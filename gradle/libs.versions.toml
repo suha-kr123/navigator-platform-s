@@ -1,0 +1,33 @@
+[versions]
+# global versions
+jdk = "21"
+
+# dependency versions
+
+# plugin versions
+springBoot = "3.5.3"
+springGradleDependencyManagement = "1.1.7"
+kotlin = "2.1.21"
+detekt = "1.23.8"
+dokka = "2.0.0"
+
+[plugins]
+
+[libraries]
+# project dependencies
+
+# test dependencies
+
+# buildSrc dependencies (plugins)
+kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+kotlin-allopenPlugin = { module = "org.jetbrains.kotlin:kotlin-allopen", version.ref = "kotlin" }
+kotlin-noargPlugin = { module = "org.jetbrains.kotlin:kotlin-noarg", version.ref = "kotlin" }
+springBoot-gradlePlugin = { module = "org.springframework.boot:spring-boot-gradle-plugin", version.ref = "springBoot" }
+spring-dependencyManagementPlugin = { module = "io.spring.gradle:dependency-management-plugin", version.ref = "springGradleDependencyManagement" }
+detekt-gradlePlugin = { module = "io.gitlab.arturbosch.detekt:detekt-gradle-plugin", version.ref = "detekt" }
+dokka-gradlePlugin = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
+
+# Detekt plugins
+detekt-formatting = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", version.ref = "detekt" }
+
+[bundles]
