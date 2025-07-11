@@ -4,8 +4,3 @@ plugins {
     id("dokka-conventions")
     id("spring-conventions")
 }
-
-
-dependencies {
-    implementation(project(":features:creditbureau"))
-}
