@@ -39,3 +39,8 @@ tasks.jar {
 repositories {
     mavenCentral()
 }
+
+dependencies{
+    // add modelmapper
+    implementation("org.modelmapper:modelmapper:3.0.0")
+}
