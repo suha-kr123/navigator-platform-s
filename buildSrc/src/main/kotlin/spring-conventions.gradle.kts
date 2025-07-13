@@ -18,6 +18,8 @@ plugins {
     id("io.spring.dependency-management")
 }
 
+val libs = extensions.getByType<VersionCatalogsExtension>().named("libs")
+
 springBoot {
     // Creates META-INF/build-info.properties for Spring Boot Actuator
     buildInfo {
@@ -31,6 +33,8 @@ dependencies {
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation(libs.findLibrary("hypersistence").get())
 }
 
 dependencyManagement {

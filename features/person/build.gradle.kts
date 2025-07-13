@@ -6,6 +6,5 @@ plugins {
 }
 
 dependencies {
-    implementation(libs.postgresql)
-    implementation(libs.liquibase)
+    implementation(project(":common"))
 }

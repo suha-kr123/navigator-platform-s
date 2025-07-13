@@ -8,4 +8,5 @@ plugins {
 
 dependencies {
     implementation(project(":features:creditbureau"))
+    implementation(project(":features:person"))
 }

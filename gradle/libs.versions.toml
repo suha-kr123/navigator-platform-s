@@ -10,6 +10,7 @@ springGradleDependencyManagement = "1.1.7"
 kotlin = "2.1.21"
 detekt = "1.23.8"
 dokka = "2.0.0"
+hypersistence = "3.10.1"
 
 [plugins]
 
@@ -26,6 +27,9 @@ springBoot-gradlePlugin = { module = "org.springframework.boot:spring-boot-gradl
 spring-dependencyManagementPlugin = { module = "io.spring.gradle:dependency-management-plugin", version.ref = "springGradleDependencyManagement" }
 detekt-gradlePlugin = { module = "io.gitlab.arturbosch.detekt:detekt-gradle-plugin", version.ref = "detekt" }
 dokka-gradlePlugin = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
+postgresql = { module = "org.postgresql:postgresql" }
+liquibase = { module = "org.liquibase:liquibase-core" }
+hypersistence = { module = "io.hypersistence:hypersistence-utils-hibernate-63", version.ref = "hypersistence" }
 
 # Detekt plugins
 detekt-formatting = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", version.ref = "detekt" }
