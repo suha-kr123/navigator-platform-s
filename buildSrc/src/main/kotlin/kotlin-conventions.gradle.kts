@@ -7,6 +7,7 @@ plugins {
 
     // Apply the Kotlin JVM plugin to add support for Kotlin on the JVM.
     kotlin("jvm")
+    kotlin("plugin.noarg")
 
     // A tool to detect kotlin problems. It's nice, give it a try!
     id("io.gitlab.arturbosch.detekt")
@@ -92,4 +93,9 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
 
     add("detektPlugins", libs.findLibrary("detekt-formatting").get())
+}
+
+noArg {
+    annotation("annotations.NoArg")
+    invokeInitializers = true
 }

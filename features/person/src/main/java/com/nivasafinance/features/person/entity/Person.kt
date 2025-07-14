@@ -1,5 +1,6 @@
 package com.nivasafinance.features.person.entity
 
+import annotations.NoArg
 import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.*
 import org.hibernate.annotations.JdbcTypeCode
@@ -9,6 +10,7 @@ import java.io.Serializable
 
 @Entity
 @Table(name = "person")
+@NoArg
 class Person(
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -19,8 +21,9 @@ class Person(
     @JdbcTypeCode(SqlTypes.JSON) // ensures Hibernate treats the column as JSON/JSONB
     @Column(name = "details", columnDefinition = "jsonb") // ensures the correct column type in PostgreSQL
     val details: Details?
-)
+) : Serializable
 
+@NoArg
 data class Details(
     val name: String?,
     val phoneNo: String?,
@@ -30,6 +33,7 @@ data class Details(
     val addressList: List<HistoryAddress>?
 ) : Serializable
 
+@NoArg
 data class Identifier(
     val id: Long?,
     val type: String?,
@@ -37,6 +41,7 @@ data class Identifier(
     val backImageUrl: String?,
 ) : Serializable
 
+@NoArg
 data class HistoryAddress(
     val type: String?,
     val addressId: Long?
