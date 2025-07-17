@@ -1,0 +1,21 @@
+{
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Navigator Dev",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "console": "internalConsole",
+      "mainClass": "com.nivasafinance.NavigatorApplicationKt",
+      "projectName": "navigator",
+      "args": "--spring.profiles.active=dev"
+    },
+    {
+      "type": "java",
+      "name": "Debug (Attach) - Remote",
+      "request": "attach",
+      "hostName": "localhost",
+      "port": 8443
+    }
+  ]
+}
