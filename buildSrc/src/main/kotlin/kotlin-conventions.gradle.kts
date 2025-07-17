@@ -8,6 +8,7 @@ plugins {
     // Apply the Kotlin JVM plugin to add support for Kotlin on the JVM.
     kotlin("jvm")
     kotlin("plugin.noarg")
+    kotlin("plugin.serialization")
 
     // A tool to detect kotlin problems. It's nice, give it a try!
     id("io.gitlab.arturbosch.detekt")

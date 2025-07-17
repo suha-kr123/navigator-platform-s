@@ -73,4 +73,6 @@ dependencies {
     // https://detekt.dev/docs/gettingstarted/gradle/
     // A static code analyzer for Kotlin
     implementation(libs.detekt.gradlePlugin)
+    implementation(libs.kotlin.serializationPlugin)
+    implementation(libs.kotlin.serialization.json)
 }

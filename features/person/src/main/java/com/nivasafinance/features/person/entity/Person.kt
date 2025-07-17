@@ -11,7 +11,6 @@ import jakarta.persistence.Table
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.annotations.Type
 import org.hibernate.type.SqlTypes
-import java.io.Serializable
 
 @Entity
 @Table(name = "person")
@@ -26,10 +25,7 @@ class Person(
     @JdbcTypeCode(SqlTypes.JSON) // ensures Hibernate treats the column as JSON/JSONB
     @Column(name = "details", columnDefinition = "jsonb") // ensures the correct column type in PostgreSQL
     val details: Details?
-) : Serializable {
-    @Suppress("MagicNumber")
-    val serialVersionUID = 998233332L
-}
+)
 
 @NoArg
 data class Details(
@@ -39,10 +35,7 @@ data class Details(
     val pastPhoneNos: List<String>?,
     val identifiers: List<Identifier>?,
     val addressList: List<HistoryAddress>?
-) : Serializable {
-    @Suppress("MagicNumber")
-    val serialVersionUID = 993282332L
-}
+)
 
 @NoArg
 data class Identifier(
@@ -50,16 +43,10 @@ data class Identifier(
     val type: String?,
     val frontImageUrl: String?,
     val backImageUrl: String?,
-) : Serializable {
-    @Suppress("MagicNumber")
-    val serialVersionUID = 9982332L
-}
+)
 
 @NoArg
 data class HistoryAddress(
     val type: String?,
     val addressId: Long?
-) : Serializable {
-    @Suppress("MagicNumber")
-    val serialVersionUID = 88232323L
-}
+)
