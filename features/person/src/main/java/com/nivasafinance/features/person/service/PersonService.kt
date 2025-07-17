@@ -13,5 +13,4 @@ class PersonService(@Autowired private val personRepository: PersonRepository) {
     fun getPerson(id: Long): Person {
         return personRepository.findById(id).orElse(null)
     }
-
 }

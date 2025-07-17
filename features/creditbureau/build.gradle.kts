@@ -8,3 +8,7 @@ plugins {
 dependencies{
     implementation(project(":common"))
 }
+
+springBoot {
+    mainClass.set("com.nivasafinance.NavigatorApplicationKt")
+}

@@ -2,7 +2,12 @@ package com.nivasafinance.features.person.entity
 
 import annotations.NoArg
 import io.hypersistence.utils.hibernate.type.json.JsonType
-import jakarta.persistence.*
+import jakarta.persistence.Column
+import jakarta.persistence.Entity
+import jakarta.persistence.GeneratedValue
+import jakarta.persistence.GenerationType
+import jakarta.persistence.Id
+import jakarta.persistence.Table
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.annotations.Type
 import org.hibernate.type.SqlTypes
@@ -21,7 +26,10 @@ class Person(
     @JdbcTypeCode(SqlTypes.JSON) // ensures Hibernate treats the column as JSON/JSONB
     @Column(name = "details", columnDefinition = "jsonb") // ensures the correct column type in PostgreSQL
     val details: Details?
-) : Serializable
+) : Serializable {
+    @Suppress("MagicNumber")
+    val serialVersionUID = 998233332L
+}
 
 @NoArg
 data class Details(
@@ -31,7 +39,10 @@ data class Details(
     val pastPhoneNos: List<String>?,
     val identifiers: List<Identifier>?,
     val addressList: List<HistoryAddress>?
-) : Serializable
+) : Serializable {
+    @Suppress("MagicNumber")
+    val serialVersionUID = 993282332L
+}
 
 @NoArg
 data class Identifier(
@@ -39,10 +50,16 @@ data class Identifier(
     val type: String?,
     val frontImageUrl: String?,
     val backImageUrl: String?,
-) : Serializable
+) : Serializable {
+    @Suppress("MagicNumber")
+    val serialVersionUID = 9982332L
+}
 
 @NoArg
 data class HistoryAddress(
     val type: String?,
     val addressId: Long?
-) : Serializable
+) : Serializable {
+    @Suppress("MagicNumber")
+    val serialVersionUID = 88232323L
+}

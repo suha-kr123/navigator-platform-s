@@ -7,5 +7,5 @@ import org.springframework.boot.runApplication
 class NavigatorApplication
 
 fun main(args: Array<String>) {
-	runApplication<NavigatorApplication>(*args)
+    runApplication<NavigatorApplication>(args = args)
 }

@@ -9,3 +9,7 @@ dependencies {
     implementation(libs.postgresql)
     implementation(libs.liquibase)
 }
+
+springBoot {
+    mainClass.set("com.nivasafinance.NavigatorApplicationKt")
+}
