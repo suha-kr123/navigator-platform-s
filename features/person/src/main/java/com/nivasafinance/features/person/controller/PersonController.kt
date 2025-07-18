@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RestController
+import java.util.UUID
 
 @RestController
 class PersonController(
@@ -19,8 +20,8 @@ class PersonController(
         return personRepository.findAll()
     }
 
-    @GetMapping("/persons/{personId}")
-    fun creditCheck(@PathVariable personId: Long): Person {
-        return personService.getPerson(personId)
+    @GetMapping("/persons/{uuid}")
+    fun creditCheck(@PathVariable uuid: String): Person {
+        return personService.getPerson(UUID.fromString(uuid))
     }
 }

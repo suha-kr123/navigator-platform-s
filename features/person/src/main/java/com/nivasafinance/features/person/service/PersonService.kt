@@ -5,12 +5,13 @@ import com.nivasafinance.features.person.repository.PersonRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Service
+import java.util.UUID
 
 @Service
 class PersonService(@Autowired private val personRepository: PersonRepository) {
 
     @Cacheable(cacheNames = ["person"], key = "#id")
-    fun getPerson(id: Long): Person {
+    fun getPerson(id: UUID): Person {
         return personRepository.findById(id).orElse(null)
     }
 }

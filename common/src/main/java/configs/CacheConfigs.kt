@@ -1,5 +1,6 @@
 package configs
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import org.springframework.cache.CacheManager
 import org.springframework.cache.annotation.EnableCaching
 import org.springframework.context.annotation.Bean
@@ -13,7 +14,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer
 
 @Configuration
 @EnableCaching
-class CacheConfigs {
+class CacheConfigs(val objectMapper: ObjectMapper) {
 
     @Bean
     fun cacheManager(redisConnectionFactory: RedisConnectionFactory): CacheManager {
@@ -25,7 +26,7 @@ class CacheConfigs {
             )
             .serializeValuesWith(
                 RedisSerializationContext.SerializationPair.fromSerializer(
-                    GenericJackson2JsonRedisSerializer()
+                    GenericJackson2JsonRedisSerializer(objectMapper)
                 )
             )
         return RedisCacheManager.builder(redisConnectionFactory)
