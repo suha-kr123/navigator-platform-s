@@ -9,7 +9,9 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.context.support.ReloadableResourceBundleMessageSource
 import org.springframework.web.servlet.LocaleResolver
 import org.springframework.web.servlet.i18n.SessionLocaleResolver
+import serializers.LocalDateDeSerializer
 import serializers.LocalDateSerializer
+import serializers.LocalDateTimeDeSerializer
 import serializers.LocalDateTimeSerializer
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -19,7 +21,16 @@ import java.util.Locale
 class AppConfig {
     @Bean
     fun modelMapper(): ModelMapper {
-        return ModelMapper()
+        val modelMapper = ModelMapper()
+
+        // Configure ModelMapper for better compatibility with Kotlin data classes
+        modelMapper.configuration.isSkipNullEnabled = true
+        modelMapper.configuration.isAmbiguityIgnored = true
+        modelMapper.configuration.matchingStrategy = org.modelmapper.convention.MatchingStrategies.STRICT
+        modelMapper.configuration.isFieldMatchingEnabled = true
+        modelMapper.configuration.fieldAccessLevel = org.modelmapper.config.Configuration.AccessLevel.PRIVATE
+
+        return modelMapper
     }
 
     @Bean
@@ -27,9 +38,11 @@ class AppConfig {
     fun objectMapper() = ObjectMapper().apply {
         val localDateModule = SimpleModule()
         localDateModule.addSerializer(LocalDate::class.java, LocalDateSerializer())
+        localDateModule.addDeserializer(LocalDate::class.java, LocalDateDeSerializer())
         registerModule(localDateModule)
         val localDateTimeModule = SimpleModule()
         localDateTimeModule.addSerializer(LocalDateTime::class.java, LocalDateTimeSerializer())
+        localDateTimeModule.addDeserializer(LocalDateTime::class.java, LocalDateTimeDeSerializer())
         registerModule(localDateTimeModule)
     }
 
