@@ -6,4 +6,5 @@
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
     <include file="/db/migrations/V1__create_persons.sql"/>
+    <include file="/db/migrations/V2__create_advisors.sql"/>
 </databaseChangeLog>

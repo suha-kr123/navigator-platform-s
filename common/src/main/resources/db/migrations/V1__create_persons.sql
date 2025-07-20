@@ -14,7 +14,8 @@ CREATE TABLE person
     created_at    TIMESTAMP,
     created_by    VARCHAR(100),
     updated_at    TIMESTAMP,
-    updated_by    VARCHAR(100)
+    updated_by VARCHAR(100),
+    version    int NOT NULL DEFAULT '0'
 );
 
 CREATE INDEX idx_person_mobile_number ON person
