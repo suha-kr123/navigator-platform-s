@@ -5,10 +5,11 @@ plugins {
     id("spring-conventions")
 }
 
-
 dependencies {
     implementation(project(":common"))
-    implementation(project(":features:creditbureau"))
     implementation(project(":features:person"))
-    implementation(project(":features:advisor"))
+}
+
+springBoot {
+    mainClass.set("com.nivasafinance.NavigatorApplicationKt")
 }
