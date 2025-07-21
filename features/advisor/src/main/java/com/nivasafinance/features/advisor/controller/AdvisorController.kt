@@ -25,8 +25,8 @@ class AdvisorController(
 
     @PostMapping
     fun createAdvisor(@RequestBody @Valid advisorDto: AdvisorDto): ResponseEntity<AdvisorDto> {
-        val advisorDto = advisorWriteService.createAdvisor(advisorDto)
-        return ResponseEntity(advisorDto, HttpStatus.CREATED)
+        val savedAdvisorDto = advisorWriteService.createAdvisor(advisorDto)
+        return ResponseEntity(savedAdvisorDto, HttpStatus.CREATED)
     }
 
     @GetMapping("/{id}")
@@ -46,6 +46,4 @@ class AdvisorController(
         advisorWriteService.deleteAdvisor(id)
         return ResponseEntity.noContent().build()
     }
-
-
 }

@@ -18,7 +18,6 @@ import java.util.UUID
 @Entity
 @Table(name = "advisor")
 @NoArg
-
 @Suppress("LongParameterList")
 class Advisor(
     @Id

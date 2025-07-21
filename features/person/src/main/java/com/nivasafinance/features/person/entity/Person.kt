@@ -69,7 +69,7 @@ class Person(
     val dataExt: Details? = null,
 
     @Column(name = "created_at")
-    val createdAt: LocalDateTime? = null, //todo use extend class
+    val createdAt: LocalDateTime? = null, // todo use extend class
 
     @Column(name = "created_by", length = 100)
     val createdBy: String? = null,

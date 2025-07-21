@@ -54,7 +54,7 @@ class AppConfig {
         }
         setSerializationInclusion(JsonInclude.Include.NON_NULL)
         registerModule(javaTimeModule)
-        //registerModule(ParameterNamesModule())
+        // registerModule(ParameterNamesModule())
         registerModule(kotlinModule())
     }
 
