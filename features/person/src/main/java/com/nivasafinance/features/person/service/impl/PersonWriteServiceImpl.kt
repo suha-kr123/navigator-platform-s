@@ -1,14 +1,12 @@
 package com.nivasafinance.features.person.service.impl
 
+import base.BaseNavigatorService
 import com.nivasafinance.features.person.dto.PersonDto
 import com.nivasafinance.features.person.entity.Person
 import com.nivasafinance.features.person.repository.PersonRepository
-import com.nivasafinance.features.person.service.PersonReadService
 import com.nivasafinance.features.person.service.PersonWriteService
-import org.modelmapper.ModelMapper
 import org.springframework.cache.annotation.CacheEvict
 import org.springframework.cache.annotation.CachePut
-import org.springframework.context.MessageSource
 import org.springframework.context.i18n.LocaleContextHolder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -17,10 +15,7 @@ import java.util.UUID
 @Service
 class PersonWriteServiceImpl(
     private val personRepository: PersonRepository,
-    private val modelMapper: ModelMapper,
-    private val personReadService: PersonReadService,
-    private val messageSource: MessageSource,
-) : PersonWriteService {
+) : PersonWriteService, BaseNavigatorService() {
 
     companion object {
         private const val CACHE_NAME = "person"

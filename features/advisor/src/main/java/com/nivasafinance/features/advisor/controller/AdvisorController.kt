@@ -3,6 +3,7 @@ package com.nivasafinance.features.advisor.controller
 import com.nivasafinance.features.advisor.dto.AdvisorDto
 import com.nivasafinance.features.advisor.service.AdvisorReadService
 import com.nivasafinance.features.advisor.service.AdvisorWriteService
+import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -23,7 +24,7 @@ class AdvisorController(
 ) {
 
     @PostMapping
-    fun createAdvisor(@RequestBody advisorDto: AdvisorDto): ResponseEntity<AdvisorDto> {
+    fun createAdvisor(@RequestBody @Valid advisorDto: AdvisorDto): ResponseEntity<AdvisorDto> {
         val advisorDto = advisorWriteService.createAdvisor(advisorDto)
         return ResponseEntity(advisorDto, HttpStatus.CREATED)
     }

@@ -8,7 +8,7 @@ plugins {
 dependencies {
     implementation(libs.postgresql)
     implementation(libs.liquibase)
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.19.0")
+    implementation(libs.jackson.kotlinmodule)
 }
 
 springBoot {

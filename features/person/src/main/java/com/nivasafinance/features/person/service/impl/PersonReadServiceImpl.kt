@@ -1,11 +1,10 @@
 package com.nivasafinance.features.person.service.impl
 
+import base.BaseNavigatorService
 import com.nivasafinance.features.person.dto.PersonDto
 import com.nivasafinance.features.person.repository.PersonRepository
 import com.nivasafinance.features.person.service.PersonReadService
-import org.modelmapper.ModelMapper
 import org.springframework.cache.annotation.Cacheable
-import org.springframework.context.MessageSource
 import org.springframework.context.i18n.LocaleContextHolder
 import org.springframework.stereotype.Service
 import java.util.Locale
@@ -14,9 +13,7 @@ import java.util.UUID
 @Service
 class PersonReadServiceImpl(
     private val personRepository: PersonRepository,
-    private val modelMapper: ModelMapper,
-    private val messageSource: MessageSource
-) : PersonReadService { //todo base
+) : PersonReadService, BaseNavigatorService() {
 
     private val locale: Locale = LocaleContextHolder.getLocale()
 

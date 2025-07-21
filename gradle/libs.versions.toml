@@ -12,6 +12,8 @@ detekt = "1.23.8"
 dokka = "2.0.0"
 hypersistence = "3.10.1"
 kotlinSerialization = "1.8.1"
+jakarataValidation = "3.1.0"
+jackson = "2.19.0"
 
 [plugins]
 
@@ -33,6 +35,8 @@ dokka-gradlePlugin = { module = "org.jetbrains.dokka:dokka-gradle-plugin", versi
 postgresql = { module = "org.postgresql:postgresql" }
 liquibase = { module = "org.liquibase:liquibase-core" }
 hypersistence = { module = "io.hypersistence:hypersistence-utils-hibernate-63", version.ref = "hypersistence" }
+jakarta-validation = { module = "jakarta.validation:jakarta.validation-api", version.ref = "jakarataValidation" }
+jackson-kotlinmodule = { module = "com.fasterxml.jackson.module:jackson-module-kotlin", version.ref = "jackson" }
 
 # Detekt plugins
 detekt-formatting = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", version.ref = "detekt" }
