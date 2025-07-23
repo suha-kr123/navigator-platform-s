@@ -9,6 +9,8 @@ dependencies {
     implementation(libs.postgresql)
     implementation(libs.liquibase)
     implementation(libs.jackson.kotlinmodule)
+    implementation(libs.auth0.jwt)
+    implementation(libs.auth0.jwks)
 }
 
 springBoot {

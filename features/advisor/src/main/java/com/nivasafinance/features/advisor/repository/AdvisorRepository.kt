@@ -11,7 +11,7 @@ interface AdvisorRepository : JpaRepository<Advisor, UUID> {
 
     @Query(
         "SELECT a.* FROM advisor a JOIN person p ON a.person_id = p.id " +
-                "WHERE p.mobile_number->>'primary' = :primaryMobileNo",
+            "WHERE p.mobile_number->>'primary' = :primaryMobileNo",
         nativeQuery = true
     )
     fun findByPrimaryMobileNo(primaryMobileNo: String): Advisor?
