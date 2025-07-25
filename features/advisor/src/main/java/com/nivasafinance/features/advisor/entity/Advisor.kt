@@ -14,6 +14,7 @@ import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.annotations.Type
 import org.hibernate.type.SqlTypes
 import java.util.UUID
+import audit.AuditableEntity //auditing
 
 @Entity
 @Table(name = "advisor")
@@ -37,7 +38,7 @@ class Advisor(
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "data_ext", columnDefinition = "jsonb")
     val dataExt: Details? = null,
-)
+) : AuditableEntity()
 
 @NoArg
 data class Details(

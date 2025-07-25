@@ -15,10 +15,10 @@ import jakarta.persistence.Table
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.annotations.Type
 import org.hibernate.type.SqlTypes
-import org.springframework.data.annotation.Version
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.util.UUID
+import audit.AuditableEntity //auditing
+
 
 @Entity
 @Table(name = "person")
@@ -27,7 +27,7 @@ import java.util.UUID
 class Person(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    val id: UUID,
+    var id: UUID,
 
     @Column(name = "first_name", length = 100)
     val firstName: String? = null,
@@ -68,21 +68,7 @@ class Person(
     @Column(name = "data_ext", columnDefinition = "jsonb")
     val dataExt: Details? = null,
 
-    @Column(name = "created_at")
-    val createdAt: LocalDateTime? = null, // todo use extend class
-
-    @Column(name = "created_by", length = 100)
-    val createdBy: String? = null,
-
-    @Column(name = "updated_at")
-    val updatedAt: LocalDateTime? = null,
-
-    @Column(name = "updated_by", length = 100)
-    val updatedBy: String? = null,
-
-    @Version
-    private val version: Long = 0
-)
+) : AuditableEntity()
 
 @NoArg
 data class MobileNumberDetails(

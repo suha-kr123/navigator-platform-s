@@ -75,16 +75,15 @@ class AdvisorWriteServiceImpl(
 
     @Caching(
         put = [
-            CachePut(cacheNames = [CACHE_NAME], key = "#advisorDto.id"),
+            CachePut(cacheNames = [CACHE_NAME], key = "#id"),
             CachePut(cacheNames = [CACHE_NAME], key = "'mobileNumber' + #result.personalDetails.mobileNumber.primary")
         ]
     )
+    @Transactional
     override fun updateAdvisor(id: UUID, advisorDto: AdvisorDto): AdvisorDto {
-        if (!advisorRepository.existsById(id)) {
-            throw AdvisorNotFoundException(id, messageSource)
-        }
-        val advisor = modelMapper.map(advisorDto, Advisor::class.java)
-        val savedPersonDto = personWriteService.savePerson(advisorDto.personalDetails)
+        val advisor = advisorRepository.findById(id).orElseThrow { AdvisorNotFoundException(id, messageSource) }
+        val personId = advisor.personId
+        val savedPersonDto = personWriteService.updatePerson(personId, advisorDto.personalDetails)
         val savedAdvisor = advisorRepository.save(advisor)
         val savedAdvisorDto = modelMapper.map(savedAdvisor, AdvisorDto::class.java)
         savedAdvisorDto.personalDetails = savedPersonDto

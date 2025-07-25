@@ -38,4 +38,17 @@ class PersonWriteServiceImpl(
         }
         personRepository.deleteById(id)
     }
+
+    @CachePut(cacheNames = [CACHE_NAME], key = "#id")
+    @Transactional
+    override fun updatePerson(id: UUID, personDto: PersonDto): PersonDto {
+        if (!personRepository.existsById(id)) {
+            throw PersonNotFoundException(id, messageSource)
+        }
+        val person = modelMapper.map(personDto, Person::class.java)
+        person.id = id
+        val savedPerson = personRepository.save(person)
+        val savedPersonDto = modelMapper.map(savedPerson, PersonDto::class.java)
+        return savedPersonDto
+    }
 }
