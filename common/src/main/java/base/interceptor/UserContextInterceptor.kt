@@ -38,7 +38,8 @@ class UserContextInterceptor : HandlerInterceptor {
 
         return try {
             val decodedJWT = JWT.decode(token)
-            val username = decodedJWT.getClaim("username")?.asString() ?: throw RuntimeException("Invalid token: username is missing")
+            val username = decodedJWT.getClaim("username")?.asString()
+                ?: throw IllegalArgumentException("Invalid token: username is missing")
             val email = decodedJWT.getClaim("email")?.asString() ?: "unknown"
             val phoneNumber = decodedJWT.getClaim("phone_number")?.asString() ?: "unknown"
             val roles = decodedJWT.getClaim("cognito:groups")
