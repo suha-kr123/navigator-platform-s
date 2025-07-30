@@ -1,11 +1,10 @@
 package audit
 
 import jakarta.persistence.*
+import jakarta.persistence.Version // audit
 import org.springframework.data.annotation.*
 import org.springframework.data.jpa.domain.support.AuditingEntityListener
-import jakarta.persistence.Version // audit
 import java.time.LocalDateTime
-
 
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener::class)

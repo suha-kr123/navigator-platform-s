@@ -11,4 +11,3 @@ class AuditorAwareImpl : AuditorAware<String> {
         return Optional.ofNullable(UserContext.getUserInfo()?.username ?: "system")
     }
 }
-

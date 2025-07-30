@@ -16,6 +16,9 @@ jakarataValidation = "3.1.0"
 jackson = "2.19.0"
 java-jwt = "4.4.0"
 jwks-rsa = "0.21.2"
+junit = "5.10.2"
+mockk = "1.13.10"
+jacoco = "0.8.11"
 
 
 
@@ -46,6 +49,10 @@ jackson-kotlinmodule = { module = "com.fasterxml.jackson.module:jackson-module-k
 detekt-formatting = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", version.ref = "detekt" }
 auth0-jwt = { module = "com.auth0:java-jwt", version.ref = "java-jwt" }
 auth0-jwks = { module = "com.auth0:jwks-rsa", version.ref = "jwks-rsa" }
+# Kotlin + Mockk
+mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
 
 
 [bundles]
