@@ -3,6 +3,7 @@
 jdk = "21"
 
 # dependency versions
+javers = "7.8.0"
 
 # plugin versions
 springBoot = "3.5.3"
@@ -26,6 +27,7 @@ jacoco = "0.8.11"
 
 [libraries]
 # project dependencies
+javers-spring-boot-starter-sql = { module = "org.javers:javers-spring-boot-starter-sql", version.ref = "javers" }
 
 # test dependencies
 

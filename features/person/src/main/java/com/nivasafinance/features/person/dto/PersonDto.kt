@@ -11,14 +11,14 @@ import java.util.UUID
 @NoArg
 data class PersonDto(
     val id: UUID? = null,
-    val firstName: String? = null,
-    val middleName: String? = null,
-    val lastName: String? = null,
+    var firstName: String? = null,
+    var middleName: String? = null,
+    var lastName: String? = null,
     @field:Valid
-    val mobileNumber: MobileNumberDetails = MobileNumberDetails(),
-    val displayName: String? = null,
-    val dateOfBirth: LocalDate? = null,
-    val gender: Gender? = null
+    var mobileNumber: MobileNumberDetails = MobileNumberDetails(),
+    var displayName: String? = null,
+    var dateOfBirth: LocalDate? = null,
+    var gender: Gender? = null
 )
 
 @NoArg

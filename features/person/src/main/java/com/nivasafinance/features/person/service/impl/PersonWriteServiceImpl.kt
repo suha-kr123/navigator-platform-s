@@ -42,13 +42,10 @@ class PersonWriteServiceImpl(
     @CachePut(cacheNames = [CACHE_NAME], key = "#id")
     @Transactional
     override fun updatePerson(id: UUID, personDto: PersonDto): PersonDto {
-        if (!personRepository.existsById(id)) {
-            throw PersonNotFoundException(id, messageSource)
-        }
-        val person = modelMapper.map(personDto, Person::class.java)
-        person.id = id
-        val savedPerson = personRepository.save(person)
-        val savedPersonDto = modelMapper.map(savedPerson, PersonDto::class.java)
-        return savedPersonDto
+        val existingPerson = personRepository.findById(id)
+            .orElseThrow { PersonNotFoundException(id, messageSource) }
+        modelMapper.map(personDto, existingPerson)
+        val savedPerson = personRepository.save(existingPerson)
+        return modelMapper.map(savedPerson, PersonDto::class.java)
     }
 }

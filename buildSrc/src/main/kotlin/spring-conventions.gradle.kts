@@ -38,6 +38,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation(libs.findLibrary("jakarta-validation").get())
+    implementation(libs.findLibrary("javers-spring-boot-starter-sql").get())
 }
 
 dependencyManagement {

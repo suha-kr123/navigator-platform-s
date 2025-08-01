@@ -11,6 +11,7 @@ dependencies {
     implementation(libs.jackson.kotlinmodule)
     implementation(libs.auth0.jwt)
     implementation(libs.auth0.jwks)
+    implementation(libs.javers.spring.boot.starter.sql)
 }
 
 springBoot {

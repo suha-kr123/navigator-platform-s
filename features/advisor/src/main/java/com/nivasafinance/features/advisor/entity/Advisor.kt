@@ -1,6 +1,7 @@
 package com.nivasafinance.features.advisor.entity
 
 import annotations.NoArg
+import audit.AuditableEntity
 import com.nivasafinance.features.advisor.enum.AdvisorStatus
 import com.nivasafinance.features.person.entity.Details
 import io.hypersistence.utils.hibernate.type.json.JsonType
@@ -13,10 +14,11 @@ import jakarta.persistence.Table
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.annotations.Type
 import org.hibernate.type.SqlTypes
+import org.javers.core.metamodel.annotation.TypeName
 import java.util.UUID
-import audit.AuditableEntity //auditing
 
 @Entity
+@TypeName("advisor")
 @Table(name = "advisor")
 @NoArg
 @Suppress("LongParameterList")

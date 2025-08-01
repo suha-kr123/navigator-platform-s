@@ -1,6 +1,7 @@
 package com.nivasafinance.features.person.entity
 
 import annotations.NoArg
+import audit.AuditableEntity
 import data.Identifier
 import data.enums.Gender
 import io.hypersistence.utils.hibernate.type.json.JsonType
@@ -15,12 +16,13 @@ import jakarta.persistence.Table
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.annotations.Type
 import org.hibernate.type.SqlTypes
+import org.javers.core.metamodel.annotation.TypeName
+import org.javers.core.metamodel.annotation.Value
 import java.time.LocalDate
 import java.util.UUID
-import audit.AuditableEntity //auditing
-
 
 @Entity
+@TypeName("person")
 @Table(name = "person")
 @NoArg
 @Suppress("LongParameterList")
@@ -30,57 +32,60 @@ class Person(
     var id: UUID,
 
     @Column(name = "first_name", length = 100)
-    val firstName: String? = null,
+    var firstName: String? = null,
 
     @Column(name = "middle_name", length = 100)
-    val middleName: String? = null,
+    var middleName: String? = null,
 
     @Column(name = "last_name", length = 100)
-    val lastName: String? = null,
+    var lastName: String? = null,
 
     @Type(JsonType::class)
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "mobile_number", columnDefinition = "jsonb")
-    val mobileNumber: MobileNumberDetails? = null,
+    var mobileNumber: MobileNumberDetails? = null,
 
     @Column(name = "email", length = 100)
-    val email: String? = null,
+    var email: String? = null,
 
     @Column(name = "date_of_birth")
-    val dateOfBirth: LocalDate? = null,
+    var dateOfBirth: LocalDate? = null,
 
     @Column(name = "gender", length = 10)
     @Enumerated(EnumType.STRING)
-    val gender: Gender? = null,
+    var gender: Gender? = null,
 
     @Type(JsonType::class)
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "identifiers", columnDefinition = "jsonb")
-    val identifiers: List<Identifier>? = null,
+    var identifiers: List<Identifier>? = null,
 
     @Type(JsonType::class)
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "addresses", columnDefinition = "jsonb")
-    val addresses: List<AddressDetails>? = null,
+    var addresses: List<AddressDetails>? = null,
 
     @Type(JsonType::class)
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "data_ext", columnDefinition = "jsonb")
-    val dataExt: Details? = null,
+    var dataExt: Details? = null,
 
 ) : AuditableEntity()
 
+@Value
 @NoArg
 data class MobileNumberDetails(
-    val primary: String? = null,
+    var primary: String? = null,
 )
 
+@Value
 @NoArg
 data class AddressDetails(
-    val addressId: String? = null,
-    val type: String? = null,
+    var addressId: String? = null,
+    var type: String? = null,
 )
 
+@Value
 @NoArg
 data class Details(
     val description: String? = null,
