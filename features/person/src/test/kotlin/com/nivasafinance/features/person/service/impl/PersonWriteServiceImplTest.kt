@@ -4,7 +4,11 @@ import com.nivasafinance.features.person.dto.PersonDto
 import com.nivasafinance.features.person.entity.Person
 import com.nivasafinance.features.person.exception.PersonNotFoundException
 import com.nivasafinance.features.person.repository.PersonRepository
-import io.mockk.*
+import io.mockk.Runs
+import io.mockk.every
+import io.mockk.just
+import io.mockk.mockk
+import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -39,7 +43,9 @@ class PersonWriteServiceImplTest {
 
         every { modelMapper.map(personDto, Person::class.java) } returns personEntity
         every { personRepository.save(personEntity) } returns savedEntity
-        every { modelMapper.map(savedEntity, PersonDto::class.java) } returns PersonDto(id = personId, firstName = "John", lastName = "Doe")
+        every {
+            modelMapper.map(savedEntity, PersonDto::class.java)
+        } returns PersonDto(id = personId, firstName = "John", lastName = "Doe")
 
         val result = personWriteService.savePerson(personDto)
 
@@ -83,7 +89,9 @@ class PersonWriteServiceImplTest {
         every { personRepository.existsById(personId) } returns true
         every { modelMapper.map(personDto, Person::class.java) } returns personEntity
         every { personRepository.save(personEntity) } returns personEntity
-        every { modelMapper.map(personEntity, PersonDto::class.java) } returns PersonDto(id = personId, firstName = "Updated", lastName = "Name")
+        every {
+            modelMapper.map(personEntity, PersonDto::class.java)
+        } returns PersonDto(id = personId, firstName = "Updated", lastName = "Name")
 
         val result = personWriteService.updatePerson(personId, personDto)
 

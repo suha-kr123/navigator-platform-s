@@ -7,8 +7,8 @@ import com.nivasafinance.features.advisor.exception.AdvisorMobileAlreadyExistsEx
 import com.nivasafinance.features.advisor.exception.AdvisorNotFoundException
 import com.nivasafinance.features.advisor.repository.AdvisorRepository
 import com.nivasafinance.features.advisor.service.AdvisorReadService
-import com.nivasafinance.features.person.dto.PersonDto
 import com.nivasafinance.features.person.dto.MobileNumberDetails
+import com.nivasafinance.features.person.dto.PersonDto
 import com.nivasafinance.features.person.service.PersonWriteService
 import io.mockk.every
 import io.mockk.mockk
