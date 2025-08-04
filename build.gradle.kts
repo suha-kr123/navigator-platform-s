@@ -1,5 +1,6 @@
 plugins {
 	idea
+	base
 }
 
 idea {
@@ -12,3 +13,4 @@ tasks {
 		distributionType = Wrapper.DistributionType.ALL
 	}
 }
+apply(from = "git-hooks.gradle.kts")

@@ -127,13 +127,14 @@ cd navigator-platform
 brew services start postgresql@17
 createdb navigator-platform
 
-# Build project
+# Clean and build project (REQUIRED on first setup)
 ./gradlew clean build
 
 # Run the main service
 ./gradlew :main:bootRun
-
 ```
+
+> **⚠️ Important:** Always run `./gradlew clean build` when setting up the project for the first time or after major changes. This ensures all dependencies are downloaded, Git hooks are installed, and the project compiles correctly.
 
 ---
 

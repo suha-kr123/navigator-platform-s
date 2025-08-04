@@ -84,13 +84,14 @@ class PersonWriteServiceImplTest {
     @Test
     fun `updatePerson should update and return person`() {
         val personDto = PersonDto(firstName = "Updated", lastName = "Name")
-        val personEntity = Person(id = personId, firstName = "Updated", lastName = "Name")
+        val existingPerson = Person(id = personId, firstName = "Old", lastName = "Name")
+        val updatedPerson = Person(id = personId, firstName = "Updated", lastName = "Name")
 
-        every { personRepository.existsById(personId) } returns true
-        every { modelMapper.map(personDto, Person::class.java) } returns personEntity
-        every { personRepository.save(personEntity) } returns personEntity
+        every { personRepository.findById(personId) } returns Optional.of(existingPerson)
+        every { modelMapper.map(personDto, existingPerson) } just Runs
+        every { personRepository.save(existingPerson) } returns updatedPerson
         every {
-            modelMapper.map(personEntity, PersonDto::class.java)
+            modelMapper.map(updatedPerson, PersonDto::class.java)
         } returns PersonDto(id = personId, firstName = "Updated", lastName = "Name")
 
         val result = personWriteService.updatePerson(personId, personDto)
@@ -98,24 +99,24 @@ class PersonWriteServiceImplTest {
         assertEquals(personId, result.id)
         assertEquals("Updated", result.firstName)
 
-        verify(exactly = 1) { personRepository.existsById(personId) }
-        verify(exactly = 1) { modelMapper.map(personDto, Person::class.java) }
-        verify(exactly = 1) { personRepository.save(personEntity) }
-        verify(exactly = 1) { modelMapper.map(personEntity, PersonDto::class.java) }
+        verify(exactly = 1) { personRepository.findById(personId) }
+        verify(exactly = 1) { modelMapper.map(personDto, existingPerson) }
+        verify(exactly = 1) { personRepository.save(existingPerson) }
+        verify(exactly = 1) { modelMapper.map(updatedPerson, PersonDto::class.java) }
     }
 
     @Test
     fun `updatePerson should throw exception when person not found`() {
         val personDto = PersonDto(firstName = "Updated")
 
-        every { personRepository.existsById(personId) } returns false
+        every { personRepository.findById(personId) } returns Optional.empty()
         every { messageSource.getMessage(any(), any(), any()) } returns "Person not found"
 
         assertThrows<PersonNotFoundException> {
             personWriteService.updatePerson(personId, personDto)
         }
 
-        verify(exactly = 1) { personRepository.existsById(personId) }
+        verify(exactly = 1) { personRepository.findById(personId) }
         verify(exactly = 1) { messageSource.getMessage(any(), any(), any()) }
     }
 }
