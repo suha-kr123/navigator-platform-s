@@ -1,0 +1,255 @@
+name: PR Code Coverage
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+env:
+  GRADLE_OPTS: -Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.caching=true
+  JAVA_VERSION: '21'
+
+permissions:
+  contents: read
+  pull-requests: write
+  actions: read
+
+jobs:
+  coverage-analysis:
+    name: Analyze Code Coverage for PR
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Full history for better coverage analysis
+    
+    - name: Set up JDK ${{ env.JAVA_VERSION }}
+      uses: actions/setup-java@v4
+      with:
+        java-version: ${{ env.JAVA_VERSION }}
+        distribution: 'temurin'
+        cache: 'gradle'
+    
+    - name: Cache Gradle packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+    
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+    
+    - name: Run tests with coverage
+      run: |
+        ./gradlew test --no-daemon
+        ./gradlew jacocoTestReport --no-daemon
+    
+    - name: Generate coverage report for changed files
+      id: coverage
+      run: |
+        # Debug: Check what files exist
+        echo "=== DEBUG: Checking build directory ==="
+        find build -name "*.xml" 2>/dev/null || echo "No XML files found"
+        echo "=== DEBUG: Checking jacoco directory ==="
+        ls -la build/reports/jacoco/ 2>/dev/null || echo "Jacoco directory not found"
+        echo "=== DEBUG: Checking test directory ==="
+        ls -la build/reports/jacoco/test/ 2>/dev/null || echo "Test directory not found"
+        
+        # Create coverage output file
+        touch coverage-output.txt
+        
+        echo "📊 **CODE COVERAGE ANALYSIS** 📊" > coverage-output.txt
+        echo "==================================" >> coverage-output.txt
+        echo "" >> coverage-output.txt
+        
+        # Get changed files
+        CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} | grep -E '\.(kt|java)$' | grep -v 'test' || true)
+        
+        if [ -z "$CHANGED_FILES" ]; then
+          echo "✅ **No source code files changed**" >> coverage-output.txt
+          echo "   No Kotlin/Java files were modified in this PR." >> coverage-output.txt
+          echo "" >> coverage-output.txt
+          echo "📈 **Overall Project Coverage:**" >> coverage-output.txt
+          echo "   📁 Check coverage reports in build/reports/jacoco/" >> coverage-output.txt
+        else
+          echo "📝 **Changed Files:**" >> coverage-output.txt
+          echo "$CHANGED_FILES" | while read -r file; do
+            echo "   📄 $file" >> coverage-output.txt
+          done
+          echo "" >> coverage-output.txt
+          
+          # Extract coverage data from JaCoCo XML reports (check all modules)
+          JACOCO_REPORTS=$(find . -name "jacocoTestReport.xml" -type f)
+          if [ -n "$JACOCO_REPORTS" ]; then
+            echo "📈 **Coverage Summary:**" >> coverage-output.txt
+            
+            # Parse XML for overall coverage (use first available report)
+            FIRST_REPORT=$(echo "$JACOCO_REPORTS" | head -1)
+            LINE_COVERAGE=$(grep -o 'lineRate="[^"]*"' "$FIRST_REPORT" | head -1 | cut -d'"' -f2 || echo "0")
+            BRANCH_COVERAGE=$(grep -o 'branchRate="[^"]*"' "$FIRST_REPORT" | head -1 | cut -d'"' -f2 || echo "0")
+            COMPLEXITY_COVERAGE=$(grep -o 'complexityRate="[^"]*"' "$FIRST_REPORT" | head -1 | cut -d'"' -f2 || echo "0")
+            
+            # Convert to percentages
+            LINE_PERCENT=$(echo "scale=1; $LINE_COVERAGE * 100" | bc -l || echo "0")
+            BRANCH_PERCENT=$(echo "scale=1; $BRANCH_COVERAGE * 100" | bc -l || echo "0")
+            COMPLEXITY_PERCENT=$(echo "scale=1; $COMPLEXITY_COVERAGE * 100" | bc -l || echo "0")
+            
+            echo "   🎯 **Line Coverage:** ${LINE_PERCENT}%" >> coverage-output.txt
+            echo "   🌿 **Branch Coverage:** ${BRANCH_PERCENT}%" >> coverage-output.txt
+            echo "   🔄 **Complexity Coverage:** ${COMPLEXITY_PERCENT}%" >> coverage-output.txt
+            echo "" >> coverage-output.txt
+            
+            # Check against thresholds
+            echo "📋 **Coverage Thresholds:**" >> coverage-output.txt
+            if (( $(echo "$LINE_PERCENT >= 80" | bc -l) )); then
+              echo "   ✅ Line Coverage: ${LINE_PERCENT}% (≥ 80%)" >> coverage-output.txt
+            else
+              echo "   ❌ Line Coverage: ${LINE_PERCENT}% (< 80%)" >> coverage-output.txt
+            fi
+            
+            if (( $(echo "$BRANCH_PERCENT >= 70" | bc -l) )); then
+              echo "   ✅ Branch Coverage: ${BRANCH_PERCENT}% (≥ 70%)" >> coverage-output.txt
+            else
+              echo "   ❌ Branch Coverage: ${BRANCH_PERCENT}% (< 70%)" >> coverage-output.txt
+            fi
+            
+            echo "" >> coverage-output.txt
+            echo "📊 **Coverage Reports:**" >> coverage-output.txt
+            echo "$JACOCO_REPORTS" | while read -r report; do
+              echo "   📄 XML Report: $report" >> coverage-output.txt
+              HTML_REPORT=$(dirname "$report")/html/index.html
+              if [ -f "$HTML_REPORT" ]; then
+                echo "   📁 HTML Report: $HTML_REPORT" >> coverage-output.txt
+              fi
+            done
+          else
+            echo "⚠️  **Coverage report not found**" >> coverage-output.txt
+            echo "   JaCoCo report not generated. Check test execution." >> coverage-output.txt
+            echo "   Looking for: build/reports/jacoco/test/jacocoTestReport.xml" >> coverage-output.txt
+            echo "   Available files:" >> coverage-output.txt
+            find build/reports -name "*.xml" 2>/dev/null || echo "   No XML reports found" >> coverage-output.txt
+          fi
+        fi
+        
+        echo "" >> coverage-output.txt
+        echo "💡 **Next Steps:**" >> coverage-output.txt
+        echo "   1. Review coverage reports for detailed analysis" >> coverage-output.txt
+        echo "   2. Add tests for uncovered code if needed" >> coverage-output.txt
+        echo "   3. Ensure coverage meets minimum thresholds" >> coverage-output.txt
+        
+        # Display the output
+        cat coverage-output.txt
+        
+        # Verify file exists
+        ls -la coverage-output.txt
+    
+    - name: Upload coverage reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: pr-coverage-reports-${{ github.event.number }}
+        path: |
+          **/build/reports/jacoco/
+        retention-days: 7
+    
+    - name: Comment PR with coverage summary
+      uses: actions/github-script@v7
+      if: always()
+      with:
+        script: |
+          const fs = require('fs');
+          const path = require('path');
+          
+          let coverageComment = `## 📊 Code Coverage Analysis
+          
+          **PR #${context.issue.number}** - Coverage Summary
+          
+          `;
+          
+          try {
+            // Check if coverage output file exists
+            const coverageFilePath = path.join(process.cwd(), 'coverage-output.txt');
+            
+            if (fs.existsSync(coverageFilePath)) {
+              // Read the coverage output
+              const coverageOutput = fs.readFileSync(coverageFilePath, 'utf8');
+              coverageComment += coverageOutput;
+            } else {
+              coverageComment += `⚠️ **Coverage analysis failed**
+              
+              Error: coverage-output.txt file not found
+              
+              Please check the workflow logs for details.
+              `;
+            }
+          } catch (error) {
+            coverageComment += `⚠️ **Coverage analysis failed**
+            
+            Error: ${error.message}
+            
+            Please check the workflow logs for details.
+            `;
+          }
+          
+          coverageComment += `
+          
+          ---
+          *This comment was automatically generated by the PR Coverage workflow*
+          `;
+          
+          // Add comment to PR
+          try {
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: coverageComment
+            });
+            console.log('Successfully added coverage comment to PR');
+          } catch (error) {
+            console.error('Failed to add comment to PR:', error.message);
+          }
+          
+          // Also update PR description with coverage badge
+          try {
+            const coverageFilePath = path.join(process.cwd(), 'coverage-output.txt');
+            
+            if (fs.existsSync(coverageFilePath)) {
+              const coverageOutput = fs.readFileSync(coverageFilePath, 'utf8');
+              const lineMatch = coverageOutput.match(/Line Coverage: ([\d.]+)%/);
+              const branchMatch = coverageOutput.match(/Branch Coverage: ([\d.]+)%/);
+              
+              if (lineMatch && branchMatch) {
+                const lineCoverage = lineMatch[1];
+                const branchCoverage = branchMatch[1];
+                
+                const coverageBadge = `![Coverage](https://img.shields.io/badge/coverage-${lineCoverage}%25-green) ![Branch Coverage](https://img.shields.io/badge/branch-${branchCoverage}%25-blue)`;
+                
+                // Get current PR
+                const pr = await github.rest.pulls.get({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: context.issue.number
+                });
+                
+                // Update PR description with coverage badge
+                const currentDescription = pr.data.body || '';
+                const updatedDescription = coverageBadge + '\n\n' + currentDescription;
+                
+                await github.rest.pulls.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: context.issue.number,
+                  body: updatedDescription
+                });
+                console.log('Successfully updated PR description with coverage badge');
+              }
+            }
+          } catch (error) {
+            console.log('Could not update PR description:', error.message);
+          }

@@ -1,6 +1,7 @@
 import org.gradle.api.tasks.testing.logging.TestLogEvent.FAILED
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
 import org.gradle.testing.jacoco.tasks.JacocoReport
+import org.gradle.testing.jacoco.tasks.JacocoCoverageVerification
 import org.gradle.kotlin.dsl.*
 
 plugins {
@@ -48,14 +49,70 @@ tasks.named<JacocoReport>("jacocoTestReport") {
         files(classDirectories.files.map {
             fileTree(it) {
                 include("**/service/impl/**")
+                include("**/controller/**")
+                include("**/repository/**")
                 exclude(
                     "**/dto/**",
                     "**/entity/**",
                     "**/enum/**",
                     "**/exception/**",
-                    "**/config/**"
+                    "**/config/**",
+                    "**/base/**"
                 )
             }
         })
     )
+}
+
+// JaCoCo coverage verification
+tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
+    dependsOn(tasks.withType<Test>())
+
+    violationRules {
+        rule {
+            limit {
+                counter = "LINE"
+                value = "COVEREDRATIO"
+                minimum = "0.80".toBigDecimal()
+            }
+        }
+        rule {
+            limit {
+                counter = "BRANCH"
+                value = "COVEREDRATIO"
+                minimum = "0.70".toBigDecimal()
+            }
+        }
+        rule {
+            limit {
+                counter = "CLASS"
+                value = "COVEREDRATIO"
+                minimum = "0.90".toBigDecimal()
+            }
+        }
+    }
+
+    classDirectories.setFrom(
+        files(classDirectories.files.map {
+            fileTree(it) {
+                include("**/service/impl/**")
+                include("**/controller/**")
+                include("**/repository/**")
+                exclude(
+                    "**/dto/**",
+                    "**/entity/**",
+                    "**/enum/**",
+                    "**/exception/**",
+                    "**/config/**",
+                    "**/base/**"
+                )
+            }
+        })
+    )
+}
+
+// Custom task to run tests with coverage
+tasks.register("testWithCoverage") {
+    dependsOn("test", "jacocoTestReport", "jacocoTestCoverageVerification")
+    description = "Run tests with coverage verification"
 }
