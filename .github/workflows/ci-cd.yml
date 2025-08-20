@@ -1,0 +1,157 @@
+name: CI/CD Pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to build for'
+        required: true
+        default: 'development'
+        type: choice
+        options:
+        - development
+        - staging
+        - production
+
+env:
+  GRADLE_OPTS: -Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.caching=true
+  JAVA_VERSION: '21'
+  KOTLIN_VERSION: '2.1.21'
+
+jobs:
+  # Build and Test Job
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Full history for better caching
+    
+    - name: Set up JDK ${{ env.JAVA_VERSION }}
+      uses: actions/setup-java@v4
+      with:
+        java-version: ${{ env.JAVA_VERSION }}
+        distribution: 'temurin'
+        cache: 'gradle'
+    
+    - name: Cache Gradle packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+    
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+    
+    - name: Build with Gradle
+      run: ./gradlew build --no-daemon
+    
+    - name: Run tests
+      run: ./gradlew test --no-daemon
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results
+        path: |
+          **/build/test-results/
+          **/build/reports/tests/
+        retention-days: 30
+    
+    - name: Upload build reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: build-reports
+        path: |
+          **/build/reports/
+        retention-days: 30
+
+  # Code Quality Job
+  code-quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up JDK ${{ env.JAVA_VERSION }}
+      uses: actions/setup-java@v4
+      with:
+        java-version: ${{ env.JAVA_VERSION }}
+        distribution: 'temurin'
+        cache: 'gradle'
+    
+    - name: Cache Gradle packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+    
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+    
+    - name: Run Detekt
+      run: ./gradlew detekt --no-daemon
+    
+    - name: Upload Detekt reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: detekt-reports
+        path: |
+          **/build/reports/detekt/
+        retention-days: 30
+
+  # Docker Build Job
+  docker-build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: [build-and-test, code-quality]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Build Docker image
+      id: build
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile
+        push: false
+        load: true
+        tags: navigator-platform:${{ github.sha }}-${{ inputs.environment }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+    
+    - name: Display Docker Image Tag
+      run: |
+        echo "🎯 **DOCKER IMAGE BUILT SUCCESSFULLY** 🎯"
+        echo "📦 **IMAGE TAG:** navigator-platform:${{ github.sha }}-${{ inputs.environment }}"
+        echo "🏷️  **COMMIT SHA:** ${{ github.sha }}"
+        echo "🌍 **ENVIRONMENT:** ${{ inputs.environment }}"
+        echo ""
+        echo "💡 **To use this image:**"
+        echo "   docker pull your-registry/navigator-platform:${{ github.sha }}-${{ inputs.environment }}"
+        echo "   docker run -p 8080:8080 your-registry/navigator-platform:${{ github.sha }}-${{ inputs.environment }}"
+    
+    - name: List Docker images
+      run: docker images | grep navigator-platform
