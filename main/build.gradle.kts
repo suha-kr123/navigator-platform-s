@@ -12,4 +12,5 @@ dependencies {
     implementation(project(":features:person"))
     implementation(project(":features:advisor"))
     implementation(project(":features:master"))
+    implementation(project(":features:address"))
 }

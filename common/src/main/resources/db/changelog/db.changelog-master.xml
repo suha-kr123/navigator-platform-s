@@ -9,4 +9,5 @@
     <include file="/db/migrations/V2__create_advisors.sql"/>
     <include file="/db/migrations/V3__create_api_audit_log.sql"/>
     <include file="/db/migrations/V4__create_pincode.sql"/>
+    <include file="/db/migrations/V5__create_address.sql"/>
 </databaseChangeLog>

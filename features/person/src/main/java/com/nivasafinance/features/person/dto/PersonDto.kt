@@ -1,6 +1,7 @@
 package com.nivasafinance.features.person.dto
 
 import annotations.NoArg
+import com.nivasafinance.features.person.entity.AddressDetails
 import data.enums.Gender
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
@@ -18,7 +19,8 @@ data class PersonDto(
     var mobileNumber: MobileNumberDetails = MobileNumberDetails(),
     var displayName: String? = null,
     var dateOfBirth: LocalDate? = null,
-    var gender: Gender? = null
+    var gender: Gender? = null,
+    var addresses: List<AddressDetails>? = null
 )
 
 @NoArg
