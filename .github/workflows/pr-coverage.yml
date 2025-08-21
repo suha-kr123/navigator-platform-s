@@ -130,9 +130,9 @@ jobs:
           else
             echo "⚠️  **Coverage report not found**" >> coverage-output.txt
             echo "   JaCoCo report not generated. Check test execution." >> coverage-output.txt
-            echo "   Looking for: build/reports/jacoco/test/jacocoTestReport.xml" >> coverage-output.txt
+            echo "   Looking for: **/build/reports/jacoco/test/jacocoTestReport.xml" >> coverage-output.txt
             echo "   Available files:" >> coverage-output.txt
-            find build/reports -name "*.xml" 2>/dev/null || echo "   No XML reports found" >> coverage-output.txt
+            find . -name "jacocoTestReport.xml" 2>/dev/null || echo "   No XML reports found" >> coverage-output.txt
           fi
         fi
         
