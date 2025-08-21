@@ -81,7 +81,7 @@ data class MobileNumberDetails(
 @Value
 @NoArg
 data class AddressDetails(
-    var addressId: String? = null,
+    var addressId: UUID? = null,
     var type: String? = null,
 )
 
