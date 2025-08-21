@@ -14,6 +14,9 @@ import com.nivasafinance.features.person.exception.PersonNotFoundException
 import com.nivasafinance.features.person.repository.PersonRepository
 import com.nivasafinance.features.person.service.PersonReadService
 import com.nivasafinance.features.person.service.PersonWriteService
+import data.Identifier
+import data.IdentifierType
+import exception.ResourceNotFoundException
 import org.springframework.cache.annotation.CacheEvict
 import org.springframework.cache.annotation.CachePut
 import org.springframework.stereotype.Service
@@ -122,6 +125,27 @@ class PersonWriteServiceImpl(
 
         addressToRemove.addressId?.let { id ->
             addressWriteService.deleteAddress(id)
+        }
+    }
+
+    override fun addIdentifier(personId: UUID, identifier: Identifier) {
+        val person = personRepository.findById(personId)
+            .orElseThrow { PersonNotFoundException(personId, messageSource) }
+        person.identifiers = (person.identifiers.orEmpty()) + identifier
+        personRepository.save(person)
+    }
+
+    override fun updateIdentifier(personId: UUID, identifierId: UUID, identifier: Identifier) {
+        val person = personRepository.findById(personId)
+            .orElseThrow { PersonNotFoundException(personId, messageSource) }
+
+        val existingIdentifier = person.identifiers?.find { it.id == identifierId.toString() }
+        if (existingIdentifier != null) {
+            existingIdentifier.identifier = identifier.identifier
+            existingIdentifier.type = IdentifierType.valueOf(identifier.type.name)
+            personRepository.save(person)
+        } else {
+            throw ResourceNotFoundException("Identifier not found with id: $identifierId")
         }
     }
 }
