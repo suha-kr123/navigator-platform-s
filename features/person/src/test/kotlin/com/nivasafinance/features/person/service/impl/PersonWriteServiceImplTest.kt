@@ -2,13 +2,13 @@ package com.nivasafinance.features.person.service.impl
 
 import com.nivasafinance.features.address.dto.AddressCreateRequest
 import com.nivasafinance.features.address.dto.AddressResponse
+import com.nivasafinance.features.address.exception.AddressNotFoundException
+import com.nivasafinance.features.address.exception.AddressTypeAlreadyExistsException
+import com.nivasafinance.features.address.exception.AddressTypeNotFoundException
 import com.nivasafinance.features.address.service.AddressWriteService
 import com.nivasafinance.features.person.dto.PersonDto
 import com.nivasafinance.features.person.entity.AddressDetails
 import com.nivasafinance.features.person.entity.Person
-import com.nivasafinance.features.address.exception.AddressNotFoundException
-import com.nivasafinance.features.address.exception.AddressTypeAlreadyExistsException
-import com.nivasafinance.features.address.exception.AddressTypeNotFoundException
 import com.nivasafinance.features.person.exception.PersonNotFoundException
 import com.nivasafinance.features.person.repository.PersonRepository
 import com.nivasafinance.features.person.service.PersonReadService
