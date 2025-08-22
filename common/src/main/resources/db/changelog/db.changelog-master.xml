@@ -10,4 +10,7 @@
     <include file="/db/migrations/V3__create_api_audit_log.sql"/>
     <include file="/db/migrations/V4__create_pincode.sql"/>
     <include file="/db/migrations/V5__create_address.sql"/>
+    <include file="/db/migrations/V6__create_leads.sql"/>
+    <include file="/db/migrations/V7__create_leadapplicants.sql"/>
+    <include file="/db/migrations/V8__add_audit_triggers.sql"/>
 </databaseChangeLog>

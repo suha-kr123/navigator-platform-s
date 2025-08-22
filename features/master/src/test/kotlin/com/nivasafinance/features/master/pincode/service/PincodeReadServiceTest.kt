@@ -31,7 +31,9 @@ class PincodeReadServiceTest {
 
     @BeforeEach
     fun setup() {
-        pincodeReadService = PincodeReadServiceImpl(pincodeRepository, messageSource)
+        pincodeReadService = PincodeReadServiceImpl(pincodeRepository)
+        // Initialize the messageSource property in BaseNavigatorService
+        pincodeReadService.messageSource = messageSource
     }
 
     @Nested

@@ -34,10 +34,20 @@ class PersonReadServiceImplTest {
 
     @BeforeEach
     fun setup() {
-        personReadService = PersonReadServiceImpl(personRepository).apply {
-            this.modelMapper = this@PersonReadServiceImplTest.modelMapper
-            this.messageSource = this@PersonReadServiceImplTest.messageSource
-        }
+        personReadService = PersonReadServiceImpl(personRepository)
+
+        // Mock modelMapper for BaseNavigatorService using reflection
+        val modelMapperField = personReadService.javaClass.superclass.getDeclaredField("modelMapper")
+        modelMapperField.isAccessible = true
+        modelMapperField.set(personReadService, modelMapper)
+
+        // Mock messageSource for BaseNavigatorService using reflection
+        val messageSourceField = personReadService.javaClass.superclass.getDeclaredField("messageSource")
+        messageSourceField.isAccessible = true
+        messageSourceField.set(personReadService, messageSource)
+
+        // Mock messageSource behavior
+        every { messageSource.getMessage(any(), any(), any()) } returns "Person not found"
     }
 
     @Test
