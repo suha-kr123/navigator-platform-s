@@ -2,7 +2,6 @@ package com.nivasafinance.features.payment.service.impl
 
 import com.nivasafinance.features.payment.PaymentTestUtils.createTestPayment
 import com.nivasafinance.features.payment.PaymentTestUtils.createTestPaymentData
-import com.nivasafinance.features.payment.dto.PaymentData
 import com.nivasafinance.features.payment.exception.PaymentNotFoundException
 import com.nivasafinance.features.payment.repository.PaymentRepository
 import io.mockk.every
@@ -82,7 +81,7 @@ class PaymentReadServiceImplTest {
             remarks = null,
             extData = null
         )
-        
+
         every { paymentRepository.findById(paymentId) } returns Optional.of(paymentWithNulls)
 
         val result = paymentReadService.getPaymentData(paymentId)

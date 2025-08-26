@@ -9,7 +9,7 @@ import java.util.UUID
 data class AdvisorResponse(
     val id: UUID,
     val personId: UUID,
-    val advisorCode: String,
+    val advisorCode: String?,
     val isEmployee: Boolean = false,
     val status: AdvisorStatus? = null,
     val remarks: String? = null,

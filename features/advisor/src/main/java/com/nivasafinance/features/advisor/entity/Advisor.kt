@@ -32,7 +32,7 @@ class Advisor(
     val personId: UUID,
 
     @Column(name = "advisor_code")
-    val advisorCode: String,
+    val advisorCode: String?,
 
     @Column(name = "is_employee")
     val isEmployee: Boolean = false,

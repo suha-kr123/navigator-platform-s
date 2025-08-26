@@ -4,7 +4,6 @@ import com.nivasafinance.features.payment.PaymentTestUtils.createTestPaymentCrea
 import com.nivasafinance.features.payment.PaymentTestUtils.createTestPaymentData
 import com.nivasafinance.features.payment.PaymentTestUtils.createTestPaymentResponse
 import com.nivasafinance.features.payment.PaymentTestUtils.createTestPaymentUpdateRequest
-import com.nivasafinance.features.payment.dto.PaymentResponse
 import com.nivasafinance.features.payment.enum.PaymentStatus
 import com.nivasafinance.features.payment.service.PaymentReadService
 import com.nivasafinance.features.payment.service.PaymentWriteService

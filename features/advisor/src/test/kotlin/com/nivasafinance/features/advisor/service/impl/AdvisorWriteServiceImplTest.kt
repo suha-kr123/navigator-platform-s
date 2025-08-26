@@ -90,6 +90,57 @@ class AdvisorWriteServiceImplTest {
             verify(exactly = 1) { advisorRepository.findByPersonId(personId) }
             verify(exactly = 1) { advisorRepository.save(any()) }
         }
+
+        @Test
+        @DisplayName("should throw exception when person not found")
+        fun `createAdvisorData should throw exception when person not found`() {
+            // Given
+            val createRequest = AdvisorCreateRequest(
+                advisorCode = "ADV001",
+                personId = personId,
+                isEmployee = false,
+                remarks = "Test advisor"
+            )
+
+            every {
+                personReadService.getPerson(personId)
+            } throws com.nivasafinance.features.person.exception.PersonNotFoundException("Person not found")
+            every { messageSource.getMessage(any(), any(), any()) } returns "Person not found"
+
+            // When & Then
+            assertThrows<com.nivasafinance.features.person.exception.PersonNotFoundException> {
+                advisorWriteService.createAdvisorData(createRequest)
+            }
+
+            verify(exactly = 1) { personReadService.getPerson(personId) }
+            verify(exactly = 0) { advisorRepository.findByPersonId(any()) }
+            verify(exactly = 0) { advisorRepository.save(any()) }
+        }
+
+        @Test
+        @DisplayName("should throw exception when advisor already exists for person")
+        fun `createAdvisorData should throw exception when advisor already exists for person`() {
+            // Given
+            val createRequest = AdvisorCreateRequest(
+                advisorCode = "ADV001",
+                personId = personId,
+                isEmployee = false,
+                remarks = "Test advisor"
+            )
+
+            every { personReadService.getPerson(personId) } returns personData
+            every { advisorRepository.findByPersonId(personId) } returns advisor
+            every { messageSource.getMessage(any(), any(), any()) } returns "Advisor already exists for this person"
+
+            // When & Then
+            assertThrows<com.nivasafinance.features.advisor.exception.AdvisorConflictException> {
+                advisorWriteService.createAdvisorData(createRequest)
+            }
+
+            verify(exactly = 1) { personReadService.getPerson(personId) }
+            verify(exactly = 1) { advisorRepository.findByPersonId(personId) }
+            verify(exactly = 0) { advisorRepository.save(any()) }
+        }
     }
 
     @Nested
@@ -166,6 +217,22 @@ class AdvisorWriteServiceImplTest {
             // Then
             verify(exactly = 1) { advisorRepository.findById(advisorId) }
             verify(exactly = 1) { advisorRepository.delete(advisor) }
+        }
+
+        @Test
+        @DisplayName("should throw exception when advisor not found for deletion")
+        fun `deleteAdvisor should throw exception when advisor not found`() {
+            // Given
+            every { advisorRepository.findById(advisorId) } returns Optional.empty()
+            every { messageSource.getMessage(any(), any(), any()) } returns "Advisor not found"
+
+            // When & Then
+            assertThrows<AdvisorNotFoundException> {
+                advisorWriteService.deleteAdvisor(advisorId)
+            }
+
+            verify(exactly = 1) { advisorRepository.findById(advisorId) }
+            verify(exactly = 0) { advisorRepository.delete(any()) }
         }
     }
 }

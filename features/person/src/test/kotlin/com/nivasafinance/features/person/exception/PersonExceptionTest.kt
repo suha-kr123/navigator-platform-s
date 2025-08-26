@@ -29,7 +29,7 @@ class PersonExceptionTest {
         val personId = UUID.randomUUID()
         val messageSource = mockk<MessageSource>()
         val expectedMessage = "Person with id $personId not found"
-        
+
         every { messageSource.getMessage(any(), any(), any()) } returns expectedMessage
 
         val exception = PersonNotFoundException(personId, messageSource)
@@ -53,8 +53,9 @@ class PersonExceptionTest {
     fun `InvalidIdentifierTypeException should create with valid types`() {
         val invalidType = "INVALID_TYPE"
         val messageSource = mockk<MessageSource>()
-        val expectedMessage = "Invalid identifier type: $invalidType. Valid types are: ${IdentifierType.values().joinToString(", ")}"
-        
+        val expectedMessage = "Invalid identifier type: $invalidType. Valid types are: " +
+            "${IdentifierType.values().joinToString(", ")}"
+
         every { messageSource.getMessage(any(), any(), any()) } returns expectedMessage
 
         val exception = InvalidIdentifierTypeException.withValidTypes(invalidType, messageSource)
@@ -67,7 +68,8 @@ class PersonExceptionTest {
     @DisplayName("should create InvalidIdentifierTypeException for enum")
     fun `InvalidIdentifierTypeException should create for enum`() {
         val invalidType = "INVALID_TYPE"
-        val expectedMessage = "Invalid identifier type: $invalidType. Valid types are: ${IdentifierType.values().joinToString(", ")}"
+        val expectedMessage = "Invalid identifier type: $invalidType. Valid types are: " +
+            "${IdentifierType.values().joinToString(", ")}"
 
         val exception = InvalidIdentifierTypeException.forEnum(invalidType)
 

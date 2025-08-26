@@ -3,7 +3,6 @@ package com.nivasafinance.features.payment.service.impl
 import com.nivasafinance.features.payment.PaymentTestUtils.createTestPayment
 import com.nivasafinance.features.payment.PaymentTestUtils.createTestPaymentCreateRequest
 import com.nivasafinance.features.payment.PaymentTestUtils.createTestPaymentUpdateRequest
-import com.nivasafinance.features.payment.dto.PaymentData
 import com.nivasafinance.features.payment.entity.Payment
 import com.nivasafinance.features.payment.enum.PaymentStatus
 import com.nivasafinance.features.payment.exception.PaymentNotFoundException
@@ -17,8 +16,6 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.context.MessageSource
-import java.math.BigDecimal
-import java.time.LocalDateTime
 import java.util.Optional
 import java.util.UUID
 import kotlin.test.assertEquals
@@ -64,7 +61,7 @@ class PaymentWriteServiceImplTest {
         assertEquals(request.extData, result.extData)
 
         verify(exactly = 1) { paymentRepository.save(any()) }
-        
+
         val capturedPayment = paymentSlot.captured
         assertEquals(PaymentStatus.PENDING_PAYMENT, capturedPayment.paymentStatus)
         assertEquals(request.amountPaid, capturedPayment.amountPaid)
@@ -90,7 +87,7 @@ class PaymentWriteServiceImplTest {
         assertEquals(PaymentStatus.PAID, result.paymentStatus)
 
         verify(exactly = 1) { paymentRepository.save(any()) }
-        
+
         val capturedPayment = paymentSlot.captured
         assertEquals(PaymentStatus.PAID, capturedPayment.paymentStatus)
     }
@@ -110,7 +107,7 @@ class PaymentWriteServiceImplTest {
         assertEquals(PaymentStatus.PENDING_PAYMENT, result.paymentStatus)
 
         verify(exactly = 1) { paymentRepository.save(any()) }
-        
+
         val capturedPayment = paymentSlot.captured
         assertEquals(PaymentStatus.PENDING_PAYMENT, capturedPayment.paymentStatus)
     }
@@ -184,7 +181,7 @@ class PaymentWriteServiceImplTest {
 
         verify(exactly = 1) { paymentRepository.findById(paymentId) }
         verify(exactly = 1) { paymentRepository.save(any()) }
-        
+
         val capturedPayment = paymentSlot.captured
         assertEquals(paymentId, capturedPayment.id)
         assertEquals(PaymentStatus.PAID, capturedPayment.paymentStatus)
@@ -224,7 +221,7 @@ class PaymentWriteServiceImplTest {
 
         verify(exactly = 1) { paymentRepository.findById(paymentId) }
         verify(exactly = 1) { paymentRepository.save(any()) }
-        
+
         val capturedPayment = paymentSlot.captured
         assertEquals(PaymentStatus.PAID, capturedPayment.paymentStatus)
         assertEquals(existingPayment.amountPaid, capturedPayment.amountPaid)
