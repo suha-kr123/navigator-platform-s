@@ -3,7 +3,7 @@ package com.nivasafinance.features.advisor.dto
 import java.util.UUID
 
 data class AdvisorCreateRequest(
-    val advisorCode: String,
+    val advisorCode: String? = null,
     val personId: UUID? = null,
     val isEmployee: Boolean = false,
     val remarks: String? = null,

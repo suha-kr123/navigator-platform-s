@@ -1,10 +1,10 @@
 package com.nivasafinance.features.master.pincode.exception
 
+import io.mockk.every
+import io.mockk.mockk
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.context.MessageSource
-import io.mockk.every
-import io.mockk.mockk
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
@@ -32,13 +32,13 @@ class PincodeNotFoundExceptionTest {
         val pincode = "123456"
         val expectedMessage = "Pincode 123456 not found"
         val messageSource = mockk<MessageSource>()
-        
-        every { 
+
+        every {
             messageSource.getMessage(
                 PincodeNotFoundException.PINCODE_NOT_FOUND_KEY,
                 arrayOf(pincode),
                 any()
-            ) 
+            )
         } returns expectedMessage
 
         // When

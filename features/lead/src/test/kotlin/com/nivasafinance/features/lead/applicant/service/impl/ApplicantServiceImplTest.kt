@@ -83,7 +83,9 @@ class ApplicantServiceImplTest {
         fun `should throw exception when applicant not found`() {
             val applicantId = UUID.randomUUID()
 
-            every { applicantReadService.getApplicant(applicantId) } throws ApplicantNotFoundException(applicantId, messageSource)
+            every {
+                applicantReadService.getApplicant(applicantId)
+            } throws ApplicantNotFoundException(applicantId, messageSource)
 
             assertThrows(ApplicantNotFoundException::class.java) {
                 applicantService.getApplicant(applicantId)

@@ -1,4 +1,4 @@
-package com.nivasafinance.features.lead.service.impl
+package com.nivasafinance.features.lead.lead.service.impl
 
 import com.nivasafinance.features.lead.dto.LeadContacts
 import com.nivasafinance.features.lead.dto.LeadCreateRequest

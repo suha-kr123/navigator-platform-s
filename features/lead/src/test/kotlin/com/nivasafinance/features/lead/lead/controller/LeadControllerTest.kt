@@ -1,4 +1,4 @@
-package com.nivasafinance.features.lead.controller
+package com.nivasafinance.features.lead.lead.controller
 
 import com.nivasafinance.features.lead.dto.LeadCreateRequest
 import com.nivasafinance.features.lead.dto.LeadResponse

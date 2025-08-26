@@ -7,7 +7,7 @@ import java.util.UUID
 data class AdvisorData(
     val id: UUID?,
     val personId: UUID,
-    val advisorCode: String,
+    val advisorCode: String?,
     val isEmployee: Boolean,
     val status: AdvisorStatus,
     val isExperiencedDsa: Boolean,

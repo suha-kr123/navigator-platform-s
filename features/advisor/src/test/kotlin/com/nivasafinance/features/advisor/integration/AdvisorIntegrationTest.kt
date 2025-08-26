@@ -153,4 +153,58 @@ class AdvisorIntegrationTest {
 
         advisorService.deleteAdvisor(advisorId)
     }
+
+    @Test
+    @DisplayName("should handle advisor with minimal data")
+    fun `advisor service should handle advisor with minimal data`() {
+        // Given
+        val minimalCreateRequest = AdvisorCreateRequest(
+            advisorCode = null,
+            isEmployee = false,
+            remarks = null
+        )
+        val minimalResponse = expectedResponse.copy(
+            advisorCode = null,
+            remarks = null
+        )
+        every { advisorService.createAdvisor(minimalCreateRequest) } returns minimalResponse
+
+        // When
+        val response = advisorController.createAdvisor(minimalCreateRequest)
+
+        // Then
+        assertNotNull(response)
+        assertEquals(HttpStatus.CREATED, response.statusCode)
+        assertEquals(expectedResponse.id, response.body?.id)
+        assertEquals(null, response.body?.advisorCode)
+        assertEquals(null, response.body?.remarks)
+    }
+
+    @Test
+    @DisplayName("should handle advisor with employee flag")
+    fun `advisor service should handle advisor with employee flag`() {
+        // Given
+        val employeeCreateRequest = AdvisorCreateRequest(
+            advisorCode = "EMP001",
+            isEmployee = true,
+            remarks = "Employee advisor"
+        )
+        val employeeResponse = expectedResponse.copy(
+            advisorCode = "EMP001",
+            isEmployee = true,
+            remarks = "Employee advisor"
+        )
+        every { advisorService.createAdvisor(employeeCreateRequest) } returns employeeResponse
+
+        // When
+        val response = advisorController.createAdvisor(employeeCreateRequest)
+
+        // Then
+        assertNotNull(response)
+        assertEquals(HttpStatus.CREATED, response.statusCode)
+        assertEquals(expectedResponse.id, response.body?.id)
+        assertEquals("EMP001", response.body?.advisorCode)
+        assertEquals(true, response.body?.isEmployee)
+        assertEquals("Employee advisor", response.body?.remarks)
+    }
 }

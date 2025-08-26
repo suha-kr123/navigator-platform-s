@@ -1,11 +1,11 @@
 package com.nivasafinance.features.person.service.impl
 
+import com.nivasafinance.features.address.service.AddressService
 import com.nivasafinance.features.person.dto.PersonData
 import com.nivasafinance.features.person.exception.PersonNotFoundException
-import com.nivasafinance.features.person.repository.PersonRepository
 import com.nivasafinance.features.person.repository.PersonAddressMappingRepository
 import com.nivasafinance.features.person.repository.PersonIdentifierRepository
-import com.nivasafinance.features.address.service.AddressService
+import com.nivasafinance.features.person.repository.PersonRepository
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
