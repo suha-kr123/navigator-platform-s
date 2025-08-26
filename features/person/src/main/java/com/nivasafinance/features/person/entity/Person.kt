@@ -2,7 +2,6 @@ package com.nivasafinance.features.person.entity
 
 import annotations.NoArg
 import audit.AuditableEntity
-import data.Identifier
 import data.enums.Gender
 import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.Column
@@ -29,7 +28,7 @@ import java.util.UUID
 class Person(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    var id: UUID,
+    var id: UUID? = null,
 
     @Column(name = "first_name", length = 100)
     var firstName: String? = null,
@@ -42,8 +41,8 @@ class Person(
 
     @Type(JsonType::class)
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "mobile_number", columnDefinition = "jsonb")
-    var mobileNumber: MobileNumberDetails? = null,
+    @Column(name = "mobile_numbers", columnDefinition = "jsonb")
+    var mobileNumbers: List<MobileNumberDetails>? = null,
 
     @Column(name = "email", length = 100)
     var email: String? = null,
@@ -57,36 +56,20 @@ class Person(
 
     @Type(JsonType::class)
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "identifiers", columnDefinition = "jsonb")
-    var identifiers: List<Identifier>? = null,
-
-    @Type(JsonType::class)
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "addresses", columnDefinition = "jsonb")
-    var addresses: List<AddressDetails>? = null,
-
-    @Type(JsonType::class)
-    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "data_ext", columnDefinition = "jsonb")
-    var dataExt: Details? = null,
+    var dataExt: Details? = null
 
 ) : AuditableEntity()
 
 @Value
 @NoArg
-data class MobileNumberDetails(
-    var primary: String? = null,
-)
-
-@Value
-@NoArg
-data class AddressDetails(
-    var addressId: UUID? = null,
-    var type: String? = null,
-)
-
-@Value
-@NoArg
 data class Details(
     val description: String? = null,
+)
+
+@Value
+@NoArg
+data class MobileNumberDetails(
+    var number: String? = null,
+    var isPrimary: Boolean? = null,
 )

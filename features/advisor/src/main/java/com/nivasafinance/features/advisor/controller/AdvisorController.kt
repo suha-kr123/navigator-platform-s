@@ -1,8 +1,9 @@
 package com.nivasafinance.features.advisor.controller
 
-import com.nivasafinance.features.advisor.dto.AdvisorDto
-import com.nivasafinance.features.advisor.service.AdvisorReadService
-import com.nivasafinance.features.advisor.service.AdvisorWriteService
+import com.nivasafinance.features.advisor.dto.AdvisorCreateRequest
+import com.nivasafinance.features.advisor.dto.AdvisorResponse
+import com.nivasafinance.features.advisor.dto.AdvisorUpdateRequest
+import com.nivasafinance.features.advisor.service.AdvisorService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -17,33 +18,36 @@ import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
 
 @RestController
-@RequestMapping("v1/advisor")
+@RequestMapping("/api/v1/advisors")
 class AdvisorController(
-    private val advisorReadService: AdvisorReadService,
-    private val advisorWriteService: AdvisorWriteService
+    private val advisorService: AdvisorService
 ) {
 
     @PostMapping
-    fun createAdvisor(@RequestBody @Valid advisorDto: AdvisorDto): ResponseEntity<AdvisorDto> {
-        val savedAdvisorDto = advisorWriteService.createAdvisor(advisorDto)
-        return ResponseEntity(savedAdvisorDto, HttpStatus.CREATED)
+    fun createAdvisor(@Valid @RequestBody request: AdvisorCreateRequest): ResponseEntity<AdvisorResponse> {
+        val advisor = advisorService.createAdvisor(request)
+        return ResponseEntity.status(HttpStatus.CREATED).body(advisor)
     }
 
     @GetMapping("/{id}")
-    fun getAdvisor(@PathVariable id: UUID): ResponseEntity<AdvisorDto> {
-        val advisor = advisorReadService.getAdvisor(id)
+    fun getAdvisor(@PathVariable id: UUID): ResponseEntity<AdvisorResponse> {
+        val advisor = advisorService.getAdvisor(id)
         return ResponseEntity.ok(advisor)
     }
 
     @PutMapping("/{id}")
-    fun updateAdvisor(@PathVariable id: UUID, @RequestBody advisorDto: AdvisorDto): ResponseEntity<Unit> {
-        advisorWriteService.updateAdvisor(id, advisorDto)
-        return ResponseEntity.ok().build()
+    fun updateAdvisor(
+        @PathVariable id: UUID,
+        @Valid @RequestBody request: AdvisorUpdateRequest
+    ): ResponseEntity<AdvisorResponse> {
+        advisorService.updateAdvisor(id, request)
+        val advisor = advisorService.getAdvisor(id)
+        return ResponseEntity.ok(advisor)
     }
 
     @DeleteMapping("/{id}")
     fun deleteAdvisor(@PathVariable id: UUID): ResponseEntity<Unit> {
-        advisorWriteService.deleteAdvisor(id)
+        advisorService.deleteAdvisor(id)
         return ResponseEntity.noContent().build()
     }
 }

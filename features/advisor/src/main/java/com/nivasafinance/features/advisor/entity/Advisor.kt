@@ -3,12 +3,13 @@ package com.nivasafinance.features.advisor.entity
 import annotations.NoArg
 import audit.AuditableEntity
 import com.nivasafinance.features.advisor.enum.AdvisorStatus
-import com.nivasafinance.features.person.entity.Details
 import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
 import jakarta.persistence.Enumerated
+import jakarta.persistence.GeneratedValue
+import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import org.hibernate.annotations.JdbcTypeCode
@@ -24,7 +25,8 @@ import java.util.UUID
 @Suppress("LongParameterList")
 class Advisor(
     @Id
-    val id: UUID,
+    @GeneratedValue(strategy = GenerationType.UUID)
+    val id: UUID? = null,
 
     @Column(name = "person_id")
     val personId: UUID,
@@ -32,17 +34,33 @@ class Advisor(
     @Column(name = "advisor_code")
     val advisorCode: String,
 
+    @Column(name = "is_employee")
+    val isEmployee: Boolean = false,
+
     @Column(name = "status")
     @Enumerated(EnumType.STRING)
     val status: AdvisorStatus,
 
+    @Column(name = "is_experienced_dsa")
+    val isExperiencedDsa: Boolean = false,
+
+    @Column(name = "remarks", length = 1000)
+    val remarks: String? = null,
+
+    @Column(name = "rejection_reason", length = 1000)
+    val rejectionReason: String? = null,
+
+    @Column(name = "advisor_feedback", length = 2000)
+    val advisorFeedback: String? = null,
+
+    @Column(name = "welcome_kit_sent")
+    val welcomeKitSent: Boolean = false,
+
+    @Column(name = "attended_advisor_meeting")
+    val attendedAdvisorMeeting: Boolean = false,
+
     @Type(JsonType::class)
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "data_ext", columnDefinition = "jsonb")
-    val dataExt: Details? = null,
+    val extData: Map<String, Any>? = null
 ) : AuditableEntity()
-
-@NoArg
-data class Details(
-    val description: String,
-)

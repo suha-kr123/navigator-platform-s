@@ -1,18 +1,16 @@
 package com.nivasafinance.features.advisor.service.impl
 
 import base.BaseNavigatorService
-import com.nivasafinance.features.advisor.dto.AdvisorDto
+import com.nivasafinance.features.advisor.dto.AdvisorCreateRequest
+import com.nivasafinance.features.advisor.dto.AdvisorData
+import com.nivasafinance.features.advisor.dto.AdvisorUpdateRequest
 import com.nivasafinance.features.advisor.entity.Advisor
 import com.nivasafinance.features.advisor.enum.AdvisorStatus
-import com.nivasafinance.features.advisor.exception.AdvisorMobileAlreadyExistsException
+import com.nivasafinance.features.advisor.exception.AdvisorConflictException
 import com.nivasafinance.features.advisor.exception.AdvisorNotFoundException
 import com.nivasafinance.features.advisor.repository.AdvisorRepository
-import com.nivasafinance.features.advisor.service.AdvisorReadService
 import com.nivasafinance.features.advisor.service.AdvisorWriteService
-import com.nivasafinance.features.person.service.PersonWriteService
-import org.springframework.cache.annotation.CacheEvict
-import org.springframework.cache.annotation.CachePut
-import org.springframework.cache.annotation.Caching
+import com.nivasafinance.features.person.service.PersonReadService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
@@ -20,73 +18,66 @@ import java.util.UUID
 @Service
 class AdvisorWriteServiceImpl(
     private val advisorRepository: AdvisorRepository,
-    private val personWriteService: PersonWriteService,
-    private val advisorReadService: AdvisorReadService,
+    private val personReadService: PersonReadService
 ) : AdvisorWriteService, BaseNavigatorService() {
 
-    companion object {
-        private const val CACHE_NAME = "advisor"
-    }
-
     @Transactional
-    @CachePut(cacheNames = [CACHE_NAME], key = "#result.id")
-    override fun createAdvisor(advisorDto: AdvisorDto): AdvisorDto {
-        val mobileNo = advisorDto.personalDetails.mobileNumber.primary
-        val existingAdvisor = try {
-            advisorReadService.getAdvisorByMobileNo(mobileNo)
-        } catch (_: Exception) {
-            null
-        }
+    override fun createAdvisorData(request: AdvisorCreateRequest): AdvisorData {
+        val personId = request.personId!!
+        personReadService.getPerson(personId)
+
+        val existingAdvisor = advisorRepository.findByPersonId(personId)
         if (existingAdvisor != null) {
-            throw AdvisorMobileAlreadyExistsException(mobileNo, messageSource)
+            throw AdvisorConflictException(personId, messageSource)
         }
-        val savedPerson = personWriteService.savePerson(advisorDto.personalDetails)
-        val savePersonId = requireNotNull(savedPerson.id) {
-            "id should not be null after saving person: $savedPerson"
-        }
+
         val advisor = Advisor(
-            id = UUID.randomUUID(),
-            personId = savePersonId,
-            advisorCode = UUID.randomUUID().toString(),
-            status = AdvisorStatus.CREATED
+            personId = personId,
+            advisorCode = request.advisorCode,
+            isEmployee = request.isEmployee,
+            status = AdvisorStatus.CREATED,
+            remarks = request.remarks,
+            rejectionReason = request.rejectionReason,
+            advisorFeedback = request.advisorFeedback,
+            welcomeKitSent = request.welcomeKitSent,
+            attendedAdvisorMeeting = request.attendedAdvisorMeeting,
+            extData = request.extData
         )
 
         val savedAdvisor = advisorRepository.save(advisor)
-        val savedAdvisorDto = modelMapper.map(savedAdvisor, AdvisorDto::class.java)
-        savedAdvisorDto.personalDetails = savedPerson
-        return savedAdvisorDto
+        return AdvisorData.fromEntity(savedAdvisor)
     }
 
-    @Caching(
-        evict = [
-            CacheEvict(cacheNames = [CACHE_NAME], key = "#id"),
-            CacheEvict(cacheNames = [CACHE_NAME], key = "'mobileNumber' + #result.personalDetails.mobileNumber.primary")
-        ]
-    )
-    override fun deleteAdvisor(id: UUID): AdvisorDto {
-        val advisor = advisorReadService.getAdvisor(id)
-        val personId = requireNotNull(advisor.personalDetails.id) {
-            "personalDetails.id should not be null for advisor: $advisor"
-        }
-        personWriteService.deletePerson(personId)
-        advisorRepository.deleteById(id)
-        return advisor
-    }
-
-    @Caching(
-        put = [
-            CachePut(cacheNames = [CACHE_NAME], key = "#id"),
-            CachePut(cacheNames = [CACHE_NAME], key = "'mobileNumber' + #result.personalDetails.mobileNumber.primary")
-        ]
-    )
     @Transactional
-    override fun updateAdvisor(id: UUID, advisorDto: AdvisorDto): AdvisorDto {
-        val advisor = advisorRepository.findById(id).orElseThrow { AdvisorNotFoundException(id, messageSource) }
-        val personId = advisor.personId
-        val savedPersonDto = personWriteService.updatePerson(personId, advisorDto.personalDetails)
-        val savedAdvisor = advisorRepository.save(advisor)
-        val savedAdvisorDto = modelMapper.map(savedAdvisor, AdvisorDto::class.java)
-        savedAdvisorDto.personalDetails = savedPersonDto
-        return savedAdvisorDto
+    override fun updateAdvisorData(id: UUID, request: AdvisorUpdateRequest): AdvisorData {
+        val existingAdvisor = advisorRepository.findById(id).orElseThrow {
+            AdvisorNotFoundException(id, messageSource)
+        }
+
+        val updatedAdvisor = Advisor(
+            id = existingAdvisor.id,
+            personId = existingAdvisor.personId,
+            advisorCode = request.advisorCode ?: existingAdvisor.advisorCode,
+            isEmployee = request.isEmployee ?: existingAdvisor.isEmployee,
+            status = request.status ?: existingAdvisor.status,
+            isExperiencedDsa = existingAdvisor.isExperiencedDsa,
+            remarks = request.remarks,
+            rejectionReason = request.rejectionReason,
+            advisorFeedback = request.advisorFeedback,
+            welcomeKitSent = request.welcomeKitSent ?: existingAdvisor.welcomeKitSent,
+            attendedAdvisorMeeting = request.attendedAdvisorMeeting ?: existingAdvisor.attendedAdvisorMeeting,
+            extData = request.extData ?: existingAdvisor.extData
+        )
+
+        val savedAdvisor = advisorRepository.save(updatedAdvisor)
+        return AdvisorData.fromEntity(savedAdvisor)
+    }
+
+    @Transactional
+    override fun deleteAdvisor(id: UUID) {
+        val advisor = advisorRepository.findById(id).orElseThrow {
+            AdvisorNotFoundException(id, messageSource)
+        }
+        advisorRepository.delete(advisor)
     }
 }

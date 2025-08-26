@@ -2,23 +2,36 @@ package com.nivasafinance.features.person.service.impl
 
 import base.BaseNavigatorService
 import com.nivasafinance.features.address.dto.AddressCreateRequest
-import com.nivasafinance.features.address.dto.AddressResponse
-import com.nivasafinance.features.address.exception.AddressNotFoundException
+import com.nivasafinance.features.address.dto.AddressUpdateRequest
+import com.nivasafinance.features.address.enum.AddressType
 import com.nivasafinance.features.address.exception.AddressTypeAlreadyExistsException
-import com.nivasafinance.features.address.exception.AddressTypeNotFoundException
-import com.nivasafinance.features.address.service.AddressWriteService
-import com.nivasafinance.features.person.dto.PersonDto
-import com.nivasafinance.features.person.entity.AddressDetails
+import com.nivasafinance.features.address.service.AddressService
+import com.nivasafinance.features.person.dto.PersonAddressMappingRequest
+import com.nivasafinance.features.person.dto.PersonAddressMappingResponse
+import com.nivasafinance.features.person.dto.PersonAddressMappingUpdateRequest
+import com.nivasafinance.features.person.dto.PersonCreateRequest
+import com.nivasafinance.features.person.dto.PersonIdentifierCreateRequest
+import com.nivasafinance.features.person.dto.PersonIdentifierResponse
+import com.nivasafinance.features.person.dto.PersonIdentifierUpdateRequest
+import com.nivasafinance.features.person.dto.PersonUpdateRequest
 import com.nivasafinance.features.person.entity.Person
+import com.nivasafinance.features.person.entity.PersonAddressMapping
+import com.nivasafinance.features.person.entity.PersonIdentifier
+import com.nivasafinance.features.person.enum.IdentifierType
+import com.nivasafinance.features.person.exception.DuplicateIdentifierTypeException
+import com.nivasafinance.features.person.exception.DuplicatePrimaryMobileNumberException
+import com.nivasafinance.features.person.exception.InvalidAddressTypeException
+import com.nivasafinance.features.person.exception.InvalidIdentifierTypeException
+import com.nivasafinance.features.person.exception.InvalidMobileNumberException
+import com.nivasafinance.features.person.exception.PersonAddressMappingNotFoundException
+import com.nivasafinance.features.person.exception.PersonIdentifierNotFoundException
 import com.nivasafinance.features.person.exception.PersonNotFoundException
+import com.nivasafinance.features.person.exception.PrimaryMobileNumberAlreadyExistsException
+import com.nivasafinance.features.person.repository.PersonAddressMappingRepository
+import com.nivasafinance.features.person.repository.PersonIdentifierRepository
 import com.nivasafinance.features.person.repository.PersonRepository
-import com.nivasafinance.features.person.service.PersonReadService
 import com.nivasafinance.features.person.service.PersonWriteService
-import data.Identifier
-import data.IdentifierType
-import exception.ResourceNotFoundException
-import org.springframework.cache.annotation.CacheEvict
-import org.springframework.cache.annotation.CachePut
+import com.nivasafinance.features.person.util.MobileNumberValidator
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
@@ -26,24 +39,48 @@ import java.util.UUID
 @Service
 class PersonWriteServiceImpl(
     private val personRepository: PersonRepository,
-    private val personReadService: PersonReadService,
-    private val addressWriteService: AddressWriteService,
+    private val personAddressMappingRepository: PersonAddressMappingRepository,
+    private val personIdentifierRepository: PersonIdentifierRepository,
+    private val addressService: AddressService
 ) : PersonWriteService, BaseNavigatorService() {
 
-    companion object {
-        private const val CACHE_NAME = "person"
-    }
-
     @Transactional
-    @CachePut(cacheNames = [CACHE_NAME], key = "#result.id")
-    override fun savePerson(personDto: PersonDto): PersonDto {
-        val personEntity = modelMapper.map(personDto, Person::class.java)
+    override fun createPerson(request: PersonCreateRequest): UUID {
+        request.mobileNumbers.forEach { mobileNumber ->
+            if (!MobileNumberValidator.isValidIndianMobileNumber(mobileNumber.number)) {
+                throw InvalidMobileNumberException(messageSource)
+            }
+        }
+
+        val primaryNumbers = request.mobileNumbers.filter { it.isPrimary == true }
+        if (primaryNumbers.size > 1) {
+            throw DuplicatePrimaryMobileNumberException(messageSource)
+        }
+        primaryNumbers.forEach { primaryMobile ->
+            primaryMobile.number?.let { mobileNumber ->
+                val existingPerson = personRepository.findByPrimaryMobileNo(mobileNumber)
+                if (existingPerson != null) {
+                    throw PrimaryMobileNumberAlreadyExistsException(messageSource)
+                }
+            }
+        }
+        val cleanedMobileNumbers = request.mobileNumbers.map { mobileNumber ->
+            mobileNumber.copy(number = MobileNumberValidator.cleanMobileNumber(mobileNumber.number))
+        }
+
+        val personEntity = Person(
+            firstName = request.firstName,
+            middleName = request.middleName,
+            lastName = request.lastName,
+            mobileNumbers = cleanedMobileNumbers,
+            email = request.email,
+            dateOfBirth = request.dateOfBirth,
+            gender = request.gender
+        )
         val savedPersonEntity = personRepository.save(personEntity)
-        val savedDto = modelMapper.map(savedPersonEntity, PersonDto::class.java)
-        return savedDto
+        return savedPersonEntity.id!!
     }
 
-    @CacheEvict(cacheNames = [CACHE_NAME], key = "#id")
     @Transactional
     override fun deletePerson(id: UUID) {
         if (!personRepository.existsById(id)) {
@@ -52,100 +89,256 @@ class PersonWriteServiceImpl(
         personRepository.deleteById(id)
     }
 
-    @CachePut(cacheNames = [CACHE_NAME], key = "#id")
     @Transactional
-    override fun updatePerson(id: UUID, personDto: PersonDto): PersonDto {
+    override fun updatePerson(id: UUID, request: PersonUpdateRequest) {
         val existingPerson = personRepository.findById(id)
             .orElseThrow { PersonNotFoundException(id, messageSource) }
-        modelMapper.map(personDto, existingPerson)
-        val savedPerson = personRepository.save(existingPerson)
-        return modelMapper.map(savedPerson, PersonDto::class.java)
+
+        // Update fields if provided
+        request.firstName?.let { existingPerson.firstName = it }
+        request.middleName?.let { existingPerson.middleName = it }
+        request.lastName?.let { existingPerson.lastName = it }
+        request.email?.let { existingPerson.email = it }
+        request.dateOfBirth?.let { existingPerson.dateOfBirth = it }
+        request.gender?.let { existingPerson.gender = it }
+
+        // Update mobile numbers if provided
+        if (request.mobileNumbers.isNotEmpty()) {
+            // Validate all mobile numbers format
+            request.mobileNumbers.forEach { mobileNumber ->
+                if (!MobileNumberValidator.isValidIndianMobileNumber(mobileNumber.number)) {
+                    throw InvalidMobileNumberException(messageSource)
+                }
+            }
+
+            // Validate that there's only one primary mobile number in the request
+            val primaryNumbers = request.mobileNumbers.filter { it.isPrimary == true }
+            if (primaryNumbers.size > 1) {
+                throw DuplicatePrimaryMobileNumberException(messageSource)
+            }
+
+            // Check if any of the primary mobile numbers already exist in the database (excluding current person)
+            primaryNumbers.forEach { primaryMobile ->
+                primaryMobile.number?.let { mobileNumber ->
+                    val existingPersonWithMobile = personRepository.findByPrimaryMobileNo(mobileNumber)
+                    if (existingPersonWithMobile != null && existingPersonWithMobile.id != id) {
+                        throw PrimaryMobileNumberAlreadyExistsException(messageSource)
+                    }
+                }
+            }
+
+            // Clean and format mobile numbers
+            val cleanedMobileNumbers = request.mobileNumbers.map { mobileNumber ->
+                mobileNumber.copy(number = MobileNumberValidator.cleanMobileNumber(mobileNumber.number))
+            }
+            existingPerson.mobileNumbers = cleanedMobileNumbers
+        }
+
+        personRepository.save(existingPerson)
     }
 
+    // Address mapping operations
     @Transactional
-    @CachePut(cacheNames = [CACHE_NAME], key = "#personId")
-    override fun addAddress(personId: UUID, addressDTO: AddressCreateRequest, addressType: String): AddressResponse {
-        // Verify person exists using PersonReadService
-        personReadService.getPerson(personId)
+    override fun addAddressToPerson(
+        personId: UUID,
+        request: PersonAddressMappingRequest
+    ): PersonAddressMappingResponse {
+        if (!personRepository.existsById(personId)) {
+            throw PersonNotFoundException(personId, messageSource)
+        }
 
-        // Get person entity from repository for modification
-        val person = personRepository.findById(personId)
-            .orElseThrow { PersonNotFoundException(personId, messageSource) }
+        // Validate address type
+        val addressType = request.addressType
+        if (addressType.isNullOrBlank()) {
+            throw InvalidAddressTypeException.mandatory(messageSource)
+        }
 
-        val existingAddresses = person.addresses?.toMutableList() ?: mutableListOf()
-        if (existingAddresses.any { it.type == addressType }) {
+        if (!AddressType.isValid(addressType)) {
+            throw InvalidAddressTypeException.withValidTypes(addressType, AddressType.getValidTypes(), messageSource)
+        }
+
+        // Check if person already has an address of this type
+        if (personAddressMappingRepository.existsByPersonIdAndAddressType(personId, addressType)) {
             throw AddressTypeAlreadyExistsException(personId, addressType, messageSource)
         }
 
-        // Create the address using address service
-        val addressResponse = addressWriteService.createAddress(addressDTO)
-
-        val newAddressDetail = AddressDetails(
-            addressId = addressResponse.id,
-            type = addressType
+        // Create address from request details
+        val addressCreateRequest = AddressCreateRequest(
+            addressOne = request.addressOne,
+            addressTwo = request.addressTwo,
+            landmark = request.landmark,
+            district = request.district,
+            state = request.state,
+            pincode = request.pincode,
+            addressSource = request.addressSource ?: "CUSTOMER"
         )
 
-        existingAddresses.add(newAddressDetail)
-        person.addresses = existingAddresses
-        personRepository.save(person)
+        val addressResponse = addressService.createAddress(addressCreateRequest)
+        val addressId = addressResponse.id!!
 
-        return addressResponse
+        val mapping = PersonAddressMapping(
+            personId = personId,
+            addressId = addressId,
+            addressType = addressType
+        )
+
+        val savedMapping = personAddressMappingRepository.save(mapping)
+
+        return PersonAddressMappingResponse(
+            id = savedMapping.id!!,
+            personId = personId,
+            address = addressResponse,
+            addressType = savedMapping.addressType
+        )
     }
 
     @Transactional
-    @CacheEvict(cacheNames = [CACHE_NAME], key = "#personId")
-    override fun removeAddress(personId: UUID, addressId: UUID) {
-        val person = personRepository.findById(personId)
-            .orElseThrow { PersonNotFoundException(personId, messageSource) }
-
-        val existingAddresses = person.addresses?.toMutableList() ?: mutableListOf()
-        val addressToRemove = existingAddresses.find { it.addressId == addressId }
-            ?: throw AddressNotFoundException(addressId, messageSource)
-
-        existingAddresses.remove(addressToRemove)
-        person.addresses = existingAddresses
-        personRepository.save(person)
-
-        addressWriteService.deleteAddress(addressId)
-    }
-
-    @Transactional
-    @CacheEvict(cacheNames = [CACHE_NAME], key = "#personId")
-    override fun removeAddress(personId: UUID, addressType: String) {
-        val person = personRepository.findById(personId)
-            .orElseThrow { PersonNotFoundException(personId, messageSource) }
-
-        val existingAddresses = person.addresses?.toMutableList() ?: mutableListOf()
-        val addressToRemove = existingAddresses.find { it.type == addressType }
-            ?: throw AddressTypeNotFoundException(personId, addressType, messageSource)
-
-        existingAddresses.remove(addressToRemove)
-        person.addresses = existingAddresses
-        personRepository.save(person)
-
-        addressToRemove.addressId?.let { id ->
-            addressWriteService.deleteAddress(id)
+    override fun updatePersonAddressMapping(
+        personId: UUID,
+        addressId: UUID,
+        request: PersonAddressMappingUpdateRequest
+    ): PersonAddressMappingResponse {
+        if (!personRepository.existsById(personId)) {
+            throw PersonNotFoundException(personId, messageSource)
         }
-    }
 
-    override fun addIdentifier(personId: UUID, identifier: Identifier) {
-        val person = personRepository.findById(personId)
-            .orElseThrow { PersonNotFoundException(personId, messageSource) }
-        person.identifiers = (person.identifiers.orEmpty()) + identifier
-        personRepository.save(person)
-    }
+        val mapping = personAddressMappingRepository.findByPersonIdAndAddressId(personId, addressId)
+            ?: throw PersonAddressMappingNotFoundException(personId, addressId, messageSource)
 
-    override fun updateIdentifier(personId: UUID, identifierId: UUID, identifier: Identifier) {
-        val person = personRepository.findById(personId)
-            .orElseThrow { PersonNotFoundException(personId, messageSource) }
+        // Validate address type if provided
+        request.addressType?.let { addressType ->
+            // Validate enum value
+            if (!AddressType.isValid(addressType)) {
+                throw InvalidAddressTypeException.withValidTypes(
+                    addressType,
+                    AddressType.getValidTypes(),
+                    messageSource
+                )
+            }
 
-        val existingIdentifier = person.identifiers?.find { it.id == identifierId.toString() }
-        if (existingIdentifier != null) {
-            existingIdentifier.identifier = identifier.identifier
-            existingIdentifier.type = IdentifierType.valueOf(identifier.type.name)
-            personRepository.save(person)
+            // Check if person already has an address of this type (excluding current address)
+            val existingMappingWithType = personAddressMappingRepository.findByPersonId(personId)
+                .find { it.addressType == addressType && it.addressId != addressId }
+
+            if (existingMappingWithType != null) {
+                throw AddressTypeAlreadyExistsException(personId, addressType, messageSource)
+            }
+        }
+
+        // Update mapping fields if provided
+        request.addressType?.let { mapping.addressType = it }
+        val savedMapping = personAddressMappingRepository.save(mapping)
+
+        // Update address details if pincode is provided (required field)
+        val addressResponse = if (request.pincode != null) {
+            val addressUpdateRequest = AddressUpdateRequest(
+                addressOne = request.addressOne,
+                addressTwo = request.addressTwo,
+                landmark = request.landmark,
+                district = request.district,
+                state = request.state,
+                pincode = request.pincode!!,
+                addressSource = request.addressSource
+            )
+            addressService.updateAddress(addressId, addressUpdateRequest)
         } else {
-            throw ResourceNotFoundException("Identifier not found with id: $identifierId")
+            addressService.getAddress(addressId)
         }
+
+        return PersonAddressMappingResponse(
+            id = savedMapping.id!!,
+            personId = personId,
+            address = addressResponse,
+            addressType = savedMapping.addressType
+        )
+    }
+
+    @Transactional
+    override fun removeAddressFromPerson(personId: UUID, addressId: UUID) {
+        if (!personRepository.existsById(personId)) {
+            throw PersonNotFoundException(personId, messageSource)
+        }
+
+        val mapping = personAddressMappingRepository.findByPersonIdAndAddressId(personId, addressId)
+        if (mapping == null) {
+            throw PersonAddressMappingNotFoundException(personId, addressId, messageSource)
+        }
+
+        // Delete the mapping first
+        personAddressMappingRepository.delete(mapping)
+
+        // Then delete the actual address
+        addressService.deleteAddress(addressId)
+    }
+
+    // Identifier operations
+    @Transactional
+    override fun createPersonIdentifier(
+        personId: UUID,
+        request: PersonIdentifierCreateRequest
+    ): PersonIdentifierResponse {
+        if (!personRepository.existsById(personId)) {
+            throw PersonNotFoundException(personId, messageSource)
+        }
+
+        // Validate identifier type
+        if (!IdentifierType.isValid(request.type.name)) {
+            throw InvalidIdentifierTypeException.withValidTypes(request.type.name, messageSource)
+        }
+
+        // Check if identifier type already exists for this person
+        if (personIdentifierRepository.existsByPersonIdAndType(personId, request.type)) {
+            throw DuplicateIdentifierTypeException(personId, request.type, messageSource)
+        }
+
+        val identifier = PersonIdentifier(
+            personId = personId,
+            identifier = request.identifier,
+            type = request.type
+        )
+
+        val savedIdentifier = personIdentifierRepository.save(identifier)
+        return mapIdentifierToResponse(savedIdentifier)
+    }
+
+    @Transactional
+    override fun updatePersonIdentifier(id: UUID, request: PersonIdentifierUpdateRequest): PersonIdentifierResponse {
+        val identifier = personIdentifierRepository.findById(id)
+            .orElseThrow { PersonIdentifierNotFoundException(id, messageSource) }
+
+        request.identifier?.let { identifier.identifier = it }
+        request.type?.let { newType ->
+            // Validate identifier type
+            if (!IdentifierType.isValid(newType.name)) {
+                throw InvalidIdentifierTypeException.withValidTypes(newType.name, messageSource)
+            }
+
+            // Check if the new type already exists for this person (excluding current identifier)
+            val existingIdentifier = personIdentifierRepository.findByPersonIdAndType(identifier.personId, newType)
+            if (existingIdentifier != null && existingIdentifier.id != id) {
+                throw DuplicateIdentifierTypeException(identifier.personId, newType, messageSource)
+            }
+            identifier.type = newType
+        }
+
+        val savedIdentifier = personIdentifierRepository.save(identifier)
+        return mapIdentifierToResponse(savedIdentifier)
+    }
+
+    @Transactional
+    override fun deletePersonIdentifier(id: UUID) {
+        if (!personIdentifierRepository.existsById(id)) {
+            throw PersonIdentifierNotFoundException(id, messageSource)
+        }
+        personIdentifierRepository.deleteById(id)
+    }
+
+    private fun mapIdentifierToResponse(identifier: PersonIdentifier): PersonIdentifierResponse {
+        return PersonIdentifierResponse(
+            id = identifier.id!!,
+            personId = identifier.personId,
+            identifier = identifier.identifier,
+            type = identifier.type
+        )
     }
 }

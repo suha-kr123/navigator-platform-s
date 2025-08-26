@@ -1,7 +1,7 @@
 package com.nivasafinance.features.master.pincode.service
 
-import com.nivasafinance.features.master.pincode.dto.PincodeResponseDto
+import com.nivasafinance.features.master.pincode.dto.PincodeData
 
 interface PincodeReadService {
-    fun getByPincode(pincode: String): PincodeResponseDto
+    fun getPincodeDataByPincode(pincode: String): List<PincodeData>
 }

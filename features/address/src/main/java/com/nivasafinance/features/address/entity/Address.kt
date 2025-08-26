@@ -20,7 +20,7 @@ data class Address(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(columnDefinition = "UUID")
-    val id: UUID,
+    val id: UUID? = null,
 
     @Column(name = "address_one")
     var addressOne: String? = null,

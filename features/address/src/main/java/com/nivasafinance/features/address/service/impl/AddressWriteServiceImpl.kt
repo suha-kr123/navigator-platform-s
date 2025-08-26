@@ -10,10 +10,7 @@ import com.nivasafinance.features.address.service.AddressReadService
 import com.nivasafinance.features.address.service.AddressWriteService
 import com.nivasafinance.features.master.pincode.service.PincodeReadService
 import jakarta.transaction.Transactional
-import org.javers.core.JaversBuilder.logger
 import org.modelmapper.ModelMapper
-import org.springframework.cache.annotation.CacheEvict
-import org.springframework.cache.annotation.CachePut
 import org.springframework.context.MessageSource
 import org.springframework.stereotype.Service
 import java.util.UUID
@@ -27,22 +24,15 @@ class AddressWriteServiceImpl(
     private val messageSource: MessageSource
 ) : AddressWriteService {
 
-    companion object {
-        private const val CACHE_NAME = "address"
-    }
-
     @Transactional
-    @CachePut(cacheNames = [CACHE_NAME], key = "#result.id")
     override fun createAddress(request: AddressCreateRequest): AddressResponse {
-        // Enhance address with pincode master details if available
-        val enhancedRequest = try {
-            val pincodeDetails = pincodeReadService.getByPincode(request.pincode)
+        val pincodeDetails = pincodeReadService.getPincodeDataByPincode(request.pincode)
+        val enhancedRequest = if (pincodeDetails.isNotEmpty()) {
+            val firstPincode = pincodeDetails.first()
             request.copy(
-                district = pincodeDetails.district ?: request.district,
-                state = request.state
+                district = firstPincode.district ?: request.district
             )
-        } catch (e: IllegalArgumentException) {
-            logger.warn("Failed to enhance address with pincode ${request.pincode}", e)
+        } else {
             request
         }
 
@@ -51,7 +41,7 @@ class AddressWriteServiceImpl(
         return modelMapper.map(savedAddress, AddressResponse::class.java)
     }
 
-    @CacheEvict(cacheNames = [CACHE_NAME], key = "#id")
+    @Transactional
     override fun deleteAddress(id: UUID): AddressResponse {
         val existing = addressReadService.getAddress(id)
         addressRepository.deleteById(id)
@@ -59,7 +49,6 @@ class AddressWriteServiceImpl(
     }
 
     @Transactional
-    @CachePut(cacheNames = [CACHE_NAME], key = "#id")
     override fun updateAddress(id: UUID, request: AddressUpdateRequest): AddressResponse {
         val existingEntity = addressRepository.findById(id).orElseThrow {
             AddressNotFoundException(id, messageSource)

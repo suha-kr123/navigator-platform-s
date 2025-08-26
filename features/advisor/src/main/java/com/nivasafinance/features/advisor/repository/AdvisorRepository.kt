@@ -13,7 +13,8 @@ interface AdvisorRepository : JpaRepository<Advisor, UUID> {
 
     @Query(
         "SELECT a.* FROM advisor a JOIN person p ON a.person_id = p.id " +
-            "WHERE p.mobile_number->>'primary' = :primaryMobileNo",
+            "WHERE p.mobile_numbers @> jsonb_build_array(" +
+            "jsonb_build_object('isPrimary', true, 'number', :primaryMobileNo))",
         nativeQuery = true
     )
     fun findByPrimaryMobileNo(primaryMobileNo: String): Advisor?

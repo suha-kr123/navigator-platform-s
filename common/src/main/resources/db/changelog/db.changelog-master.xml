@@ -5,12 +5,16 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
-    <include file="/db/migrations/V1__create_persons.sql"/>
-    <include file="/db/migrations/V2__create_advisors.sql"/>
-    <include file="/db/migrations/V3__create_api_audit_log.sql"/>
-    <include file="/db/migrations/V4__create_pincode.sql"/>
-    <include file="/db/migrations/V5__create_address.sql"/>
-    <include file="/db/migrations/V6__create_leads.sql"/>
-    <include file="/db/migrations/V7__create_leadapplicants.sql"/>
-    <include file="/db/migrations/V8__add_audit_triggers.sql"/>
+    <include file="/db/migrations/V1__create_api_audit_log.sql"/>
+    <include file="/db/migrations/V2__create_master_pincode.sql"/>
+    <include file="/db/migrations/V3__create_persons.sql"/>
+    <include file="/db/migrations/V4__create_address.sql"/>
+    <include file="/db/migrations/V5__create_person_address_mapping.sql"/>
+    <include file="/db/migrations/V6__create_person_identifiers.sql"/>
+    <include file="/db/migrations/V7__create_advisors.sql"/>
+    <include file="/db/migrations/V8__create_leads.sql"/>
+    <include file="/db/migrations/V9__create_lead_applicants.sql"/>
+    <include file="/db/migrations/V10__create_payments.sql"/>
+    <include file="/db/migrations/V11__create_advisor_lead_mapping.sql"/>
+    <include file="/db/migrations/V12__create_audit_triggers.sql"/>
 </databaseChangeLog>

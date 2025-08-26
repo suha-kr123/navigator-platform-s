@@ -1,10 +1,10 @@
 package com.nivasafinance
 
-import com.nivasafinance.features.master.pincode.dto.PincodeResponseDto
+import com.nivasafinance.features.master.pincode.dto.PincodeResponse
 import com.nivasafinance.features.master.pincode.entity.PincodeEntity
 import java.util.UUID
 
-object TestUtils {
+object MasterTestUtils {
 
     fun createTestPincodeEntity(
         pincode: String = "123456",
@@ -23,14 +23,14 @@ object TestUtils {
         )
     }
 
-    fun createTestPincodeResponseDto(
+    fun createTestPincodeResponse(
         pincode: String = "123456",
         areas: List<String> = listOf("Mumbai Area"),
         district: String? = "Mumbai",
         country: String? = "India",
         isServicable: Boolean = true
-    ): PincodeResponseDto {
-        return PincodeResponseDto(
+    ): PincodeResponse {
+        return PincodeResponse(
             pincode = pincode,
             areas = areas,
             district = district,
