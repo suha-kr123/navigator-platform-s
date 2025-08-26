@@ -1,4 +1,4 @@
-package com.nivasafinance.features.integration
+package com.nivasafinance.features.lead.integration
 
 import com.nivasafinance.features.TestUtils.createTestLeadCreateRequest
 import com.nivasafinance.features.TestUtils.createTestLeadResponse
