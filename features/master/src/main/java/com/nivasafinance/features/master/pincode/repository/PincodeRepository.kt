@@ -1,13 +1,13 @@
 package com.nivasafinance.features.master.pincode.repository
 
-import com.nivasafinance.features.master.pincode.entity.PincodeEntity
+import com.nivasafinance.features.master.pincode.entity.Pincode
 import org.javers.spring.annotation.JaversSpringDataAuditable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
-import java.util.*
+import java.util.UUID
 
 @Repository
 @JaversSpringDataAuditable
-interface PincodeRepository : JpaRepository<PincodeEntity, UUID> {
-    fun findAllByPincode(pincode: String): List<PincodeEntity>
+interface PincodeRepository : JpaRepository<Pincode, UUID> {
+    fun findAllByPincode(pincode: String): List<Pincode>
 }

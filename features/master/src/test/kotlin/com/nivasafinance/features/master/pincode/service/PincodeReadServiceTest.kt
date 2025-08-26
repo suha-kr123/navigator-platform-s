@@ -1,7 +1,7 @@
 package com.nivasafinance.features.master.pincode.service
 
-import com.nivasafinance.TestUtils.createTestPincodeEntity
-import com.nivasafinance.TestUtils.createTestPincodeResponseDto
+import com.nivasafinance.MasterTestUtils.createTestPincodeEntity
+import com.nivasafinance.MasterTestUtils.createTestPincodeData
 import com.nivasafinance.features.master.pincode.exception.PincodeNotFoundException
 import com.nivasafinance.features.master.pincode.repository.PincodeRepository
 import com.nivasafinance.features.master.pincode.service.impl.PincodeReadServiceImpl
@@ -27,7 +27,7 @@ class PincodeReadServiceTest {
 
     private val pincode = "123456"
     private val pincodeEntities = listOf(createTestPincodeEntity(pincode = pincode))
-    private val expectedDto = createTestPincodeResponseDto(pincode = pincode)
+    private val expectedData = listOf(createTestPincodeData(pincode = pincode))
 
     @BeforeEach
     fun setup() {
@@ -37,39 +37,40 @@ class PincodeReadServiceTest {
     }
 
     @Nested
-    @DisplayName("getByPincode Tests")
-    inner class GetByPincodeTests {
+    @DisplayName("getPincodeDataByPincode Tests")
+    inner class GetPincodeDataByPincodeTests {
 
         @Test
-        @DisplayName("should return pincode details when found")
-        fun `getByPincode should return pincode details when found`() {
+        @DisplayName("should return pincode data when found")
+        fun `getPincodeDataByPincode should return pincode data when found`() {
             // Given
             every { pincodeRepository.findAllByPincode(pincode) } returns pincodeEntities
 
             // When
-            val result = pincodeReadService.getByPincode(pincode)
+            val result = pincodeReadService.getPincodeDataByPincode(pincode)
 
             // Then
             assertNotNull(result)
-            assertEquals(expectedDto.pincode, result.pincode)
-            assertEquals(expectedDto.areas, result.areas)
-            assertEquals(expectedDto.district, result.district)
-            assertEquals(expectedDto.country, result.country)
-            assertEquals(expectedDto.isServicable, result.isServicable)
+            assertEquals(expectedData.size, result.size)
+            assertEquals(expectedData.first().pincode, result.first().pincode)
+            assertEquals(expectedData.first().area, result.first().area)
+            assertEquals(expectedData.first().district, result.first().district)
+            assertEquals(expectedData.first().country, result.first().country)
+            assertEquals(expectedData.first().isServicable, result.first().isServicable)
 
             verify(exactly = 1) { pincodeRepository.findAllByPincode(pincode) }
         }
 
         @Test
         @DisplayName("should throw exception when pincode not found")
-        fun `getByPincode should throw exception when pincode not found`() {
+        fun `getPincodeDataByPincode should throw exception when pincode not found`() {
             // Given
             every { pincodeRepository.findAllByPincode(pincode) } returns emptyList()
             every { messageSource.getMessage(any(), any(), any()) } returns "Pincode not found"
 
             // When & Then
             assertThrows<PincodeNotFoundException> {
-                pincodeReadService.getByPincode(pincode)
+                pincodeReadService.getPincodeDataByPincode(pincode)
             }
 
             verify(exactly = 1) { pincodeRepository.findAllByPincode(pincode) }
@@ -78,7 +79,7 @@ class PincodeReadServiceTest {
 
         @Test
         @DisplayName("should handle empty pincode")
-        fun `getByPincode should handle empty pincode`() {
+        fun `getPincodeDataByPincode should handle empty pincode`() {
             // Given
             val emptyPincode = ""
             every { pincodeRepository.findAllByPincode(emptyPincode) } returns emptyList()
@@ -86,7 +87,7 @@ class PincodeReadServiceTest {
 
             // When & Then
             assertThrows<PincodeNotFoundException> {
-                pincodeReadService.getByPincode(emptyPincode)
+                pincodeReadService.getPincodeDataByPincode(emptyPincode)
             }
 
             verify(exactly = 1) { pincodeRepository.findAllByPincode(emptyPincode) }

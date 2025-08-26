@@ -1,7 +1,7 @@
 package com.nivasafinance.features.master.pincode.service.impl
 
 import base.BaseNavigatorService
-import com.nivasafinance.features.master.pincode.dto.PincodeResponseDto
+import com.nivasafinance.features.master.pincode.dto.PincodeData
 import com.nivasafinance.features.master.pincode.exception.PincodeNotFoundException
 import com.nivasafinance.features.master.pincode.repository.PincodeRepository
 import com.nivasafinance.features.master.pincode.service.PincodeReadService
@@ -18,19 +18,13 @@ class PincodeReadServiceImpl(
     }
 
     @Cacheable(cacheNames = [CACHE_NAME], key = "#pincode")
-    override fun getByPincode(pincode: String): PincodeResponseDto {
+    override fun getPincodeDataByPincode(pincode: String): List<PincodeData> {
         val entities = pincodeRepository.findAllByPincode(pincode)
 
         if (entities.isEmpty()) {
             throw PincodeNotFoundException(pincode, messageSource)
         }
 
-        return PincodeResponseDto(
-            pincode = pincode,
-            areas = entities.map { it.area },
-            district = entities.first().district,
-            country = entities.first().country,
-            isServicable = entities.any { it.isServicable }
-        )
+        return entities.map { PincodeData.fromEntity(it) }
     }
 }

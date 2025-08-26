@@ -1,29 +1,71 @@
 package com.nivasafinance.features.person.service.impl
-
 import base.BaseNavigatorService
-import com.nivasafinance.features.person.dto.PersonDto
+import com.nivasafinance.features.address.exception.AddressNotFoundException
+import com.nivasafinance.features.address.service.AddressService
+import com.nivasafinance.features.person.dto.PersonAddressMappingResponse
+import com.nivasafinance.features.person.dto.PersonData
+import com.nivasafinance.features.person.dto.PersonIdentifierResponse
+import com.nivasafinance.features.person.entity.PersonIdentifier
 import com.nivasafinance.features.person.exception.PersonNotFoundException
+import com.nivasafinance.features.person.repository.PersonAddressMappingRepository
+import com.nivasafinance.features.person.repository.PersonIdentifierRepository
 import com.nivasafinance.features.person.repository.PersonRepository
 import com.nivasafinance.features.person.service.PersonReadService
-import org.springframework.cache.annotation.Cacheable
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.util.UUID
-
 @Service
 class PersonReadServiceImpl(
     private val personRepository: PersonRepository,
+    private val personAddressMappingRepository: PersonAddressMappingRepository,
+    private val personIdentifierRepository: PersonIdentifierRepository,
+    private val addressService: AddressService
 ) : PersonReadService, BaseNavigatorService() {
     companion object {
-        private const val CACHE_NAME = "person"
+        private val logger = LoggerFactory.getLogger(PersonReadServiceImpl::class.java)
     }
-
-    @Cacheable(cacheNames = [CACHE_NAME], key = "#id")
-    override fun getPerson(id: UUID): PersonDto {
+    override fun getPerson(id: UUID): PersonData {
         val person = personRepository.findById(id).orElseThrow {
-            // Use the new PersonNotFoundException with a localized message
             PersonNotFoundException(id, messageSource)
         }
-
-        return modelMapper.map(person, PersonDto::class.java)
+        return PersonData.fromEntity(person)
+    }
+    override fun getPersonAddresses(personId: UUID): List<PersonAddressMappingResponse> {
+        if (!personRepository.existsById(personId)) {
+            throw PersonNotFoundException(personId, messageSource)
+        }
+        val mappings = personAddressMappingRepository.findByPersonId(personId)
+        return mappings.mapNotNull { mapping ->
+            mapping.addressId?.let { addressId ->
+                try {
+                    val addressResponse = addressService.getAddress(addressId)
+                    PersonAddressMappingResponse(
+                        id = mapping.id!!,
+                        personId = personId,
+                        address = addressResponse,
+                        addressType = mapping.addressType
+                    )
+                } catch (e: AddressNotFoundException) {
+                    // Log the exception for debugging but don't fail the entire operation
+                    logger.warn("Failed to fetch address $addressId for person $personId: ${e.message}")
+                    null
+                }
+            }
+        }
+    }
+    override fun getPersonIdentifiers(personId: UUID): List<PersonIdentifierResponse> {
+        if (!personRepository.existsById(personId)) {
+            throw PersonNotFoundException(personId, messageSource)
+        }
+        val identifiers = personIdentifierRepository.findByPersonId(personId)
+        return identifiers.map { mapIdentifierToResponse(it) }
+    }
+    private fun mapIdentifierToResponse(identifier: PersonIdentifier): PersonIdentifierResponse {
+        return PersonIdentifierResponse(
+            id = identifier.id!!,
+            personId = identifier.personId,
+            identifier = identifier.identifier,
+            type = identifier.type
+        )
     }
 }

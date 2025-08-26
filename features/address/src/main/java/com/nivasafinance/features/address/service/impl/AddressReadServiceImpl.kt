@@ -27,16 +27,4 @@ class AddressReadServiceImpl(
             .orElseThrow { AddressNotFoundException(id, messageSource) }
         return modelMapper.map(address, AddressResponse::class.java)
     }
-
-    override fun getAddresses(ids: List<UUID>): List<AddressResponse> {
-        if (ids.isEmpty()) {
-            return emptyList()
-        }
-
-        val addresses = addressRepository.findAllById(ids)
-
-        return addresses.map { address ->
-            modelMapper.map(address, AddressResponse::class.java)
-        }
-    }
 }

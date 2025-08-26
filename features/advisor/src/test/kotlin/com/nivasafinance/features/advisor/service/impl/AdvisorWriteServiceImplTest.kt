@@ -1,15 +1,13 @@
 package com.nivasafinance.features.advisor.service.impl
 
 import com.nivasafinance.TestUtils.createTestAdvisor
-import com.nivasafinance.TestUtils.createTestAdvisorDto
-import com.nivasafinance.TestUtils.createTestPersonDto
-import com.nivasafinance.features.advisor.dto.AdvisorDto
+import com.nivasafinance.features.advisor.dto.AdvisorCreateRequest
+import com.nivasafinance.features.advisor.dto.AdvisorUpdateRequest
 import com.nivasafinance.features.advisor.enum.AdvisorStatus
-import com.nivasafinance.features.advisor.exception.AdvisorMobileAlreadyExistsException
 import com.nivasafinance.features.advisor.exception.AdvisorNotFoundException
 import com.nivasafinance.features.advisor.repository.AdvisorRepository
-import com.nivasafinance.features.advisor.service.AdvisorReadService
-import com.nivasafinance.features.person.service.PersonWriteService
+import com.nivasafinance.features.person.dto.PersonData
+import com.nivasafinance.features.person.service.PersonReadService
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -18,7 +16,6 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.modelmapper.ModelMapper
 import org.springframework.context.MessageSource
 import java.util.*
 import kotlin.test.assertEquals
@@ -28,9 +25,7 @@ import kotlin.test.assertNotNull
 class AdvisorWriteServiceImplTest {
 
     private val advisorRepository = mockk<AdvisorRepository>()
-    private val personWriteService = mockk<PersonWriteService>()
-    private val advisorReadService = mockk<AdvisorReadService>()
-    private val modelMapper = mockk<ModelMapper>()
+    private val personReadService = mockk<PersonReadService>()
     private val messageSource = mockk<MessageSource>()
 
     private lateinit var advisorWriteService: AdvisorWriteServiceImpl
@@ -38,152 +33,118 @@ class AdvisorWriteServiceImplTest {
     private val advisorId = UUID.randomUUID()
     private val personId = UUID.randomUUID()
     private val advisor = createTestAdvisor(id = advisorId, personId = personId)
+    private val personData = PersonData(
+        id = personId,
+        firstName = "John",
+        middleName = null,
+        lastName = "Doe",
+        mobileNumbers = null,
+        email = null,
+        dateOfBirth = null,
+        gender = null,
+        dataExt = null
+    )
 
     @BeforeEach
     fun setup() {
-        advisorWriteService = AdvisorWriteServiceImpl(advisorRepository, personWriteService, advisorReadService).apply {
-            this.modelMapper = this@AdvisorWriteServiceImplTest.modelMapper
+        advisorWriteService = AdvisorWriteServiceImpl(advisorRepository, personReadService).apply {
             this.messageSource = this@AdvisorWriteServiceImplTest.messageSource
         }
     }
 
     @Nested
-    @DisplayName("createAdvisor Tests")
-    inner class CreateAdvisorTests {
+    @DisplayName("createAdvisorData Tests")
+    inner class CreateAdvisorDataTests {
 
         @Test
-        @DisplayName("should create advisor successfully")
-        fun `createAdvisor should create advisor successfully`() {
+        @DisplayName("should create advisor data successfully")
+        fun `createAdvisorData should create advisor data successfully`() {
             // Given
-            val newAdvisorDto = createTestAdvisorDto(
-                id = null,
-                personalDetails = createTestPersonDto(
-                    id = null,
-                    mobileNumber = com.nivasafinance.features.person.dto.MobileNumberDetails("1234567890")
-                )
+            val createRequest = AdvisorCreateRequest(
+                advisorCode = "ADV001",
+                personId = personId,
+                isEmployee = false,
+                remarks = "Test advisor"
             )
-            val savedPersonDto = createTestPersonDto(id = personId)
             val newAdvisor = createTestAdvisor(
                 id = advisorId,
                 personId = personId,
                 advisorCode = "ADV001",
                 status = AdvisorStatus.CREATED
             )
-            val expectedDto = createTestAdvisorDto(
-                id = advisorId,
-                personalDetails = savedPersonDto
-            )
 
-            every { advisorReadService.getAdvisorByMobileNo("1234567890") } throws
-                Exception("Advisor not found by mobile")
-            every { personWriteService.savePerson(newAdvisorDto.personalDetails) } returns savedPersonDto
+            every { personReadService.getPerson(personId) } returns personData
+            every { advisorRepository.findByPersonId(personId) } returns null
             every { advisorRepository.save(any()) } returns newAdvisor
-            every { modelMapper.map(newAdvisor, AdvisorDto::class.java) } returns expectedDto
 
             // When
-            val result = advisorWriteService.createAdvisor(newAdvisorDto)
+            val result = advisorWriteService.createAdvisorData(createRequest)
 
             // Then
             assertNotNull(result)
-            assertEquals(expectedDto.id, result.id)
-            assertEquals(savedPersonDto.id, result.personalDetails.id)
+            assertEquals(advisorId, result.id)
+            assertEquals(personId, result.personId)
+            assertEquals("ADV001", result.advisorCode)
 
-            verify(exactly = 1) { advisorReadService.getAdvisorByMobileNo("1234567890") }
-            verify(exactly = 1) { personWriteService.savePerson(newAdvisorDto.personalDetails) }
+            verify(exactly = 1) { personReadService.getPerson(personId) }
+            verify(exactly = 1) { advisorRepository.findByPersonId(personId) }
             verify(exactly = 1) { advisorRepository.save(any()) }
-            verify(exactly = 1) { modelMapper.map(newAdvisor, AdvisorDto::class.java) }
-        }
-
-        @Test
-        @DisplayName("should throw exception when mobile already exists")
-        fun `createAdvisor should throw exception when mobile already exists`() {
-            // Given
-            val newAdvisorDto = createTestAdvisorDto(
-                id = null,
-                personalDetails = createTestPersonDto(
-                    id = null,
-                    mobileNumber = com.nivasafinance.features.person.dto.MobileNumberDetails("1234567890")
-                )
-            )
-            val existingAdvisorDto = createTestAdvisorDto(id = UUID.randomUUID())
-
-            every { advisorReadService.getAdvisorByMobileNo("1234567890") } returns existingAdvisorDto
-            every { messageSource.getMessage("error.advisor.mobile.already.exists", any(), any()) } returns
-                "Mobile already exists"
-
-            // When & Then
-            assertThrows<AdvisorMobileAlreadyExistsException> {
-                advisorWriteService.createAdvisor(newAdvisorDto)
-            }
-
-            verify(exactly = 1) { advisorReadService.getAdvisorByMobileNo("1234567890") }
-            verify(exactly = 0) { personWriteService.savePerson(any()) }
-            verify(exactly = 0) { advisorRepository.save(any()) }
         }
     }
 
     @Nested
-    @DisplayName("updateAdvisor Tests")
-    inner class UpdateAdvisorTests {
+    @DisplayName("updateAdvisorData Tests")
+    inner class UpdateAdvisorDataTests {
 
         @Test
-        @DisplayName("should update advisor successfully")
-        fun `updateAdvisor should update advisor successfully`() {
+        @DisplayName("should update advisor data successfully")
+        fun `updateAdvisorData should update advisor data successfully`() {
             // Given
-            val updateDto = createTestAdvisorDto(
-                id = advisorId,
-                personalDetails = createTestPersonDto(
-                    id = personId,
-                    firstName = "Updated",
-                    mobileNumber = com.nivasafinance.features.person.dto.MobileNumberDetails("9876543210")
-                )
+            val updateRequest = AdvisorUpdateRequest(
+                advisorCode = "ADV002",
+                remarks = "Updated advisor"
             )
-            val updatedPersonDto = createTestPersonDto(
-                id = personId,
-                firstName = "Updated",
-                mobileNumber = com.nivasafinance.features.person.dto.MobileNumberDetails("9876543210")
-            )
-            val expectedDto = createTestAdvisorDto(
+            val updatedAdvisor = createTestAdvisor(
                 id = advisorId,
-                personalDetails = updatedPersonDto
+                personId = personId,
+                advisorCode = "ADV002",
+                status = AdvisorStatus.ACTIVE
             )
 
             every { advisorRepository.findById(advisorId) } returns Optional.of(advisor)
-            every { personWriteService.updatePerson(personId, updateDto.personalDetails) } returns updatedPersonDto
-            every { advisorRepository.save(advisor) } returns advisor
-            every { modelMapper.map(advisor, AdvisorDto::class.java) } returns expectedDto
+            every { advisorRepository.save(any()) } returns updatedAdvisor
 
             // When
-            val result = advisorWriteService.updateAdvisor(advisorId, updateDto)
+            val result = advisorWriteService.updateAdvisorData(advisorId, updateRequest)
 
             // Then
             assertNotNull(result)
-            assertEquals(expectedDto.id, result.id)
-            assertEquals(updatedPersonDto.id, result.personalDetails.id)
-            assertEquals("Updated", result.personalDetails.firstName)
+            assertEquals(advisorId, result.id)
+            assertEquals(personId, result.personId)
+            assertEquals("ADV002", result.advisorCode)
 
             verify(exactly = 1) { advisorRepository.findById(advisorId) }
-            verify(exactly = 1) { personWriteService.updatePerson(personId, updateDto.personalDetails) }
-            verify(exactly = 1) { advisorRepository.save(advisor) }
-            verify(exactly = 1) { modelMapper.map(advisor, AdvisorDto::class.java) }
+            verify(exactly = 1) { advisorRepository.save(any()) }
         }
 
         @Test
         @DisplayName("should throw exception when advisor not found")
-        fun `updateAdvisor should throw exception when advisor not found`() {
+        fun `updateAdvisorData should throw exception when advisor not found`() {
             // Given
-            val updateDto = createTestAdvisorDto(id = advisorId)
+            val updateRequest = AdvisorUpdateRequest(
+                advisorCode = "ADV002",
+                remarks = "Updated advisor"
+            )
 
             every { advisorRepository.findById(advisorId) } returns Optional.empty()
             every { messageSource.getMessage(any(), any(), any()) } returns "Advisor not found"
 
             // When & Then
             assertThrows<AdvisorNotFoundException> {
-                advisorWriteService.updateAdvisor(advisorId, updateDto)
+                advisorWriteService.updateAdvisorData(advisorId, updateRequest)
             }
 
             verify(exactly = 1) { advisorRepository.findById(advisorId) }
-            verify(exactly = 0) { personWriteService.updatePerson(any(), any()) }
             verify(exactly = 0) { advisorRepository.save(any()) }
         }
     }
@@ -196,25 +157,15 @@ class AdvisorWriteServiceImplTest {
         @DisplayName("should delete advisor successfully")
         fun `deleteAdvisor should delete advisor successfully`() {
             // Given
-            val advisorDto = createTestAdvisorDto(
-                id = advisorId,
-                personalDetails = createTestPersonDto(id = personId)
-            )
-
-            every { advisorReadService.getAdvisor(advisorId) } returns advisorDto
-            every { personWriteService.deletePerson(personId) } returns Unit
-            every { advisorRepository.deleteById(advisorId) } returns Unit
+            every { advisorRepository.findById(advisorId) } returns Optional.of(advisor)
+            every { advisorRepository.delete(advisor) } returns Unit
 
             // When
-            val result = advisorWriteService.deleteAdvisor(advisorId)
+            advisorWriteService.deleteAdvisor(advisorId)
 
             // Then
-            assertNotNull(result)
-            assertEquals(advisorDto.id, result.id)
-
-            verify(exactly = 1) { advisorReadService.getAdvisor(advisorId) }
-            verify(exactly = 1) { personWriteService.deletePerson(personId) }
-            verify(exactly = 1) { advisorRepository.deleteById(advisorId) }
+            verify(exactly = 1) { advisorRepository.findById(advisorId) }
+            verify(exactly = 1) { advisorRepository.delete(advisor) }
         }
     }
 }

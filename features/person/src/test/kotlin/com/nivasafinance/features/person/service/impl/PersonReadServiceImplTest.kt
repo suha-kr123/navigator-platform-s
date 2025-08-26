@@ -1,10 +1,11 @@
 package com.nivasafinance.features.person.service.impl
 
-import com.nivasafinance.TestUtils.createTestPerson
-import com.nivasafinance.TestUtils.createTestPersonDto
-import com.nivasafinance.features.person.dto.PersonDto
+import com.nivasafinance.features.person.dto.PersonData
 import com.nivasafinance.features.person.exception.PersonNotFoundException
 import com.nivasafinance.features.person.repository.PersonRepository
+import com.nivasafinance.features.person.repository.PersonAddressMappingRepository
+import com.nivasafinance.features.person.repository.PersonIdentifierRepository
+import com.nivasafinance.features.address.service.AddressService
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -23,18 +24,32 @@ import kotlin.test.assertNotNull
 class PersonReadServiceImplTest {
 
     private val personRepository = mockk<PersonRepository>()
+    private val personAddressMappingRepository = mockk<PersonAddressMappingRepository>()
+    private val personIdentifierRepository = mockk<PersonIdentifierRepository>()
+    private val addressService = mockk<AddressService>()
     private val modelMapper = mockk<ModelMapper>()
     private val messageSource = mockk<MessageSource>()
 
     private lateinit var personReadService: PersonReadServiceImpl
 
     private val personId = UUID.randomUUID()
-    private val person = createTestPerson(id = personId)
-    private val expectedDto = createTestPersonDto(id = personId)
+    private val person = com.nivasafinance.features.person.entity.Person(
+        id = personId,
+        firstName = "John",
+        lastName = "Doe",
+        email = "john.doe@example.com",
+        gender = data.enums.Gender.MALE
+    )
+    private val expectedData = PersonData.fromEntity(person)
 
     @BeforeEach
     fun setup() {
-        personReadService = PersonReadServiceImpl(personRepository)
+        personReadService = PersonReadServiceImpl(
+            personRepository,
+            personAddressMappingRepository,
+            personIdentifierRepository,
+            addressService
+        )
 
         // Mock modelMapper for BaseNavigatorService using reflection
         val modelMapperField = personReadService.javaClass.superclass.getDeclaredField("modelMapper")
@@ -55,19 +70,17 @@ class PersonReadServiceImplTest {
     fun `getPerson should return person when found`() {
         // Given
         every { personRepository.findById(personId) } returns Optional.of(person)
-        every { modelMapper.map(person, PersonDto::class.java) } returns expectedDto
 
         // When
         val result = personReadService.getPerson(personId)
 
         // Then
         assertNotNull(result)
-        assertEquals(expectedDto.id, result.id)
-        assertEquals(expectedDto.firstName, result.firstName)
-        assertEquals(expectedDto.lastName, result.lastName)
+        assertEquals(expectedData.id, result.id)
+        assertEquals(expectedData.firstName, result.firstName)
+        assertEquals(expectedData.lastName, result.lastName)
 
         verify(exactly = 1) { personRepository.findById(personId) }
-        verify(exactly = 1) { modelMapper.map(person, PersonDto::class.java) }
     }
 
     @Test
@@ -75,7 +88,6 @@ class PersonReadServiceImplTest {
     fun `getPerson should throw exception when not found`() {
         // Given
         every { personRepository.findById(personId) } returns Optional.empty()
-        every { messageSource.getMessage(any(), any(), any()) } returns "Person not found"
 
         // When & Then
         assertThrows<PersonNotFoundException> {
@@ -83,6 +95,5 @@ class PersonReadServiceImplTest {
         }
 
         verify(exactly = 1) { personRepository.findById(personId) }
-        verify(exactly = 1) { messageSource.getMessage(any(), any(), any()) }
     }
 }

@@ -1,10 +1,12 @@
 package com.nivasafinance
 
-import com.nivasafinance.features.advisor.dto.AdvisorDto
+import com.nivasafinance.features.advisor.dto.AdvisorResponse
 import com.nivasafinance.features.advisor.entity.Advisor
 import com.nivasafinance.features.advisor.enum.AdvisorStatus
-import com.nivasafinance.features.person.dto.PersonDto
-import com.nivasafinance.features.person.entity.Details
+import com.nivasafinance.features.person.dto.PersonResponse
+import com.nivasafinance.features.person.entity.MobileNumberDetails
+import data.enums.Gender
+import java.time.LocalDate
 import java.util.UUID
 
 object TestUtils {
@@ -14,43 +16,69 @@ object TestUtils {
         personId: UUID = UUID.randomUUID(),
         advisorCode: String = "ADV001",
         status: AdvisorStatus = AdvisorStatus.ACTIVE,
-        dataExt: Details? = null
+        isEmployee: Boolean = false,
+        isExperiencedDsa: Boolean = false,
+        remarks: String? = null,
+        rejectionReason: String? = null,
+        advisorFeedback: String? = null,
+        welcomeKitSent: Boolean = false,
+        attendedAdvisorMeeting: Boolean = false,
+        extData: Map<String, Any>? = null
     ): Advisor {
         return Advisor(
             id = id,
             personId = personId,
             advisorCode = advisorCode,
+            isEmployee = isEmployee,
             status = status,
-            dataExt = dataExt
+            isExperiencedDsa = isExperiencedDsa,
+            remarks = remarks,
+            rejectionReason = rejectionReason,
+            advisorFeedback = advisorFeedback,
+            welcomeKitSent = welcomeKitSent,
+            attendedAdvisorMeeting = attendedAdvisorMeeting,
+            extData = extData
         )
     }
 
-    fun createTestAdvisorDto(
-        id: UUID? = UUID.randomUUID(),
+    fun createTestAdvisorResponse(
+        id: UUID = UUID.randomUUID(),
+        personId: UUID = UUID.randomUUID(),
         advisorCode: String = "ADV001",
         status: AdvisorStatus = AdvisorStatus.ACTIVE,
-        personalDetails: PersonDto = createTestPersonDto()
-    ): AdvisorDto {
-        return AdvisorDto(
+        personalDetails: PersonResponse = createTestPersonResponse()
+    ): AdvisorResponse {
+        return AdvisorResponse(
             id = id,
+            personId = personId,
             advisorCode = advisorCode,
+            isEmployee = false,
             status = status,
+            remarks = "Test advisor",
+            rejectionReason = null,
+            advisorFeedback = null,
+            welcomeKitSent = false,
+            attendedAdvisorMeeting = false,
+            extData = null,
             personalDetails = personalDetails
         )
     }
 
-    fun createTestPersonDto(
+    fun createTestPersonResponse(
         id: UUID? = UUID.randomUUID(),
         firstName: String = "John",
         lastName: String = "Doe",
-        mobileNumber: com.nivasafinance.features.person.dto.MobileNumberDetails =
-            com.nivasafinance.features.person.dto.MobileNumberDetails("1234567890")
-    ): PersonDto {
-        return PersonDto(
+        mobileNumbers: List<MobileNumberDetails> = listOf(MobileNumberDetails("1234567890", true))
+    ): PersonResponse {
+        return PersonResponse(
             id = id,
             firstName = firstName,
+            middleName = null,
             lastName = lastName,
-            mobileNumber = mobileNumber
+            mobileNumbers = mobileNumbers,
+            email = "john.doe@example.com",
+            dateOfBirth = LocalDate.of(1990, 1, 1),
+            gender = Gender.MALE
         )
     }
 }

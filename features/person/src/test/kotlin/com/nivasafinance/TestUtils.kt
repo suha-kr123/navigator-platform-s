@@ -1,6 +1,6 @@
 package com.nivasafinance
 
-import com.nivasafinance.features.person.dto.PersonDto
+import com.nivasafinance.features.person.dto.PersonData
 import com.nivasafinance.features.person.entity.Person
 import data.enums.Gender
 import java.util.UUID
@@ -23,20 +23,23 @@ object TestUtils {
         )
     }
 
-    fun createTestPersonDto(
-        id: UUID? = UUID.randomUUID(),
+    fun createTestPersonData(
+        id: UUID = UUID.randomUUID(),
         firstName: String = "John",
         lastName: String = "Doe",
-        mobileNumber: com.nivasafinance.features.person.dto.MobileNumberDetails =
-            com.nivasafinance.features.person.dto.MobileNumberDetails("1234567890"),
+        email: String = "john.doe@example.com",
         gender: Gender = Gender.MALE
-    ): PersonDto {
-        return PersonDto(
+    ): PersonData {
+        return PersonData(
             id = id,
             firstName = firstName,
+            middleName = null,
             lastName = lastName,
-            mobileNumber = mobileNumber,
-            gender = gender
+            mobileNumbers = null,
+            email = email,
+            dateOfBirth = null,
+            gender = gender,
+            dataExt = null
         )
     }
 }

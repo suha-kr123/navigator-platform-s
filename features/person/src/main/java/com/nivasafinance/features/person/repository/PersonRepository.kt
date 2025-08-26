@@ -10,6 +10,10 @@ import java.util.UUID
 @Repository
 @JaversSpringDataAuditable
 interface PersonRepository : JpaRepository<Person, UUID> {
-    @Query("SELECT * FROM person WHERE mobile_number->>'primary' = :primaryMobileNo", nativeQuery = true)
+    @Query(
+        "SELECT * FROM person WHERE mobile_numbers @> jsonb_build_array(" +
+            "jsonb_build_object('isPrimary', true, 'number', :primaryMobileNo))",
+        nativeQuery = true
+    )
     fun findByPrimaryMobileNo(primaryMobileNo: String): Person?
 }

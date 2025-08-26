@@ -1,0 +1,28 @@
+package com.nivasafinance.features.lead.dto
+
+import com.nivasafinance.features.lead.enum.LeadStage
+import com.nivasafinance.features.lead.enum.LeadStatus
+import java.math.BigDecimal
+
+data class LeadCreateRequest(
+    val requestedAmount: BigDecimal?,
+    val purpose: String? = null,
+    val productCode: String? = null,
+    val sourcingChannel: String? = null,
+    val preliminaryInformation: LeadPreliminaryInformation? = null,
+    val leadContacts: LeadContacts? = null,
+    val stage: LeadStage? = null,
+    val status: LeadStatus? = null
+)
+
+data class LeadPreliminaryInformation(
+    val whenYouWantLoan: String,
+    val isHouseConstructionStarted: Boolean,
+    val isEKhathaAvailable: Boolean,
+    val selfDeclaredAnnualFamilyIncome: Int
+)
+
+data class LeadContacts(
+    val name: String,
+    val number: String
+)

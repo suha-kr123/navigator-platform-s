@@ -1,8 +1,6 @@
 package com.nivasafinance.features.person.controller
 
-import com.nivasafinance.TestUtils.createTestPersonDto
-import com.nivasafinance.features.person.service.PersonReadService
-import com.nivasafinance.features.person.service.PersonWriteService
+import com.nivasafinance.features.person.service.PersonService
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -16,79 +14,93 @@ import kotlin.test.assertNotNull
 @DisplayName("PersonController Tests")
 class PersonControllerTest {
 
-    private val personReadService = mockk<PersonReadService>()
-    private val personWriteService = mockk<PersonWriteService>()
+    private val personService = mockk<PersonService>()
     private lateinit var personController: PersonController
 
     private val personId = UUID.randomUUID()
-    private val expectedDto = createTestPersonDto(id = personId)
+    private val expectedResponse = com.nivasafinance.features.person.dto.PersonResponse(
+        id = personId,
+        firstName = "John",
+        lastName = "Doe",
+        mobileNumbers = emptyList(),
+        email = "john.doe@example.com",
+        gender = data.enums.Gender.MALE
+    )
 
     @BeforeEach
     fun setup() {
-        personController = PersonController(personReadService, personWriteService)
+        personController = PersonController(personService)
     }
 
     @Test
     @DisplayName("should return person when found")
     fun `getPerson should return person when found`() {
         // Given
-        every { personReadService.getPerson(personId) } returns expectedDto
+        every { personService.getPerson(personId) } returns expectedResponse
 
         // When
         val result = personController.getPerson(personId)
 
         // Then
         assertNotNull(result)
-        assertEquals(expectedDto.id, result.body?.id)
-        assertEquals(expectedDto.firstName, result.body?.firstName)
-        assertEquals(expectedDto.lastName, result.body?.lastName)
+        assertEquals(expectedResponse.id, result.body?.id)
+        assertEquals(expectedResponse.firstName, result.body?.firstName)
+        assertEquals(expectedResponse.lastName, result.body?.lastName)
 
-        verify(exactly = 1) { personReadService.getPerson(personId) }
+        verify(exactly = 1) { personService.getPerson(personId) }
     }
 
     @Test
     @DisplayName("should create person successfully")
     fun `createPerson should create person successfully`() {
         // Given
-        val newPersonDto = createTestPersonDto(id = null)
-        every { personWriteService.savePerson(newPersonDto) } returns expectedDto
+        val newPersonRequest = com.nivasafinance.features.person.dto.PersonCreateRequest(
+            firstName = "John",
+            lastName = "Doe",
+            email = "john.doe@example.com",
+            gender = data.enums.Gender.MALE
+        )
+        every { personService.createPerson(newPersonRequest) } returns expectedResponse
 
         // When
-        val result = personController.createPerson(newPersonDto)
+        val result = personController.createPerson(newPersonRequest)
 
         // Then
         assertNotNull(result)
-        assertEquals(expectedDto.id, result.body?.id)
-        assertEquals(expectedDto.firstName, result.body?.firstName)
-        assertEquals(expectedDto.lastName, result.body?.lastName)
+        assertEquals(expectedResponse.id, result.body?.id)
+        assertEquals(expectedResponse.firstName, result.body?.firstName)
+        assertEquals(expectedResponse.lastName, result.body?.lastName)
 
-        verify(exactly = 1) { personWriteService.savePerson(newPersonDto) }
+        verify(exactly = 1) { personService.createPerson(newPersonRequest) }
     }
 
     @Test
     @DisplayName("should update person successfully")
     fun `updatePerson should update person successfully`() {
         // Given
-        val updateDto = createTestPersonDto(id = personId)
-        every { personWriteService.updatePerson(personId, updateDto) } returns expectedDto
+        val updateRequest = com.nivasafinance.features.person.dto.PersonUpdateRequest(
+            firstName = "Jane",
+            lastName = "Doe"
+        )
+        every { personService.updatePerson(personId, updateRequest) } returns expectedResponse
 
         // When
-        val result = personController.updatePerson(personId, updateDto)
+        val result = personController.updatePerson(personId, updateRequest)
 
         // Then
         assertNotNull(result)
-        assertEquals(expectedDto.id, result.body?.id)
-        assertEquals(expectedDto.firstName, result.body?.firstName)
-        assertEquals(expectedDto.lastName, result.body?.lastName)
+        assertEquals(expectedResponse.id, result.body?.id)
+        assertEquals(expectedResponse.firstName, result.body?.firstName)
+        assertEquals(expectedResponse.lastName, result.body?.lastName)
 
-        verify(exactly = 1) { personWriteService.updatePerson(personId, updateDto) }
+        verify(exactly = 1) { personService.updatePerson(personId, updateRequest) }
     }
 
     @Test
     @DisplayName("should delete person successfully")
     fun `deletePerson should delete person successfully`() {
         // Given
-        every { personWriteService.deletePerson(personId) } returns Unit
+        every { personService.deletePerson(personId) } returns Unit
 
         // When
         val result = personController.deletePerson(personId)
@@ -96,6 +108,6 @@ class PersonControllerTest {
         // Then
         assertNotNull(result)
         assertEquals(204, result.statusCode.value())
-        verify(exactly = 1) { personWriteService.deletePerson(personId) }
+        verify(exactly = 1) { personService.deletePerson(personId) }
     }
 }

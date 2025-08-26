@@ -1,8 +1,9 @@
 package com.nivasafinance.features.person.controller
 
-import com.nivasafinance.features.person.dto.PersonDto
-import com.nivasafinance.features.person.service.PersonReadService
-import com.nivasafinance.features.person.service.PersonWriteService
+import com.nivasafinance.features.person.dto.PersonCreateRequest
+import com.nivasafinance.features.person.dto.PersonResponse
+import com.nivasafinance.features.person.dto.PersonUpdateRequest
+import com.nivasafinance.features.person.service.PersonService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -17,33 +18,35 @@ import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
 
 @RestController
-@RequestMapping("v1/person")
+@RequestMapping("/v1/persons")
 class PersonController(
-    private val personReadService: PersonReadService,
-    private val personWriteService: PersonWriteService
+    private val personService: PersonService
 ) {
 
     @PostMapping
-    fun createPerson(@RequestBody @Valid personDto: PersonDto): ResponseEntity<PersonDto> {
-        val savedPersonDto = personWriteService.savePerson(personDto)
-        return ResponseEntity(savedPersonDto, HttpStatus.CREATED)
+    fun createPerson(@RequestBody @Valid request: PersonCreateRequest): ResponseEntity<PersonResponse> {
+        val person = personService.createPerson(request)
+        return ResponseEntity.status(HttpStatus.CREATED).body(person)
     }
 
-    @GetMapping("/{id}")
-    fun getPerson(@PathVariable id: UUID): ResponseEntity<PersonDto> {
-        val person = personReadService.getPerson(id)
+    @GetMapping("/{personId}")
+    fun getPerson(@PathVariable personId: UUID): ResponseEntity<PersonResponse> {
+        val person = personService.getPerson(personId)
         return ResponseEntity.ok(person)
     }
 
-    @PutMapping("/{id}")
-    fun updatePerson(@PathVariable id: UUID, @RequestBody personDto: PersonDto): ResponseEntity<PersonDto> {
-        val updatedPerson = personWriteService.updatePerson(id, personDto)
-        return ResponseEntity.ok(updatedPerson)
+    @PutMapping("/{personId}")
+    fun updatePerson(
+        @PathVariable personId: UUID,
+        @RequestBody @Valid request: PersonUpdateRequest
+    ): ResponseEntity<PersonResponse> {
+        val person = personService.updatePerson(personId, request)
+        return ResponseEntity.ok(person)
     }
 
-    @DeleteMapping("/{id}")
-    fun deletePerson(@PathVariable id: UUID): ResponseEntity<Unit> {
-        personWriteService.deletePerson(id)
+    @DeleteMapping("/{personId}")
+    fun deletePerson(@PathVariable personId: UUID): ResponseEntity<Unit> {
+        personService.deletePerson(personId)
         return ResponseEntity.noContent().build()
     }
 }

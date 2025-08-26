@@ -7,7 +7,13 @@ import java.util.*
 
 @Component
 class AuditorAwareImpl : AuditorAware<String> {
+    companion object {
+        private const val MAX_USERNAME_LENGTH = 255
+    }
+
     override fun getCurrentAuditor(): Optional<String> {
-        return Optional.ofNullable(UserContext.getUserInfo()?.username ?: "system")
+        val username = UserContext.getUserInfo()?.username ?: "system"
+        // Truncate username to 255 characters to prevent database issues
+        return Optional.of(username.take(MAX_USERNAME_LENGTH))
     }
 }
