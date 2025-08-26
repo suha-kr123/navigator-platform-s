@@ -4,6 +4,8 @@ import base.BaseNavigatorService
 import com.nivasafinance.features.advisor.dto.AdvisorCreateRequest
 import com.nivasafinance.features.advisor.service.AdvisorService
 import com.nivasafinance.features.advisorleadmapping.service.AdvisorLeadMappingService
+import com.nivasafinance.features.lead.enum.LeadStage
+import com.nivasafinance.features.lead.enum.LeadStatus
 import com.nivasafinance.features.lead.service.LeadService
 import com.nivasafinance.features.person.dto.PersonCreateRequest
 import com.nivasafinance.features.person.service.PersonService
@@ -104,10 +106,11 @@ class AdvisorWrapperWriteServiceImpl(
             status = advisorResponse.status
                 ?: com.nivasafinance.features.advisor.enum.AdvisorStatus.CREATED,
             leads = leads.map { mapping ->
+                val lead = leadService.getLeadById(mapping.leadId)
                 AdvisorWrapperResponse.LeadInfo(
                     leadId = mapping.leadId,
-                    status = com.nivasafinance.features.lead.enum.LeadStatus.ACTIVE,
-                    stage = com.nivasafinance.features.lead.enum.LeadStage.INQUIRY
+                    status = lead.status ?: LeadStatus.ACTIVE,
+                    stage = lead.stage ?: LeadStage.INQUIRY
                 )
             }
         )

@@ -168,6 +168,7 @@ class AdvisorWrapperWriteServiceImplTest {
 
         every { advisorService.getAdvisor(advisorId) } returns advisorResponse
         every { leadService.createLead(any<LeadCreateRequest>()) } returns leadResponse
+        every { leadService.getLeadById(leadId) } returns leadResponse
         every { advisorLeadMappingService.createAdvisorLeadMapping(any(), any(), any()) } returns mappingResponse
         every { advisorLeadMappingService.getAllLeadsForAdvisor(advisorId) } returns leadMappings
 
@@ -185,6 +186,7 @@ class AdvisorWrapperWriteServiceImplTest {
 
         verify(exactly = 1) { advisorService.getAdvisor(advisorId) }
         verify(exactly = 1) { leadService.createLead(any<LeadCreateRequest>()) }
+        verify(exactly = 1) { leadService.getLeadById(leadId) }
         verify(exactly = 1) { advisorLeadMappingService.createAdvisorLeadMapping(any(), any(), any()) }
         verify(exactly = 1) { advisorLeadMappingService.getAllLeadsForAdvisor(advisorId) }
     }

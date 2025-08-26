@@ -7,6 +7,7 @@ import com.nivasafinance.features.advisorleadmapping.dto.AdvisorLeadMappingRespo
 import com.nivasafinance.features.advisorleadmapping.service.AdvisorLeadMappingService
 import com.nivasafinance.features.lead.enum.LeadStage
 import com.nivasafinance.features.lead.enum.LeadStatus
+import com.nivasafinance.features.lead.service.LeadService
 import com.nivasafinance.features.person.dto.PersonResponse
 import io.mockk.every
 import io.mockk.mockk
@@ -23,17 +24,20 @@ class AdvisorWrapperReadServiceImplTest {
 
     private val advisorService = mockk<AdvisorService>()
     private val advisorLeadMappingService = mockk<AdvisorLeadMappingService>()
+    private val leadService = mockk<LeadService>()
 
     private lateinit var advisorWrapperReadService: AdvisorWrapperReadServiceImpl
 
     private val advisorId = UUID.randomUUID()
     private val personId = UUID.randomUUID()
+    private val leadId = UUID.randomUUID()
 
     @BeforeEach
     fun setup() {
         advisorWrapperReadService = AdvisorWrapperReadServiceImpl(
             advisorService,
-            advisorLeadMappingService
+            advisorLeadMappingService,
+            leadService
         )
     }
 
@@ -41,10 +45,12 @@ class AdvisorWrapperReadServiceImplTest {
     @DisplayName("Should get advisor successfully")
     fun `getAdvisor should get advisor successfully`() {
         val advisorResponse = createTestAdvisorResponse()
-        val leadMappings = listOf(createTestAdvisorLeadMappingResponse())
+        val leadMappings = listOf(createTestAdvisorLeadMappingResponse(leadId))
+        val leadResponse = createTestLeadResponse()
 
         every { advisorService.getAdvisor(advisorId) } returns advisorResponse
         every { advisorLeadMappingService.getAllLeadsForAdvisor(advisorId) } returns leadMappings
+        every { leadService.getLeadById(leadId) } returns leadResponse
 
         val result = advisorWrapperReadService.getAdvisor(advisorId)
 
@@ -60,6 +66,7 @@ class AdvisorWrapperReadServiceImplTest {
 
         verify(exactly = 1) { advisorService.getAdvisor(advisorId) }
         verify(exactly = 1) { advisorLeadMappingService.getAllLeadsForAdvisor(advisorId) }
+        verify(exactly = 1) { leadService.getLeadById(leadId) }
     }
 
     @Test
@@ -87,13 +94,18 @@ class AdvisorWrapperReadServiceImplTest {
     @DisplayName("Should get advisor with multiple leads")
     fun `getAdvisor should get advisor with multiple leads`() {
         val advisorResponse = createTestAdvisorResponse()
+        val secondLeadId = UUID.randomUUID()
         val leadMappings = listOf(
-            createTestAdvisorLeadMappingResponse(),
-            createTestAdvisorLeadMappingResponse(leadId = UUID.randomUUID())
+            createTestAdvisorLeadMappingResponse(leadId),
+            createTestAdvisorLeadMappingResponse(leadId = secondLeadId)
         )
+        val leadResponse1 = createTestLeadResponse()
+        val leadResponse2 = createTestLeadResponse().copy(id = secondLeadId)
 
         every { advisorService.getAdvisor(advisorId) } returns advisorResponse
         every { advisorLeadMappingService.getAllLeadsForAdvisor(advisorId) } returns leadMappings
+        every { leadService.getLeadById(leadId) } returns leadResponse1
+        every { leadService.getLeadById(secondLeadId) } returns leadResponse2
 
         val result = advisorWrapperReadService.getAdvisor(advisorId)
 
@@ -106,6 +118,8 @@ class AdvisorWrapperReadServiceImplTest {
 
         verify(exactly = 1) { advisorService.getAdvisor(advisorId) }
         verify(exactly = 1) { advisorLeadMappingService.getAllLeadsForAdvisor(advisorId) }
+        verify(exactly = 1) { leadService.getLeadById(leadId) }
+        verify(exactly = 1) { leadService.getLeadById(secondLeadId) }
     }
 
     @Test
@@ -172,6 +186,20 @@ class AdvisorWrapperReadServiceImplTest {
             remarks = "Test mapping",
             extData = null,
             payment = null
+        )
+    }
+
+    private fun createTestLeadResponse(): com.nivasafinance.features.lead.dto.LeadResponse {
+        return com.nivasafinance.features.lead.dto.LeadResponse(
+            id = leadId,
+            requestedAmount = java.math.BigDecimal("500000"),
+            purpose = "Home Construction",
+            productCode = "HL001",
+            sourcingChannel = "Direct",
+            status = LeadStatus.ACTIVE,
+            stage = LeadStage.INQUIRY,
+            preliminaryInformation = null,
+            leadContacts = null
         )
     }
 }

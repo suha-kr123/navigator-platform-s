@@ -4,7 +4,6 @@ import com.nivasafinance.features.applicant.dto.ApplicantResponse
 import com.nivasafinance.features.lead.dto.LeadResponse
 import com.nivasafinance.features.lead.enum.LeadStage
 import com.nivasafinance.features.lead.enum.LeadStatus
-import com.nivasafinance.features.person.dto.PersonResponse
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -18,20 +17,17 @@ import kotlin.test.assertNotNull
 @DisplayName("ApplicantWrapperReadServiceImpl Tests")
 class ApplicantWrapperReadServiceImplTest {
 
-    private val personService = mockk<com.nivasafinance.features.person.service.PersonService>()
     private val leadService = mockk<com.nivasafinance.features.lead.service.LeadService>()
     private val applicantService = mockk<com.nivasafinance.features.applicant.service.ApplicantService>()
 
     private lateinit var applicantWrapperReadService: ApplicantWrapperReadServiceImpl
 
     private val applicantId = UUID.randomUUID()
-    private val personId = UUID.randomUUID()
     private val leadId = UUID.randomUUID()
 
     @BeforeEach
     fun setup() {
         applicantWrapperReadService = ApplicantWrapperReadServiceImpl(
-            personService,
             leadService,
             applicantService
         )
@@ -42,11 +38,9 @@ class ApplicantWrapperReadServiceImplTest {
     fun `getApplicant should get applicant successfully`() {
         // Given
         val applicantResponse = createTestApplicantResponse()
-        val personResponse = createTestPersonResponse()
         val leadResponse = createTestLeadResponse()
 
         every { applicantService.getApplicant(applicantId) } returns applicantResponse
-        every { personService.getPerson(personId) } returns personResponse
         every { leadService.getLeadById(leadId) } returns leadResponse
 
         // When
@@ -59,7 +53,6 @@ class ApplicantWrapperReadServiceImplTest {
         assertEquals(LeadStage.INQUIRY, result.stage)
 
         verify(exactly = 1) { applicantService.getApplicant(applicantId) }
-        verify(exactly = 1) { personService.getPerson(personId) }
         verify(exactly = 1) { leadService.getLeadById(leadId) }
     }
 
@@ -68,11 +61,9 @@ class ApplicantWrapperReadServiceImplTest {
     fun `getApplicant should get applicant with null lead status and stage`() {
         // Given
         val applicantResponse = createTestApplicantResponse()
-        val personResponse = createTestPersonResponse()
         val leadResponse = createTestLeadResponseWithNullValues()
 
         every { applicantService.getApplicant(applicantId) } returns applicantResponse
-        every { personService.getPerson(personId) } returns personResponse
         every { leadService.getLeadById(leadId) } returns leadResponse
 
         // When
@@ -85,7 +76,6 @@ class ApplicantWrapperReadServiceImplTest {
         assertEquals(LeadStage.INQUIRY, result.stage) // Default value
 
         verify(exactly = 1) { applicantService.getApplicant(applicantId) }
-        verify(exactly = 1) { personService.getPerson(personId) }
         verify(exactly = 1) { leadService.getLeadById(leadId) }
     }
 
@@ -103,28 +93,6 @@ class ApplicantWrapperReadServiceImplTest {
         }
 
         verify(exactly = 1) { applicantService.getApplicant(applicantId) }
-        verify(exactly = 0) { personService.getPerson(any<UUID>()) }
-        verify(exactly = 0) { leadService.getLeadById(any<UUID>()) }
-    }
-
-    @Test
-    @DisplayName("Should handle person service exception")
-    fun `getApplicant should handle person service exception`() {
-        // Given
-        val applicantResponse = createTestApplicantResponse()
-
-        every { applicantService.getApplicant(applicantId) } returns applicantResponse
-        every { personService.getPerson(personId) } throws RuntimeException("Person not found")
-
-        // When & Then
-        try {
-            applicantWrapperReadService.getApplicant(applicantId)
-        } catch (e: RuntimeException) {
-            assertEquals("Person not found", e.message)
-        }
-
-        verify(exactly = 1) { applicantService.getApplicant(applicantId) }
-        verify(exactly = 1) { personService.getPerson(personId) }
         verify(exactly = 0) { leadService.getLeadById(any<UUID>()) }
     }
 
@@ -133,10 +101,8 @@ class ApplicantWrapperReadServiceImplTest {
     fun `getApplicant should handle lead service exception`() {
         // Given
         val applicantResponse = createTestApplicantResponse()
-        val personResponse = createTestPersonResponse()
 
         every { applicantService.getApplicant(applicantId) } returns applicantResponse
-        every { personService.getPerson(personId) } returns personResponse
         every { leadService.getLeadById(leadId) } throws RuntimeException("Lead not found")
 
         // When & Then
@@ -147,7 +113,6 @@ class ApplicantWrapperReadServiceImplTest {
         }
 
         verify(exactly = 1) { applicantService.getApplicant(applicantId) }
-        verify(exactly = 1) { personService.getPerson(personId) }
         verify(exactly = 1) { leadService.getLeadById(leadId) }
     }
 
@@ -155,21 +120,10 @@ class ApplicantWrapperReadServiceImplTest {
         return ApplicantResponse(
             id = applicantId,
             leadId = leadId,
-            personId = personId,
+            personId = UUID.randomUUID(),
             applicantType = com.nivasafinance.features.applicant.enum.ApplicantType.PRIMARY,
             relationshipToPrimary = com.nivasafinance.features.applicant.enum.RelationshipToPrimary.SELF,
             status = com.nivasafinance.features.applicant.enum.ApplicantStatus.NEEDS_TO_BE_REVIEWED
-        )
-    }
-
-    private fun createTestPersonResponse(): PersonResponse {
-        return PersonResponse(
-            id = personId,
-            firstName = "John",
-            lastName = "Doe",
-            email = "john.doe@example.com",
-            dateOfBirth = java.time.LocalDate.of(1990, 1, 1),
-            gender = data.enums.Gender.MALE
         )
     }
 
