@@ -1,7 +1,7 @@
 package com.nivasafinance.features.master.pincode.controller
 
-import com.nivasafinance.TestUtils.createTestPincodeResponseDto
-import com.nivasafinance.features.master.pincode.service.PincodeReadService
+import com.nivasafinance.MasterTestUtils.createTestPincodeResponse
+import com.nivasafinance.features.master.pincode.service.PincodeService
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -14,22 +14,22 @@ import kotlin.test.assertNotNull
 @DisplayName("PincodeController Tests")
 class PincodeControllerTest {
 
-    private val pincodeReadService = mockk<PincodeReadService>()
+    private val pincodeService = mockk<PincodeService>()
     private lateinit var pincodeController: PincodeController
 
     private val pincode = "123456"
-    private val expectedDto = createTestPincodeResponseDto(pincode = pincode)
+    private val expectedDto = createTestPincodeResponse(pincode = pincode)
 
     @BeforeEach
     fun setup() {
-        pincodeController = PincodeController(pincodeReadService)
+        pincodeController = PincodeController(pincodeService)
     }
 
     @Test
     @DisplayName("getPincodeDetails should return pincode details")
     fun `getPincodeDetails should return pincode details`() {
         // Given
-        every { pincodeReadService.getByPincode(pincode) } returns expectedDto
+        every { pincodeService.getByPincode(pincode) } returns expectedDto
 
         // When
         val result = pincodeController.getPincodeDetails(pincode)
@@ -42,6 +42,6 @@ class PincodeControllerTest {
         assertEquals(expectedDto.country, result.country)
         assertEquals(expectedDto.isServicable, result.isServicable)
 
-        verify(exactly = 1) { pincodeReadService.getByPincode(pincode) }
+        verify(exactly = 1) { pincodeService.getByPincode(pincode) }
     }
 }

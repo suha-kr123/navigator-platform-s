@@ -35,21 +35,18 @@ class AdvisorLeadMappingServiceImpl(
 
     @Cacheable(cacheNames = [CACHE_NAME], key = "#id")
     override fun getAdvisorLeadMapping(id: UUID): AdvisorLeadMappingResponse {
-        println("Cache miss for advisor lead mapping with id: $id")
         val mappingData = advisorLeadMappingReadService.getAdvisorLeadMappingData(id)
         return mapDataToResponse(mappingData)
     }
 
     @Cacheable(cacheNames = [CACHE_NAME], key = "#advisorId + '_' + #leadId")
     override fun getAdvisorLeadMappingByAdvisorAndLead(advisorId: UUID, leadId: UUID): AdvisorLeadMappingResponse? {
-        println("Cache miss for advisor lead mapping by advisor: $advisorId and lead: $leadId")
         val mappingData = advisorLeadMappingReadService.getAdvisorLeadMappingDataByAdvisorAndLead(advisorId, leadId)
         return mappingData?.let { mapDataToResponse(it) }
     }
 
     @Cacheable(cacheNames = [CACHE_NAME], key = "'advisor_' + #advisorId")
     override fun getAllLeadsForAdvisor(advisorId: UUID): List<AdvisorLeadMappingResponse> {
-        println("Cache miss for all leads for advisor: $advisorId")
         val mappingDataList = advisorLeadMappingReadService.getAllLeadsForAdvisorData(advisorId)
         return mappingDataList.map { mappingData ->
             mapDataToResponse(mappingData)
@@ -78,10 +75,8 @@ class AdvisorLeadMappingServiceImpl(
         leadId: UUID,
         request: AdvisorLeadMappingCreateRequest
     ): AdvisorLeadMappingResponse {
-        println("Creating advisor lead mapping for advisor: $advisorId and lead: $leadId")
         val mappingData = advisorLeadMappingWriteService.createAdvisorLeadMappingData(advisorId, leadId, request)
         val response = mapDataToResponse(mappingData)
-        println("Created advisor lead mapping with id: ${response.id}")
         return response
     }
 

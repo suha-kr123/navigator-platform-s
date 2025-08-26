@@ -1,7 +1,8 @@
 package com.nivasafinance
 
+import com.nivasafinance.features.master.pincode.dto.PincodeData
 import com.nivasafinance.features.master.pincode.dto.PincodeResponse
-import com.nivasafinance.features.master.pincode.entity.PincodeEntity
+import com.nivasafinance.features.master.pincode.entity.Pincode
 import java.util.UUID
 
 object MasterTestUtils {
@@ -12,8 +13,25 @@ object MasterTestUtils {
         district: String? = "Mumbai",
         country: String? = "India",
         isServicable: Boolean = true
-    ): PincodeEntity {
-        return PincodeEntity(
+    ): Pincode {
+        return Pincode(
+            id = UUID.randomUUID(),
+            pincode = pincode,
+            area = area,
+            district = district,
+            country = country,
+            isServicable = isServicable
+        )
+    }
+
+    fun createTestPincodeData(
+        pincode: String = "123456",
+        area: String = "Mumbai Area",
+        district: String? = "Mumbai",
+        country: String? = "India",
+        isServicable: Boolean = true
+    ): PincodeData {
+        return PincodeData(
             id = UUID.randomUUID(),
             pincode = pincode,
             area = area,
