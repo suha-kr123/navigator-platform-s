@@ -16,4 +16,19 @@ data class PersonResponse(
     val email: String? = null,
     val dateOfBirth: LocalDate? = null,
     val gender: Gender? = null
-)
+) {
+    companion object {
+        fun fromPersonData(personData: PersonData): PersonResponse {
+            return PersonResponse(
+                id = personData.id,
+                firstName = personData.firstName,
+                middleName = personData.middleName,
+                lastName = personData.lastName,
+                mobileNumbers = personData.mobileNumbers,
+                email = personData.email,
+                dateOfBirth = personData.dateOfBirth,
+                gender = personData.gender
+            )
+        }
+    }
+}

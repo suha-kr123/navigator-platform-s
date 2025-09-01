@@ -2,8 +2,6 @@ package com.nivasafinance.features.payment.integration
 
 import com.nivasafinance.features.payment.PaymentTestUtils
 import com.nivasafinance.features.payment.controller.PaymentController
-import com.nivasafinance.features.payment.dto.PaymentCreateRequest
-import com.nivasafinance.features.payment.dto.PaymentUpdateRequest
 import com.nivasafinance.features.payment.service.PaymentService
 import io.mockk.every
 import io.mockk.mockk
@@ -26,7 +24,7 @@ class PaymentIntegrationTest {
 
     private val paymentId = UUID.randomUUID()
     private val testTime = LocalDateTime.of(2024, 1, 1, 12, 0, 0)
-    
+
     private val expectedPaymentResponse = PaymentTestUtils.createTestPaymentResponse(
         id = paymentId,
         paymentStatus = "PENDING_PAYMENT",

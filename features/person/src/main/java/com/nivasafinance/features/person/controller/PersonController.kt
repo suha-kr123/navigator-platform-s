@@ -4,6 +4,7 @@ import com.nivasafinance.features.person.dto.PersonCreateRequest
 import com.nivasafinance.features.person.dto.PersonResponse
 import com.nivasafinance.features.person.dto.PersonUpdateRequest
 import com.nivasafinance.features.person.service.PersonService
+import com.nivasafinance.features.person.service.PersonReadService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -14,13 +15,15 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
 
 @RestController
 @RequestMapping("/v1/persons")
 class PersonController(
-    private val personService: PersonService
+    private val personService: PersonService,
+    private val personReadService: PersonReadService
 ) {
 
     @PostMapping
@@ -33,6 +36,12 @@ class PersonController(
     fun getPerson(@PathVariable personId: UUID): ResponseEntity<PersonResponse> {
         val person = personService.getPerson(personId)
         return ResponseEntity.ok(person)
+    }
+
+    @GetMapping("/mobile")
+    fun getPersonByMobileNo(@RequestParam mobileNo: String): ResponseEntity<PersonResponse> {
+        val person = personReadService.getPersonByMobileNo(mobileNo)
+        return ResponseEntity.ok(PersonResponse.fromPersonData(person))
     }
 
     @PutMapping("/{personId}")

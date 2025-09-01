@@ -43,4 +43,19 @@ class ApplicantReadServiceImpl(
             )
         }
     }
+
+    @Transactional(readOnly = true)
+    override fun getApplicantsByPersonId(personId: UUID): List<ApplicantData> {
+        val applicants = applicantRepository.findByPersonId(personId)
+        return applicants.map { applicant ->
+            ApplicantData(
+                id = applicant.id,
+                personId = applicant.personId,
+                leadId = applicant.leadId,
+                applicantType = applicant.applicantType,
+                relationshipToPrimary = applicant.relationshipToPrimary,
+                status = applicant.status
+            )
+        }
+    }
 }

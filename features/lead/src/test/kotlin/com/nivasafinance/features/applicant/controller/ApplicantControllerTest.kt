@@ -102,24 +102,32 @@ class ApplicantControllerTest {
     @DisplayName("Should get applicants by lead successfully")
     fun `getApplicantsByLead should get applicants by lead successfully`() {
         val leadId = UUID.randomUUID()
-        val expectedResponses = listOf(
-            createTestApplicantResponse(),
-            createTestApplicantResponse().copy(
-                id = UUID.randomUUID(),
-                applicantType = ApplicantType.CO_APPLICANT,
-                relationshipToPrimary = RelationshipToPrimary.SPOUSE
-            )
-        )
+        val expectedResponse = listOf(createTestApplicantResponse())
 
-        every { applicantService.getApplicantsByLeadId(leadId) } returns expectedResponses
+        every { applicantService.getApplicantsByLeadId(leadId) } returns expectedResponse
 
         val result = applicantController.getApplicantsByLead(leadId)
 
         assertNotNull(result)
         assertEquals(HttpStatus.OK, result.statusCode)
-        assertEquals(expectedResponses, result.body)
-        assertEquals(2, result.body?.size)
+        assertEquals(expectedResponse, result.body)
         verify { applicantService.getApplicantsByLeadId(leadId) }
+    }
+
+    @Test
+    @DisplayName("Should get applicants by mobile number successfully")
+    fun `getApplicantsByMobileNumber should get applicants by mobile number successfully`() {
+        val mobileNumber = "9876543210"
+        val expectedResponse = listOf(createTestApplicantResponse())
+
+        every { applicantService.getApplicantsByMobileNumber(mobileNumber) } returns expectedResponse
+
+        val result = applicantController.getApplicantsByMobileNumber(mobileNumber)
+
+        assertNotNull(result)
+        assertEquals(HttpStatus.OK, result.statusCode)
+        assertEquals(expectedResponse, result.body)
+        verify { applicantService.getApplicantsByMobileNumber(mobileNumber) }
     }
 
     @Test

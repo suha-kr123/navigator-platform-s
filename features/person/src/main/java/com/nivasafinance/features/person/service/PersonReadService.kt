@@ -9,6 +9,7 @@ interface PersonReadService {
 
     // Basic person operations
     fun getPerson(id: UUID): PersonData
+    fun getPersonByMobileNo(mobileNo: String): PersonData
 
     // Address mapping operations
     fun getPersonAddresses(personId: UUID): List<PersonAddressMappingResponse>

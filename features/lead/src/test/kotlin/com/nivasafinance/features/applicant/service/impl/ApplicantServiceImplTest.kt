@@ -9,6 +9,8 @@ import com.nivasafinance.features.applicant.enum.RelationshipToPrimary
 import com.nivasafinance.features.applicant.exception.ApplicantNotFoundException
 import com.nivasafinance.features.applicant.service.ApplicantReadService
 import com.nivasafinance.features.applicant.service.ApplicantWriteService
+import com.nivasafinance.features.person.dto.PersonData
+import com.nivasafinance.features.person.service.PersonReadService
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -28,6 +30,7 @@ class ApplicantServiceImplTest {
 
     private lateinit var applicantReadService: ApplicantReadService
     private lateinit var applicantWriteService: ApplicantWriteService
+    private lateinit var personReadService: PersonReadService
     private lateinit var cacheManager: CacheManager
     private lateinit var cache: Cache
     private lateinit var messageSource: MessageSource
@@ -37,10 +40,16 @@ class ApplicantServiceImplTest {
     fun setUp() {
         applicantReadService = mockk()
         applicantWriteService = mockk()
+        personReadService = mockk()
         cacheManager = mockk()
         cache = mockk()
         messageSource = mockk()
-        applicantService = ApplicantServiceImpl(applicantReadService, applicantWriteService, cacheManager)
+        applicantService = ApplicantServiceImpl(
+            applicantReadService,
+            applicantWriteService,
+            personReadService,
+            cacheManager
+        )
 
         every { cacheManager.getCache("applicant") } returns cache
         every { messageSource.getMessage(any(), any(), any()) } returns "Test message"
@@ -144,6 +153,81 @@ class ApplicantServiceImplTest {
             assertEquals(0, result.size)
 
             verify { applicantReadService.getApplicantsByLeadId(leadId) }
+        }
+    }
+
+
+
+    @Nested
+    @DisplayName("getApplicantsByMobileNumber")
+    inner class GetApplicantsByMobileNumber {
+
+        @Test
+        @DisplayName("should return list of applicant responses when mobile number has applicants")
+        fun `should return list of applicant responses when mobile number has applicants`() {
+            val mobileNumber = "9876543210"
+            val personId = UUID.randomUUID()
+            val personData = PersonData(
+                id = personId,
+                firstName = "John",
+                middleName = null,
+                lastName = "Doe",
+                mobileNumbers = null,
+                email = null,
+                dateOfBirth = null,
+                gender = null,
+                dataExt = null
+            )
+            val applicantsData = listOf(
+                ApplicantData(
+                    id = UUID.randomUUID(),
+                    personId = personId,
+                    leadId = UUID.randomUUID(),
+                    applicantType = ApplicantType.PRIMARY,
+                    relationshipToPrimary = RelationshipToPrimary.SELF,
+                    status = ApplicantStatus.NEEDS_TO_BE_REVIEWED
+                )
+            )
+
+            every { personReadService.getPersonByMobileNo(mobileNumber) } returns personData
+            every { applicantReadService.getApplicantsByPersonId(personId) } returns applicantsData
+
+            val result = applicantService.getApplicantsByMobileNumber(mobileNumber)
+
+            assertEquals(1, result.size)
+            assertEquals(applicantsData[0].id, result[0].id)
+            assertEquals(personId, result[0].personId)
+
+            verify { personReadService.getPersonByMobileNo(mobileNumber) }
+            verify { applicantReadService.getApplicantsByPersonId(personId) }
+        }
+
+        @Test
+        @DisplayName("should return empty list when mobile number has no applicants")
+        fun `should return empty list when mobile number has no applicants`() {
+            val mobileNumber = "9876543210"
+            val personId = UUID.randomUUID()
+            val personData = PersonData(
+                id = personId,
+                firstName = "John",
+                middleName = null,
+                lastName = "Doe",
+                mobileNumbers = null,
+                email = null,
+                dateOfBirth = null,
+                gender = null,
+                dataExt = null
+            )
+
+            every { personReadService.getPersonByMobileNo(mobileNumber) } returns personData
+            every { applicantReadService.getApplicantsByPersonId(personId) } returns emptyList()
+
+            val result = applicantService.getApplicantsByMobileNumber(mobileNumber)
+
+            assertEquals(0, result.size)
+
+            verify { personReadService.getPersonByMobileNo(mobileNumber) }
+            verify { applicantReadService.getApplicantsByPersonId(personId) }
         }
     }
 

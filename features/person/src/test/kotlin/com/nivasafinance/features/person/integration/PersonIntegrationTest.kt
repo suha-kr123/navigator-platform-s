@@ -9,6 +9,7 @@ import com.nivasafinance.features.person.dto.PersonIdentifierCreateRequest
 import com.nivasafinance.features.person.dto.PersonIdentifierUpdateRequest
 import com.nivasafinance.features.person.dto.PersonUpdateRequest
 import com.nivasafinance.features.person.service.PersonService
+import com.nivasafinance.features.person.service.PersonReadService
 import com.nivasafinance.features.person.enum.IdentifierType
 import data.enums.Gender
 import io.mockk.every
@@ -27,6 +28,7 @@ import kotlin.test.assertNotNull
 class PersonIntegrationTest {
 
     private lateinit var personService: PersonService
+    private lateinit var personReadService: PersonReadService
     private lateinit var personController: PersonController
 
     private val personId = UUID.randomUUID()
@@ -55,7 +57,8 @@ class PersonIntegrationTest {
     @BeforeEach
     fun setup() {
         personService = mockk<PersonService>()
-        personController = PersonController(personService)
+        personReadService = mockk<PersonReadService>()
+        personController = PersonController(personService, personReadService)
     }
 
     @Test

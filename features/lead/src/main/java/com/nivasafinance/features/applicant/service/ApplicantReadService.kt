@@ -6,4 +6,5 @@ import java.util.UUID
 interface ApplicantReadService {
     fun getApplicant(applicantId: UUID): ApplicantData
     fun getApplicantsByLeadId(leadId: UUID): List<ApplicantData>
+    fun getApplicantsByPersonId(personId: UUID): List<ApplicantData>
 }

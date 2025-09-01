@@ -1,6 +1,7 @@
 package com.nivasafinance.features.person.controller
 
 import com.nivasafinance.features.person.service.PersonService
+import com.nivasafinance.features.person.service.PersonReadService
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -15,6 +16,7 @@ import kotlin.test.assertNotNull
 class PersonControllerTest {
 
     private val personService = mockk<PersonService>()
+    private val personReadService = mockk<PersonReadService>()
     private lateinit var personController: PersonController
 
     private val personId = UUID.randomUUID()
@@ -29,7 +31,7 @@ class PersonControllerTest {
 
     @BeforeEach
     fun setup() {
-        personController = PersonController(personService)
+        personController = PersonController(personService, personReadService)
     }
 
     @Test
