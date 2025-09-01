@@ -2,6 +2,7 @@ package com.nivasafinance.features.wrapper.service
 
 import com.nivasafinance.features.lead.enum.LeadStage
 import com.nivasafinance.features.lead.enum.LeadStatus
+import com.nivasafinance.features.lead.enum.SourcingChannel
 import com.nivasafinance.features.wrapper.dto.ApplicantWrapperRequest
 import com.nivasafinance.features.wrapper.dto.ApplicantWrapperResponse
 import com.nivasafinance.features.wrapper.service.impl.ApplicantWrapperServiceImpl
@@ -169,7 +170,7 @@ class ApplicantWrapperServiceTest {
                 requestedAmount = BigDecimal("500000"),
                 purpose = "Home Construction",
                 productCode = "HL001",
-                sourcingChannel = "Direct",
+                sourcingChannel = SourcingChannel.DIRECT,
                 preliminaryInformation = ApplicantWrapperRequest.LeadData.LeadPreliminaryInformation(
                     whenYouWantLoan = "Within 3 months",
                     isHouseConstructionStarted = false,
@@ -253,7 +254,7 @@ class ApplicantWrapperServiceTest {
                 requestedAmount = BigDecimal("1000000"),
                 purpose = "Home Construction",
                 productCode = "HL001",
-                sourcingChannel = "Direct",
+                sourcingChannel = SourcingChannel.DIRECT,
                 preliminaryInformation = ApplicantWrapperRequest.LeadData.LeadPreliminaryInformation(
                     whenYouWantLoan = "Within 6 months",
                     isHouseConstructionStarted = true,

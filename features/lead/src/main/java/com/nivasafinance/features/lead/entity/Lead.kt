@@ -5,6 +5,7 @@ import com.nivasafinance.features.lead.dto.LeadContacts
 import com.nivasafinance.features.lead.dto.LeadPreliminaryInformation
 import com.nivasafinance.features.lead.enum.LeadStage
 import com.nivasafinance.features.lead.enum.LeadStatus
+import com.nivasafinance.features.lead.enum.SourcingChannel
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
@@ -52,5 +53,5 @@ data class Lead(
     var leadContacts: LeadContacts?,
 
     @Column(name = "sourcing_channel", length = 50)
-    var sourcingChannel: String?
+    var sourcingChannel: SourcingChannel?
 ) : AuditableEntity()

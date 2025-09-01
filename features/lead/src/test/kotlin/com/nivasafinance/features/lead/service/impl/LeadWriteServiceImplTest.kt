@@ -7,6 +7,7 @@ import com.nivasafinance.features.lead.dto.LeadUpdateRequest
 import com.nivasafinance.features.lead.entity.Lead
 import com.nivasafinance.features.lead.enum.LeadStage
 import com.nivasafinance.features.lead.enum.LeadStatus
+import com.nivasafinance.features.lead.enum.SourcingChannel
 import com.nivasafinance.features.lead.exception.LeadNotFoundException
 import com.nivasafinance.features.lead.repository.LeadRepository
 import io.mockk.clearAllMocks
@@ -142,7 +143,7 @@ class LeadWriteServiceImplTest {
             every { existingLead.status } returns LeadStatus.ACTIVE
             every { existingLead.preliminaryInformation } returns null
             every { existingLead.leadContacts } returns null
-            every { existingLead.sourcingChannel } returns "Direct"
+            every { existingLead.sourcingChannel } returns SourcingChannel.DIRECT
 
             val updatedLead = mockk<Lead>(relaxed = true)
             every { updatedLead.id } returns leadId
@@ -153,7 +154,7 @@ class LeadWriteServiceImplTest {
             every { updatedLead.status } returns LeadStatus.ACTIVE
             every { updatedLead.preliminaryInformation } returns null
             every { updatedLead.leadContacts } returns null
-            every { updatedLead.sourcingChannel } returns "Direct"
+            every { updatedLead.sourcingChannel } returns SourcingChannel.DIRECT
 
             every { leadRepository.findById(leadId) } returns java.util.Optional.of(existingLead)
             every { leadRepository.save(any()) } returns updatedLead
@@ -191,7 +192,7 @@ class LeadWriteServiceImplTest {
         requestedAmount = BigDecimal("500000"),
         purpose = "Home Construction",
         productCode = "HOME_LOAN",
-        sourcingChannel = "WEBSITE",
+        sourcingChannel = SourcingChannel.DIRECT,
         preliminaryInformation = LeadPreliminaryInformation(
             whenYouWantLoan = "Within 6 months",
             isHouseConstructionStarted = false,
@@ -210,7 +211,7 @@ class LeadWriteServiceImplTest {
         requestedAmount = BigDecimal("750000"),
         purpose = "Home Renovation",
         productCode = "RENOVATION_LOAN",
-        sourcingChannel = "REFERRAL",
+        sourcingChannel = SourcingChannel.DIRECT,
         preliminaryInformation = LeadPreliminaryInformation(
             whenYouWantLoan = "Within 3 months",
             isHouseConstructionStarted = true,

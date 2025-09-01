@@ -12,6 +12,7 @@ import com.nivasafinance.features.lead.dto.LeadUpdateRequest
 import com.nivasafinance.features.lead.entity.Lead
 import com.nivasafinance.features.lead.enum.LeadStage
 import com.nivasafinance.features.lead.enum.LeadStatus
+import com.nivasafinance.features.lead.enum.SourcingChannel
 import java.math.BigDecimal
 import java.util.UUID
 
@@ -21,7 +22,7 @@ object TestUtils {
         requestedAmount: BigDecimal = BigDecimal("500000"),
         purpose: String = "Home Construction",
         productCode: String = "HL001",
-        sourcingChannel: String = "Direct"
+        sourcingChannel: SourcingChannel = SourcingChannel.DIRECT
     ): LeadCreateRequest {
         return LeadCreateRequest(
             requestedAmount = requestedAmount,
@@ -38,7 +39,7 @@ object TestUtils {
         requestedAmount: BigDecimal = BigDecimal("500000"),
         purpose: String = "Home Construction",
         productCode: String = "HL001",
-        sourcingChannel: String = "Direct",
+        sourcingChannel: SourcingChannel = SourcingChannel.DIRECT,
         stage: LeadStage = LeadStage.INQUIRY,
         status: LeadStatus = LeadStatus.ACTIVE
     ): LeadResponse {
@@ -72,7 +73,7 @@ object TestUtils {
         requestedAmount: BigDecimal = BigDecimal("500000"),
         purpose: String = "Home Construction",
         productCode: String = "HL001",
-        sourcingChannel: String = "Direct",
+        sourcingChannel: SourcingChannel = SourcingChannel.DIRECT,
         stage: LeadStage = LeadStage.INQUIRY,
         status: LeadStatus = LeadStatus.ACTIVE
     ): Lead {

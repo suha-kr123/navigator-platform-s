@@ -4,6 +4,7 @@ import com.nivasafinance.features.applicant.dto.ApplicantResponse
 import com.nivasafinance.features.lead.dto.LeadResponse
 import com.nivasafinance.features.lead.enum.LeadStage
 import com.nivasafinance.features.lead.enum.LeadStatus
+import com.nivasafinance.features.lead.enum.SourcingChannel
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -133,7 +134,7 @@ class ApplicantWrapperReadServiceImplTest {
             requestedAmount = java.math.BigDecimal("500000"),
             purpose = "Home Construction",
             productCode = "HL001",
-            sourcingChannel = "Direct",
+            sourcingChannel = SourcingChannel.DIRECT,
             status = LeadStatus.ACTIVE,
             stage = LeadStage.INQUIRY,
             preliminaryInformation = null,
@@ -147,7 +148,7 @@ class ApplicantWrapperReadServiceImplTest {
             requestedAmount = java.math.BigDecimal("500000"),
             purpose = "Home Construction",
             productCode = "HL001",
-            sourcingChannel = "Direct",
+            sourcingChannel = SourcingChannel.DIRECT,
             status = null,
             stage = null,
             preliminaryInformation = null,

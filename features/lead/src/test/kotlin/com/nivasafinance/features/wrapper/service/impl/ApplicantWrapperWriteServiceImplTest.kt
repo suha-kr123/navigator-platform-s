@@ -9,6 +9,7 @@ import com.nivasafinance.features.lead.dto.LeadCreateRequest
 import com.nivasafinance.features.lead.dto.LeadResponse
 import com.nivasafinance.features.lead.enum.LeadStage
 import com.nivasafinance.features.lead.enum.LeadStatus
+import com.nivasafinance.features.lead.enum.SourcingChannel
 import com.nivasafinance.features.person.dto.PersonCreateRequest
 import com.nivasafinance.features.person.dto.PersonResponse
 import com.nivasafinance.features.wrapper.dto.ApplicantWrapperRequest
@@ -281,7 +282,7 @@ class ApplicantWrapperWriteServiceImplTest {
                 requestedAmount = BigDecimal("500000"),
                 purpose = "Home Construction",
                 productCode = "HL001",
-                sourcingChannel = "Direct",
+                sourcingChannel = SourcingChannel.DIRECT,
                 preliminaryInformation = ApplicantWrapperRequest.LeadData.LeadPreliminaryInformation(
                     whenYouWantLoan = "Within 3 months",
                     isHouseConstructionStarted = false,
@@ -365,7 +366,7 @@ class ApplicantWrapperWriteServiceImplTest {
                 requestedAmount = BigDecimal("1000000"),
                 purpose = "Home Construction",
                 productCode = "HL001",
-                sourcingChannel = "Direct",
+                sourcingChannel = SourcingChannel.DIRECT,
                 preliminaryInformation = ApplicantWrapperRequest.LeadData.LeadPreliminaryInformation(
                     whenYouWantLoan = "Within 6 months",
                     isHouseConstructionStarted = true,
@@ -429,7 +430,7 @@ class ApplicantWrapperWriteServiceImplTest {
                 requestedAmount = BigDecimal("500000"),
                 purpose = "Home Construction",
                 productCode = "HL001",
-                sourcingChannel = "Direct",
+                sourcingChannel = SourcingChannel.DIRECT,
                 preliminaryInformation = null,
                 leadContacts = null
             )
@@ -453,7 +454,7 @@ class ApplicantWrapperWriteServiceImplTest {
             requestedAmount = BigDecimal("500000"),
             purpose = "Home Construction",
             productCode = "HL001",
-            sourcingChannel = "Direct",
+            sourcingChannel = SourcingChannel.DIRECT,
             status = LeadStatus.ACTIVE,
             stage = LeadStage.INQUIRY,
             preliminaryInformation = null,
