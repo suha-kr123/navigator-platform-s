@@ -55,4 +55,10 @@ class ApplicantController(
         val applicants = applicantService.getApplicantsByLeadId(leadId)
         return ResponseEntity.ok(applicants)
     }
+
+    @GetMapping("/mobile/{mobileNumber}")
+    fun getApplicantsByMobileNumber(@PathVariable mobileNumber: String): ResponseEntity<List<ApplicantResponse>> {
+        val applicants = applicantService.getApplicantsByMobileNumber(mobileNumber)
+        return ResponseEntity.ok(applicants)
+    }
 }

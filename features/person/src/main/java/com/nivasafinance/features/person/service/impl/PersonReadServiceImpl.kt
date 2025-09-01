@@ -7,6 +7,7 @@ import com.nivasafinance.features.person.dto.PersonData
 import com.nivasafinance.features.person.dto.PersonIdentifierResponse
 import com.nivasafinance.features.person.entity.PersonIdentifier
 import com.nivasafinance.features.person.exception.PersonNotFoundException
+import com.nivasafinance.features.person.exception.PersonMobileNotFoundException
 import com.nivasafinance.features.person.repository.PersonAddressMappingRepository
 import com.nivasafinance.features.person.repository.PersonIdentifierRepository
 import com.nivasafinance.features.person.repository.PersonRepository
@@ -30,6 +31,15 @@ class PersonReadServiceImpl(
         }
         return PersonData.fromEntity(person)
     }
+
+    override fun getPersonByMobileNo(mobileNo: String): PersonData {
+        val person = personRepository.findByPrimaryMobileNo(mobileNo)
+        if (person == null) {
+            throw PersonMobileNotFoundException(mobileNo, messageSource)
+        }
+        return PersonData.fromEntity(person)
+    }
+
     override fun getPersonAddresses(personId: UUID): List<PersonAddressMappingResponse> {
         if (!personRepository.existsById(personId)) {
             throw PersonNotFoundException(personId, messageSource)
@@ -66,6 +76,6 @@ class PersonReadServiceImpl(
             personId = identifier.personId,
             identifier = identifier.identifier,
             type = identifier.type
-        )
+            )
+        }
     }
-}

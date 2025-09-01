@@ -8,6 +8,7 @@ import com.nivasafinance.features.applicant.dto.ApplicantUpdateRequest
 import com.nivasafinance.features.applicant.service.ApplicantReadService
 import com.nivasafinance.features.applicant.service.ApplicantService
 import com.nivasafinance.features.applicant.service.ApplicantWriteService
+import com.nivasafinance.features.person.service.PersonReadService
 import org.springframework.cache.CacheManager
 import org.springframework.cache.annotation.CacheEvict
 import org.springframework.cache.annotation.CachePut
@@ -21,6 +22,7 @@ import java.util.UUID
 class ApplicantServiceImpl(
     private val applicantReadService: ApplicantReadService,
     private val applicantWriteService: ApplicantWriteService,
+    private val personReadService: PersonReadService,
     private val cacheManager: CacheManager
 ) : ApplicantService, BaseNavigatorService() {
 
@@ -37,6 +39,13 @@ class ApplicantServiceImpl(
     @Cacheable(value = [CACHE_NAME], key = "'lead_' + #leadId")
     override fun getApplicantsByLeadId(leadId: UUID): List<ApplicantResponse> {
         val applicantsData = applicantReadService.getApplicantsByLeadId(leadId)
+        return applicantsData.map { mapDataToResponse(it) }
+    }
+
+    @Cacheable(value = [CACHE_NAME], key = "'mobile_' + #mobileNumber")
+    override fun getApplicantsByMobileNumber(mobileNumber: String): List<ApplicantResponse> {
+        val personData = personReadService.getPersonByMobileNo(mobileNumber)
+        val applicantsData = applicantReadService.getApplicantsByPersonId(personData.id!!)
         return applicantsData.map { mapDataToResponse(it) }
     }
 
