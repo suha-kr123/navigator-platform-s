@@ -5,6 +5,7 @@ import com.nivasafinance.features.applicant.enum.ApplicantType
 import com.nivasafinance.features.applicant.enum.RelationshipToPrimary
 import com.nivasafinance.features.lead.enum.LeadStage
 import com.nivasafinance.features.lead.enum.LeadStatus
+import com.nivasafinance.features.lead.enum.SourcingChannel
 import java.math.BigDecimal
 
 data class ApplicantWrapperRequest(
@@ -49,7 +50,7 @@ data class ApplicantWrapperRequest(
         val requestedAmount: BigDecimal?,
         val purpose: String? = null,
         val productCode: String? = null,
-        val sourcingChannel: String? = null,
+        val sourcingChannel: SourcingChannel? = null,
         val preliminaryInformation: LeadPreliminaryInformation? = null,
         val leadContacts: LeadContacts? = null,
         val stage: LeadStage? = null,

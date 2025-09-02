@@ -5,6 +5,7 @@ import com.nivasafinance.features.lead.dto.LeadResponse
 import com.nivasafinance.features.lead.dto.LeadUpdateRequest
 import com.nivasafinance.features.lead.enum.LeadStage
 import com.nivasafinance.features.lead.enum.LeadStatus
+import com.nivasafinance.features.lead.enum.SourcingChannel
 import com.nivasafinance.features.lead.service.LeadService
 import io.mockk.every
 import io.mockk.mockk
@@ -114,7 +115,7 @@ class LeadControllerTest {
             stage = LeadStage.INQUIRY,
             preliminaryInformation = null,
             leadContacts = null,
-            sourcingChannel = "Direct"
+            sourcingChannel = SourcingChannel.DIRECT
         )
     }
 
@@ -125,7 +126,7 @@ class LeadControllerTest {
             productCode = "HL001",
             preliminaryInformation = null,
             leadContacts = null,
-            sourcingChannel = "Direct"
+            sourcingChannel = SourcingChannel.DIRECT
         )
     }
 }

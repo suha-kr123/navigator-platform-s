@@ -3,6 +3,7 @@ package com.nivasafinance.features.lead.service.impl
 import com.nivasafinance.features.lead.entity.Lead
 import com.nivasafinance.features.lead.enum.LeadStage
 import com.nivasafinance.features.lead.enum.LeadStatus
+import com.nivasafinance.features.lead.enum.SourcingChannel
 import com.nivasafinance.features.lead.exception.LeadNotFoundException
 import com.nivasafinance.features.lead.repository.LeadRepository
 import io.mockk.clearAllMocks
@@ -52,7 +53,7 @@ class LeadReadServiceImplTest {
         every { lead.requestedAmount } returns BigDecimal("500000")
         every { lead.purpose } returns "Home Construction"
         every { lead.productCode } returns "HL001"
-        every { lead.sourcingChannel } returns "Direct"
+        every { lead.sourcingChannel } returns SourcingChannel.DIRECT
         every { lead.stage } returns stage
         every { lead.status } returns status
         every { lead.preliminaryInformation } returns null
@@ -72,7 +73,7 @@ class LeadReadServiceImplTest {
         assertEquals(BigDecimal("500000"), result.requestedAmount)
         assertEquals("Home Construction", result.purpose)
         assertEquals("HL001", result.productCode)
-        assertEquals("Direct", result.sourcingChannel)
+        assertEquals(SourcingChannel.DIRECT, result.sourcingChannel)
     }
 
     @Test
@@ -103,7 +104,7 @@ class LeadReadServiceImplTest {
         every { lead.requestedAmount } returns BigDecimal("750000")
         every { lead.purpose } returns "Business Loan"
         every { lead.productCode } returns "BL002"
-        every { lead.sourcingChannel } returns "Partner"
+        every { lead.sourcingChannel } returns SourcingChannel.ADVISOR
         every { lead.stage } returns stage
         every { lead.status } returns status
         every { lead.preliminaryInformation } returns null
@@ -123,7 +124,7 @@ class LeadReadServiceImplTest {
         assertEquals(BigDecimal("750000"), result.requestedAmount)
         assertEquals("Business Loan", result.purpose)
         assertEquals("BL002", result.productCode)
-        assertEquals("Partner", result.sourcingChannel)
+        assertEquals(SourcingChannel.ADVISOR, result.sourcingChannel)
     }
 
     @Test
@@ -139,7 +140,7 @@ class LeadReadServiceImplTest {
         every { lead.requestedAmount } returns BigDecimal("300000")
         every { lead.purpose } returns "Personal Loan"
         every { lead.productCode } returns "PL003"
-        every { lead.sourcingChannel } returns "Website"
+        every { lead.sourcingChannel } returns SourcingChannel.DIRECT
         every { lead.stage } returns stage
         every { lead.status } returns status
         every { lead.preliminaryInformation } returns null
@@ -159,6 +160,6 @@ class LeadReadServiceImplTest {
         assertEquals(BigDecimal("300000"), result.requestedAmount)
         assertEquals("Personal Loan", result.purpose)
         assertEquals("PL003", result.productCode)
-        assertEquals("Website", result.sourcingChannel)
+        assertEquals(SourcingChannel.DIRECT, result.sourcingChannel)
     }
 }

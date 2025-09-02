@@ -3,6 +3,7 @@ package com.nivasafinance.features.lead.dto
 import com.nivasafinance.features.lead.entity.Lead
 import com.nivasafinance.features.lead.enum.LeadStage
 import com.nivasafinance.features.lead.enum.LeadStatus
+import com.nivasafinance.features.lead.enum.SourcingChannel
 import java.math.BigDecimal
 import java.util.UUID
 
@@ -15,7 +16,7 @@ data class LeadData(
     val stage: LeadStage?,
     val preliminaryInformation: LeadPreliminaryInformation?,
     val leadContacts: LeadContacts?,
-    val sourcingChannel: String?
+    val sourcingChannel: SourcingChannel?
 ) {
     companion object {
         fun fromEntity(lead: Lead): LeadData {
