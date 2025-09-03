@@ -3,6 +3,7 @@ package com.nivasafinance.features.wrapper.controller
 import com.nivasafinance.features.advisor.enum.AdvisorStatus
 import com.nivasafinance.features.lead.enum.LeadStage
 import com.nivasafinance.features.lead.enum.LeadStatus
+import com.nivasafinance.features.lead.enum.SourcingChannel
 import com.nivasafinance.features.wrapper.dto.AdvisorWrapperRequest
 import com.nivasafinance.features.wrapper.dto.AdvisorWrapperResponse
 import com.nivasafinance.features.wrapper.dto.ApplicantWrapperRequest
@@ -301,7 +302,7 @@ class AdvisorWrapperControllerTest {
                 requestedAmount = BigDecimal("500000"),
                 purpose = "Home Construction",
                 productCode = "HL001",
-                sourcingChannel = "Direct",
+                sourcingChannel = SourcingChannel.DIRECT,
                 preliminaryInformation = null,
                 leadContacts = null,
                 stage = com.nivasafinance.features.lead.enum.LeadStage.INQUIRY,
@@ -331,7 +332,7 @@ class AdvisorWrapperControllerTest {
                 requestedAmount = BigDecimal("1000000"),
                 purpose = "Home Construction",
                 productCode = "HL001",
-                sourcingChannel = "Direct",
+                sourcingChannel = SourcingChannel.DIRECT,
                 preliminaryInformation = null,
                 leadContacts = null,
                 stage = com.nivasafinance.features.lead.enum.LeadStage.INQUIRY,
