@@ -7,6 +7,7 @@ import com.nivasafinance.features.advisorleadmapping.dto.AdvisorLeadMappingRespo
 import com.nivasafinance.features.advisorleadmapping.service.AdvisorLeadMappingService
 import com.nivasafinance.features.lead.enum.LeadStage
 import com.nivasafinance.features.lead.enum.LeadStatus
+import com.nivasafinance.features.lead.enum.SourcingChannel
 import com.nivasafinance.features.lead.service.LeadService
 import com.nivasafinance.features.person.dto.PersonResponse
 import io.mockk.every
@@ -195,7 +196,7 @@ class AdvisorWrapperReadServiceImplTest {
             requestedAmount = java.math.BigDecimal("500000"),
             purpose = "Home Construction",
             productCode = "HL001",
-            sourcingChannel = "Direct",
+            sourcingChannel = SourcingChannel.DIRECT,
             status = LeadStatus.ACTIVE,
             stage = LeadStage.INQUIRY,
             preliminaryInformation = null,

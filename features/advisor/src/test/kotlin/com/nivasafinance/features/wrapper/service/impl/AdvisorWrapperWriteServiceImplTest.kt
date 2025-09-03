@@ -10,6 +10,7 @@ import com.nivasafinance.features.lead.dto.LeadCreateRequest
 import com.nivasafinance.features.lead.dto.LeadResponse
 import com.nivasafinance.features.lead.enum.LeadStage
 import com.nivasafinance.features.lead.enum.LeadStatus
+import com.nivasafinance.features.lead.enum.SourcingChannel
 import com.nivasafinance.features.lead.service.LeadService
 import com.nivasafinance.features.person.dto.PersonCreateRequest
 import com.nivasafinance.features.person.dto.PersonResponse
@@ -380,7 +381,7 @@ class AdvisorWrapperWriteServiceImplTest {
                 requestedAmount = BigDecimal("500000"),
                 purpose = "Home Construction",
                 productCode = "HL001",
-                sourcingChannel = "Direct",
+                sourcingChannel = SourcingChannel.DIRECT,
                 preliminaryInformation = null,
                 leadContacts = null,
                 stage = LeadStage.INQUIRY,
@@ -433,7 +434,7 @@ class AdvisorWrapperWriteServiceImplTest {
             requestedAmount = BigDecimal("500000"),
             purpose = "Home Construction",
             productCode = "HL001",
-            sourcingChannel = "Direct",
+            sourcingChannel = SourcingChannel.DIRECT,
             status = LeadStatus.ACTIVE,
             stage = LeadStage.INQUIRY,
             preliminaryInformation = null,

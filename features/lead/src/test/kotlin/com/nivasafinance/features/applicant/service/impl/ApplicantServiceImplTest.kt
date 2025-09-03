@@ -156,8 +156,6 @@ class ApplicantServiceImplTest {
         }
     }
 
-
-
     @Nested
     @DisplayName("getApplicantsByMobileNumber")
     inner class GetApplicantsByMobileNumber {

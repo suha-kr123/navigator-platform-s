@@ -18,4 +18,5 @@
     <include file="/db/migrations/V11__create_advisor_lead_mapping.sql"/>
     <include file="/db/migrations/V12__create_audit_triggers.sql"/>
     <include file="/db/migrations/V13__alter_advisor_code_nullable.sql"/>
+    <include file="/db/migrations/V14__create_documents.sql"/>
 </databaseChangeLog>
