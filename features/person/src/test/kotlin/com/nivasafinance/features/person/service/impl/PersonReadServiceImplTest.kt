@@ -1,8 +1,13 @@
 package com.nivasafinance.features.person.service.impl
 
 import com.nivasafinance.features.address.service.AddressService
+import com.nivasafinance.features.person.TestUtils.createTestEmploymentDetailsEntity
+import com.nivasafinance.features.person.TestUtils.createTestEmploymentDetailsResponse
+import com.nivasafinance.features.person.dto.EmploymentDetailsResponse
 import com.nivasafinance.features.person.dto.PersonData
+import com.nivasafinance.features.person.entity.EmploymentDetails
 import com.nivasafinance.features.person.exception.PersonNotFoundException
+import com.nivasafinance.features.person.repository.EmploymentDetailsRepository
 import com.nivasafinance.features.person.repository.PersonAddressMappingRepository
 import com.nivasafinance.features.person.repository.PersonIdentifierRepository
 import com.nivasafinance.features.person.repository.PersonRepository
@@ -26,6 +31,7 @@ class PersonReadServiceImplTest {
     private val personRepository = mockk<PersonRepository>()
     private val personAddressMappingRepository = mockk<PersonAddressMappingRepository>()
     private val personIdentifierRepository = mockk<PersonIdentifierRepository>()
+    private val employmentDetailsRepository = mockk<EmploymentDetailsRepository>()
     private val addressService = mockk<AddressService>()
     private val modelMapper = mockk<ModelMapper>()
     private val messageSource = mockk<MessageSource>()
@@ -48,6 +54,7 @@ class PersonReadServiceImplTest {
             personRepository,
             personAddressMappingRepository,
             personIdentifierRepository,
+            employmentDetailsRepository,
             addressService
         )
 
@@ -95,5 +102,73 @@ class PersonReadServiceImplTest {
         }
 
         verify(exactly = 1) { personRepository.findById(personId) }
+    }
+
+    // Employment Details Tests
+
+    @Test
+    @DisplayName("should get person employment details successfully")
+    fun `getPersonEmploymentDetails should get person employment details successfully`() {
+        // Given
+        val employmentId = UUID.randomUUID()
+        val employmentDetails = createTestEmploymentDetailsEntity(
+            employmentId = employmentId,
+            personId = personId
+        )
+        
+        every { personRepository.existsById(personId) } returns true
+        every { employmentDetailsRepository.findByPersonId(personId) } returns employmentDetails
+
+        // When
+        val result = personReadService.getPersonEmploymentDetails(personId)
+
+        // Then
+        assertNotNull(result)
+        assertEquals(employmentId, result?.employmentId)
+        assertEquals(personId, result?.personId)
+        assertEquals(employmentDetails.employerName, result?.employerName)
+        assertEquals(employmentDetails.employerType, result?.employerType)
+        assertEquals(employmentDetails.jobTitle, result?.jobTitle)
+        assertEquals(employmentDetails.department, result?.department)
+        assertEquals(employmentDetails.employmentType, result?.employmentType)
+        assertEquals(employmentDetails.location, result?.location)
+        assertEquals(employmentDetails.salary, result?.salary)
+        assertEquals(employmentDetails.documents, result?.documents)
+        assertEquals(employmentDetails.extData, result?.extData)
+
+        verify(exactly = 1) { personRepository.existsById(personId) }
+        verify(exactly = 1) { employmentDetailsRepository.findByPersonId(personId) }
+    }
+
+    @Test
+    @DisplayName("should return null when employment details not found")
+    fun `getPersonEmploymentDetails should return null when employment details not found`() {
+        // Given
+        every { personRepository.existsById(personId) } returns true
+        every { employmentDetailsRepository.findByPersonId(personId) } returns null
+
+        // When
+        val result = personReadService.getPersonEmploymentDetails(personId)
+
+        // Then
+        assertEquals(null, result)
+
+        verify(exactly = 1) { personRepository.existsById(personId) }
+        verify(exactly = 1) { employmentDetailsRepository.findByPersonId(personId) }
+    }
+
+    @Test
+    @DisplayName("should throw PersonNotFoundException when person does not exist")
+    fun `getPersonEmploymentDetails should throw PersonNotFoundException when person does not exist`() {
+        // Given
+        every { personRepository.existsById(personId) } returns false
+
+        // When & Then
+        assertThrows<PersonNotFoundException> {
+            personReadService.getPersonEmploymentDetails(personId)
+        }
+
+        verify(exactly = 1) { personRepository.existsById(personId) }
+        verify(exactly = 0) { employmentDetailsRepository.findByPersonId(personId) }
     }
 }

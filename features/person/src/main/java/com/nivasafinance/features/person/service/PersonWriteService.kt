@@ -1,5 +1,8 @@
 package com.nivasafinance.features.person.service
 
+import com.nivasafinance.features.person.dto.EmploymentDetailsCreateRequest
+import com.nivasafinance.features.person.dto.EmploymentDetailsResponse
+import com.nivasafinance.features.person.dto.EmploymentDetailsUpdateRequest
 import com.nivasafinance.features.person.dto.PersonAddressMappingRequest
 import com.nivasafinance.features.person.dto.PersonAddressMappingResponse
 import com.nivasafinance.features.person.dto.PersonAddressMappingUpdateRequest
@@ -29,4 +32,15 @@ interface PersonWriteService {
     fun createPersonIdentifier(personId: UUID, request: PersonIdentifierCreateRequest): PersonIdentifierResponse
     fun updatePersonIdentifier(id: UUID, request: PersonIdentifierUpdateRequest): PersonIdentifierResponse
     fun deletePersonIdentifier(id: UUID)
+
+    // Employment details operations
+    fun createPersonEmploymentDetails(
+        personId: UUID,
+        request: EmploymentDetailsCreateRequest
+    ): EmploymentDetailsResponse
+    fun updatePersonEmploymentDetails(
+        personId: UUID,
+        request: EmploymentDetailsUpdateRequest
+    ): EmploymentDetailsResponse
+    fun deletePersonEmploymentDetails(personId: UUID)
 }

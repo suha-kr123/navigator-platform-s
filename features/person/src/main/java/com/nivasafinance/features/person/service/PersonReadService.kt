@@ -1,5 +1,6 @@
 package com.nivasafinance.features.person.service
 
+import com.nivasafinance.features.person.dto.EmploymentDetailsResponse
 import com.nivasafinance.features.person.dto.PersonAddressMappingResponse
 import com.nivasafinance.features.person.dto.PersonData
 import com.nivasafinance.features.person.dto.PersonIdentifierResponse
@@ -16,4 +17,7 @@ interface PersonReadService {
 
     // Identifier operations
     fun getPersonIdentifiers(personId: UUID): List<PersonIdentifierResponse>
+
+    // Employment details operations
+    fun getPersonEmploymentDetails(personId: UUID): EmploymentDetailsResponse?
 }

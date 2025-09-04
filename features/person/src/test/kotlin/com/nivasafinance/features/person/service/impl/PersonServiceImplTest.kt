@@ -1,5 +1,11 @@
 package com.nivasafinance.features.person.service.impl
 
+import com.nivasafinance.features.person.TestUtils.createTestEmploymentDetailsCreateRequest
+import com.nivasafinance.features.person.TestUtils.createTestEmploymentDetailsResponse
+import com.nivasafinance.features.person.TestUtils.createTestEmploymentDetailsUpdateRequest
+import com.nivasafinance.features.person.dto.EmploymentDetailsCreateRequest
+import com.nivasafinance.features.person.dto.EmploymentDetailsResponse
+import com.nivasafinance.features.person.dto.EmploymentDetailsUpdateRequest
 import com.nivasafinance.features.person.dto.PersonCreateRequest
 import com.nivasafinance.features.person.dto.PersonData
 import com.nivasafinance.features.person.dto.PersonResponse
@@ -157,5 +163,97 @@ class PersonServiceImplTest {
         personService.deletePerson(personId)
 
         verify(exactly = 1) { personWriteService.deletePerson(personId) }
+    }
+
+    // Employment Details Tests
+
+    @Test
+    @DisplayName("should get person employment details successfully")
+    fun `getPersonEmploymentDetails should get person employment details successfully`() {
+        // Given
+        val expectedResponse = createTestEmploymentDetailsResponse(personId = personId)
+        every { personReadService.getPersonEmploymentDetails(personId) } returns expectedResponse
+
+        // When
+        val result = personService.getPersonEmploymentDetails(personId)
+
+        // Then
+        assertNotNull(result)
+        assertEquals(expectedResponse.employmentId, result?.employmentId)
+        assertEquals(expectedResponse.personId, result?.personId)
+        assertEquals(expectedResponse.employerName, result?.employerName)
+
+        verify(exactly = 1) { personReadService.getPersonEmploymentDetails(personId) }
+    }
+
+    @Test
+    @DisplayName("should return null when employment details not found")
+    fun `getPersonEmploymentDetails should return null when employment details not found`() {
+        // Given
+        every { personReadService.getPersonEmploymentDetails(personId) } returns null
+
+        // When
+        val result = personService.getPersonEmploymentDetails(personId)
+
+        // Then
+        assertEquals(null, result)
+
+        verify(exactly = 1) { personReadService.getPersonEmploymentDetails(personId) }
+    }
+
+    @Test
+    @DisplayName("should create person employment details successfully")
+    fun `createPersonEmploymentDetails should create person employment details successfully`() {
+        // Given
+        val createRequest = createTestEmploymentDetailsCreateRequest()
+        val expectedResponse = createTestEmploymentDetailsResponse(personId = personId)
+        every { personWriteService.createPersonEmploymentDetails(personId, createRequest) } returns expectedResponse
+
+        // When
+        val result = personService.createPersonEmploymentDetails(personId, createRequest)
+
+        // Then
+        assertNotNull(result)
+        assertEquals(expectedResponse.employmentId, result.employmentId)
+        assertEquals(expectedResponse.personId, result.personId)
+        assertEquals(expectedResponse.employerName, result.employerName)
+
+        verify(exactly = 1) { personWriteService.createPersonEmploymentDetails(personId, createRequest) }
+    }
+
+    @Test
+    @DisplayName("should update person employment details successfully")
+    fun `updatePersonEmploymentDetails should update person employment details successfully`() {
+        // Given
+        val updateRequest = createTestEmploymentDetailsUpdateRequest()
+        val expectedResponse = createTestEmploymentDetailsResponse(
+            personId = personId,
+            employerName = "Updated Company"
+        )
+        every { personWriteService.updatePersonEmploymentDetails(personId, updateRequest) } returns expectedResponse
+
+        // When
+        val result = personService.updatePersonEmploymentDetails(personId, updateRequest)
+
+        // Then
+        assertNotNull(result)
+        assertEquals(expectedResponse.employmentId, result.employmentId)
+        assertEquals(expectedResponse.personId, result.personId)
+        assertEquals(expectedResponse.employerName, result.employerName)
+
+        verify(exactly = 1) { personWriteService.updatePersonEmploymentDetails(personId, updateRequest) }
+    }
+
+    @Test
+    @DisplayName("should delete person employment details successfully")
+    fun `deletePersonEmploymentDetails should delete person employment details successfully`() {
+        // Given
+        every { personWriteService.deletePersonEmploymentDetails(personId) } returns Unit
+
+        // When
+        personService.deletePersonEmploymentDetails(personId)
+
+        // Then
+        verify(exactly = 1) { personWriteService.deletePersonEmploymentDetails(personId) }
     }
 }

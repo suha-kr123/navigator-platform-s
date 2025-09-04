@@ -2,12 +2,14 @@ package com.nivasafinance.features.person.service.impl
 import base.BaseNavigatorService
 import com.nivasafinance.features.address.exception.AddressNotFoundException
 import com.nivasafinance.features.address.service.AddressService
+import com.nivasafinance.features.person.dto.EmploymentDetailsResponse
 import com.nivasafinance.features.person.dto.PersonAddressMappingResponse
 import com.nivasafinance.features.person.dto.PersonData
 import com.nivasafinance.features.person.dto.PersonIdentifierResponse
 import com.nivasafinance.features.person.entity.PersonIdentifier
 import com.nivasafinance.features.person.exception.PersonMobileNotFoundException
 import com.nivasafinance.features.person.exception.PersonNotFoundException
+import com.nivasafinance.features.person.repository.EmploymentDetailsRepository
 import com.nivasafinance.features.person.repository.PersonAddressMappingRepository
 import com.nivasafinance.features.person.repository.PersonIdentifierRepository
 import com.nivasafinance.features.person.repository.PersonRepository
@@ -20,6 +22,7 @@ class PersonReadServiceImpl(
     private val personRepository: PersonRepository,
     private val personAddressMappingRepository: PersonAddressMappingRepository,
     private val personIdentifierRepository: PersonIdentifierRepository,
+    private val employmentDetailsRepository: EmploymentDetailsRepository,
     private val addressService: AddressService
 ) : PersonReadService, BaseNavigatorService() {
     companion object {
@@ -70,6 +73,15 @@ class PersonReadServiceImpl(
         val identifiers = personIdentifierRepository.findByPersonId(personId)
         return identifiers.map { mapIdentifierToResponse(it) }
     }
+
+    override fun getPersonEmploymentDetails(personId: UUID): EmploymentDetailsResponse? {
+        if (!personRepository.existsById(personId)) {
+            throw PersonNotFoundException(personId, messageSource)
+        }
+        val employmentDetails = employmentDetailsRepository.findByPersonId(personId)
+        return employmentDetails?.let { EmploymentDetailsResponse.fromEmploymentDetails(it) }
+    }
+
     private fun mapIdentifierToResponse(identifier: PersonIdentifier): PersonIdentifierResponse {
         return PersonIdentifierResponse(
             id = identifier.id!!,

@@ -6,6 +6,9 @@ import com.nivasafinance.features.address.dto.AddressUpdateRequest
 import com.nivasafinance.features.address.enum.AddressType
 import com.nivasafinance.features.address.exception.AddressTypeAlreadyExistsException
 import com.nivasafinance.features.address.service.AddressService
+import com.nivasafinance.features.person.dto.EmploymentDetailsCreateRequest
+import com.nivasafinance.features.person.dto.EmploymentDetailsResponse
+import com.nivasafinance.features.person.dto.EmploymentDetailsUpdateRequest
 import com.nivasafinance.features.person.dto.PersonAddressMappingRequest
 import com.nivasafinance.features.person.dto.PersonAddressMappingResponse
 import com.nivasafinance.features.person.dto.PersonAddressMappingUpdateRequest
@@ -14,12 +17,15 @@ import com.nivasafinance.features.person.dto.PersonIdentifierCreateRequest
 import com.nivasafinance.features.person.dto.PersonIdentifierResponse
 import com.nivasafinance.features.person.dto.PersonIdentifierUpdateRequest
 import com.nivasafinance.features.person.dto.PersonUpdateRequest
+import com.nivasafinance.features.person.entity.EmploymentDetails
 import com.nivasafinance.features.person.entity.Person
 import com.nivasafinance.features.person.entity.PersonAddressMapping
 import com.nivasafinance.features.person.entity.PersonIdentifier
 import com.nivasafinance.features.person.enum.IdentifierType
 import com.nivasafinance.features.person.exception.DuplicateIdentifierTypeException
 import com.nivasafinance.features.person.exception.DuplicatePrimaryMobileNumberException
+import com.nivasafinance.features.person.exception.EmploymentDetailsAlreadyExistsException
+import com.nivasafinance.features.person.exception.EmploymentDetailsNotFoundException
 import com.nivasafinance.features.person.exception.InvalidAddressTypeException
 import com.nivasafinance.features.person.exception.InvalidIdentifierTypeException
 import com.nivasafinance.features.person.exception.InvalidMobileNumberException
@@ -27,6 +33,7 @@ import com.nivasafinance.features.person.exception.PersonAddressMappingNotFoundE
 import com.nivasafinance.features.person.exception.PersonIdentifierNotFoundException
 import com.nivasafinance.features.person.exception.PersonNotFoundException
 import com.nivasafinance.features.person.exception.PrimaryMobileNumberAlreadyExistsException
+import com.nivasafinance.features.person.repository.EmploymentDetailsRepository
 import com.nivasafinance.features.person.repository.PersonAddressMappingRepository
 import com.nivasafinance.features.person.repository.PersonIdentifierRepository
 import com.nivasafinance.features.person.repository.PersonRepository
@@ -41,6 +48,7 @@ class PersonWriteServiceImpl(
     private val personRepository: PersonRepository,
     private val personAddressMappingRepository: PersonAddressMappingRepository,
     private val personIdentifierRepository: PersonIdentifierRepository,
+    private val employmentDetailsRepository: EmploymentDetailsRepository,
     private val addressService: AddressService
 ) : PersonWriteService, BaseNavigatorService() {
 
@@ -331,6 +339,66 @@ class PersonWriteServiceImpl(
             throw PersonIdentifierNotFoundException(id, messageSource)
         }
         personIdentifierRepository.deleteById(id)
+    }
+
+    // Employment details operations
+    @Transactional
+    override fun createPersonEmploymentDetails(
+        personId: UUID,
+        request: EmploymentDetailsCreateRequest
+    ): EmploymentDetailsResponse {
+        if (!personRepository.existsById(personId)) {
+            throw PersonNotFoundException(personId, messageSource)
+        }
+
+        if (employmentDetailsRepository.existsByPersonId(personId)) {
+            throw EmploymentDetailsAlreadyExistsException(personId, messageSource)
+        }
+
+        val employmentDetails = EmploymentDetails(
+            personId = personId,
+            employerName = request.employerName,
+            employerType = request.employerType,
+            jobTitle = request.jobTitle,
+            department = request.department,
+            employmentType = request.employmentType,
+            location = request.location,
+            salary = request.salary,
+            documents = request.documents,
+            extData = request.extData
+        )
+
+        val savedEmploymentDetails = employmentDetailsRepository.save(employmentDetails)
+        return EmploymentDetailsResponse.fromEmploymentDetails(savedEmploymentDetails)
+    }
+
+    @Transactional
+    override fun updatePersonEmploymentDetails(
+        personId: UUID,
+        request: EmploymentDetailsUpdateRequest
+    ): EmploymentDetailsResponse {
+        val employmentDetails = employmentDetailsRepository.findByPersonId(personId)
+            ?: throw EmploymentDetailsNotFoundException(personId, messageSource)
+
+        request.employerName?.let { employmentDetails.employerName = it }
+        request.employerType?.let { employmentDetails.employerType = it }
+        request.jobTitle?.let { employmentDetails.jobTitle = it }
+        request.department?.let { employmentDetails.department = it }
+        request.employmentType?.let { employmentDetails.employmentType = it }
+        request.location?.let { employmentDetails.location = it }
+        request.salary?.let { employmentDetails.salary = it }
+        request.documents?.let { employmentDetails.documents = it }
+        request.extData?.let { employmentDetails.extData = it }
+
+        val updatedEmploymentDetails = employmentDetailsRepository.save(employmentDetails)
+        return EmploymentDetailsResponse.fromEmploymentDetails(updatedEmploymentDetails)
+    }
+
+    @Transactional
+    override fun deletePersonEmploymentDetails(personId: UUID) {
+        val employmentDetails = employmentDetailsRepository.findByPersonId(personId)
+            ?: throw EmploymentDetailsNotFoundException(personId, messageSource)
+        employmentDetailsRepository.delete(employmentDetails)
     }
 
     private fun mapIdentifierToResponse(identifier: PersonIdentifier): PersonIdentifierResponse {
