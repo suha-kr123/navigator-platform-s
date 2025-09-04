@@ -6,8 +6,8 @@ import com.nivasafinance.features.person.dto.PersonAddressMappingResponse
 import com.nivasafinance.features.person.dto.PersonData
 import com.nivasafinance.features.person.dto.PersonIdentifierResponse
 import com.nivasafinance.features.person.entity.PersonIdentifier
-import com.nivasafinance.features.person.exception.PersonNotFoundException
 import com.nivasafinance.features.person.exception.PersonMobileNotFoundException
+import com.nivasafinance.features.person.exception.PersonNotFoundException
 import com.nivasafinance.features.person.repository.PersonAddressMappingRepository
 import com.nivasafinance.features.person.repository.PersonIdentifierRepository
 import com.nivasafinance.features.person.repository.PersonRepository
@@ -76,6 +76,6 @@ class PersonReadServiceImpl(
             personId = identifier.personId,
             identifier = identifier.identifier,
             type = identifier.type
-            )
-        }
+        )
     }
+}

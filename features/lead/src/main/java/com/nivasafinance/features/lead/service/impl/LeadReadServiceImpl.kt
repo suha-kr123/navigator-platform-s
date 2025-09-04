@@ -26,7 +26,8 @@ class LeadReadServiceImpl(
             stage = lead.stage,
             preliminaryInformation = lead.preliminaryInformation,
             leadContacts = lead.leadContacts,
-            sourcingChannel = lead.sourcingChannel
+            sourcingChannel = lead.sourcingChannel,
+            extData = lead.extData
         )
     }
 }

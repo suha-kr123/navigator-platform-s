@@ -138,7 +138,8 @@ class ApplicantWrapperReadServiceImplTest {
             status = LeadStatus.ACTIVE,
             stage = LeadStage.INQUIRY,
             preliminaryInformation = null,
-            leadContacts = null
+            leadContacts = null,
+            extData = null
         )
     }
 
@@ -152,7 +153,8 @@ class ApplicantWrapperReadServiceImplTest {
             status = null,
             stage = null,
             preliminaryInformation = null,
-            leadContacts = null
+            leadContacts = null,
+            extData = null
         )
     }
 }

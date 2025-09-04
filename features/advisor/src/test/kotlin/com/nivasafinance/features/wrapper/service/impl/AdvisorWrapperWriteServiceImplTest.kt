@@ -438,7 +438,8 @@ class AdvisorWrapperWriteServiceImplTest {
             status = LeadStatus.ACTIVE,
             stage = LeadStage.INQUIRY,
             preliminaryInformation = null,
-            leadContacts = null
+            leadContacts = null,
+            extData = null
         )
     }
 

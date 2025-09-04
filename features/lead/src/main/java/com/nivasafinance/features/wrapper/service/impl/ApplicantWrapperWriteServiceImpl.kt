@@ -75,14 +75,17 @@ class ApplicantWrapperWriteServiceImpl(
                     it.whenYouWantLoan,
                     it.isHouseConstructionStarted,
                     it.isEKhathaAvailable,
-                    it.selfDeclaredAnnualFamilyIncome
+                    it.selfDeclaredAnnualFamilyIncome,
+                    it.preferredCallTime,
+                    it.monthlyIncome
                 )
             },
             leadContacts = leadData.leadContacts?.let {
                 com.nivasafinance.features.lead.dto.LeadContacts(it.name, it.number)
             },
             stage = leadData.stage,
-            status = leadData.status
+            status = leadData.status,
+            extData = leadData.extData
         )
     }
 }
