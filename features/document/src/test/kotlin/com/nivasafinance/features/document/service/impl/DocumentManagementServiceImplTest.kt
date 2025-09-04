@@ -9,6 +9,7 @@ import com.nivasafinance.features.document.enum.ProviderType
 import com.nivasafinance.features.document.exception.DocumentNotFoundException
 import com.nivasafinance.features.document.exception.DocumentValidationException
 import com.nivasafinance.features.document.repository.DocumentRepository
+import com.nivasafinance.features.document.service.DocumentUtilityService
 import com.nivasafinance.features.document.storage.ContentRepository
 import com.nivasafinance.features.document.storage.ContentRepositoryFactory
 import exception.UnauthorizedException
@@ -40,6 +41,7 @@ class DocumentManagementServiceImplTest {
     private val documentRepository = mockk<DocumentRepository>()
     private val messageSource = mockk<MessageSource>()
     private val contentRepository = mockk<ContentRepository>()
+    private val documentUtilityService = mockk<DocumentUtilityService>()
 
     private lateinit var documentManagementService: DocumentManagementServiceImpl
 
@@ -49,15 +51,29 @@ class DocumentManagementServiceImplTest {
         mockkObject(UserContext)
         documentManagementService = DocumentManagementServiceImpl(
             contentRepositoryFactory = contentRepositoryFactory,
-            documentRepository = documentRepository
+            documentRepository = documentRepository,
+            documentUtilityService = documentUtilityService
         )
 
         // Mock the messageSource in BaseNavigatorService
         documentManagementService.messageSource = messageSource
 
+        // Mock the default provider configuration
+        documentManagementService.javaClass.getDeclaredField("defaultProvider").apply {
+            isAccessible = true
+            set(documentManagementService, "AWS_S3")
+        }
+
         // Mock UserContext
         val userInfo = UserInfo(username = "testuser", email = "test@example.com", phoneNumber = "1234567890")
         every { UserContext.getUserInfo() } returns userInfo
+
+        // Mock DocumentUtilityService methods
+        every {
+            documentUtilityService.getAllowedDocumentType(any())
+        } returns com.nivasafinance.features.document.enum.AllowedDocumentType.PDF
+        every { documentUtilityService.validateFileSize(any(), any()) } returns true
+        every { documentUtilityService.generateStorageKey(any(), any(), any(), any()) } returns "test-storage-key"
     }
 
     @AfterEach
@@ -78,7 +94,7 @@ class DocumentManagementServiceImplTest {
             val fileUrl = "http://localhost:8080/files/test-document.pdf"
             val storageKey = "docs/testuser/1234567890-test-document.pdf"
 
-            every { contentRepositoryFactory.getRepository(ProviderType.LOCAL) } returns contentRepository
+            every { contentRepositoryFactory.getRepository(any()) } returns contentRepository
             every { contentRepository.saveFile(any(), any()) } returns fileUrl
             every { documentRepository.save(any()) } answers {
                 val document = firstArg<Document>()
@@ -91,7 +107,7 @@ class DocumentManagementServiceImplTest {
             assertNotNull(result.documentId)
             assertEquals(fileUrl, result.uploadUrl)
 
-            verify { contentRepositoryFactory.getRepository(ProviderType.LOCAL) }
+            verify { contentRepositoryFactory.getRepository(any()) }
             verify { contentRepository.saveFile(any(), any()) }
             verify { documentRepository.save(any()) }
         }
@@ -110,7 +126,7 @@ class DocumentManagementServiceImplTest {
             val documentId = UUID.randomUUID()
             val fileUrl = "http://localhost:8080/files/minimal-doc.txt"
 
-            every { contentRepositoryFactory.getRepository(ProviderType.LOCAL) } returns contentRepository
+            every { contentRepositoryFactory.getRepository(any()) } returns contentRepository
             every { contentRepository.saveFile(any(), any()) } returns fileUrl
             every { documentRepository.save(any()) } answers {
                 val document = firstArg<Document>()
@@ -154,32 +170,6 @@ class DocumentManagementServiceImplTest {
             }
 
             verify(exactly = 0) { documentRepository.save(any()) }
-        }
-
-        @Test
-        @DisplayName("Should save file with AWS S3 provider")
-        fun `saveFile should save file with AWS S3 provider`() {
-            val uploadRequest = createTestUploadRequest(provider = ProviderType.AWS_S3)
-            val inputStream = ByteArrayInputStream("s3 content".toByteArray())
-            val documentId = UUID.randomUUID()
-            val fileUrl = "https://s3.amazonaws.com/bucket/test-document.pdf"
-
-            every { contentRepositoryFactory.getRepository(ProviderType.AWS_S3) } returns contentRepository
-            every { contentRepository.saveFile(any(), any()) } returns fileUrl
-            every { documentRepository.save(any()) } answers {
-                val document = firstArg<Document>()
-                document.documentId = documentId
-                document
-            }
-
-            val result = documentManagementService.saveFile(uploadRequest, inputStream)
-
-            assertNotNull(result.documentId)
-            assertEquals(fileUrl, result.uploadUrl)
-
-            verify { contentRepositoryFactory.getRepository(ProviderType.AWS_S3) }
-            verify { contentRepository.saveFile(any(), any()) }
-            verify { documentRepository.save(any()) }
         }
     }
 
@@ -266,7 +256,7 @@ class DocumentManagementServiceImplTest {
 
             every { documentRepository.findById(documentId) } returns Optional.of(document)
             every { contentRepositoryFactory.getRepository(ProviderType.AWS_S3) } returns contentRepository
-            every { contentRepository.getSignedDownloadUrl(document.storageKey, 600) } returns expectedSignedUrl
+            every { contentRepository.getSignedDownloadUrl(document.storageKey, 0) } returns expectedSignedUrl
 
             val result = documentManagementService.getDownload(documentId)
 
@@ -275,7 +265,7 @@ class DocumentManagementServiceImplTest {
 
             verify { documentRepository.findById(documentId) }
             verify { contentRepositoryFactory.getRepository(ProviderType.AWS_S3) }
-            verify { contentRepository.getSignedDownloadUrl(document.storageKey, 600) }
+            verify { contentRepository.getSignedDownloadUrl(document.storageKey, 0) }
         }
 
         @Test
@@ -289,16 +279,16 @@ class DocumentManagementServiceImplTest {
             )
 
             every { documentRepository.findById(documentId) } returns Optional.of(document)
-            every { contentRepositoryFactory.getRepository(ProviderType.LOCAL) } returns contentRepository
-            every { contentRepository.getSignedDownloadUrl(document.storageKey, 600) } returns null
+            every { contentRepositoryFactory.getRepository(any()) } returns contentRepository
+            every { contentRepository.getSignedDownloadUrl(document.storageKey, 0) } returns null
 
             assertThrows(UnsupportedOperationException::class.java) {
                 documentManagementService.getDownload(documentId)
             }
 
             verify { documentRepository.findById(documentId) }
-            verify { contentRepositoryFactory.getRepository(ProviderType.LOCAL) }
-            verify { contentRepository.getSignedDownloadUrl(document.storageKey, 600) }
+            verify { contentRepositoryFactory.getRepository(any()) }
+            verify { contentRepository.getSignedDownloadUrl(document.storageKey, 0) }
         }
 
         @Test

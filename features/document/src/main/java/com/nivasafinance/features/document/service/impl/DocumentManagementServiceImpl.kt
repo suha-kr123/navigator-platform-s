@@ -7,14 +7,17 @@ import com.nivasafinance.features.document.dto.DownloadResponse
 import com.nivasafinance.features.document.dto.UploadRequest
 import com.nivasafinance.features.document.dto.UploadResponse
 import com.nivasafinance.features.document.entity.Document
+import com.nivasafinance.features.document.enum.AllowedDocumentType
 import com.nivasafinance.features.document.enum.ProviderType
 import com.nivasafinance.features.document.exception.DocumentNotFoundException
 import com.nivasafinance.features.document.exception.DocumentValidationException
 import com.nivasafinance.features.document.repository.DocumentRepository
 import com.nivasafinance.features.document.service.DocumentManagementService
+import com.nivasafinance.features.document.service.DocumentUtilityService
 import com.nivasafinance.features.document.storage.ContentRepository
 import com.nivasafinance.features.document.storage.ContentRepositoryFactory
 import exception.UnauthorizedException
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.io.InputStream
@@ -23,21 +26,78 @@ import java.util.UUID
 @Service
 class DocumentManagementServiceImpl(
     private val contentRepositoryFactory: ContentRepositoryFactory,
-    private val documentRepository: DocumentRepository
+    private val documentRepository: DocumentRepository,
+    private val documentUtilityService: DocumentUtilityService
 ) : DocumentManagementService, BaseNavigatorService() {
+
+    @Value("\${document.storage.provider:LOCAL}")
+    private val defaultProvider: String = "LOCAL"
 
     @Transactional
     override fun saveFile(documentData: UploadRequest, inputStream: InputStream): UploadResponse {
-        // Basic validation
+        // Basic file name validation (path traversal, etc.)
         if (documentData.fileName.isBlank()) {
-            throw DocumentValidationException("File name cannot be empty", messageSource)
+            throw DocumentValidationException(
+                messageSource.getMessage("error.document.file.name.blank", null, java.util.Locale.getDefault()),
+                messageSource
+            )
+        }
+
+        if (documentData.fileName.contains("..") ||
+            documentData.fileName.contains("/") ||
+            documentData.fileName.contains("\\")
+        ) {
+            throw DocumentValidationException(
+                messageSource.getMessage(
+                    "error.document.file.name.invalid",
+                    arrayOf(documentData.fileName),
+                    java.util.Locale.getDefault()
+                ),
+                messageSource
+            )
+        }
+
+        // Validate file type against allowed document types
+        val allowedDocumentType = documentUtilityService.getAllowedDocumentType(documentData.fileName)
+        if (allowedDocumentType == null) {
+            val allowedExtensions = AllowedDocumentType.getAllowedExtensions().joinToString(", ")
+            throw DocumentValidationException(
+                messageSource.getMessage(
+                    "error.document.invalid.file.type",
+                    arrayOf(documentData.fileName.substringAfterLast('.'), allowedExtensions),
+                    java.util.Locale.getDefault()
+                ),
+                messageSource
+            )
+        }
+
+        // Validate file size based on document type
+        if (documentData.fileSize != null) {
+            val maxSizeInMB = allowedDocumentType.maxSizeInMB
+            if (!documentUtilityService.validateFileSize(documentData.fileSize, maxSizeInMB)) {
+                throw DocumentValidationException(
+                    messageSource.getMessage(
+                        "error.document.file.size.exceeded",
+                        arrayOf(allowedDocumentType.name, maxSizeInMB.toString()),
+                        java.util.Locale.getDefault()
+                    ),
+                    messageSource
+                )
+            }
         }
 
         val currentUser = getCurrentUserId()
-        val storageKey = generateStorageKey(currentUser, documentData.fileName)
+        val provider = ProviderType.valueOf(defaultProvider.uppercase())
 
-        // Save file to storage using ContentRepository
-        val contentRepository = contentRepositoryFactory.getRepository(documentData.provider)
+        // Use utility service to generate storage key
+        val storageKey = documentUtilityService.generateStorageKey(
+            userId = currentUser,
+            fileName = documentData.fileName,
+            category = documentData.category,
+            provider = provider
+        )
+
+        val contentRepository = contentRepositoryFactory.getRepository(provider)
         val fileUrl = contentRepository.saveFile(inputStream, storageKey)
 
         // Save document metadata to database
@@ -45,7 +105,7 @@ class DocumentManagementServiceImpl(
             fileName = documentData.fileName,
             fileType = documentData.fileType,
             fileSize = documentData.fileSize,
-            provider = documentData.provider,
+            provider = provider,
             storageKey = storageKey,
             fileUrl = fileUrl,
             category = documentData.category,
@@ -96,7 +156,10 @@ class DocumentManagementServiceImpl(
         ensureCanView(document)
 
         val contentRepository = contentRepositoryFactory.getRepository(document.provider)
-        val signedUrl = contentRepository.getSignedDownloadUrl(document.storageKey, expiresIn = 600)
+        val signedUrl = contentRepository.getSignedDownloadUrl(
+            document.storageKey,
+            expiresIn = 0
+        ) // Use default from configuration
 
         return DownloadResponse(
             downloadUrl = signedUrl ?: throw UnsupportedOperationException("Provider doesn't support signed URLs")
@@ -157,12 +220,5 @@ class DocumentManagementServiceImpl(
                 "User ${getCurrentUserInfo().username} is not authorized to delete document ${document.documentId}"
             )
         }
-    }
-
-    private fun generateStorageKey(currentUser: String, fileName: String): String {
-        val timestamp = System.currentTimeMillis()
-        val fileExtension = fileName.substringAfterLast('.', "")
-        val baseFileName = fileName.substringBeforeLast('.')
-        return "docs/$currentUser/$timestamp-$baseFileName.$fileExtension"
     }
 }

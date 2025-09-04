@@ -44,7 +44,6 @@ object DocumentTestUtils {
         fileName: String = "test-document.pdf",
         fileType: String = "application/pdf",
         fileSize: Long = 1024L,
-        provider: ProviderType = ProviderType.LOCAL,
         category: String = "KYC",
         docType: String = "PAN_CARD",
         tags: List<String> = listOf("kyc", "pan", "verification")
@@ -53,7 +52,6 @@ object DocumentTestUtils {
             fileName = fileName,
             fileType = fileType,
             fileSize = fileSize,
-            provider = provider,
             category = category,
             docType = docType,
             tags = tags

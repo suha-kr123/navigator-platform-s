@@ -58,6 +58,7 @@ class LeadReadServiceImplTest {
         every { lead.status } returns status
         every { lead.preliminaryInformation } returns null
         every { lead.leadContacts } returns null
+        every { lead.extData } returns null
 
         every { leadRepository.findById(leadId) } returns java.util.Optional.of(lead)
 
@@ -109,6 +110,7 @@ class LeadReadServiceImplTest {
         every { lead.status } returns status
         every { lead.preliminaryInformation } returns null
         every { lead.leadContacts } returns null
+        every { lead.extData } returns null
 
         every { leadRepository.findById(leadId) } returns java.util.Optional.of(lead)
 
@@ -145,6 +147,7 @@ class LeadReadServiceImplTest {
         every { lead.status } returns status
         every { lead.preliminaryInformation } returns null
         every { lead.leadContacts } returns null
+        every { lead.extData } returns null
 
         every { leadRepository.findById(leadId) } returns java.util.Optional.of(lead)
 
