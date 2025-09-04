@@ -3,18 +3,29 @@ package com.nivasafinance.features.person.service.impl
 import com.nivasafinance.features.address.dto.AddressCreateRequest
 import com.nivasafinance.features.address.dto.AddressResponse
 import com.nivasafinance.features.address.service.AddressService
+import com.nivasafinance.features.person.TestUtils.createTestEmploymentDetailsCreateRequest
+import com.nivasafinance.features.person.TestUtils.createTestEmploymentDetailsEntity
+import com.nivasafinance.features.person.TestUtils.createTestEmploymentDetailsResponse
+import com.nivasafinance.features.person.TestUtils.createTestEmploymentDetailsUpdateRequest
+import com.nivasafinance.features.person.dto.EmploymentDetailsCreateRequest
+import com.nivasafinance.features.person.dto.EmploymentDetailsResponse
+import com.nivasafinance.features.person.dto.EmploymentDetailsUpdateRequest
 import com.nivasafinance.features.person.dto.PersonAddressMappingRequest
 import com.nivasafinance.features.person.dto.PersonCreateRequest
 import com.nivasafinance.features.person.dto.PersonIdentifierCreateRequest
 import com.nivasafinance.features.person.dto.PersonUpdateRequest
+import com.nivasafinance.features.person.entity.EmploymentDetails
 import com.nivasafinance.features.person.entity.MobileNumberDetails
 import com.nivasafinance.features.person.entity.Person
 import com.nivasafinance.features.person.entity.PersonAddressMapping
 import com.nivasafinance.features.person.entity.PersonIdentifier
 import com.nivasafinance.features.person.enum.IdentifierType
+import com.nivasafinance.features.person.exception.EmploymentDetailsAlreadyExistsException
+import com.nivasafinance.features.person.exception.EmploymentDetailsNotFoundException
 import com.nivasafinance.features.person.exception.InvalidMobileNumberException
 import com.nivasafinance.features.person.exception.PersonNotFoundException
 import com.nivasafinance.features.person.exception.PrimaryMobileNumberAlreadyExistsException
+import com.nivasafinance.features.person.repository.EmploymentDetailsRepository
 import com.nivasafinance.features.person.repository.PersonAddressMappingRepository
 import com.nivasafinance.features.person.repository.PersonIdentifierRepository
 import com.nivasafinance.features.person.repository.PersonRepository
@@ -38,6 +49,7 @@ class PersonWriteServiceImplTest {
     private val personRepository = mockk<PersonRepository>()
     private val personAddressMappingRepository = mockk<PersonAddressMappingRepository>()
     private val personIdentifierRepository = mockk<PersonIdentifierRepository>()
+    private val employmentDetailsRepository = mockk<EmploymentDetailsRepository>()
     private val addressService = mockk<AddressService>()
     private val messageSource = mockk<MessageSource>()
 
@@ -53,6 +65,7 @@ class PersonWriteServiceImplTest {
             personRepository,
             personAddressMappingRepository,
             personIdentifierRepository,
+            employmentDetailsRepository,
             addressService
         )
 
@@ -338,6 +351,213 @@ class PersonWriteServiceImplTest {
             assertThrows<PersonNotFoundException> {
                 personWriteService.createPersonIdentifier(personId, request)
             }
+        }
+    }
+
+    @Nested
+    @DisplayName("Employment Details Tests")
+    inner class EmploymentDetailsTests {
+
+        private val employmentId = UUID.randomUUID()
+
+        @Test
+        @DisplayName("should create person employment details successfully")
+        fun `createPersonEmploymentDetails should create person employment details successfully`() {
+            // Given
+            val createRequest = createTestEmploymentDetailsCreateRequest()
+            val savedEmploymentDetails = createTestEmploymentDetailsEntity(
+                employmentId = employmentId,
+                personId = personId
+            )
+            val expectedResponse = createTestEmploymentDetailsResponse(
+                employmentId = employmentId,
+                personId = personId
+            )
+
+            every { personRepository.existsById(personId) } returns true
+            every { employmentDetailsRepository.existsByPersonId(personId) } returns false
+            every { employmentDetailsRepository.save(any<EmploymentDetails>()) } returns savedEmploymentDetails
+
+            // When
+            val result = personWriteService.createPersonEmploymentDetails(personId, createRequest)
+
+            // Then
+            assertEquals(expectedResponse.employmentId, result.employmentId)
+            assertEquals(expectedResponse.personId, result.personId)
+            assertEquals(expectedResponse.employerName, result.employerName)
+            assertEquals(expectedResponse.employerType, result.employerType)
+            assertEquals(expectedResponse.jobTitle, result.jobTitle)
+            assertEquals(expectedResponse.department, result.department)
+            assertEquals(expectedResponse.employmentType, result.employmentType)
+            assertEquals(expectedResponse.location, result.location)
+            assertEquals(expectedResponse.salary, result.salary)
+            assertEquals(expectedResponse.documents, result.documents)
+            assertEquals(expectedResponse.extData, result.extData)
+
+            verify(exactly = 1) { personRepository.existsById(personId) }
+            verify(exactly = 1) { employmentDetailsRepository.existsByPersonId(personId) }
+            verify(exactly = 1) { employmentDetailsRepository.save(any<EmploymentDetails>()) }
+        }
+
+        @Test
+        @DisplayName("should throw PersonNotFoundException when person does not exist")
+        fun `createPersonEmploymentDetails should throw PersonNotFoundException when person does not exist`() {
+            // Given
+            val createRequest = createTestEmploymentDetailsCreateRequest()
+            every { personRepository.existsById(personId) } returns false
+
+            // When & Then
+            assertThrows<PersonNotFoundException> {
+                personWriteService.createPersonEmploymentDetails(personId, createRequest)
+            }
+
+            verify(exactly = 1) { personRepository.existsById(personId) }
+            verify(exactly = 0) { employmentDetailsRepository.existsByPersonId(personId) }
+            verify(exactly = 0) { employmentDetailsRepository.save(any<EmploymentDetails>()) }
+        }
+
+        @Test
+        @DisplayName("should throw EmploymentDetailsAlreadyExistsException when employment details already exist")
+        fun `createPersonEmploymentDetails should throw EmploymentDetailsAlreadyExistsException when employment details already exist`() {
+            // Given
+            val createRequest = createTestEmploymentDetailsCreateRequest()
+            every { personRepository.existsById(personId) } returns true
+            every { employmentDetailsRepository.existsByPersonId(personId) } returns true
+
+            // When & Then
+            assertThrows<EmploymentDetailsAlreadyExistsException> {
+                personWriteService.createPersonEmploymentDetails(personId, createRequest)
+            }
+
+            verify(exactly = 1) { personRepository.existsById(personId) }
+            verify(exactly = 1) { employmentDetailsRepository.existsByPersonId(personId) }
+            verify(exactly = 0) { employmentDetailsRepository.save(any<EmploymentDetails>()) }
+        }
+
+        @Test
+        @DisplayName("should update person employment details successfully")
+        fun `updatePersonEmploymentDetails should update person employment details successfully`() {
+            // Given
+            val updateRequest = createTestEmploymentDetailsUpdateRequest()
+            val existingEmploymentDetails = createTestEmploymentDetailsEntity(
+                employmentId = employmentId,
+                personId = personId
+            )
+            val updatedEmploymentDetails = createTestEmploymentDetailsEntity(
+                employmentId = employmentId,
+                personId = personId,
+                employerName = "Updated Company"
+            )
+            val expectedResponse = createTestEmploymentDetailsResponse(
+                employmentId = employmentId,
+                personId = personId,
+                employerName = "Updated Company"
+            )
+
+            every { employmentDetailsRepository.findByPersonId(personId) } returns existingEmploymentDetails
+            every { employmentDetailsRepository.save(any<EmploymentDetails>()) } returns updatedEmploymentDetails
+
+            // When
+            val result = personWriteService.updatePersonEmploymentDetails(personId, updateRequest)
+
+            // Then
+            assertEquals(expectedResponse.employmentId, result.employmentId)
+            assertEquals(expectedResponse.personId, result.personId)
+            assertEquals(expectedResponse.employerName, result.employerName)
+
+            verify(exactly = 1) { employmentDetailsRepository.findByPersonId(personId) }
+            verify(exactly = 1) { employmentDetailsRepository.save(any<EmploymentDetails>()) }
+        }
+
+        @Test
+        @DisplayName("should throw EmploymentDetailsNotFoundException when employment details not found")
+        fun `updatePersonEmploymentDetails should throw EmploymentDetailsNotFoundException when employment details not found`() {
+            // Given
+            val updateRequest = createTestEmploymentDetailsUpdateRequest()
+            every { employmentDetailsRepository.findByPersonId(personId) } returns null
+
+            // When & Then
+            assertThrows<EmploymentDetailsNotFoundException> {
+                personWriteService.updatePersonEmploymentDetails(personId, updateRequest)
+            }
+
+            verify(exactly = 1) { employmentDetailsRepository.findByPersonId(personId) }
+            verify(exactly = 0) { employmentDetailsRepository.save(any<EmploymentDetails>()) }
+        }
+
+        @Test
+        @DisplayName("should handle partial update with null values")
+        fun `updatePersonEmploymentDetails should handle partial update with null values`() {
+            // Given
+            val updateRequest = EmploymentDetailsUpdateRequest(
+                employerName = "Updated Company",
+                employerType = null,
+                jobTitle = null,
+                department = null,
+                employmentType = null,
+                location = null,
+                salary = null,
+                documents = null,
+                extData = null
+            )
+            val existingEmploymentDetails = createTestEmploymentDetailsEntity(
+                employmentId = employmentId,
+                personId = personId
+            )
+            val updatedEmploymentDetails = createTestEmploymentDetailsEntity(
+                employmentId = employmentId,
+                personId = personId,
+                employerName = "Updated Company"
+            )
+
+            every { employmentDetailsRepository.findByPersonId(personId) } returns existingEmploymentDetails
+            every { employmentDetailsRepository.save(any<EmploymentDetails>()) } returns updatedEmploymentDetails
+
+            // When
+            val result = personWriteService.updatePersonEmploymentDetails(personId, updateRequest)
+
+            // Then
+            assertEquals(employmentId, result.employmentId)
+            assertEquals(personId, result.personId)
+            assertEquals("Updated Company", result.employerName)
+
+            verify(exactly = 1) { employmentDetailsRepository.findByPersonId(personId) }
+            verify(exactly = 1) { employmentDetailsRepository.save(any<EmploymentDetails>()) }
+        }
+
+        @Test
+        @DisplayName("should delete person employment details successfully")
+        fun `deletePersonEmploymentDetails should delete person employment details successfully`() {
+            // Given
+            val existingEmploymentDetails = createTestEmploymentDetailsEntity(
+                employmentId = employmentId,
+                personId = personId
+            )
+
+            every { employmentDetailsRepository.findByPersonId(personId) } returns existingEmploymentDetails
+            every { employmentDetailsRepository.delete(any<EmploymentDetails>()) } returns Unit
+
+            // When
+            personWriteService.deletePersonEmploymentDetails(personId)
+
+            // Then
+            verify(exactly = 1) { employmentDetailsRepository.findByPersonId(personId) }
+            verify(exactly = 1) { employmentDetailsRepository.delete(existingEmploymentDetails) }
+        }
+
+        @Test
+        @DisplayName("should throw EmploymentDetailsNotFoundException when deleting non-existent employment details")
+        fun `deletePersonEmploymentDetails should throw EmploymentDetailsNotFoundException when deleting non-existent employment details`() {
+            // Given
+            every { employmentDetailsRepository.findByPersonId(personId) } returns null
+
+            // When & Then
+            assertThrows<EmploymentDetailsNotFoundException> {
+                personWriteService.deletePersonEmploymentDetails(personId)
+            }
+
+            verify(exactly = 1) { employmentDetailsRepository.findByPersonId(personId) }
+            verify(exactly = 0) { employmentDetailsRepository.delete(any<EmploymentDetails>()) }
         }
     }
 }

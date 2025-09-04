@@ -1,6 +1,9 @@
 package com.nivasafinance.features.person.service.impl
 
 import base.BaseNavigatorService
+import com.nivasafinance.features.person.dto.EmploymentDetailsCreateRequest
+import com.nivasafinance.features.person.dto.EmploymentDetailsResponse
+import com.nivasafinance.features.person.dto.EmploymentDetailsUpdateRequest
 import com.nivasafinance.features.person.dto.PersonAddressMappingRequest
 import com.nivasafinance.features.person.dto.PersonAddressMappingResponse
 import com.nivasafinance.features.person.dto.PersonAddressMappingUpdateRequest
@@ -125,6 +128,36 @@ class PersonServiceImpl(
     @CacheEvict(cacheNames = ["person_identifiers"], key = "#personId")
     override fun deletePersonIdentifier(personId: UUID, identifierId: UUID) {
         personWriteService.deletePersonIdentifier(identifierId)
+    }
+
+    // Employment details operations
+    @Cacheable(cacheNames = ["person_employment"], key = "#personId")
+    override fun getPersonEmploymentDetails(personId: UUID): EmploymentDetailsResponse? {
+        return personReadService.getPersonEmploymentDetails(personId)
+    }
+
+    @Transactional
+    @CacheEvict(cacheNames = ["person_employment"], key = "#personId")
+    override fun createPersonEmploymentDetails(
+        personId: UUID,
+        request: EmploymentDetailsCreateRequest
+    ): EmploymentDetailsResponse {
+        return personWriteService.createPersonEmploymentDetails(personId, request)
+    }
+
+    @Transactional
+    @CacheEvict(cacheNames = ["person_employment"], key = "#personId")
+    override fun updatePersonEmploymentDetails(
+        personId: UUID,
+        request: EmploymentDetailsUpdateRequest
+    ): EmploymentDetailsResponse {
+        return personWriteService.updatePersonEmploymentDetails(personId, request)
+    }
+
+    @Transactional
+    @CacheEvict(cacheNames = ["person_employment"], key = "#personId")
+    override fun deletePersonEmploymentDetails(personId: UUID) {
+        personWriteService.deletePersonEmploymentDetails(personId)
     }
 
     private fun mapDataToResponse(personData: PersonData): PersonResponse {

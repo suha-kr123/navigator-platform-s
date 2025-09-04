@@ -20,4 +20,5 @@
     <include file="/db/migrations/V13__alter_advisor_code_nullable.sql"/>
     <include file="/db/migrations/V14__create_documents.sql"/>
     <include file="/db/migrations/V15__add_data_ext_to_leads.sql"/>
+    <include file="/db/migrations/V16__create_employment_details.sql"/>
 </databaseChangeLog>

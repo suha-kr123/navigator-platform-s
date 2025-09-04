@@ -1,7 +1,14 @@
 package com.nivasafinance.features.person.integration
 
 import com.nivasafinance.features.person.TestUtils
+import com.nivasafinance.features.person.TestUtils.createTestEmploymentDetailsCreateRequest
+import com.nivasafinance.features.person.TestUtils.createTestEmploymentDetailsResponse
+import com.nivasafinance.features.person.TestUtils.createTestEmploymentDetailsUpdateRequest
 import com.nivasafinance.features.person.controller.PersonController
+import com.nivasafinance.features.person.controller.PersonEmploymentController
+import com.nivasafinance.features.person.dto.EmploymentDetailsCreateRequest
+import com.nivasafinance.features.person.dto.EmploymentDetailsResponse
+import com.nivasafinance.features.person.dto.EmploymentDetailsUpdateRequest
 import com.nivasafinance.features.person.dto.PersonAddressMappingRequest
 import com.nivasafinance.features.person.dto.PersonAddressMappingUpdateRequest
 import com.nivasafinance.features.person.dto.PersonCreateRequest
@@ -30,6 +37,7 @@ class PersonIntegrationTest {
     private lateinit var personService: PersonService
     private lateinit var personReadService: PersonReadService
     private lateinit var personController: PersonController
+    private lateinit var personEmploymentController: PersonEmploymentController
 
     private val personId = UUID.randomUUID()
     private val addressId = UUID.randomUUID()
@@ -53,12 +61,17 @@ class PersonIntegrationTest {
         id = identifierId,
         personId = personId
     )
+    
+    private val expectedEmploymentDetailsResponse = createTestEmploymentDetailsResponse(
+        personId = personId
+    )
 
     @BeforeEach
     fun setup() {
         personService = mockk<PersonService>()
         personReadService = mockk<PersonReadService>()
         personController = PersonController(personService, personReadService)
+        personEmploymentController = PersonEmploymentController(personService)
     }
 
     @Test
@@ -240,6 +253,160 @@ class PersonIntegrationTest {
         assertEquals(expectedIdentifierResponse.id, updateResponse.id)
 
         personService.deletePersonIdentifier(personId, identifierId)
+    }
+
+    @Test
+    @DisplayName("should create employment details through complete flow")
+    fun `createEmploymentDetails should work through complete flow`() {
+        // Given
+        val createRequest = createTestEmploymentDetailsCreateRequest()
+        
+        every { personService.createPersonEmploymentDetails(personId, createRequest) } returns expectedEmploymentDetailsResponse
+
+        // When
+        val createResponse = personEmploymentController.createEmploymentDetails(personId, createRequest)
+
+        // Then
+        assertNotNull(createResponse)
+        assertEquals(HttpStatus.CREATED, createResponse.statusCode)
+        assertNotNull(createResponse.body)
+        assertEquals(expectedEmploymentDetailsResponse.employmentId, createResponse.body?.employmentId)
+        assertEquals(expectedEmploymentDetailsResponse.personId, createResponse.body?.personId)
+        assertEquals(expectedEmploymentDetailsResponse.employerName, createResponse.body?.employerName)
+    }
+
+    @Test
+    @DisplayName("should get employment details through complete flow")
+    fun `getEmploymentDetails should work through complete flow`() {
+        // Given
+        every { personService.getPersonEmploymentDetails(personId) } returns expectedEmploymentDetailsResponse
+
+        // When
+        val getResponse = personEmploymentController.getEmploymentDetails(personId)
+
+        // Then
+        assertNotNull(getResponse)
+        assertEquals(HttpStatus.OK, getResponse.statusCode)
+        assertNotNull(getResponse.body)
+        assertEquals(expectedEmploymentDetailsResponse.employmentId, getResponse.body?.employmentId)
+        assertEquals(expectedEmploymentDetailsResponse.personId, getResponse.body?.personId)
+        assertEquals(expectedEmploymentDetailsResponse.employerName, getResponse.body?.employerName)
+    }
+
+    @Test
+    @DisplayName("should update employment details through complete flow")
+    fun `updateEmploymentDetails should work through complete flow`() {
+        // Given
+        val updateRequest = createTestEmploymentDetailsUpdateRequest()
+        val updatedResponse = createTestEmploymentDetailsResponse(
+            personId = personId,
+            employerName = "Updated Company"
+        )
+        
+        every { personService.updatePersonEmploymentDetails(personId, updateRequest) } returns updatedResponse
+
+        // When
+        val updateResponse = personEmploymentController.updateEmploymentDetails(personId, updateRequest)
+
+        // Then
+        assertNotNull(updateResponse)
+        assertEquals(HttpStatus.OK, updateResponse.statusCode)
+        assertNotNull(updateResponse.body)
+        assertEquals(updatedResponse.employmentId, updateResponse.body?.employmentId)
+        assertEquals(updatedResponse.personId, updateResponse.body?.personId)
+        assertEquals(updatedResponse.employerName, updateResponse.body?.employerName)
+    }
+
+    @Test
+    @DisplayName("should delete employment details through complete flow")
+    fun `deleteEmploymentDetails should work through complete flow`() {
+        // Given
+        every { personService.deletePersonEmploymentDetails(personId) } returns Unit
+
+        // When
+        val deleteResponse = personEmploymentController.deleteEmploymentDetails(personId)
+
+        // Then
+        assertNotNull(deleteResponse)
+        assertEquals(HttpStatus.NO_CONTENT, deleteResponse.statusCode)
+    }
+
+    @Test
+    @DisplayName("should handle employment details CRUD operations through service layer")
+    fun `employmentDetails CRUD should work through service layer`() {
+        // Given
+        val createRequest = createTestEmploymentDetailsCreateRequest()
+        val updateRequest = createTestEmploymentDetailsUpdateRequest()
+        
+        every { personService.createPersonEmploymentDetails(personId, createRequest) } returns expectedEmploymentDetailsResponse
+        every { personService.getPersonEmploymentDetails(personId) } returns expectedEmploymentDetailsResponse
+        every { personService.updatePersonEmploymentDetails(personId, updateRequest) } returns expectedEmploymentDetailsResponse
+        every { personService.deletePersonEmploymentDetails(personId) } returns Unit
+
+        // When & Then - Create
+        val createResponse = personService.createPersonEmploymentDetails(personId, createRequest)
+        assertNotNull(createResponse)
+        assertEquals(expectedEmploymentDetailsResponse.employmentId, createResponse.employmentId)
+
+        // When & Then - Read
+        val getResponse = personService.getPersonEmploymentDetails(personId)
+        assertNotNull(getResponse)
+        assertEquals(expectedEmploymentDetailsResponse.employmentId, getResponse?.employmentId)
+
+        // When & Then - Update
+        val updateResponse = personService.updatePersonEmploymentDetails(personId, updateRequest)
+        assertNotNull(updateResponse)
+        assertEquals(expectedEmploymentDetailsResponse.employmentId, updateResponse.employmentId)
+
+        // When & Then - Delete
+        personService.deletePersonEmploymentDetails(personId)
+    }
+
+    @Test
+    @DisplayName("should return null when employment details not found")
+    fun `getEmploymentDetails should return null when not found`() {
+        // Given
+        every { personService.getPersonEmploymentDetails(personId) } returns null
+
+        // When
+        val getResponse = personEmploymentController.getEmploymentDetails(personId)
+
+        // Then
+        assertNotNull(getResponse)
+        assertEquals(HttpStatus.OK, getResponse.statusCode)
+        assertEquals(null, getResponse.body)
+    }
+
+    @Test
+    @DisplayName("should handle partial employment details update")
+    fun `updateEmploymentDetails should handle partial update`() {
+        // Given
+        val partialUpdateRequest = EmploymentDetailsUpdateRequest(
+            employerName = "Partially Updated Company",
+            employerType = null,
+            jobTitle = null,
+            department = null,
+            employmentType = null,
+            location = null,
+            salary = null,
+            documents = null,
+            extData = null
+        )
+        val updatedResponse = createTestEmploymentDetailsResponse(
+            personId = personId,
+            employerName = "Partially Updated Company"
+        )
+        
+        every { personService.updatePersonEmploymentDetails(personId, partialUpdateRequest) } returns updatedResponse
+
+        // When
+        val updateResponse = personEmploymentController.updateEmploymentDetails(personId, partialUpdateRequest)
+
+        // Then
+        assertNotNull(updateResponse)
+        assertEquals(HttpStatus.OK, updateResponse.statusCode)
+        assertNotNull(updateResponse.body)
+        assertEquals(updatedResponse.employerName, updateResponse.body?.employerName)
     }
 
 

@@ -146,4 +146,67 @@ class PersonExceptionTest {
         assertNotNull(exception)
         assertEquals(message, exception.message)
     }
+
+    @Test
+    @DisplayName("should create EmploymentDetailsNotFoundException with message")
+    fun `EmploymentDetailsNotFoundException should create with message`() {
+        val message = "Employment details not found"
+        val exception = EmploymentDetailsNotFoundException(message)
+
+        assertNotNull(exception)
+        assertEquals(message, exception.message)
+    }
+
+    @Test
+    @DisplayName("should create EmploymentDetailsNotFoundException with personId and message source")
+    fun `EmploymentDetailsNotFoundException should create with personId and message source`() {
+        val personId = UUID.randomUUID()
+        val messageSource = mockk<MessageSource>()
+        val expectedMessage = "Employment details not found for person with id $personId"
+
+        every { messageSource.getMessage(any(), any(), any()) } returns expectedMessage
+
+        val exception = EmploymentDetailsNotFoundException(personId, messageSource)
+
+        assertNotNull(exception)
+        assertEquals(expectedMessage, exception.message)
+    }
+
+    @Test
+    @DisplayName("should create EmploymentDetailsAlreadyExistsException with message")
+    fun `EmploymentDetailsAlreadyExistsException should create with message`() {
+        val message = "Employment details already exist"
+        val exception = EmploymentDetailsAlreadyExistsException(message)
+
+        assertNotNull(exception)
+        assertEquals(message, exception.message)
+    }
+
+    @Test
+    @DisplayName("should create EmploymentDetailsAlreadyExistsException with personId and message source")
+    fun `EmploymentDetailsAlreadyExistsException should create with personId and message source`() {
+        val personId = UUID.randomUUID()
+        val messageSource = mockk<MessageSource>()
+        val expectedMessage = "Employment details already exist for person with id $personId"
+
+        every { messageSource.getMessage(any(), any(), any()) } returns expectedMessage
+
+        val exception = EmploymentDetailsAlreadyExistsException(personId, messageSource)
+
+        assertNotNull(exception)
+        assertEquals(expectedMessage, exception.message)
+    }
+
+
+    @Test
+    @DisplayName("should verify EmploymentDetailsNotFoundException has correct key")
+    fun `EmploymentDetailsNotFoundException should have correct key`() {
+        assertEquals("error.employment.details.not.found", EmploymentDetailsNotFoundException.KEY)
+    }
+
+    @Test
+    @DisplayName("should verify EmploymentDetailsAlreadyExistsException has correct key")
+    fun `EmploymentDetailsAlreadyExistsException should have correct key`() {
+        assertEquals("error.employment.details.already.exists", EmploymentDetailsAlreadyExistsException.KEY)
+    }
 }
