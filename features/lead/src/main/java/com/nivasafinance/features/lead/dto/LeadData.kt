@@ -16,7 +16,8 @@ data class LeadData(
     val stage: LeadStage?,
     val preliminaryInformation: LeadPreliminaryInformation?,
     val leadContacts: LeadContacts?,
-    val sourcingChannel: SourcingChannel?
+    val sourcingChannel: SourcingChannel?,
+    val extData: Map<String, Any>?
 ) {
     companion object {
         fun fromEntity(lead: Lead): LeadData {
@@ -29,7 +30,8 @@ data class LeadData(
                 stage = lead.stage,
                 preliminaryInformation = lead.preliminaryInformation,
                 leadContacts = lead.leadContacts,
-                sourcingChannel = lead.sourcingChannel
+                sourcingChannel = lead.sourcingChannel,
+                extData = lead.extData
             )
         }
     }

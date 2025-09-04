@@ -3,8 +3,8 @@ package com.nivasafinance.features.person.controller
 import com.nivasafinance.features.person.dto.PersonCreateRequest
 import com.nivasafinance.features.person.dto.PersonResponse
 import com.nivasafinance.features.person.dto.PersonUpdateRequest
-import com.nivasafinance.features.person.service.PersonService
 import com.nivasafinance.features.person.service.PersonReadService
+import com.nivasafinance.features.person.service.PersonService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity

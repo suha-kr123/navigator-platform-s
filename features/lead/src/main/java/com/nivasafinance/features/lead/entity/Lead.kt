@@ -53,5 +53,9 @@ data class Lead(
     var leadContacts: LeadContacts?,
 
     @Column(name = "sourcing_channel", length = 50)
-    var sourcingChannel: SourcingChannel?
+    var sourcingChannel: SourcingChannel?,
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "data_ext", columnDefinition = "jsonb")
+    var extData: Map<String, Any>? = null
 ) : AuditableEntity()

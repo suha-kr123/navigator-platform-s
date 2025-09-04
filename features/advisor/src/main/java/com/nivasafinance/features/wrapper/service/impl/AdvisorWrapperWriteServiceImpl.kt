@@ -73,13 +73,16 @@ class AdvisorWrapperWriteServiceImpl(
                     it.whenYouWantLoan,
                     it.isHouseConstructionStarted,
                     it.isEKhathaAvailable,
-                    it.selfDeclaredAnnualFamilyIncome
+                    it.selfDeclaredAnnualFamilyIncome,
+                    it.preferredCallTime,
+                    it.monthlyIncome
                 )
             },
             leadContacts = request.applicantWrapperRequest.leadData?.leadContacts?.let {
                 com.nivasafinance.features.lead.dto.LeadContacts(it.name, it.number)
             },
-            sourcingChannel = request.applicantWrapperRequest.leadData?.sourcingChannel
+            sourcingChannel = request.applicantWrapperRequest.leadData?.sourcingChannel,
+            extData = request.applicantWrapperRequest.leadData?.extData
         )
 
         val leadResponse = leadService.createLead(leadCreateRequest)

@@ -54,13 +54,16 @@ data class ApplicantWrapperRequest(
         val preliminaryInformation: LeadPreliminaryInformation? = null,
         val leadContacts: LeadContacts? = null,
         val stage: LeadStage? = null,
-        val status: LeadStatus? = null
+        val status: LeadStatus? = null,
+        val extData: Map<String, Any>? = null
     ) {
         data class LeadPreliminaryInformation(
             val whenYouWantLoan: String,
             val isHouseConstructionStarted: Boolean,
             val isEKhathaAvailable: Boolean,
-            val selfDeclaredAnnualFamilyIncome: Int
+            val selfDeclaredAnnualFamilyIncome: Int,
+            val preferredCallTime: String? = null,
+            val monthlyIncome: BigDecimal? = null
         )
 
         data class LeadContacts(

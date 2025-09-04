@@ -52,7 +52,8 @@ object TestUtils {
             stage = stage,
             status = status,
             preliminaryInformation = null,
-            leadContacts = null
+            leadContacts = null,
+            extData = null
         )
     }
 
@@ -86,7 +87,8 @@ object TestUtils {
             stage = stage,
             status = status,
             preliminaryInformation = null,
-            leadContacts = null
+            leadContacts = null,
+            extData = null
         )
     }
 

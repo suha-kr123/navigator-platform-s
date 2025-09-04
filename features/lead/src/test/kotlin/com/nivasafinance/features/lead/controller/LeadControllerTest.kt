@@ -115,7 +115,8 @@ class LeadControllerTest {
             stage = LeadStage.INQUIRY,
             preliminaryInformation = null,
             leadContacts = null,
-            sourcingChannel = SourcingChannel.DIRECT
+            sourcingChannel = SourcingChannel.DIRECT,
+            extData = null
         )
     }
 
@@ -126,7 +127,8 @@ class LeadControllerTest {
             productCode = "HL001",
             preliminaryInformation = null,
             leadContacts = null,
-            sourcingChannel = SourcingChannel.DIRECT
+            sourcingChannel = SourcingChannel.DIRECT,
+            extData = null
         )
     }
 }

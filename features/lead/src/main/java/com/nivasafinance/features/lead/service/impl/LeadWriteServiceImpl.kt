@@ -29,7 +29,8 @@ class LeadWriteServiceImpl(
             stage = request.stage ?: LeadStage.INQUIRY,
             preliminaryInformation = request.preliminaryInformation,
             leadContacts = request.leadContacts,
-            sourcingChannel = request.sourcingChannel
+            sourcingChannel = request.sourcingChannel,
+            extData = request.extData
         )
 
         val savedLead = leadRepository.save(lead)
@@ -42,7 +43,8 @@ class LeadWriteServiceImpl(
             stage = savedLead.stage,
             preliminaryInformation = savedLead.preliminaryInformation,
             leadContacts = savedLead.leadContacts,
-            sourcingChannel = savedLead.sourcingChannel
+            sourcingChannel = savedLead.sourcingChannel,
+            extData = savedLead.extData
         )
     }
 
@@ -72,7 +74,8 @@ class LeadWriteServiceImpl(
             stage = savedLead.stage,
             preliminaryInformation = savedLead.preliminaryInformation,
             leadContacts = savedLead.leadContacts,
-            sourcingChannel = savedLead.sourcingChannel
+            sourcingChannel = savedLead.sourcingChannel,
+            extData = savedLead.extData
         )
     }
 }
