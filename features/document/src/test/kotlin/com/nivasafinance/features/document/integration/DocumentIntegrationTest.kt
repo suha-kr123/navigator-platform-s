@@ -74,25 +74,19 @@ class DocumentIntegrationTest {
         }
 
         @Test
-        @DisplayName("Should handle document upload with different providers")
-        fun `should handle document upload with different providers`() {
-            val localUploadRequest = createTestUploadRequest(provider = ProviderType.LOCAL)
-            val s3UploadRequest = createTestUploadRequest(provider = ProviderType.AWS_S3)
+        @DisplayName("Should handle document upload with S3 provider")
+        fun `should handle document upload with S3 provider`() {
+            val uploadRequest = createTestUploadRequest()
             val inputStream = ByteArrayInputStream("test content".toByteArray())
-            val localResponse = createTestUploadResponse(uploadUrl = "http://localhost:8080/files/test.pdf")
-            val s3Response = createTestUploadResponse(uploadUrl = "https://s3.amazonaws.com/bucket/test.pdf")
+            val uploadResponse = createTestUploadResponse(uploadUrl = "https://s3.amazonaws.com/bucket/test.pdf")
 
-            every { documentManagementService.saveFile(localUploadRequest, inputStream) } returns localResponse
-            every { documentManagementService.saveFile(s3UploadRequest, inputStream) } returns s3Response
+            every { documentManagementService.saveFile(uploadRequest, inputStream) } returns uploadResponse
 
-            val localResult = documentManagementService.saveFile(localUploadRequest, inputStream)
-            val s3Result = documentManagementService.saveFile(s3UploadRequest, inputStream)
+            val result = documentManagementService.saveFile(uploadRequest, inputStream)
 
-            assertEquals("http://localhost:8080/files/test.pdf", localResult.uploadUrl)
-            assertEquals("https://s3.amazonaws.com/bucket/test.pdf", s3Result.uploadUrl)
+            assertEquals("https://s3.amazonaws.com/bucket/test.pdf", result.uploadUrl)
 
-            verify { documentManagementService.saveFile(localUploadRequest, inputStream) }
-            verify { documentManagementService.saveFile(s3UploadRequest, inputStream) }
+            verify { documentManagementService.saveFile(uploadRequest, inputStream) }
         }
 
         @Test
@@ -166,35 +160,23 @@ class DocumentIntegrationTest {
         }
 
         @Test
-        @DisplayName("Should handle document retrieval with different providers")
-        fun `should handle document retrieval with different providers`() {
-            val localDocument = createTestDocument(provider = ProviderType.LOCAL)
+        @DisplayName("Should handle document retrieval with S3 provider")
+        fun `should handle document retrieval with S3 provider`() {
             val s3Document = createTestDocument(provider = ProviderType.AWS_S3)
-            val localInputStream = ByteArrayInputStream("local content".toByteArray())
             val s3InputStream = ByteArrayInputStream("s3 content".toByteArray())
 
             every {
-                documentManagementService.getDocument(localDocument.documentId!!)
-            } returns createDocumentResponse(localDocument)
-            every {
                 documentManagementService.getDocument(s3Document.documentId!!)
             } returns createDocumentResponse(s3Document)
-            every { documentManagementService.fetchFile(localDocument.documentId!!) } returns localInputStream
             every { documentManagementService.fetchFile(s3Document.documentId!!) } returns s3InputStream
 
-            val localResult = documentManagementService.getDocument(localDocument.documentId!!)
             val s3Result = documentManagementService.getDocument(s3Document.documentId!!)
-            val localFile = documentManagementService.fetchFile(localDocument.documentId!!)
             val s3File = documentManagementService.fetchFile(s3Document.documentId!!)
 
-            assertEquals(ProviderType.LOCAL, localResult.provider)
             assertEquals(ProviderType.AWS_S3, s3Result.provider)
-            assertNotNull(localFile)
             assertNotNull(s3File)
 
-            verify { documentManagementService.getDocument(localDocument.documentId!!) }
             verify { documentManagementService.getDocument(s3Document.documentId!!) }
-            verify { documentManagementService.fetchFile(localDocument.documentId!!) }
             verify { documentManagementService.fetchFile(s3Document.documentId!!) }
         }
     }

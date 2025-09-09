@@ -26,7 +26,6 @@ class DocumentDtoTest {
                 fileName = "test-document.pdf",
                 fileType = "application/pdf",
                 fileSize = 1024L,
-                provider = ProviderType.LOCAL,
                 category = "KYC",
                 docType = "PAN_CARD",
                 tags = listOf("kyc", "pan", "verification")
@@ -35,7 +34,6 @@ class DocumentDtoTest {
             assertEquals("test-document.pdf", uploadRequest.fileName)
             assertEquals("application/pdf", uploadRequest.fileType)
             assertEquals(1024L, uploadRequest.fileSize)
-            assertEquals(ProviderType.LOCAL, uploadRequest.provider)
             assertEquals("KYC", uploadRequest.category)
             assertEquals("PAN_CARD", uploadRequest.docType)
             assertEquals(listOf("kyc", "pan", "verification"), uploadRequest.tags)
@@ -48,14 +46,12 @@ class DocumentDtoTest {
                 fileName = "minimal-doc.txt",
                 fileType = "text/plain",
                 fileSize = 0L,
-                provider = ProviderType.LOCAL,
                 category = "test",
                 docType = "text",
                 tags = emptyList()
             )
 
             assertEquals("minimal-doc.txt", uploadRequest.fileName)
-            assertEquals(ProviderType.LOCAL, uploadRequest.provider)
             assertEquals("text/plain", uploadRequest.fileType)
             assertEquals(0L, uploadRequest.fileSize)
             assertEquals("test", uploadRequest.category)
@@ -64,15 +60,13 @@ class DocumentDtoTest {
         }
 
         @Test
-        @DisplayName("Should create UploadRequest with AWS S3 provider")
-        fun `should create UploadRequest with AWS S3 provider`() {
+        @DisplayName("Should create UploadRequest with loan document category")
+        fun `should create UploadRequest with loan document category`() {
             val uploadRequest = createTestUploadRequest(
-                provider = ProviderType.AWS_S3,
                 category = "LOAN_DOCS",
                 docType = "BANK_STATEMENT"
             )
 
-            assertEquals(ProviderType.AWS_S3, uploadRequest.provider)
             assertEquals("LOAN_DOCS", uploadRequest.category)
             assertEquals("BANK_STATEMENT", uploadRequest.docType)
         }
@@ -322,7 +316,6 @@ class DocumentDtoTest {
                 fileName = "test.pdf",
                 fileType = "application/pdf",
                 fileSize = 1024L,
-                provider = ProviderType.LOCAL,
                 category = "KYC",
                 docType = "PAN_CARD",
                 tags = listOf("kyc", "pan")
@@ -332,7 +325,6 @@ class DocumentDtoTest {
                 fileName = "test.pdf",
                 fileType = "application/pdf",
                 fileSize = 1024L,
-                provider = ProviderType.LOCAL,
                 category = "KYC",
                 docType = "PAN_CARD",
                 tags = listOf("kyc", "pan")

@@ -70,6 +70,7 @@ class LeadWriteServiceImplTest {
             every { savedLead.preliminaryInformation } returns request.preliminaryInformation
             every { savedLead.leadContacts } returns request.leadContacts
             every { savedLead.sourcingChannel } returns request.sourcingChannel
+            every { savedLead.extData } returns null
 
             every { leadRepository.save(any()) } returns savedLead
 
@@ -107,6 +108,7 @@ class LeadWriteServiceImplTest {
             every { savedLead.preliminaryInformation } returns request.preliminaryInformation
             every { savedLead.leadContacts } returns request.leadContacts
             every { savedLead.sourcingChannel } returns request.sourcingChannel
+            every { savedLead.extData } returns null
 
             every { leadRepository.save(any()) } returns savedLead
 
