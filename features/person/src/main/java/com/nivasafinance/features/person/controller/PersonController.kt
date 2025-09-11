@@ -3,7 +3,6 @@ package com.nivasafinance.features.person.controller
 import com.nivasafinance.features.person.dto.PersonCreateRequest
 import com.nivasafinance.features.person.dto.PersonResponse
 import com.nivasafinance.features.person.dto.PersonUpdateRequest
-import com.nivasafinance.features.person.service.PersonReadService
 import com.nivasafinance.features.person.service.PersonService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
@@ -22,8 +21,7 @@ import java.util.UUID
 @RestController
 @RequestMapping("/v1/persons")
 class PersonController(
-    private val personService: PersonService,
-    private val personReadService: PersonReadService
+    private val personService: PersonService
 ) {
 
     @PostMapping
@@ -40,8 +38,8 @@ class PersonController(
 
     @GetMapping("/mobile")
     fun getPersonByMobileNo(@RequestParam mobileNo: String): ResponseEntity<PersonResponse> {
-        val person = personReadService.getPersonByMobileNo(mobileNo)
-        return ResponseEntity.ok(PersonResponse.fromPersonData(person))
+        val person = personService.getPersonByMobileNo(mobileNo)
+        return ResponseEntity.ok(person)
     }
 
     @PutMapping("/{personId}")

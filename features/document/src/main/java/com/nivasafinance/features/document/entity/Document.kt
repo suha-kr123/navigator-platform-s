@@ -29,6 +29,24 @@ class Document(
     @Column(name = "document_id")
     var documentId: UUID? = null,
 
+    @Column(name = "entity_id", nullable = false)
+    var entityId: UUID? = null,
+
+    @Column(name = "entity_type", nullable = false)
+    var entityType: String? = null,
+
+    @Column(name = "document_type", nullable = false)
+    var documentType: String? = null,
+
+    @Column(name = "is_required", nullable = false)
+    var isRequired: Boolean = false,
+
+    @Column(name = "is_verified", nullable = false)
+    var isVerified: Boolean = false,
+
+    @Column(name = "verification_notes", length = 500)
+    var verificationNotes: String? = null,
+
     // Core file metadata
     @Column(name = "file_name", nullable = false)
     var fileName: String,

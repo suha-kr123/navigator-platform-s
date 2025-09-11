@@ -25,6 +25,15 @@ class Payment(
     @GeneratedValue(strategy = GenerationType.UUID)
     val id: UUID? = null,
 
+    @Column(name = "entity_id", nullable = false)
+    val entityId: UUID? = null,
+
+    @Column(name = "entity_type", nullable = false)
+    val entityType: String? = null,
+
+    @Column(name = "payment_type", nullable = false)
+    val paymentType: String? = null,
+
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_status", nullable = false)
     val paymentStatus: PaymentStatus = PaymentStatus.PENDING_PAYMENT,

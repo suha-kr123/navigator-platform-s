@@ -8,6 +8,12 @@ import java.util.UUID
 @NoArg
 data class DocumentResponse(
     val documentId: UUID,
+    val entityId: UUID?,
+    val entityType: String?,
+    val documentType: String?,
+    val isRequired: Boolean,
+    val isVerified: Boolean,
+    val verificationNotes: String?,
     val fileName: String,
     val fileType: String?,
     val fileSize: Long?,

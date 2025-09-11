@@ -5,27 +5,4 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
-    <include file="/db/migrations/V1__create_api_audit_log.sql"/>
-    <include file="/db/migrations/V2__create_master_pincode.sql"/>
-    <include file="/db/migrations/V3__create_persons.sql"/>
-    <include file="/db/migrations/V4__create_address.sql"/>
-    <include file="/db/migrations/V5__create_person_address_mapping.sql"/>
-    <include file="/db/migrations/V6__create_person_identifiers.sql"/>
-    <include file="/db/migrations/V7__create_advisors.sql"/>
-    <include file="/db/migrations/V8__create_leads.sql"/>
-    <include file="/db/migrations/V9__create_lead_applicants.sql"/>
-    <include file="/db/migrations/V10__create_payments.sql"/>
-    <include file="/db/migrations/V11__create_advisor_lead_mapping.sql"/>
-    <include file="/db/migrations/V12__create_audit_triggers.sql"/>
-    <include file="/db/migrations/V13__alter_advisor_code_nullable.sql"/>
-    <include file="/db/migrations/V14__create_documents.sql"/>
-    <include file="/db/migrations/V15__add_data_ext_to_leads.sql"/>
-    <include file="/db/migrations/V16__create_employment_details.sql"/>
-    <include file="/db/migrations/V17__create_pipelines.sql"/>
-    <include file="/db/migrations/V18__create_stages.sql"/>
-    <include file="/db/migrations/V19__create_transition_definitions.sql"/>
-    <include file="/db/migrations/V20__add_pipeline_columns_to_leads.sql"/>
-    <include file="/db/migrations/V21__create_task_definitions.sql"/>
-    <include file="/db/migrations/V22__create_lead_tasks.sql"/>
-    <include file="/db/migrations/V23__add_audit_triggers_task_management.sql"/>
 </databaseChangeLog>

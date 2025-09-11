@@ -11,8 +11,10 @@ dependencies {
     implementation(project(":features:creditbureau"))
     implementation(project(":features:person"))
     implementation(project(":features:advisor"))
+    implementation(project(":features:advisorleadmapping"))
     implementation(project(":features:master"))
     implementation(project(":features:address"))
     implementation(project(":features:lead"))
     implementation(project(":features:document"))
+    implementation(project(":features:identifiers"))
 }

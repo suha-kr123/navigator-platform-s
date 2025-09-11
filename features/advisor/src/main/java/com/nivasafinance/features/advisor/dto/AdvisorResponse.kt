@@ -2,7 +2,6 @@ package com.nivasafinance.features.advisor.dto
 
 import annotations.NoArg
 import com.nivasafinance.features.advisor.enum.AdvisorStatus
-import com.nivasafinance.features.person.dto.PersonResponse
 import java.util.UUID
 
 @NoArg

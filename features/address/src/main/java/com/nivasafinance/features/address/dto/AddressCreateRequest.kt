@@ -3,9 +3,14 @@ package com.nivasafinance.features.address.dto
 import annotations.NoArg
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Pattern
+import java.util.UUID
 
 @NoArg
 data class AddressCreateRequest(
+    var entityId: UUID,
+    var entityType: String,
+    var addressType: String,
+    var isPrimary: Boolean = false,
     var addressOne: String? = null,
     var addressTwo: String? = null,
     var landmark: String? = null,

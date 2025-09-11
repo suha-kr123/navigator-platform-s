@@ -6,6 +6,9 @@ import java.util.UUID
 
 data class PaymentResponse(
     val id: UUID,
+    val entityId: UUID?,
+    val entityType: String?,
+    val paymentType: String?,
     val paymentStatus: String,
     val amountPaid: BigDecimal?,
     val paidAt: LocalDateTime?,

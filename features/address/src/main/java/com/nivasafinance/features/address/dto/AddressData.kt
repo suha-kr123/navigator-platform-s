@@ -5,6 +5,10 @@ import java.util.UUID
 
 data class AddressData(
     val id: UUID?,
+    val entityId: UUID?,
+    val entityType: String?,
+    val addressType: String?,
+    val isPrimary: Boolean,
     val addressOne: String?,
     val addressTwo: String?,
     val landmark: String?,
@@ -17,6 +21,10 @@ data class AddressData(
         fun fromEntity(address: Address): AddressData {
             return AddressData(
                 id = address.id,
+                entityId = address.entityId,
+                entityType = address.entityType,
+                addressType = address.addressType,
+                isPrimary = address.isPrimary,
                 addressOne = address.addressOne,
                 addressTwo = address.addressTwo,
                 landmark = address.landmark,

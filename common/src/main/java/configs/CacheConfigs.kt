@@ -42,17 +42,6 @@ class CacheConfigs(val mapper: ObjectMapper) {
             .disableCachingNullValues()
         return RedisCacheManager.builder(redisConnectionFactory)
             .cacheDefaults(redisCacheConfiguration)
-            .withCacheConfiguration("advisor_lead_mapping", redisCacheConfiguration)
-            .withCacheConfiguration("payment", redisCacheConfiguration)
-            .withCacheConfiguration("advisor", redisCacheConfiguration)
-            .withCacheConfiguration("advisor_wrapper", redisCacheConfiguration)
-            .withCacheConfiguration("applicant", redisCacheConfiguration)
-            .withCacheConfiguration("applicant_wrapper", redisCacheConfiguration)
-            .withCacheConfiguration("person", redisCacheConfiguration)
-            .withCacheConfiguration("address", redisCacheConfiguration)
-            .withCacheConfiguration("pincode", redisCacheConfiguration)
-            .withCacheConfiguration("leads", redisCacheConfiguration)
-            .withCacheConfiguration("person_addresses", redisCacheConfiguration)
             .build()
     }
 }

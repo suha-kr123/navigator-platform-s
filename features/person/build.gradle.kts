@@ -7,8 +7,7 @@ plugins {
 
 dependencies {
     implementation(project(":common"))
-    implementation(project(":features:master"))
-    implementation(project(":features:address"))
+    implementation("org.springframework.kafka:spring-kafka")
 }
 
 springBoot {

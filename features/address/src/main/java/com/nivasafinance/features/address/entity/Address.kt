@@ -22,6 +22,18 @@ data class Address(
     @Column(columnDefinition = "UUID")
     val id: UUID? = null,
 
+    @Column(name = "entity_id", nullable = false)
+    var entityId: UUID? = null,
+
+    @Column(name = "entity_type", nullable = false)
+    var entityType: String? = null,
+
+    @Column(name = "address_type", nullable = false)
+    var addressType: String? = null,
+
+    @Column(name = "is_primary", nullable = false)
+    var isPrimary: Boolean = false,
+
     @Column(name = "address_one")
     var addressOne: String? = null,
 

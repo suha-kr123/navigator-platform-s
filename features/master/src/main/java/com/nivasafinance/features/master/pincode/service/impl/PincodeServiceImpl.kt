@@ -3,17 +3,26 @@ package com.nivasafinance.features.master.pincode.service.impl
 import base.BaseNavigatorService
 import com.nivasafinance.features.master.pincode.dto.PincodeData
 import com.nivasafinance.features.master.pincode.dto.PincodeResponse
-import com.nivasafinance.features.master.pincode.service.PincodeReadService
+import com.nivasafinance.features.master.pincode.exception.PincodeNotFoundException
+import com.nivasafinance.features.master.pincode.repository.PincodeRepository
 import com.nivasafinance.features.master.pincode.service.PincodeService
+import org.springframework.cache.annotation.CacheConfig
 import org.springframework.stereotype.Service
 
 @Service
+@CacheConfig(cacheManager = "masterCacheManager")
 class PincodeServiceImpl(
-    private val pincodeReadService: PincodeReadService
+    private val pincodeRepository: PincodeRepository
 ) : PincodeService, BaseNavigatorService() {
 
     override fun getByPincode(pincode: String): PincodeResponse {
-        val pincodeDataList = pincodeReadService.getPincodeDataByPincode(pincode)
+        val entities = pincodeRepository.findAllByPincode(pincode)
+
+        if (entities.isEmpty()) {
+            throw PincodeNotFoundException(pincode, messageSource)
+        }
+
+        val pincodeDataList = entities.map { PincodeData.fromEntity(it) }
         return mapDataToResponse(pincode, pincodeDataList)
     }
 

@@ -102,6 +102,10 @@ class DocumentManagementServiceImpl(
 
         // Save document metadata to database
         val document = Document(
+            entityId = documentData.entityId,
+            entityType = documentData.entityType,
+            documentType = documentData.documentType,
+            isRequired = documentData.isRequired,
             fileName = documentData.fileName,
             fileType = documentData.fileType,
             fileSize = documentData.fileSize,
@@ -131,6 +135,12 @@ class DocumentManagementServiceImpl(
 
         return DocumentResponse(
             documentId = document.documentId ?: error("Document ID should not be null"),
+            entityId = document.entityId,
+            entityType = document.entityType,
+            documentType = document.documentType,
+            isRequired = document.isRequired,
+            isVerified = document.isVerified,
+            verificationNotes = document.verificationNotes,
             fileName = document.fileName,
             fileType = document.fileType,
             fileSize = document.fileSize,
