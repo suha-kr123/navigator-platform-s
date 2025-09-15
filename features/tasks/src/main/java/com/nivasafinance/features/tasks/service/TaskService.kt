@@ -12,4 +12,6 @@ interface TaskService {
     fun deleteTask(taskId: UUID)
 
     fun getTask(taskId: UUID): Task
+
+    fun getTasks(taskIds: List<UUID>): List<Task>
 }

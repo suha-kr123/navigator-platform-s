@@ -63,4 +63,12 @@ class TaskRepositoryWrapper(
             throw TaskExceptionFactory.taskNotFound(taskId, messageSource)
         }
     }
+
+    fun findAllWithException(taskIds: List<UUID>): List<Task> {
+        return try {
+            taskRepository.findAllById(taskIds)
+        } catch (e: Exception) {
+            throw TaskExceptionFactory.retrieveEntityFailed(messageSource)
+        }
+    }
 }

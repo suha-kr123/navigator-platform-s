@@ -54,4 +54,8 @@ class TaskServiceImpl(
     private fun getTaskById(taskId: UUID): Task {
         return taskRepositoryWrapper.findByIdWithException(taskId)
     }
+
+    override fun getTasks(taskIds: List<UUID>): List<Task> {
+        return taskRepositoryWrapper.findAllWithException(taskIds)
+    }
 }
