@@ -16,6 +16,9 @@ data class Stage(
     @GeneratedValue(strategy = GenerationType.UUID)
     val id: UUID? = null,
 
+    @Column(name = "stage_definition_key", nullable = false)
+    val stageDefinitionKey: String,
+
     @Enumerated(EnumType.STRING)
     @Column(name = "entity_type", nullable = false)
     val entityType: EntityType,

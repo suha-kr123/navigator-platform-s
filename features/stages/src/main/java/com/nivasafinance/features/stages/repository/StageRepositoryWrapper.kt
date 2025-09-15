@@ -13,7 +13,7 @@ class StageRepositoryWrapper(
     private val messageSource: MessageSource
 ) {   
 
-    fun save(stage: Stage): Stage {
+    fun saveWithException(stage: Stage): Stage {
         return try {
             stageRepository.save(stage)
         } catch (e: Exception) {
@@ -21,7 +21,7 @@ class StageRepositoryWrapper(
         }
     }
 
-    fun findById(id: UUID): Stage {
+    fun findByIdWithException(id: UUID): Stage {
         return try {
             stageRepository.findById(id).orElseThrow {
                 StageExceptionFactory.notFound(id, messageSource)
@@ -31,7 +31,7 @@ class StageRepositoryWrapper(
         }
     }
 
-    fun findAllByEntityTypeAndEntityId(entityType: EntityType, entityId: UUID): List<Stage> {
+    fun findAllByEntityTypeAndEntityIdWithException(entityType: EntityType, entityId: UUID): List<Stage> {
         return try {
             stageRepository.findAllByEntityTypeAndEntityId(entityType, entityId)
         } catch (e: Exception) {
@@ -39,7 +39,7 @@ class StageRepositoryWrapper(
         }
     }
 
-    fun deleteById(id: UUID) {
+    fun deleteByIdWithException(id: UUID) {
         return try {
             stageRepository.deleteById(id)
         } catch (e: Exception) {
@@ -47,7 +47,7 @@ class StageRepositoryWrapper(
         }
     }
 
-    fun findByStageKey(stageKey: String): Stage {
+    fun findByStageKeyWithException(stageKey: String): Stage {
         return try {
             stageRepository.findByStageKey(stageKey)
         } catch (e: Exception) {

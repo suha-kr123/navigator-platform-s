@@ -3,6 +3,8 @@ package exception
 import com.fasterxml.jackson.databind.exc.InvalidFormatException
 import com.nivasafinance.features.tasks.exception.*
 import com.nivasafinance.features.stages.exception.*
+import com.nivasafinance.features.lead.exception.*
+import com.nivasafinance.features.leadpipelinemapping.exception.*
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageNotReadableException
@@ -223,6 +225,102 @@ class GlobalExceptionHandler {
             error = ex.localizedMessage,
             statusCode = HttpStatus.INTERNAL_SERVER_ERROR,
             errorCode = "STAGE_OPERATION_ERROR",
+            requestId = generateRequestId(),
+            path = request.getDescription(false)
+        )
+        return ResponseEntity(apiError, HttpStatus.INTERNAL_SERVER_ERROR)
+    }
+
+    @ExceptionHandler(LeadNotFoundException::class)
+    fun handleLeadNotFoundException(ex: LeadNotFoundException, request: WebRequest): ResponseEntity<ApiError> {
+        val apiError = ApiError(
+            error = ex.localizedMessage,
+            statusCode = HttpStatus.NOT_FOUND,
+            errorCode = "LEAD_NOT_FOUND",
+            requestId = generateRequestId(),
+            path = request.getDescription(false)
+        )
+        return ResponseEntity(apiError, HttpStatus.NOT_FOUND)
+    }
+
+    @ExceptionHandler(LeadValidationException::class)
+    fun handleLeadValidationException(ex: LeadValidationException, request: WebRequest): ResponseEntity<ApiError> {
+        val apiError = ApiError(
+            error = ex.localizedMessage,
+            statusCode = HttpStatus.BAD_REQUEST,
+            errorCode = "LEAD_VALIDATION_ERROR",
+            requestId = generateRequestId(),
+            path = request.getDescription(false)
+        )
+        return ResponseEntity(apiError, HttpStatus.BAD_REQUEST)
+    }
+
+    @ExceptionHandler(LeadConflictException::class)
+    fun handleLeadConflictException(ex: LeadConflictException, request: WebRequest): ResponseEntity<ApiError> {
+        val apiError = ApiError(
+            error = ex.localizedMessage,
+            statusCode = HttpStatus.CONFLICT,
+            errorCode = "LEAD_CONFLICT",
+            requestId = generateRequestId(),
+            path = request.getDescription(false)
+        )
+        return ResponseEntity(apiError, HttpStatus.CONFLICT)
+    }
+
+    @ExceptionHandler(LeadOperationException::class)
+    fun handleLeadOperationException(ex: LeadOperationException, request: WebRequest): ResponseEntity<ApiError> {
+        val apiError = ApiError(
+            error = ex.localizedMessage,
+            statusCode = HttpStatus.INTERNAL_SERVER_ERROR,
+            errorCode = "LEAD_OPERATION_ERROR",
+            requestId = generateRequestId(),
+            path = request.getDescription(false)
+        )
+        return ResponseEntity(apiError, HttpStatus.INTERNAL_SERVER_ERROR)
+    }
+
+    @ExceptionHandler(LeadPipelineMappingNotFoundException::class)
+    fun handleLeadPipelineMappingNotFoundException(ex: LeadPipelineMappingNotFoundException, request: WebRequest): ResponseEntity<ApiError> {
+        val apiError = ApiError(
+            error = ex.localizedMessage,
+            statusCode = HttpStatus.NOT_FOUND,
+            errorCode = "LEAD_PIPELINE_MAPPING_NOT_FOUND",
+            requestId = generateRequestId(),
+            path = request.getDescription(false)
+        )
+        return ResponseEntity(apiError, HttpStatus.NOT_FOUND)
+    }
+
+    @ExceptionHandler(LeadPipelineMappingValidationException::class)
+    fun handleLeadPipelineMappingValidationException(ex: LeadPipelineMappingValidationException, request: WebRequest): ResponseEntity<ApiError> {
+        val apiError = ApiError(
+            error = ex.localizedMessage,
+            statusCode = HttpStatus.BAD_REQUEST,
+            errorCode = "LEAD_PIPELINE_MAPPING_VALIDATION_ERROR",
+            requestId = generateRequestId(),
+            path = request.getDescription(false)
+        )
+        return ResponseEntity(apiError, HttpStatus.BAD_REQUEST)
+    }
+
+    @ExceptionHandler(LeadPipelineMappingConflictException::class)
+    fun handleLeadPipelineMappingConflictException(ex: LeadPipelineMappingConflictException, request: WebRequest): ResponseEntity<ApiError> {
+        val apiError = ApiError(
+            error = ex.localizedMessage,
+            statusCode = HttpStatus.CONFLICT,
+            errorCode = "LEAD_PIPELINE_MAPPING_CONFLICT",
+            requestId = generateRequestId(),
+            path = request.getDescription(false)
+        )
+        return ResponseEntity(apiError, HttpStatus.CONFLICT)
+    }
+
+    @ExceptionHandler(LeadPipelineMappingOperationException::class)
+    fun handleLeadPipelineMappingOperationException(ex: LeadPipelineMappingOperationException, request: WebRequest): ResponseEntity<ApiError> {
+        val apiError = ApiError(
+            error = ex.localizedMessage,
+            statusCode = HttpStatus.INTERNAL_SERVER_ERROR,
+            errorCode = "LEAD_PIPELINE_MAPPING_OPERATION_ERROR",
             requestId = generateRequestId(),
             path = request.getDescription(false)
         )

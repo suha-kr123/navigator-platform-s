@@ -14,7 +14,7 @@ class TaskRepositoryWrapper(
     private val messageSource: MessageSource
 ) {
 
-    fun existsByTaskKey(taskKey: String): Boolean {
+    fun existsByTaskKeyWithException(taskKey: String): Boolean {
         return try {
             taskRepository.existsByTaskKey(taskKey)
         } catch (e: Exception) {
@@ -22,7 +22,7 @@ class TaskRepositoryWrapper(
         }
     } 
 
-    fun findAll(pageable: Pageable): Page<Task> {
+    fun findAllWithException(pageable: Pageable): Page<Task> {
         return try {
             taskRepository.findAll(pageable)
         } catch (e: Exception) {
@@ -30,7 +30,7 @@ class TaskRepositoryWrapper(
         }
     }
 
-    fun count(): Long {
+    fun countWithException(): Long {
         return try {   
             taskRepository.count()
         } catch (e: Exception) {
@@ -38,7 +38,7 @@ class TaskRepositoryWrapper(
         }
     }
 
-    fun save(task: Task): Task {
+    fun saveWithException(task: Task): Task {
         return try {
             taskRepository.save(task)
         } catch (e: Exception) {
@@ -46,7 +46,7 @@ class TaskRepositoryWrapper(
         }
     }
 
-    fun deleteById(taskId: UUID) {
+    fun deleteByIdWithException(taskId: UUID) {
         try {
             taskRepository.deleteById(taskId)
         } catch (e: Exception) {
@@ -54,7 +54,7 @@ class TaskRepositoryWrapper(
         }
     }
 
-    fun findById(taskId: UUID): Task {
+    fun findByIdWithException(taskId: UUID): Task {
         return try {
             taskRepository.findById(taskId).orElseThrow {
                 TaskExceptionFactory.taskNotFound(taskId, messageSource)

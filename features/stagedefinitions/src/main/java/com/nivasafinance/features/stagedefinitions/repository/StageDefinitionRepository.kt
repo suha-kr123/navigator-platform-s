@@ -7,4 +7,5 @@ import java.util.*
 
 @Repository
 interface StageDefinitionRepository : JpaRepository<StageDefinition, UUID> {
+    fun findByPipelineKeyOrderByKeyAsc(pipelineKey: String): List<StageDefinition>
 }

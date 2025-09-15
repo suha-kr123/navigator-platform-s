@@ -1,4 +1,4 @@
-package com.nivasafinance.features.lead.dto
+package com.nivasafinance.features.tasks.dto
 
 import com.nivasafinance.features.tasks.enum.TaskOutcome
 import com.nivasafinance.features.tasks.enum.TaskStatus
@@ -7,16 +7,16 @@ import java.util.*
 
 data class TaskResponse(
     val id: UUID,
-    val taskKey: String,
-    val entityId: UUID,
-    val entityType: String,
+    val taskDefinitionKey: String,
+    val taskData: String?,
     val assignedTo: String?,
     val status: TaskStatus,
     val outcome: TaskOutcome,
-    val taskData: String?,
     val dueAt: LocalDateTime?,
     val completedAt: LocalDateTime?,
     val rescheduledAt: LocalDateTime?,
     val createdAt: LocalDateTime,
-    val updatedAt: LocalDateTime
+    val createdBy: String?,
+    val updatedAt: LocalDateTime,
+    val updatedBy: String?,
 )
