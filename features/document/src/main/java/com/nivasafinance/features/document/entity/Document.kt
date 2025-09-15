@@ -38,8 +38,6 @@ class Document(
     @Column(name = "document_type", nullable = false)
     var documentType: String? = null,
 
-    @Column(name = "is_required", nullable = false)
-    var isRequired: Boolean = false,
 
     @Column(name = "is_verified", nullable = false)
     var isVerified: Boolean = false,
@@ -85,8 +83,4 @@ class Document(
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "ext_data", columnDefinition = "jsonb")
     var extData: Map<String, Any>? = null,
-
-    // Note: Audit fields (createdBy, createdAt, updatedBy, updatedAt, version)
-    // are inherited from AuditableEntity
-
 ) : AuditableEntity()
