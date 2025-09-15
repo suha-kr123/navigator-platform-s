@@ -14,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
 import com.nivasafinance.features.stages.entity.Stage
 import com.nivasafinance.features.stages.repository.StageRepositoryWrapper
-import com.nivasafinance.features.stages.dto.StageResponse
 import com.nivasafinance.features.stages.enum.EntityType as StageEntityType
 import com.nivasafinance.features.stagedefinitions.repository.StageDefinitionRepositoryWrapper
 import com.nivasafinance.features.stages.enum.Status
@@ -41,16 +40,14 @@ class LeadServiceImpl(
         val lead = toLead(leadCreateRequest)
         val savedLead = leadRepositoryWrapper.saveWithException(lead)
         
-        // Create stages for the lead based on pipeline
-        val stages = createStagesForLead(savedLead.id!!, leadCreateRequest.pipelineKey)
+        createStagesForLead(savedLead.id!!, leadCreateRequest.pipelineKey)
         
-        return toLeadResponse(savedLead, stages)
+        return toLeadResponse(savedLead)
     }
 
     override fun getLeadById(id: UUID): LeadResponse {
         val lead = leadRepositoryWrapper.findByIdWithException(id)
-        val stages = getStagesByLeadId(id)
-        return toLeadResponse(lead, stages)
+        return toLeadResponse(lead)
     }
 
     override fun getAllLeads(paginationRequest: PaginationRequest): PaginatedResponse<LeadResponse> {
@@ -91,7 +88,7 @@ class LeadServiceImpl(
         )
     }
 
-    private fun toLeadResponse(lead: Lead, stages: List<Stage> = emptyList()): LeadResponse {
+    private fun toLeadResponse(lead: Lead): LeadResponse {
         return LeadResponse(
             id = lead.id ?: UUID.randomUUID(),
             requestedAmount = lead.requestedAmount,
@@ -102,7 +99,6 @@ class LeadServiceImpl(
             leadContacts = lead.leadContacts,
             sourcingChannel = lead.sourcingChannel,
             extData = lead.extData,
-            stages = stages.map { toStageResponse(it) },
             createdAt = lead.createdAt ?: java.time.LocalDateTime.now(),
             createdBy = lead.createdBy,
             updatedAt = lead.updatedAt ?: java.time.LocalDateTime.now(),
@@ -134,24 +130,4 @@ class LeadServiceImpl(
         return stages
     }
 
-    private fun getStagesByLeadId(leadId: UUID): List<Stage> {
-        return stageRepositoryWrapper.findAllByEntityTypeAndEntityIdWithException(StageEntityType.LEAD, leadId)
-    }
-
-    private fun toStageResponse(stage: Stage): StageResponse {
-        return StageResponse(
-            id = stage.id ?: UUID.randomUUID(),
-            entityType = stage.entityType,
-            entityId = stage.entityId,
-            stageDefinitionKey = stage.stageDefinitionKey,
-            outcome = stage.outcome,
-            status = stage.status,
-            assignedTo = stage.assignedTo,
-            tasks = emptyList(), // Tasks not implemented yet
-            createdAt = stage.createdAt ?: java.time.LocalDateTime.now(),
-            createdBy = stage.createdBy,
-            updatedAt = stage.updatedAt ?: java.time.LocalDateTime.now(),
-            updatedBy = stage.updatedBy
-        )
-    }
 }
