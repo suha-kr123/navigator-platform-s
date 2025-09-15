@@ -1,5 +1,7 @@
 package com.nivasafinance.features.stages.controller
 
+import com.nivasafinance.features.stages.dto.StageResponse
+import com.nivasafinance.features.stages.dto.StageUpdateRequest
 import com.nivasafinance.features.stages.service.StageService
 import com.nivasafinance.features.tasks.dto.TaskRequest
 import com.nivasafinance.features.tasks.dto.TaskResponse
@@ -22,6 +24,15 @@ class StageController(
     ): ResponseEntity<TaskResponse> {
         val task = stageService.addTasksToStage(stageId, listOf(taskRequest))
         return ResponseEntity.status(HttpStatus.CREATED).body(task.first())
+    }
+
+    @PutMapping("/{stageId}")
+    fun updateStage(
+        @PathVariable stageId: UUID,
+        @RequestBody stageUpdateRequest: StageUpdateRequest
+    ): ResponseEntity<StageResponse> {
+        val stageResponse = stageService.updateStage(stageId, stageUpdateRequest)
+        return ResponseEntity.ok(stageResponse)
     }
 
     @PutMapping("/{stageId}/tasks/{taskId}")

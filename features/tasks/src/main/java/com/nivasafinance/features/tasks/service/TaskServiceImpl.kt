@@ -99,7 +99,7 @@ class TaskServiceImpl(
             paginationRequest.limit
         )
         val taskPage = taskRepositoryWrapper.findAllByAssignedToWithException(assignedTo, pageable)
-        val taskResponses = taskPage.content.map { toTaskResponse(it) }
+        val taskResponses = taskPage.toList().map { toTaskResponse(it) }
 
         val totalElements = taskPage.totalElements
         val totalPages = if (totalElements == 0L) 0 else ((totalElements - 1) / paginationRequest.limit + 1).toInt()

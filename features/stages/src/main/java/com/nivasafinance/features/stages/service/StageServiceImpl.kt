@@ -2,6 +2,7 @@ package com.nivasafinance.features.stages.service
 
 import com.nivasafinance.features.stages.dto.StageRequest
 import com.nivasafinance.features.stages.dto.StageResponse
+import com.nivasafinance.features.stages.dto.StageUpdateRequest
 import com.nivasafinance.features.stages.entity.Stage
 import com.nivasafinance.features.stages.enum.EntityType
 import com.nivasafinance.features.stages.exception.StageExceptionFactory
@@ -9,7 +10,6 @@ import com.nivasafinance.features.stages.repository.StageRepositoryWrapper
 import com.nivasafinance.features.tasks.dto.TaskRequest
 import com.nivasafinance.features.tasks.dto.TaskResponse
 import com.nivasafinance.features.tasks.dto.UpdateTaskRequest
-import com.nivasafinance.features.tasks.entity.Task
 import com.nivasafinance.features.tasks.service.TaskService
 import org.springframework.context.MessageSource
 import org.springframework.stereotype.Service
@@ -42,6 +42,17 @@ class StageServiceImpl(
         val savedStage = stageRepositoryWrapper.saveWithException(stage)
         
         return toStageResponse(savedStage, taskResponses)
+    }
+
+    override fun updateStage(stageId: UUID, stageUpdateRequest: StageUpdateRequest): StageResponse {
+        val stage = stageRepositoryWrapper.findByIdWithException(stageId)
+        val updatedStage = stage.copy(
+            outcome = stageUpdateRequest.outcome,
+            status = stageUpdateRequest.status,
+            assignedTo = stageUpdateRequest.assignedTo
+        )
+        val savedStage = stageRepositoryWrapper.saveWithException(updatedStage)
+        return toStageResponse(savedStage)
     }
 
     override fun getStagesByEntityTypeAndEntityId(entityType: EntityType, entityId: UUID): List<StageResponse> {
@@ -78,7 +89,7 @@ class StageServiceImpl(
             throw StageExceptionFactory.taskNotFoundInStage(taskId, stageId, messageSource)
         }
         
-        val existingTask = taskService.getTask(taskId)
+        val existingTask = taskService.getTask(taskId, messageSource)
         val updatedTask = existingTask.copy(
             taskData = updateTaskRequest.taskData,
             assignedTo = updateTaskRequest.assignedTo,
@@ -86,7 +97,7 @@ class StageServiceImpl(
             outcome = updateTaskRequest.outcome
         )
         
-        val savedTask = taskService.updateTask(updatedTask)
+        val savedTask = taskService.updateTask(taskId, updatedTask)
         
         return TaskResponse(
             id = savedTask.id!!,
@@ -113,8 +124,9 @@ class StageServiceImpl(
             throw StageExceptionFactory.taskNotFoundInStage(taskId, stageId, messageSource)
         }
         
-        taskService.deleteTask(taskId)
+        taskService.deleteTask(taskId, messageSource)
         
+        val updatedTask = taskService.getTask(taskId, messageSource)
         val updatedTaskIds = taskIds.filter { it != taskId }
         val updatedStage = stage.copy(
             tasks = updatedTaskIds.toString()
@@ -157,18 +169,9 @@ class StageServiceImpl(
 
     private fun createTasksForStage(stageId: UUID, taskRequests: List<TaskRequest>): List<TaskResponse> {
         val taskResponses = taskRequests.map { taskRequest ->
-            val task = Task(
-                taskDefinitionKey = taskRequest.taskDefinitionKey,
-                taskData = taskRequest.taskData,
-                assignedTo = taskRequest.assignedTo,
-                status = taskRequest.status,
-                outcome = taskRequest.outcome,
-                dueAt = null,
-                completedAt = null,
-                rescheduledAt = null
-            )
+           
             
-            val createdTask = taskService.createTask(task)
+            val createdTask = taskService.createTask(taskRequest)
             
             TaskResponse(
                 id = createdTask.id ?: UUID.randomUUID(),
@@ -205,7 +208,7 @@ class StageServiceImpl(
         val taskIds = parseTaskIdsFromStage(stage)
         
         return taskIds.map { taskId ->
-            val task = taskService.getTask(taskId)
+            val task = taskService.getTask(taskId, messageSource)
             TaskResponse(
                 id = task.id ?: UUID.randomUUID(),
                 taskDefinitionKey = task.taskDefinitionKey,
