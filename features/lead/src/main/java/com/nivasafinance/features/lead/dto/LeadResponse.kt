@@ -2,7 +2,7 @@ package com.nivasafinance.features.lead.dto
 
 import com.nivasafinance.features.lead.enum.LeadStatus
 import com.nivasafinance.features.lead.enum.SourcingChannel
-// import com.nivasafinance.features.stages.dto.StageResponse
+import com.nivasafinance.features.stages.dto.StageResponse
 import java.math.BigDecimal
 import java.time.LocalDateTime
 import java.util.*
@@ -17,7 +17,7 @@ data class LeadResponse(
     val preliminaryInformation: LeadPreliminaryInformation?,
     val leadContacts: LeadContacts?,
     val extData: Map<String, Any>?,
-    // val stages: List<StageResponse>, // Removed for now
+    val stages: List<StageResponse>,
     val createdAt: LocalDateTime,
     val createdBy: String?,
     val updatedAt: LocalDateTime,

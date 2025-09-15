@@ -12,27 +12,20 @@ import org.springframework.context.MessageSource
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
-// Stage and task functionality temporarily disabled
-// import com.nivasafinance.features.stages.entity.Stage
-// import com.nivasafinance.features.tasks.entity.Task
-// import com.nivasafinance.features.stages.repository.StageRepositoryWrapper
-// import com.nivasafinance.features.tasks.repository.TaskRepositoryWrapper
-// import com.nivasafinance.features.stages.dto.StageResponse
-// import com.nivasafinance.features.tasks.dto.TaskResponse
-// import com.nivasafinance.features.stages.enum.EntityType as StageEntityType
-// import com.nivasafinance.features.stagedefinitions.repository.StageDefinitionRepositoryWrapper
-// import com.nivasafinance.features.stagedefinitions.entity.StageDefinition
-// import com.nivasafinance.features.stagedefinitions.dto.StageDefinitionResponse
-// import com.nivasafinance.features.stages.enum.Status
-// import com.nivasafinance.features.stages.enum.Outcome
+import com.nivasafinance.features.stages.entity.Stage
+import com.nivasafinance.features.stages.repository.StageRepositoryWrapper
+import com.nivasafinance.features.stages.dto.StageResponse
+import com.nivasafinance.features.stages.enum.EntityType as StageEntityType
+import com.nivasafinance.features.stagedefinitions.repository.StageDefinitionRepositoryWrapper
+import com.nivasafinance.features.stages.enum.Status
+import com.nivasafinance.features.stages.enum.Outcome
 
 @Service
 @Transactional
 class LeadServiceImpl(
     private val leadRepositoryWrapper: LeadRepositoryWrapper,
-    // private val stageRepositoryWrapper: StageRepositoryWrapper,
-    // private val taskRepositoryWrapper: TaskRepositoryWrapper,
-    // private val stageDefinitionRepositoryWrapper: StageDefinitionRepositoryWrapper,
+    private val stageRepositoryWrapper: StageRepositoryWrapper,
+    private val stageDefinitionRepositoryWrapper: StageDefinitionRepositoryWrapper,
     private val messageSource: MessageSource
 ) : LeadService {
 
@@ -47,12 +40,17 @@ class LeadServiceImpl(
         )
         val lead = toLead(leadCreateRequest)
         val savedLead = leadRepositoryWrapper.saveWithException(lead)
-        return toLeadResponse(savedLead)
+        
+        // Create stages for the lead based on pipeline
+        val stages = createStagesForLead(savedLead.id!!, leadCreateRequest.pipelineKey)
+        
+        return toLeadResponse(savedLead, stages)
     }
 
     override fun getLeadById(id: UUID): LeadResponse {
         val lead = leadRepositoryWrapper.findByIdWithException(id)
-        return toLeadResponse(lead)
+        val stages = getStagesByLeadId(id)
+        return toLeadResponse(lead, stages)
     }
 
     override fun getAllLeads(paginationRequest: PaginationRequest): PaginatedResponse<LeadResponse> {
@@ -93,7 +91,7 @@ class LeadServiceImpl(
         )
     }
 
-    private fun toLeadResponse(lead: Lead): LeadResponse {
+    private fun toLeadResponse(lead: Lead, stages: List<Stage> = emptyList()): LeadResponse {
         return LeadResponse(
             id = lead.id ?: UUID.randomUUID(),
             requestedAmount = lead.requestedAmount,
@@ -104,7 +102,7 @@ class LeadServiceImpl(
             leadContacts = lead.leadContacts,
             sourcingChannel = lead.sourcingChannel,
             extData = lead.extData,
-            // stages = emptyList(), // Stages disabled for now
+            stages = stages.map { toStageResponse(it) },
             createdAt = lead.createdAt ?: java.time.LocalDateTime.now(),
             createdBy = lead.createdBy,
             updatedAt = lead.updatedAt ?: java.time.LocalDateTime.now(),
@@ -112,5 +110,48 @@ class LeadServiceImpl(
         )
     }
 
-    // Stage and task functionality removed for now
+    private fun createStagesForLead(leadId: UUID, pipelineKey: String?): List<Stage> {
+        if (pipelineKey.isNullOrBlank()) {
+            return emptyList()
+        }
+        
+        val stageDefinitions = stageDefinitionRepositoryWrapper.findByPipelineKeyWithException(pipelineKey)
+        val stages = mutableListOf<Stage>()
+        
+        stageDefinitions.forEach { stageDefinition ->
+            val stage = Stage(
+                stageDefinitionKey = stageDefinition.key,
+                entityType = StageEntityType.LEAD,
+                entityId = leadId,
+                outcome = Outcome.PENDING,
+                status = Status.PENDING,
+                assignedTo = null
+            )
+            val savedStage = stageRepositoryWrapper.saveWithException(stage)
+            stages.add(savedStage)
+        }
+        
+        return stages
+    }
+
+    private fun getStagesByLeadId(leadId: UUID): List<Stage> {
+        return stageRepositoryWrapper.findAllByEntityTypeAndEntityIdWithException(StageEntityType.LEAD, leadId)
+    }
+
+    private fun toStageResponse(stage: Stage): StageResponse {
+        return StageResponse(
+            id = stage.id ?: UUID.randomUUID(),
+            entityType = stage.entityType,
+            entityId = stage.entityId,
+            stageDefinitionKey = stage.stageDefinitionKey,
+            outcome = stage.outcome,
+            status = stage.status,
+            assignedTo = stage.assignedTo,
+            tasks = emptyList(), // Tasks not implemented yet
+            createdAt = stage.createdAt ?: java.time.LocalDateTime.now(),
+            createdBy = stage.createdBy,
+            updatedAt = stage.updatedAt ?: java.time.LocalDateTime.now(),
+            updatedBy = stage.updatedBy
+        )
+    }
 }

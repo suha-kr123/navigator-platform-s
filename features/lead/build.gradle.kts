@@ -8,6 +8,8 @@ plugins {
 dependencies {
     implementation(project(":common"))
     implementation(project(":features:tasks"))
+    implementation(project(":features:stages"))
+    implementation(project(":features:stagedefinitions"))
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
 }
 
