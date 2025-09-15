@@ -8,4 +8,6 @@ import java.util.*
 @Repository
 interface TaskRepository : JpaRepository<Task, UUID> {
     fun existsByTaskKey(taskKey: String): Boolean
+
+    fun findAllByAssignedTo(assignedTo: String): List<Task>
 }

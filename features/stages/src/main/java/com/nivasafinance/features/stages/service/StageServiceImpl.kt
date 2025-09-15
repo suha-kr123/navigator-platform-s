@@ -8,6 +8,7 @@ import com.nivasafinance.features.stages.exception.StageExceptionFactory
 import com.nivasafinance.features.stages.repository.StageRepositoryWrapper
 import com.nivasafinance.features.tasks.dto.TaskRequest
 import com.nivasafinance.features.tasks.dto.TaskResponse
+import com.nivasafinance.features.tasks.dto.UpdateTaskRequest
 import com.nivasafinance.features.tasks.entity.Task
 import com.nivasafinance.features.tasks.service.TaskService
 import org.springframework.context.MessageSource
@@ -67,6 +68,62 @@ class StageServiceImpl(
         stageRepositoryWrapper.saveWithException(updatedStage)
         
         return taskResponses
+    }
+
+    override fun updateTaskInStage(stageId: UUID, taskId: UUID, updateTaskRequest: UpdateTaskRequest): TaskResponse {
+        val stage = stageRepositoryWrapper.findByIdWithException(stageId)
+        val taskIds = parseTaskIdsFromStage(stage)
+        
+        if (!taskIds.contains(taskId)) {
+            throw StageExceptionFactory.taskNotFoundInStage(taskId, stageId, messageSource)
+        }
+        
+        val existingTask = taskService.getTask(taskId)
+        val updatedTask = existingTask.copy(
+            taskData = updateTaskRequest.taskData,
+            assignedTo = updateTaskRequest.assignedTo,
+            status = updateTaskRequest.status,
+            outcome = updateTaskRequest.outcome
+        )
+        
+        val savedTask = taskService.updateTask(updatedTask)
+        
+        return TaskResponse(
+            id = savedTask.id!!,
+            taskDefinitionKey = savedTask.taskDefinitionKey,
+            taskData = savedTask.taskData,
+            assignedTo = savedTask.assignedTo,
+            status = savedTask.status,
+            outcome = savedTask.outcome,
+            dueAt = savedTask.dueAt,
+            completedAt = savedTask.completedAt,
+            rescheduledAt = savedTask.rescheduledAt,
+            createdAt = savedTask.createdAt!!,
+            createdBy = savedTask.createdBy,
+            updatedAt = savedTask.updatedAt!!,
+            updatedBy = savedTask.updatedBy
+        )
+    }
+
+    override fun deleteTaskFromStage(stageId: UUID, taskId: UUID) {
+        val stage = stageRepositoryWrapper.findByIdWithException(stageId)
+        val taskIds = parseTaskIdsFromStage(stage)
+        
+        if (!taskIds.contains(taskId)) {
+            throw StageExceptionFactory.taskNotFoundInStage(taskId, stageId, messageSource)
+        }
+        
+        taskService.deleteTask(taskId)
+        
+        val updatedTaskIds = taskIds.filter { it != taskId }
+        val updatedStage = stage.copy(
+            tasks = updatedTaskIds.toString()
+        )
+        stageRepositoryWrapper.saveWithException(updatedStage)
+    }
+
+    override fun getTasksForStage(stageId: UUID): List<TaskResponse> {
+        return getTasksByStageId(stageId)
     }
 
     private fun toStage(stageRequest: StageRequest, taskIds: List<String> = emptyList()): Stage {

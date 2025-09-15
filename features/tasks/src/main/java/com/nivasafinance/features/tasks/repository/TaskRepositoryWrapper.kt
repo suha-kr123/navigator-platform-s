@@ -71,4 +71,12 @@ class TaskRepositoryWrapper(
             throw TaskExceptionFactory.retrieveEntityFailed(messageSource)
         }
     }
+
+    fun findAllByAssignedToWithException(assignedTo: String): List<Task> {
+        return try {
+            taskRepository.findAllByAssignedTo(assignedTo)
+        } catch (e: Exception) {
+            throw TaskExceptionFactory.retrieveEntityFailed(messageSource)
+        }
+    }
 }

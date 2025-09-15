@@ -48,6 +48,10 @@ object StageExceptionFactory {
         return StageInvalidStatusTransitionException(currentStatus.name, newStatus.name, messageSource)
     }
 
+    fun taskNotFoundInStage(taskId: UUID, stageId: UUID, messageSource: MessageSource): StageValidationException {
+        return StageValidationException("error.stage.task.not.found", arrayOf(taskId.toString(), stageId.toString()), messageSource)
+    }
+
     fun validateEntityParameters(entityId: UUID?, entityType: EntityType?, messageSource: MessageSource) {
         ExceptionUtils.requireNotNull(entityId, "entityId", "error.invalid", messageSource)
         ExceptionUtils.requireNotNull(entityType, "entityType", "error.invalid", messageSource)
