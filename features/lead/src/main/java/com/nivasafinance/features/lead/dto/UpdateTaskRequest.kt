@@ -4,11 +4,12 @@ import com.nivasafinance.features.tasks.enum.TaskOutcome
 import com.nivasafinance.features.tasks.enum.TaskStatus
 import java.time.LocalDateTime
 
-data class CreateTaskRequest(
-    val taskKey: String,
+data class UpdateTaskRequest(
+    val status: TaskStatus? = null,
+    val outcome: TaskOutcome? = null,
     val assignedTo: String? = null,
     val taskData: String? = null,
-    val status: TaskStatus,
-    val outcome: TaskOutcome,
-    val dueAt: LocalDateTime? = null
+    val dueAt: LocalDateTime? = null,
+    val completedAt: LocalDateTime? = null,
+    val rescheduledAt: LocalDateTime? = null
 )

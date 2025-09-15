@@ -7,6 +7,7 @@ plugins {
 
 dependencies {
     implementation(project(":common"))
+    implementation(project(":features:tasks"))
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
 }
 

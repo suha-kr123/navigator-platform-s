@@ -1,6 +1,8 @@
 package exception
 
 import com.fasterxml.jackson.databind.exc.InvalidFormatException
+import com.nivasafinance.features.tasks.exception.*
+import com.nivasafinance.features.stages.exception.*
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageNotReadableException
@@ -129,6 +131,102 @@ class GlobalExceptionHandler {
             path = request.getDescription(false)
         )
         return ResponseEntity(apiError, HttpStatus.CONFLICT)
+    }
+
+    @ExceptionHandler(TaskNotFoundException::class)
+    fun handleTaskNotFoundException(ex: TaskNotFoundException, request: WebRequest): ResponseEntity<ApiError> {
+        val apiError = ApiError(
+            error = ex.localizedMessage,
+            statusCode = HttpStatus.NOT_FOUND,
+            errorCode = "TASK_NOT_FOUND",
+            requestId = generateRequestId(),
+            path = request.getDescription(false)
+        )
+        return ResponseEntity(apiError, HttpStatus.NOT_FOUND)
+    }
+
+    @ExceptionHandler(TaskValidationException::class)
+    fun handleTaskValidationException(ex: TaskValidationException, request: WebRequest): ResponseEntity<ApiError> {
+        val apiError = ApiError(
+            error = ex.localizedMessage,
+            statusCode = HttpStatus.BAD_REQUEST,
+            errorCode = "TASK_VALIDATION_ERROR",
+            requestId = generateRequestId(),
+            path = request.getDescription(false)
+        )
+        return ResponseEntity(apiError, HttpStatus.BAD_REQUEST)
+    }
+
+    @ExceptionHandler(TaskConflictException::class)
+    fun handleTaskConflictException(ex: TaskConflictException, request: WebRequest): ResponseEntity<ApiError> {
+        val apiError = ApiError(
+            error = ex.localizedMessage,
+            statusCode = HttpStatus.CONFLICT,
+            errorCode = "TASK_CONFLICT",
+            requestId = generateRequestId(),
+            path = request.getDescription(false)
+        )
+        return ResponseEntity(apiError, HttpStatus.CONFLICT)
+    }
+
+    @ExceptionHandler(TaskOperationException::class)
+    fun handleTaskOperationException(ex: TaskOperationException, request: WebRequest): ResponseEntity<ApiError> {
+        val apiError = ApiError(
+            error = ex.localizedMessage,
+            statusCode = HttpStatus.INTERNAL_SERVER_ERROR,
+            errorCode = "TASK_OPERATION_ERROR",
+            requestId = generateRequestId(),
+            path = request.getDescription(false)
+        )
+        return ResponseEntity(apiError, HttpStatus.INTERNAL_SERVER_ERROR)
+    }
+
+    @ExceptionHandler(StageNotFoundException::class)
+    fun handleStageNotFoundException(ex: StageNotFoundException, request: WebRequest): ResponseEntity<ApiError> {
+        val apiError = ApiError(
+            error = ex.localizedMessage,
+            statusCode = HttpStatus.NOT_FOUND,
+            errorCode = "STAGE_NOT_FOUND",
+            requestId = generateRequestId(),
+            path = request.getDescription(false)
+        )
+        return ResponseEntity(apiError, HttpStatus.NOT_FOUND)
+    }
+
+    @ExceptionHandler(StageValidationException::class)
+    fun handleStageValidationException(ex: StageValidationException, request: WebRequest): ResponseEntity<ApiError> {
+        val apiError = ApiError(
+            error = ex.localizedMessage,
+            statusCode = HttpStatus.BAD_REQUEST,
+            errorCode = "STAGE_VALIDATION_ERROR",
+            requestId = generateRequestId(),
+            path = request.getDescription(false)
+        )
+        return ResponseEntity(apiError, HttpStatus.BAD_REQUEST)
+    }
+
+    @ExceptionHandler(StageConflictException::class)
+    fun handleStageConflictException(ex: StageConflictException, request: WebRequest): ResponseEntity<ApiError> {
+        val apiError = ApiError(
+            error = ex.localizedMessage,
+            statusCode = HttpStatus.CONFLICT,
+            errorCode = "STAGE_CONFLICT",
+            requestId = generateRequestId(),
+            path = request.getDescription(false)
+        )
+        return ResponseEntity(apiError, HttpStatus.CONFLICT)
+    }
+
+    @ExceptionHandler(StageOperationException::class)
+    fun handleStageOperationException(ex: StageOperationException, request: WebRequest): ResponseEntity<ApiError> {
+        val apiError = ApiError(
+            error = ex.localizedMessage,
+            statusCode = HttpStatus.INTERNAL_SERVER_ERROR,
+            errorCode = "STAGE_OPERATION_ERROR",
+            requestId = generateRequestId(),
+            path = request.getDescription(false)
+        )
+        return ResponseEntity(apiError, HttpStatus.INTERNAL_SERVER_ERROR)
     }
 
     @ExceptionHandler(UnauthorizedException::class)

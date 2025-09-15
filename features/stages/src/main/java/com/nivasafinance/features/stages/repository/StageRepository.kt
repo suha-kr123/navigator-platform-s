@@ -10,4 +10,8 @@ import java.util.*
 
 @Repository
 interface StageRepository : JpaRepository<Stage, UUID> {
+
+    fun findAllByEntityTypeAndEntityId(entityType: EntityType, entityId: UUID): List<Stage>
+
+    fun findByStageKey(stageKey: String): Stage
 }

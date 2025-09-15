@@ -16,14 +16,8 @@ data class Task(
     @GeneratedValue(strategy = GenerationType.UUID)
     val id: UUID? = null,
 
-    @Column(name = "task_key", nullable = false)
-    val taskKey: String,
-
-    @Column(name = "entity_id", nullable = false)
-    val entityId: UUID,
-
-    @Column(name = "entity_type", nullable = false)
-    val entityType: String,
+    @Column(name = "task_definition_key", nullable = false, unique = true)
+    val taskDefinitionKey: String,
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "task_data", columnDefinition = "jsonb")

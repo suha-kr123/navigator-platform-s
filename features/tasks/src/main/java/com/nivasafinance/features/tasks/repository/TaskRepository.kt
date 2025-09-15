@@ -7,5 +7,5 @@ import java.util.*
 
 @Repository
 interface TaskRepository : JpaRepository<Task, UUID> {
-    fun findByEntityIdAndEntityType(entityId: UUID, entityType: String): List<Task>
+    fun existsByTaskKey(taskKey: String): Boolean
 }

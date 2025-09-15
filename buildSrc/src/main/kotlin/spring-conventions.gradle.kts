@@ -35,7 +35,6 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation(libs.findLibrary("hypersistence").get())
-    implementation("org.springframework.boot:spring-boot-starter-data-redis")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation(libs.findLibrary("jakarta-validation").get())
     implementation(libs.findLibrary("javers-spring-boot-starter-sql").get())
