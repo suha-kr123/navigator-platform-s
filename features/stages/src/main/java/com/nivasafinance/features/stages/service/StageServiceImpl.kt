@@ -89,15 +89,7 @@ class StageServiceImpl(
             throw StageExceptionFactory.taskNotFoundInStage(taskId, stageId, messageSource)
         }
         
-        val existingTask = taskService.getTask(taskId, messageSource)
-        val updatedTask = existingTask.copy(
-            taskData = updateTaskRequest.taskData,
-            assignedTo = updateTaskRequest.assignedTo,
-            status = updateTaskRequest.status,
-            outcome = updateTaskRequest.outcome
-        )
-        
-        val savedTask = taskService.updateTask(taskId, updatedTask)
+        val savedTask = taskService.updateTask(taskId, updateTaskRequest)
         
         return TaskResponse(
             id = savedTask.id!!,
@@ -124,9 +116,8 @@ class StageServiceImpl(
             throw StageExceptionFactory.taskNotFoundInStage(taskId, stageId, messageSource)
         }
         
-        taskService.deleteTask(taskId, messageSource)
+        taskService.deleteTask(taskId)
         
-        val updatedTask = taskService.getTask(taskId, messageSource)
         val updatedTaskIds = taskIds.filter { it != taskId }
         val updatedStage = stage.copy(
             tasks = updatedTaskIds.toString()
@@ -208,22 +199,7 @@ class StageServiceImpl(
         val taskIds = parseTaskIdsFromStage(stage)
         
         return taskIds.map { taskId ->
-            val task = taskService.getTask(taskId, messageSource)
-            TaskResponse(
-                id = task.id ?: UUID.randomUUID(),
-                taskDefinitionKey = task.taskDefinitionKey,
-                taskData = task.taskData,
-                assignedTo = task.assignedTo,
-                status = task.status,
-                outcome = task.outcome,
-                dueAt = task.dueAt,
-                completedAt = task.completedAt,
-                rescheduledAt = task.rescheduledAt,
-                createdAt = task.createdAt ?: LocalDateTime.now(),
-                createdBy = task.createdBy,
-                updatedAt = task.updatedAt ?: LocalDateTime.now(),
-                updatedBy = task.updatedBy
-            )
+            taskService.getTask(taskId)
         }
     }
 
