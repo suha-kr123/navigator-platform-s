@@ -7,6 +7,8 @@ import com.nivasafinance.features.stages.entity.Stage
 import com.nivasafinance.features.stages.enum.EntityType
 import com.nivasafinance.features.stages.exception.StageExceptionFactory
 import com.nivasafinance.features.stages.repository.StageRepositoryWrapper
+import com.nivasafinance.features.stagetasks.dto.StageTaskRequest
+import com.nivasafinance.features.stagetasks.service.StageTaskService
 import com.nivasafinance.features.tasks.dto.TaskRequest
 import com.nivasafinance.features.tasks.dto.TaskResponse
 import com.nivasafinance.features.tasks.dto.UpdateTaskRequest
@@ -22,6 +24,7 @@ import java.util.UUID
 class StageServiceImpl(
     private val stageRepositoryWrapper: StageRepositoryWrapper,
     private val taskService: TaskService,
+    private val stageTaskService: StageTaskService,
     private val messageSource: MessageSource
 ) : StageService {
 
@@ -35,11 +38,10 @@ class StageServiceImpl(
             messageSource
         )
         
-        val taskResponses = createTasksForStage(UUID.randomUUID(), stageRequest.tasks)
-        val taskIds = taskResponses.map { it.id.toString() }
-        
-        val stage = toStage(stageRequest, taskIds)
+        val stage = toStage(stageRequest)
         val savedStage = stageRepositoryWrapper.saveWithException(stage)
+        
+        val taskResponses = createTasksForStage(savedStage.id!!, stageRequest.tasks)
         
         return toStageResponse(savedStage, taskResponses)
     }
@@ -70,22 +72,17 @@ class StageServiceImpl(
     }
 
     override fun addTasksToStage(stageId: UUID, tasks: List<TaskRequest>): List<TaskResponse> {
-        val stage = stageRepositoryWrapper.findByIdWithException(stageId)
-        val taskResponses = createTasksForStage(stageId, tasks)
-        val taskIds = taskResponses.map { it.id.toString() }
-        val updatedStage = stage.copy(
-            tasks = taskIds.toString()
-        )
-        stageRepositoryWrapper.saveWithException(updatedStage)
-        
-        return taskResponses
+        stageRepositoryWrapper.findByIdWithException(stageId)
+        return createTasksForStage(stageId, tasks)
     }
 
     override fun updateTaskInStage(stageId: UUID, taskId: UUID, updateTaskRequest: UpdateTaskRequest): TaskResponse {
-        val stage = stageRepositoryWrapper.findByIdWithException(stageId)
-        val taskIds = parseTaskIdsFromStage(stage)
+        stageRepositoryWrapper.findByIdWithException(stageId)
         
-        if (!taskIds.contains(taskId)) {
+        val stageTasks = stageTaskService.getTasksForStage(stageId)
+        val taskExists = stageTasks.any { it.taskId == taskId }
+        
+        if (!taskExists) {
             throw StageExceptionFactory.taskNotFoundInStage(taskId, stageId, messageSource)
         }
         
@@ -109,34 +106,33 @@ class StageServiceImpl(
     }
 
     override fun deleteTaskFromStage(stageId: UUID, taskId: UUID) {
-        val stage = stageRepositoryWrapper.findByIdWithException(stageId)
-        val taskIds = parseTaskIdsFromStage(stage)
+        stageRepositoryWrapper.findByIdWithException(stageId)
         
-        if (!taskIds.contains(taskId)) {
+        val stageTasks = stageTaskService.getTasksForStage(stageId)
+        val taskExists = stageTasks.any { it.taskId == taskId }
+        
+        if (!taskExists) {
             throw StageExceptionFactory.taskNotFoundInStage(taskId, stageId, messageSource)
         }
         
+        stageTaskService.deleteStageTask(stageId, taskId)
         taskService.deleteTask(taskId)
-        
-        val updatedTaskIds = taskIds.filter { it != taskId }
-        val updatedStage = stage.copy(
-            tasks = updatedTaskIds.toString()
-        )
-        stageRepositoryWrapper.saveWithException(updatedStage)
     }
 
     override fun getTasksForStage(stageId: UUID): List<TaskResponse> {
-        return getTasksByStageId(stageId)
+        val stageTasks = stageTaskService.getTasksForStage(stageId)
+        return stageTasks.map { stageTask ->
+            taskService.getTask(stageTask.taskId)
+        }
     }
 
-    private fun toStage(stageRequest: StageRequest, taskIds: List<String> = emptyList()): Stage {
+    private fun toStage(stageRequest: StageRequest): Stage {
         return Stage(
             stageDefinitionKey = stageRequest.stageDefinitionKey,
             entityType = stageRequest.entityType,
             entityId = stageRequest.entityId,
             outcome = stageRequest.outcome,
             status = stageRequest.status,
-            tasks = taskIds.toString(),
             assignedTo = stageRequest.assignedTo
         )
     }
@@ -160,9 +156,15 @@ class StageServiceImpl(
 
     private fun createTasksForStage(stageId: UUID, taskRequests: List<TaskRequest>): List<TaskResponse> {
         val taskResponses = taskRequests.map { taskRequest ->
-           
-            
             val createdTask = taskService.createTask(taskRequest)
+            
+            stageTaskService.createStageTask(
+                StageTaskRequest(
+                    stageId = stageId,
+                    taskId = createdTask.id!!,
+                    extData = null
+                )
+            )
             
             TaskResponse(
                 id = createdTask.id ?: UUID.randomUUID(),
@@ -174,42 +176,21 @@ class StageServiceImpl(
                 dueAt = createdTask.dueAt,
                 completedAt = createdTask.completedAt,
                 rescheduledAt = createdTask.rescheduledAt,
-                createdAt = createdTask.createdAt ?: LocalDateTime.now(),
+                createdAt = createdTask.createdAt,
                 createdBy = createdTask.createdBy,
-                updatedAt = createdTask.updatedAt ?: LocalDateTime.now(),
+                updatedAt = createdTask.updatedAt,
                 updatedBy = createdTask.updatedBy
             )
         }
-        
-        val stage = stageRepositoryWrapper.findByIdWithException(stageId)
-        val existingTaskIds = parseTaskIdsFromStage(stage)
-        val newTaskIds = taskResponses.map { it.id.toString() }
-        val allTaskIds = existingTaskIds + newTaskIds
-        
-        val updatedStage = stage.copy(
-            tasks = allTaskIds.toString()
-        )
-        stageRepositoryWrapper.saveWithException(updatedStage)
         
         return taskResponses
     }
 
     private fun getTasksByStageId(stageId: UUID): List<TaskResponse> {
-        val stage = stageRepositoryWrapper.findByIdWithException(stageId)
-        val taskIds = parseTaskIdsFromStage(stage)
-        
-        return taskIds.map { taskId ->
-            taskService.getTask(taskId)
+        val stageTasks = stageTaskService.getTasksForStage(stageId)
+        return stageTasks.map { stageTask ->
+            taskService.getTask(stageTask.taskId)
         }
     }
 
-    private fun parseTaskIdsFromStage(stage: Stage): List<UUID> {
-        val taskIdsString = stage.tasks ?: "[]"
-        return if (taskIdsString.isNotEmpty() && taskIdsString != "[]") {
-            taskIdsString.replace("[", "").replace("]", "").replace("\"", "")
-                .split(",").map { UUID.fromString(it.trim()) }
-        } else {
-            emptyList()
-        }
-    }
 }
