@@ -1,7 +1,6 @@
 package com.nivasafinance.features.tasks.entity
 
 import audit.AuditableEntity
-import com.nivasafinance.features.tasks.enum.TaskOutcome
 import com.nivasafinance.features.tasks.enum.TaskStatus
 import jakarta.persistence.*
 import org.hibernate.annotations.JdbcTypeCode
@@ -30,9 +29,8 @@ data class Task(
     @Column(name = "status", nullable = false)
     val status: TaskStatus,
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "outcome", nullable = false)
-    val outcome: TaskOutcome,
+    val outcome: String,
 
     @Column(name = "due_at")
     val dueAt: LocalDateTime? = null,

@@ -4,7 +4,5 @@ enum class EntityType {
     PERSON,
     LEAD,
     ADVISOR,
-    APPLICANT,
-    COMPANY,
-    ORGANIZATION
+    APPLICANT
 }

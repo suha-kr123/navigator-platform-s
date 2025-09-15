@@ -1,6 +1,5 @@
 package com.nivasafinance.features.tasks.dto
 
-import com.nivasafinance.features.tasks.enum.TaskOutcome
 import com.nivasafinance.features.tasks.enum.TaskStatus
 import java.time.LocalDateTime
 import java.util.*
@@ -11,7 +10,7 @@ data class TaskResponse(
     val taskData: String?,
     val assignedTo: String?,
     val status: TaskStatus,
-    val outcome: TaskOutcome,
+    val outcome: String,
     val dueAt: LocalDateTime?,
     val completedAt: LocalDateTime?,
     val rescheduledAt: LocalDateTime?,

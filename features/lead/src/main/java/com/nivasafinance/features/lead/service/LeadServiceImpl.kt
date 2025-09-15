@@ -17,7 +17,6 @@ import com.nivasafinance.features.stages.repository.StageRepositoryWrapper
 import com.nivasafinance.features.stages.enum.EntityType as StageEntityType
 import com.nivasafinance.features.stagedefinitions.repository.StageDefinitionRepositoryWrapper
 import com.nivasafinance.features.stages.enum.Status
-import com.nivasafinance.features.stages.enum.Outcome
 
 @Service
 @Transactional
@@ -119,7 +118,7 @@ class LeadServiceImpl(
                 stageDefinitionKey = stageDefinition.key,
                 entityType = StageEntityType.LEAD,
                 entityId = leadId,
-                outcome = Outcome.PENDING,
+                outcome = "",
                 status = Status.PENDING,
                 assignedTo = null
             )
