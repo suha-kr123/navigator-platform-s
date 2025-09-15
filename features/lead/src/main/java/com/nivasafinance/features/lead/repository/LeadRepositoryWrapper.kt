@@ -2,16 +2,16 @@ package com.nivasafinance.features.lead.repository
 
 import com.nivasafinance.features.lead.entity.Lead
 import com.nivasafinance.features.lead.exception.LeadExceptionFactory
-import java.util.UUID
 import org.springframework.context.MessageSource
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
+import java.util.UUID
 
 @Service
 class LeadRepositoryWrapper(
-        private val leadRepository: LeadRepository,
-        private val messageSource: MessageSource
+    private val leadRepository: LeadRepository,
+    private val messageSource: MessageSource
 ) {
 
     fun saveWithException(lead: Lead): Lead {

@@ -1,5 +1,6 @@
 package com.nivasafinance.features.stages.entity
 
+import audit.AuditableEntity
 import com.nivasafinance.features.stages.enum.EntityType
 import com.nivasafinance.features.stages.enum.Outcome
 import com.nivasafinance.features.stages.enum.Status
@@ -7,7 +8,6 @@ import jakarta.persistence.*
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import java.util.*
-import audit.AuditableEntity
 
 @Entity
 @Table(name = "stages")
@@ -41,4 +41,4 @@ data class Stage(
     @Column(name = "assigned_to")
     val assignedTo: String? = null
 
-): AuditableEntity()
+) : AuditableEntity()

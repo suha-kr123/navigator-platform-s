@@ -2,7 +2,7 @@ package com.nivasafinance.features.person.entity
 
 import annotations.NoArg
 import audit.AuditableEntity
-import data.enums.Gender
+import com.nivasafinance.features.person.enum.Gender
 import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity

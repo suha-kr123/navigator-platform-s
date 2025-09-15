@@ -1,6 +1,6 @@
 package com.nivasafinance.features.stagedefinitions.entity
 
-import com.nivasafinance.features.stagedefinitions.enum.AssignmentStrategy
+// import com.nivasafinance.features.stagedefinitions.enum.AssignmentStrategy
 import jakarta.persistence.*
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
@@ -24,22 +24,6 @@ data class StageDefinition(
 
     @Column(name = "pipeline_key", nullable = false)
     val pipelineKey: String,
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "assignment_strategy", nullable = false)
-    val assignmentStrategy: AssignmentStrategy,
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "action_groups", columnDefinition = "jsonb")
-    val actionGroups: String? = null,
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "default_tasks", columnDefinition = "jsonb")
-    val defaultTasks: String? = null,
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "tasks_allowed", columnDefinition = "jsonb")
-    val tasksAllowed: String? = null,
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "outcomes", columnDefinition = "jsonb")

@@ -25,12 +25,7 @@ class TaskServiceImpl(
             task.assignedTo,
             messageSource
         )
-        return try {
-            taskRepositoryWrapper.save(task)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            throw TaskExceptionFactory.createFailed(messageSource)
-        }
+        return taskRepositoryWrapper.saveWithException(task)
     }
 
     override fun updateTask(task: Task): Task {
@@ -44,12 +39,12 @@ class TaskServiceImpl(
             task.assignedTo,
             messageSource
         )
-        return taskRepositoryWrapper.save(task)
+        return taskRepositoryWrapper.saveWithException(task)
     }
 
     override fun deleteTask(taskId: UUID) {
         getTaskById(taskId)
-        taskRepositoryWrapper.deleteById(taskId)
+        taskRepositoryWrapper.deleteByIdWithException(taskId)
     }
 
     override fun getTask(taskId: UUID): Task {
@@ -57,6 +52,6 @@ class TaskServiceImpl(
     }
 
     private fun getTaskById(taskId: UUID): Task {
-        return taskRepositoryWrapper.findById(taskId)
+        return taskRepositoryWrapper.findByIdWithException(taskId)
     }
 }

@@ -97,7 +97,7 @@ object TaskExceptionFactory {
         ExceptionUtils.requireNotBlank(taskKey, "taskKey", "error.invalid", messageSource)
         ExceptionUtils.requireNotNull(status, "status", "error.invalid", messageSource)
         ExceptionUtils.requireNotNull(outcome, "outcome", "error.invalid", messageSource)
-        
+
         validateDueDate(dueAt, messageSource)
         validateTaskAssignment(status, assignedTo, messageSource)
     }

@@ -1,11 +1,10 @@
 package com.nivasafinance.features.lead.service
 
+import base.model.PaginatedResponse
+import base.model.PaginationRequest
 import com.nivasafinance.features.lead.dto.LeadCreateRequest
 import com.nivasafinance.features.lead.dto.LeadResponse
 import java.util.UUID
-import base.model.PaginatedResponse
-import base.model.PaginationRequest
-
 
 interface LeadService {
     fun createLead(leadCreateRequest: LeadCreateRequest): LeadResponse

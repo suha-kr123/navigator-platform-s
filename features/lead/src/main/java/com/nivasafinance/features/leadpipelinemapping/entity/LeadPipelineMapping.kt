@@ -1,10 +1,10 @@
 package com.nivasafinance.features.leadpipelinemapping.entity
 
-import jakarta.persistence.*
-import java.util.*
 import audit.AuditableEntity
+import jakarta.persistence.*
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
+import java.util.*
 
 @Entity
 @Table(name = "lead_pipeline_mapping")
@@ -25,5 +25,5 @@ data class LeadPipelineMapping(
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "data_ext", columnDefinition = "jsonb")
     val extData: Map<String, Any>? = null
-    
+
 ) : AuditableEntity()

@@ -20,7 +20,7 @@ class TaskRepositoryWrapper(
         } catch (e: Exception) {
             throw TaskExceptionFactory.retrieveEntityFailed(messageSource)
         }
-    } 
+    }
 
     fun findAllWithException(pageable: Pageable): Page<Task> {
         return try {
@@ -31,7 +31,7 @@ class TaskRepositoryWrapper(
     }
 
     fun countWithException(): Long {
-        return try {   
+        return try {
             taskRepository.count()
         } catch (e: Exception) {
             throw TaskExceptionFactory.retrieveEntityTypeFailed(messageSource)
@@ -63,6 +63,4 @@ class TaskRepositoryWrapper(
             throw TaskExceptionFactory.taskNotFound(taskId, messageSource)
         }
     }
-
-
 }

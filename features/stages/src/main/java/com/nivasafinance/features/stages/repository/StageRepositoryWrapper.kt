@@ -1,8 +1,8 @@
 package com.nivasafinance.features.stages.repository
 
 import com.nivasafinance.features.stages.entity.Stage
-import com.nivasafinance.features.stages.exception.StageExceptionFactory
 import com.nivasafinance.features.stages.enum.EntityType
+import com.nivasafinance.features.stages.exception.StageExceptionFactory
 import org.springframework.context.MessageSource
 import org.springframework.stereotype.Service
 import java.util.UUID
@@ -11,7 +11,7 @@ import java.util.UUID
 class StageRepositoryWrapper(
     private val stageRepository: StageRepository,
     private val messageSource: MessageSource
-) {   
+) {
 
     fun saveWithException(stage: Stage): Stage {
         return try {

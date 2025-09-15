@@ -1,7 +1,5 @@
 package com.nivasafinance.features.lead.dto
 
-import com.nivasafinance.features.lead.dto.LeadPreliminaryInformation
-import com.nivasafinance.features.lead.dto.LeadContacts
 import com.nivasafinance.features.lead.enum.SourcingChannel
 import java.math.BigDecimal
 

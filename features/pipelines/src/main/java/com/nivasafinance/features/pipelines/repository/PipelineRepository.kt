@@ -8,5 +8,4 @@ import java.util.UUID
 
 @Repository
 @JaversSpringDataAuditable
-interface PipelineRepository : JpaRepository<Pipeline, UUID> {
-}
+interface PipelineRepository : JpaRepository<Pipeline, UUID>

@@ -9,7 +9,7 @@ class StageDefinitionRepositoryWrapper(
     private val stageDefinitionRepository: StageDefinitionRepository,
     private val messageSource: MessageSource
 ) {
-    
+
     fun findByPipelineKeyWithException(pipelineKey: String): List<StageDefinition> {
         return try {
             stageDefinitionRepository.findByPipelineKeyOrderByKeyAsc(pipelineKey)

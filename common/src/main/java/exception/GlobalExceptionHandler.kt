@@ -1,10 +1,6 @@
 package exception
 
 import com.fasterxml.jackson.databind.exc.InvalidFormatException
-import com.nivasafinance.features.tasks.exception.*
-import com.nivasafinance.features.stages.exception.*
-import com.nivasafinance.features.lead.exception.*
-import com.nivasafinance.features.leadpipelinemapping.exception.*
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageNotReadableException
@@ -18,33 +14,15 @@ import java.util.UUID
 class GlobalExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException::class)
-    fun handleResourceNotFoundException(
-        exception: ResourceNotFoundException,
-        request: WebRequest
-    ): ResponseEntity<ApiError> {
+    fun handleResourceNotFoundException(ex: ResourceNotFoundException, request: WebRequest): ResponseEntity<ApiError> {
         val apiError = ApiError(
-            error = exception.localizedMessage,
+            error = ex.localizedMessage,
             statusCode = HttpStatus.NOT_FOUND,
             errorCode = "RESOURCE_NOT_FOUND",
             requestId = generateRequestId(),
             path = request.getDescription(false)
         )
         return ResponseEntity(apiError, HttpStatus.NOT_FOUND)
-    }
-
-    @ExceptionHandler(BadRequestException::class)
-    fun handleBadRequestException(
-        ex: BadRequestException,
-        request: WebRequest
-    ): ResponseEntity<ApiError> {
-        val apiError = ApiError(
-            error = ex.localizedMessage,
-            statusCode = HttpStatus.BAD_REQUEST,
-            errorCode = "BAD_REQUEST",
-            requestId = generateRequestId(),
-            path = request.getDescription(false)
-        )
-        return ResponseEntity(apiError, HttpStatus.BAD_REQUEST)
     }
 
     @ExceptionHandler(ValidationException::class)
@@ -59,64 +37,12 @@ class GlobalExceptionHandler {
         return ResponseEntity(apiError, HttpStatus.BAD_REQUEST)
     }
 
-    @ExceptionHandler(MethodArgumentNotValidException::class)
-    fun handleMethodArgumentNotValidException(
-        ex: MethodArgumentNotValidException,
-        request: WebRequest
-    ): ResponseEntity<ApiError> {
-        val fieldErrors = ex.bindingResult.fieldErrors
-        val errorMessages = fieldErrors.joinToString(", ") { fieldError ->
-            "${fieldError.field}: ${fieldError.defaultMessage}"
-        }
-
+    @ExceptionHandler(BadRequestException::class)
+    fun handleBadRequestException(ex: BadRequestException, request: WebRequest): ResponseEntity<ApiError> {
         val apiError = ApiError(
-            error = "Validation failed: $errorMessages",
+            error = ex.localizedMessage,
             statusCode = HttpStatus.BAD_REQUEST,
-            errorCode = "VALIDATION_ERROR",
-            requestId = generateRequestId(),
-            path = request.getDescription(false)
-        )
-        return ResponseEntity(apiError, HttpStatus.BAD_REQUEST)
-    }
-
-    @ExceptionHandler(HttpMessageNotReadableException::class)
-    fun handleHttpMessageNotReadableException(
-        ex: HttpMessageNotReadableException,
-        request: WebRequest
-    ): ResponseEntity<ApiError> {
-        val errorMessage = when (val cause = ex.cause) {
-            is InvalidFormatException -> {
-                val fieldName = cause.pathReference.toString().split("->").lastOrNull()?.trim() ?: "unknown"
-                val invalidValue = cause.value?.toString() ?: "null"
-
-                when {
-                    fieldName.contains("stage", ignoreCase = true) -> {
-                        val validValues = listOf(
-                            "INQUIRY",
-                            "DOCUMENTATION",
-                            "PROCESSING",
-                            "SANCTION",
-                            "DISBURSEMENT",
-                            "CLOSED"
-                        )
-                        "Invalid value '$invalidValue' for field '$fieldName'. " +
-                            "Valid values are: ${validValues.joinToString(", ")}"
-                    }
-                    fieldName.contains("status", ignoreCase = true) -> {
-                        val validValues = listOf("ACTIVE", "ON_HOLD", "REJECTED", "CANCELLED", "COMPLETED")
-                        "Invalid value '$invalidValue' for field '$fieldName'. " +
-                            "Valid values are: ${validValues.joinToString(", ")}"
-                    }
-                    else -> "Invalid value '$invalidValue' for field '$fieldName'"
-                }
-            }
-            else -> "Invalid request body: ${ex.message}"
-        }
-
-        val apiError = ApiError(
-            error = errorMessage,
-            statusCode = HttpStatus.BAD_REQUEST,
-            errorCode = "INVALID_REQUEST_BODY",
+            errorCode = "BAD_REQUEST",
             requestId = generateRequestId(),
             path = request.getDescription(false)
         )
@@ -135,196 +61,16 @@ class GlobalExceptionHandler {
         return ResponseEntity(apiError, HttpStatus.CONFLICT)
     }
 
-    @ExceptionHandler(TaskNotFoundException::class)
-    fun handleTaskNotFoundException(ex: TaskNotFoundException, request: WebRequest): ResponseEntity<ApiError> {
-        val apiError = ApiError(
-            error = ex.localizedMessage,
-            statusCode = HttpStatus.NOT_FOUND,
-            errorCode = "TASK_NOT_FOUND",
-            requestId = generateRequestId(),
-            path = request.getDescription(false)
-        )
-        return ResponseEntity(apiError, HttpStatus.NOT_FOUND)
-    }
-
-    @ExceptionHandler(TaskValidationException::class)
-    fun handleTaskValidationException(ex: TaskValidationException, request: WebRequest): ResponseEntity<ApiError> {
-        val apiError = ApiError(
-            error = ex.localizedMessage,
-            statusCode = HttpStatus.BAD_REQUEST,
-            errorCode = "TASK_VALIDATION_ERROR",
-            requestId = generateRequestId(),
-            path = request.getDescription(false)
-        )
-        return ResponseEntity(apiError, HttpStatus.BAD_REQUEST)
-    }
-
-    @ExceptionHandler(TaskConflictException::class)
-    fun handleTaskConflictException(ex: TaskConflictException, request: WebRequest): ResponseEntity<ApiError> {
+    @ExceptionHandler(ResourceConflictException::class)
+    fun handleResourceConflictException(ex: ResourceConflictException, request: WebRequest): ResponseEntity<ApiError> {
         val apiError = ApiError(
             error = ex.localizedMessage,
             statusCode = HttpStatus.CONFLICT,
-            errorCode = "TASK_CONFLICT",
+            errorCode = "RESOURCE_CONFLICT",
             requestId = generateRequestId(),
             path = request.getDescription(false)
         )
         return ResponseEntity(apiError, HttpStatus.CONFLICT)
-    }
-
-    @ExceptionHandler(TaskOperationException::class)
-    fun handleTaskOperationException(ex: TaskOperationException, request: WebRequest): ResponseEntity<ApiError> {
-        val apiError = ApiError(
-            error = ex.localizedMessage,
-            statusCode = HttpStatus.INTERNAL_SERVER_ERROR,
-            errorCode = "TASK_OPERATION_ERROR",
-            requestId = generateRequestId(),
-            path = request.getDescription(false)
-        )
-        return ResponseEntity(apiError, HttpStatus.INTERNAL_SERVER_ERROR)
-    }
-
-    @ExceptionHandler(StageNotFoundException::class)
-    fun handleStageNotFoundException(ex: StageNotFoundException, request: WebRequest): ResponseEntity<ApiError> {
-        val apiError = ApiError(
-            error = ex.localizedMessage,
-            statusCode = HttpStatus.NOT_FOUND,
-            errorCode = "STAGE_NOT_FOUND",
-            requestId = generateRequestId(),
-            path = request.getDescription(false)
-        )
-        return ResponseEntity(apiError, HttpStatus.NOT_FOUND)
-    }
-
-    @ExceptionHandler(StageValidationException::class)
-    fun handleStageValidationException(ex: StageValidationException, request: WebRequest): ResponseEntity<ApiError> {
-        val apiError = ApiError(
-            error = ex.localizedMessage,
-            statusCode = HttpStatus.BAD_REQUEST,
-            errorCode = "STAGE_VALIDATION_ERROR",
-            requestId = generateRequestId(),
-            path = request.getDescription(false)
-        )
-        return ResponseEntity(apiError, HttpStatus.BAD_REQUEST)
-    }
-
-    @ExceptionHandler(StageConflictException::class)
-    fun handleStageConflictException(ex: StageConflictException, request: WebRequest): ResponseEntity<ApiError> {
-        val apiError = ApiError(
-            error = ex.localizedMessage,
-            statusCode = HttpStatus.CONFLICT,
-            errorCode = "STAGE_CONFLICT",
-            requestId = generateRequestId(),
-            path = request.getDescription(false)
-        )
-        return ResponseEntity(apiError, HttpStatus.CONFLICT)
-    }
-
-    @ExceptionHandler(StageOperationException::class)
-    fun handleStageOperationException(ex: StageOperationException, request: WebRequest): ResponseEntity<ApiError> {
-        val apiError = ApiError(
-            error = ex.localizedMessage,
-            statusCode = HttpStatus.INTERNAL_SERVER_ERROR,
-            errorCode = "STAGE_OPERATION_ERROR",
-            requestId = generateRequestId(),
-            path = request.getDescription(false)
-        )
-        return ResponseEntity(apiError, HttpStatus.INTERNAL_SERVER_ERROR)
-    }
-
-    @ExceptionHandler(LeadNotFoundException::class)
-    fun handleLeadNotFoundException(ex: LeadNotFoundException, request: WebRequest): ResponseEntity<ApiError> {
-        val apiError = ApiError(
-            error = ex.localizedMessage,
-            statusCode = HttpStatus.NOT_FOUND,
-            errorCode = "LEAD_NOT_FOUND",
-            requestId = generateRequestId(),
-            path = request.getDescription(false)
-        )
-        return ResponseEntity(apiError, HttpStatus.NOT_FOUND)
-    }
-
-    @ExceptionHandler(LeadValidationException::class)
-    fun handleLeadValidationException(ex: LeadValidationException, request: WebRequest): ResponseEntity<ApiError> {
-        val apiError = ApiError(
-            error = ex.localizedMessage,
-            statusCode = HttpStatus.BAD_REQUEST,
-            errorCode = "LEAD_VALIDATION_ERROR",
-            requestId = generateRequestId(),
-            path = request.getDescription(false)
-        )
-        return ResponseEntity(apiError, HttpStatus.BAD_REQUEST)
-    }
-
-    @ExceptionHandler(LeadConflictException::class)
-    fun handleLeadConflictException(ex: LeadConflictException, request: WebRequest): ResponseEntity<ApiError> {
-        val apiError = ApiError(
-            error = ex.localizedMessage,
-            statusCode = HttpStatus.CONFLICT,
-            errorCode = "LEAD_CONFLICT",
-            requestId = generateRequestId(),
-            path = request.getDescription(false)
-        )
-        return ResponseEntity(apiError, HttpStatus.CONFLICT)
-    }
-
-    @ExceptionHandler(LeadOperationException::class)
-    fun handleLeadOperationException(ex: LeadOperationException, request: WebRequest): ResponseEntity<ApiError> {
-        val apiError = ApiError(
-            error = ex.localizedMessage,
-            statusCode = HttpStatus.INTERNAL_SERVER_ERROR,
-            errorCode = "LEAD_OPERATION_ERROR",
-            requestId = generateRequestId(),
-            path = request.getDescription(false)
-        )
-        return ResponseEntity(apiError, HttpStatus.INTERNAL_SERVER_ERROR)
-    }
-
-    @ExceptionHandler(LeadPipelineMappingNotFoundException::class)
-    fun handleLeadPipelineMappingNotFoundException(ex: LeadPipelineMappingNotFoundException, request: WebRequest): ResponseEntity<ApiError> {
-        val apiError = ApiError(
-            error = ex.localizedMessage,
-            statusCode = HttpStatus.NOT_FOUND,
-            errorCode = "LEAD_PIPELINE_MAPPING_NOT_FOUND",
-            requestId = generateRequestId(),
-            path = request.getDescription(false)
-        )
-        return ResponseEntity(apiError, HttpStatus.NOT_FOUND)
-    }
-
-    @ExceptionHandler(LeadPipelineMappingValidationException::class)
-    fun handleLeadPipelineMappingValidationException(ex: LeadPipelineMappingValidationException, request: WebRequest): ResponseEntity<ApiError> {
-        val apiError = ApiError(
-            error = ex.localizedMessage,
-            statusCode = HttpStatus.BAD_REQUEST,
-            errorCode = "LEAD_PIPELINE_MAPPING_VALIDATION_ERROR",
-            requestId = generateRequestId(),
-            path = request.getDescription(false)
-        )
-        return ResponseEntity(apiError, HttpStatus.BAD_REQUEST)
-    }
-
-    @ExceptionHandler(LeadPipelineMappingConflictException::class)
-    fun handleLeadPipelineMappingConflictException(ex: LeadPipelineMappingConflictException, request: WebRequest): ResponseEntity<ApiError> {
-        val apiError = ApiError(
-            error = ex.localizedMessage,
-            statusCode = HttpStatus.CONFLICT,
-            errorCode = "LEAD_PIPELINE_MAPPING_CONFLICT",
-            requestId = generateRequestId(),
-            path = request.getDescription(false)
-        )
-        return ResponseEntity(apiError, HttpStatus.CONFLICT)
-    }
-
-    @ExceptionHandler(LeadPipelineMappingOperationException::class)
-    fun handleLeadPipelineMappingOperationException(ex: LeadPipelineMappingOperationException, request: WebRequest): ResponseEntity<ApiError> {
-        val apiError = ApiError(
-            error = ex.localizedMessage,
-            statusCode = HttpStatus.INTERNAL_SERVER_ERROR,
-            errorCode = "LEAD_PIPELINE_MAPPING_OPERATION_ERROR",
-            requestId = generateRequestId(),
-            path = request.getDescription(false)
-        )
-        return ResponseEntity(apiError, HttpStatus.INTERNAL_SERVER_ERROR)
     }
 
     @ExceptionHandler(UnauthorizedException::class)
@@ -337,6 +83,49 @@ class GlobalExceptionHandler {
             path = request.getDescription(false)
         )
         return ResponseEntity(apiError, HttpStatus.UNAUTHORIZED)
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException::class)
+    fun handleMethodArgumentNotValidException(
+        ex: MethodArgumentNotValidException,
+        request: WebRequest
+    ): ResponseEntity<ApiError> {
+        val errors = ex.bindingResult.fieldErrors.associate { it.field to it.defaultMessage }
+        val apiError = ApiError(
+            error = "Validation failed: $errors",
+            statusCode = HttpStatus.BAD_REQUEST,
+            errorCode = "VALIDATION_ERROR",
+            requestId = generateRequestId(),
+            path = request.getDescription(false)
+        )
+        return ResponseEntity(apiError, HttpStatus.BAD_REQUEST)
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException::class)
+    fun handleHttpMessageNotReadableException(
+        ex: HttpMessageNotReadableException,
+        request: WebRequest
+    ): ResponseEntity<ApiError> {
+        val apiError = ApiError(
+            error = "Invalid JSON format: ${ex.message}",
+            statusCode = HttpStatus.BAD_REQUEST,
+            errorCode = "INVALID_JSON",
+            requestId = generateRequestId(),
+            path = request.getDescription(false)
+        )
+        return ResponseEntity(apiError, HttpStatus.BAD_REQUEST)
+    }
+
+    @ExceptionHandler(InvalidFormatException::class)
+    fun handleInvalidFormatException(ex: InvalidFormatException, request: WebRequest): ResponseEntity<ApiError> {
+        val apiError = ApiError(
+            error = "Invalid format: ${ex.message}",
+            statusCode = HttpStatus.BAD_REQUEST,
+            errorCode = "INVALID_FORMAT",
+            requestId = generateRequestId(),
+            path = request.getDescription(false)
+        )
+        return ResponseEntity(apiError, HttpStatus.BAD_REQUEST)
     }
 
     @ExceptionHandler(RuntimeException::class)

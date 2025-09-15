@@ -1,5 +1,6 @@
 package com.nivasafinance.features.tasks.entity
 
+import audit.AuditableEntity
 import com.nivasafinance.features.tasks.enum.TaskOutcome
 import com.nivasafinance.features.tasks.enum.TaskStatus
 import jakarta.persistence.*
@@ -7,7 +8,6 @@ import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import java.time.LocalDateTime
 import java.util.*
-import audit.AuditableEntity
 
 @Entity
 @Table(name = "tasks")

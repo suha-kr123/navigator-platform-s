@@ -3,6 +3,7 @@ package com.nivasafinance.features.lead.exception
 import exception.ConflictException
 import exception.ExceptionUtils
 import org.springframework.context.MessageSource
+import java.util.UUID
 
 open class LeadConflictException(
     messageKey: String,

@@ -63,7 +63,7 @@ object LeadPipelineMappingExceptionFactory {
         ExceptionUtils.requireNotNull(leadId, "leadId", "error.invalid", messageSource)
         ExceptionUtils.requireNotBlank(pipelineKey, "pipelineKey", "error.invalid", messageSource)
         ExceptionUtils.requireNotBlank(currentStage, "currentStage", "error.invalid", messageSource)
-        
+
         validateLeadId(leadId, messageSource)
         validatePipelineKey(pipelineKey, messageSource)
         validateCurrentStage(currentStage, messageSource)

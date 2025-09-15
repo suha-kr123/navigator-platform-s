@@ -73,7 +73,7 @@ object LeadExceptionFactory {
         ExceptionUtils.requireNotBlank(purpose, "purpose", "error.invalid", messageSource)
         ExceptionUtils.requireNotBlank(productCode, "productCode", "error.invalid", messageSource)
         ExceptionUtils.requireNotNull(status, "status", "error.invalid", messageSource)
-        
+
         validateAmount(requestedAmount, messageSource)
         validatePurpose(purpose, messageSource)
         validateProductCode(productCode, messageSource)

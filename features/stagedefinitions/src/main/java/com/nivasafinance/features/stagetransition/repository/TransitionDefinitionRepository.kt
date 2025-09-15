@@ -6,5 +6,4 @@ import org.springframework.stereotype.Repository
 import java.util.*
 
 @Repository
-interface TransitionDefinitionRepository : JpaRepository<TransitionDefinition, UUID> {
-}
+interface TransitionDefinitionRepository : JpaRepository<TransitionDefinition, UUID>
