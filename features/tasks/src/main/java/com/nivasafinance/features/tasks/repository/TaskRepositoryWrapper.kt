@@ -72,9 +72,9 @@ class TaskRepositoryWrapper(
         }
     }
 
-    fun findAllByAssignedToWithException(assignedTo: String): List<Task> {
+    fun findAllByAssignedToWithException(assignedTo: String, pageable: Pageable): Page<Task> {
         return try {
-            taskRepository.findAllByAssignedTo(assignedTo)
+            taskRepository.findAllByAssignedTo(assignedTo, pageable)
         } catch (e: Exception) {
             throw TaskExceptionFactory.retrieveEntityFailed(messageSource)
         }

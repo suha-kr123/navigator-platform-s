@@ -1,5 +1,7 @@
 package com.nivasafinance.features.tasks.service
 
+import base.model.PaginatedResponse
+import base.model.PaginationRequest
 import com.nivasafinance.features.tasks.dto.TaskRequest
 import com.nivasafinance.features.tasks.dto.TaskResponse
 import com.nivasafinance.features.tasks.dto.UpdateTaskRequest
@@ -18,5 +20,5 @@ interface TaskService {
 
     fun getTasks(taskIds: List<UUID>): List<TaskResponse>
 
-    fun getTasksByAssignedTo(assignedTo: String): List<TaskResponse>
+    fun getTasksByAssignedTo(assignedTo: String, paginationRequest: PaginationRequest): PaginatedResponse<TaskResponse>
 }

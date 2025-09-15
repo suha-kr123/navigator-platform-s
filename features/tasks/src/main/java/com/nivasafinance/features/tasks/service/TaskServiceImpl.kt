@@ -1,5 +1,8 @@
 package com.nivasafinance.features.tasks.service
 
+import base.model.PaginatedResponse
+import base.model.PaginationInfo
+import base.model.PaginationRequest
 import com.nivasafinance.features.tasks.dto.TaskRequest
 import com.nivasafinance.features.tasks.dto.TaskResponse
 import com.nivasafinance.features.tasks.dto.UpdateTaskRequest
@@ -7,6 +10,7 @@ import com.nivasafinance.features.tasks.entity.Task
 import com.nivasafinance.features.tasks.exception.TaskExceptionFactory
 import com.nivasafinance.features.tasks.repository.TaskRepositoryWrapper
 import org.springframework.context.MessageSource
+import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
@@ -89,9 +93,30 @@ class TaskServiceImpl(
         return tasks.map { toTaskResponse(it) }
     }
 
-    override fun getTasksByAssignedTo(assignedTo: String): List<TaskResponse> {
-        val tasks = taskRepositoryWrapper.findAllByAssignedToWithException(assignedTo)
-        return tasks.map { toTaskResponse(it) }
+    override fun getTasksByAssignedTo(assignedTo: String, paginationRequest: PaginationRequest): PaginatedResponse<TaskResponse> {
+        val pageable = PageRequest.of(
+            paginationRequest.offset / paginationRequest.limit,
+            paginationRequest.limit
+        )
+        val taskPage = taskRepositoryWrapper.findAllByAssignedToWithException(assignedTo, pageable)
+        val taskResponses = taskPage.content.map { toTaskResponse(it) }
+
+        val totalElements = taskPage.totalElements
+        val totalPages = if (totalElements == 0L) 0 else ((totalElements - 1) / paginationRequest.limit + 1).toInt()
+        val currentPage = paginationRequest.offset / paginationRequest.limit
+
+        return PaginatedResponse(
+            content = taskResponses,
+            pagination = PaginationInfo(
+                offset = paginationRequest.offset,
+                limit = paginationRequest.limit,
+                totalElements = totalElements,
+                totalPages = totalPages,
+                currentPage = currentPage,
+                hasNext = currentPage < totalPages - 1,
+                hasPrevious = currentPage > 0
+            )
+        )
     }
 
     private fun toTaskResponse(task: Task): TaskResponse {
