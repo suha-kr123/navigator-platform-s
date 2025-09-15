@@ -29,16 +29,16 @@ data class Lead(
     @GeneratedValue(strategy = GenerationType.UUID)
     val id: UUID? = null,
 
-    @Column(nullable = false)
+    @Column(name = "requested_amount", nullable = false)
     var requestedAmount: BigDecimal?,
 
-    @Column(length = 40, nullable = false)
+    @Column(name = "purpose", length = 40, nullable = false)
     var purpose: String?,
 
     @Column(name = "product_code", nullable = false)
     var productCode: String?,
 
-    @Column(length = 20, nullable = false)
+    @Column(name = "status", length = 20, nullable = false)
     @Enumerated(EnumType.STRING)
     var status: LeadStatus?,
 

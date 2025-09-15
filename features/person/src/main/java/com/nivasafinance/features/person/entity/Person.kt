@@ -57,7 +57,7 @@ class Person(
     @Type(JsonType::class)
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "data_ext", columnDefinition = "jsonb")
-    var dataExt: Map<String, Any>? = null
+    var extData: Map<String, Any>? = null
 
 ) : AuditableEntity()
 

@@ -64,5 +64,5 @@ data class Address(
     @Type(JsonType::class)
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "data_ext", columnDefinition = "jsonb")
-    val dataExt: String? = null,
+    val extData: Map<String, Any>? = null,
 ) : AuditableEntity()

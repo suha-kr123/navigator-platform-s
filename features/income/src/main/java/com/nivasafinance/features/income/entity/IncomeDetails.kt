@@ -63,7 +63,7 @@ class IncomeDetails(
 
     @Type(JsonType::class)
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "ext_data", columnDefinition = "jsonb")
+    @Column(name = "data_ext", columnDefinition = "jsonb")
     var extData: Map<String, Any>? = null
 
 ) : AuditableEntity()
