@@ -15,12 +15,10 @@ import jakarta.persistence.Table
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.annotations.Type
 import org.hibernate.type.SqlTypes
-import org.javers.core.metamodel.annotation.TypeName
 import java.math.BigDecimal
 import java.util.UUID
 
 @Entity
-@TypeName("income_details")
 @Table(name = "income_details")
 @NoArg
 @Suppress("LongParameterList")

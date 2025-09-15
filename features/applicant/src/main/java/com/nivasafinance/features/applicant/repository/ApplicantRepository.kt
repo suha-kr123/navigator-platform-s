@@ -8,10 +8,4 @@ import java.util.UUID
 
 @Repository
 interface ApplicantRepository : JpaRepository<Applicant, UUID> {
-
-    fun findByLeadId(leadId: UUID): List<Applicant>
-
-    fun findByPersonId(personId: UUID): List<Applicant>
-
-    fun findByLeadIdAndApplicantType(leadId: UUID, applicantType: ApplicantType): List<Applicant>
 }

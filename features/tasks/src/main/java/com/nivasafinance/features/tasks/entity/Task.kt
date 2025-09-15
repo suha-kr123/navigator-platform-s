@@ -1,0 +1,52 @@
+package com.nivasafinance.features.tasks.entity
+
+import com.nivasafinance.features.tasks.enum.TaskOutcome
+import com.nivasafinance.features.tasks.enum.TaskStatus
+import jakarta.persistence.*
+import org.hibernate.annotations.JdbcTypeCode
+import org.hibernate.type.SqlTypes
+import java.time.LocalDateTime
+import java.util.*
+import audit.AuditableEntity
+
+@Entity
+@Table(name = "tasks")
+data class Task(
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    val id: UUID? = null,
+
+    @Column(name = "task_key", nullable = false)
+    val taskKey: String,
+
+    @Column(name = "entity_id", nullable = false)
+    val entityId: UUID,
+
+    @Column(name = "entity_type", nullable = false)
+    val entityType: String,
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "task_data", columnDefinition = "jsonb")
+    val taskData: String? = null,
+
+    @Column(name = "assigned_to")
+    val assignedTo: String? = null,
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    val status: TaskStatus,
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "outcome", nullable = false)
+    val outcome: TaskOutcome,
+
+    @Column(name = "due_at")
+    val dueAt: LocalDateTime? = null,
+
+    @Column(name = "completed_at")
+    val completedAt: LocalDateTime? = null,
+
+    @Column(name = "rescheduled_at")
+    val rescheduledAt: LocalDateTime? = null
+
+) : AuditableEntity()

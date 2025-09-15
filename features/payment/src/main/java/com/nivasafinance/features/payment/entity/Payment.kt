@@ -1,5 +1,6 @@
 package com.nivasafinance.features.payment.entity
 
+import annotations.NoArg
 import audit.AuditableEntity
 import com.nivasafinance.features.payment.enum.PaymentStatus
 import io.hypersistence.utils.hibernate.type.json.JsonType
@@ -20,6 +21,8 @@ import java.util.UUID
 
 @Entity
 @Table(name = "payments")
+@NoArg
+@Suppress("LongParameterList")
 class Payment(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

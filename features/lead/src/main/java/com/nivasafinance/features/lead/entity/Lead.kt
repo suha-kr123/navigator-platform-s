@@ -1,9 +1,9 @@
 package com.nivasafinance.features.lead.entity
 
+import annotations.NoArg
 import audit.AuditableEntity
 import com.nivasafinance.features.lead.dto.LeadContacts
 import com.nivasafinance.features.lead.dto.LeadPreliminaryInformation
-import com.nivasafinance.features.lead.enum.LeadStage
 import com.nivasafinance.features.lead.enum.LeadStatus
 import com.nivasafinance.features.lead.enum.SourcingChannel
 import jakarta.persistence.Column
@@ -21,6 +21,8 @@ import java.util.UUID
 
 @Entity
 @Table(name = "leads")
+@NoArg
+@Suppress("LongParameterList")
 data class Lead(
 
     @Id
@@ -39,10 +41,6 @@ data class Lead(
     @Column(length = 20, nullable = false)
     @Enumerated(EnumType.STRING)
     var status: LeadStatus?,
-
-    @Column(length = 30, nullable = false)
-    @Enumerated(EnumType.STRING)
-    var stage: LeadStage?,
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "preliminary_information", columnDefinition = "jsonb")

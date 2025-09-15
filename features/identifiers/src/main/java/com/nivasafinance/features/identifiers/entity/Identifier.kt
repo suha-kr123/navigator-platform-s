@@ -12,13 +12,12 @@ import jakarta.persistence.Table
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.annotations.Type
 import org.hibernate.type.SqlTypes
-import org.javers.core.metamodel.annotation.TypeName
 import java.util.UUID
 
 @Entity
-@TypeName("identifier")
 @Table(name = "identifiers")
 @NoArg
+@Suppress("LongParameterList")
 class Identifier(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

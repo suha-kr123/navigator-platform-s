@@ -22,6 +22,7 @@ class WebConfig : WebMvcConfigurer {
 
     override fun addInterceptors(registry: InterceptorRegistry) {
         registry.addInterceptor(localeChangeInterceptor())
-        registry.addInterceptor(userContextInterceptor())
+        // Temporarily disabled for testing
+        // registry.addInterceptor(userContextInterceptor())
     }
 }

@@ -1,29 +1,23 @@
 package com.nivasafinance.features.pipelines.entity
 
-import com.nivasafinance.features.pipelines.enum.EntityType
+import audit.AuditableEntity
+import annotations.NoArg
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
-import jakarta.persistence.EnumType
-import jakarta.persistence.Enumerated
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Table
-import org.javers.core.metamodel.annotation.Id
-import org.javers.spring.annotation.JaversSpringDataAuditable
+import jakarta.persistence.Id
 import java.util.UUID
 
 @Entity
 @Table(name = "pipelines")
-@JaversSpringDataAuditable
-@Suppress("ImportOrdering")
+@NoArg
+@Suppress("LongParameterList")
 data class Pipeline(
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.UUID)
     val id: UUID? = null,
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "entity_type", nullable = false)
-    val entityType: EntityType,
 
     @Column(name = "name", nullable = false)
     val name: String,
@@ -33,4 +27,4 @@ data class Pipeline(
 
     @Column(name = "description", columnDefinition = "TEXT")
     val description: String? = null
-)
+) : AuditableEntity()

@@ -1,5 +1,6 @@
 package com.nivasafinance.features.advisorleadmapping.entity
 
+import annotations.NoArg
 import audit.AuditableEntity
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -13,6 +14,8 @@ import java.util.UUID
 
 @Entity
 @Table(name = "advisor_lead_mapping")
+@NoArg
+@Suppress("LongParameterList")
 class AdvisorLeadMapping(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

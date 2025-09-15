@@ -9,14 +9,4 @@ import java.util.UUID
 
 @Repository
 interface AdvisorLeadMappingRepository : JpaRepository<AdvisorLeadMapping, UUID> {
-
-    fun findByAdvisorId(advisorId: UUID, pageable: Pageable): Page<AdvisorLeadMapping>
-
-    fun findByAdvisorId(advisorId: UUID): List<AdvisorLeadMapping>
-
-    fun findByLeadId(leadId: UUID, pageable: Pageable): Page<AdvisorLeadMapping>
-
-    fun findByAdvisorIdAndLeadId(advisorId: UUID, leadId: UUID): AdvisorLeadMapping?
-
-    fun existsByAdvisorIdAndLeadId(advisorId: UUID, leadId: UUID): Boolean
 }
