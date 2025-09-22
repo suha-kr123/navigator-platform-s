@@ -1,9 +1,10 @@
 package com.nivasafinance.features.notes.repository
 
 import com.nivasafinance.features.notes.entity.Notes
-import com.nivasafinance.features.notes.enum.EntityType
 import com.nivasafinance.features.notes.exception.NotesExceptionFactory
 import org.springframework.context.MessageSource
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import java.util.*
 
@@ -39,13 +40,17 @@ class NotesRepositoryWrapper(
         }
     }
 
-    fun findAllByEntityTypeAndEntityId(entityType: EntityType, entityId: UUID): List<Notes> {
-        return notesRepository.findAllByEntityTypeAndEntityId(entityType, entityId)
+    fun findAllByEntityTypeAndEntityId(entityType: String, entityId: UUID, pageable: Pageable): Page<Notes> {
+        return try {
+            notesRepository.findAllByEntityTypeAndEntityId(entityType, entityId, pageable)
+        } catch (e: Exception) {
+            throw NotesExceptionFactory.retrieveEntityFailed(messageSource)
+        }
     }
 
-    fun findAllByParentIdWithException(parentId: UUID): List<Notes> {
+    fun findAllByEntityTypeAndEntityId(entityType: String, entityId: UUID): List<Notes> {
         return try {
-            notesRepository.findAllByParentId(parentId)
+            notesRepository.findAllByEntityTypeAndEntityId(entityType, entityId, Pageable.unpaged()).content
         } catch (e: Exception) {
             throw NotesExceptionFactory.retrieveEntityFailed(messageSource)
         }
