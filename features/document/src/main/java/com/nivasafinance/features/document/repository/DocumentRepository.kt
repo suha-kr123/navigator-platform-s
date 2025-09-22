@@ -20,16 +20,10 @@ interface DocumentRepository : JpaRepository<Document, UUID> {
         documentType: String
     ): List<Document>
 
-    fun findByEntityIdAndEntityTypeAndIsRequired(
+    fun findByEntityIdAndEntityTypeAndVerificationStatus(
         entityId: UUID,
         entityType: String,
-        isRequired: Boolean
-    ): List<Document>
-
-    fun findByEntityIdAndEntityTypeAndIsVerified(
-        entityId: UUID,
-        entityType: String,
-        isVerified: Boolean
+        verificationStatus: com.nivasafinance.features.document.enum.VerificationStatus
     ): List<Document>
 
     fun existsByEntityIdAndEntityTypeAndDocumentType(
@@ -44,6 +38,6 @@ interface DocumentRepository : JpaRepository<Document, UUID> {
         @Param("documentType") documentType: String
     ): List<Document>
 
-    @Query("SELECT d FROM Document d WHERE d.entityType = :entityType AND d.isRequired = true")
-    fun findRequiredDocumentsByEntityType(@Param("entityType") entityType: String): List<Document>
+    @Query("SELECT d FROM Document d WHERE d.entityType = :entityType AND d.verificationStatus = 'VERIFIED'")
+    fun findVerifiedDocumentsByEntityType(@Param("entityType") entityType: String): List<Document>
 }

@@ -1,7 +1,8 @@
 package com.nivasafinance.features.document.exception
 
 import org.springframework.context.MessageSource
-import java.util.*
+import java.util.Locale
+import java.util.UUID
 
 class DocumentExceptionFactory(private val messageSource: MessageSource) {
 
@@ -55,14 +56,20 @@ class DocumentExceptionFactory(private val messageSource: MessageSource) {
     }
 
     fun validateDocumentForCreation(documentRequest: com.nivasafinance.features.document.dto.DocumentRequest) {
+        val validationErrors = mutableListOf<String>()
+
         if (documentRequest.entityType.isBlank()) {
-            throw createValidationException("Entity type is required")
+            validationErrors.add("Entity type is required")
         }
         if (documentRequest.documentType.isBlank()) {
-            throw createValidationException("Document type is required")
+            validationErrors.add("Document type is required")
         }
         if (documentRequest.fileName.isBlank()) {
-            throw createValidationException("File name is required")
+            validationErrors.add("File name is required")
+        }
+
+        if (validationErrors.isNotEmpty()) {
+            throw createValidationException(validationErrors.joinToString(", "))
         }
     }
 }

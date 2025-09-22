@@ -3,6 +3,7 @@ package com.nivasafinance.features.document.entity
 import annotations.NoArg
 import audit.AuditableEntity
 import com.nivasafinance.features.document.enum.ProviderType
+import com.nivasafinance.features.document.enum.VerificationStatus
 import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -26,8 +27,8 @@ import java.util.UUID
 class Document(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "document_id")
-    var documentId: UUID? = null,
+    @Column(name = "id")
+    var id: UUID? = null,
 
     @Column(name = "entity_id", nullable = false)
     var entityId: UUID? = null,
@@ -38,11 +39,11 @@ class Document(
     @Column(name = "document_type", nullable = false)
     var documentType: String? = null,
 
+    @Column(name = "verification_status", nullable = false)
+    @Enumerated(EnumType.STRING)
+    var verificationStatus: VerificationStatus = VerificationStatus.PENDING_TO_BE_VERIFIED,
 
-    @Column(name = "is_verified", nullable = false)
-    var isVerified: Boolean = false,
-
-    @Column(name = "verification_notes", length = 500)
+    @Column(name = "verification_notes", columnDefinition = "TEXT")
     var verificationNotes: String? = null,
 
     // Core file metadata
@@ -66,21 +67,8 @@ class Document(
     @Column(name = "file_url")
     var fileUrl: String? = null,
 
-    // Classification
-    @Column(name = "category")
-    var category: String? = null,
-
-    @Column(name = "doc_type")
-    var docType: String? = null,
-
     @Type(JsonType::class)
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "tags", columnDefinition = "jsonb")
     var tags: List<String>? = null,
-
-    // Extra flexible metadata
-    @Type(JsonType::class)
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "data_ext", columnDefinition = "jsonb")
-    var extData: Map<String, Any>? = null,
 ) : AuditableEntity()

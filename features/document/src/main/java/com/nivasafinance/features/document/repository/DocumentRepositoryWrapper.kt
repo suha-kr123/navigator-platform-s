@@ -2,8 +2,8 @@ package com.nivasafinance.features.document.repository
 
 import com.nivasafinance.features.document.entity.Document
 import com.nivasafinance.features.document.exception.DocumentExceptionFactory
-import com.nivasafinance.features.document.exception.DocumentNotFoundException
 import org.springframework.context.MessageSource
+import org.springframework.dao.DataAccessException
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Component
@@ -19,7 +19,7 @@ class DocumentRepositoryWrapper(
     fun saveWithException(document: Document): Document {
         return try {
             documentRepository.save(document)
-        } catch (e: Exception) {
+        } catch (e: DataAccessException) {
             throw documentExceptionFactory.createOperationException("create", e)
         }
     }
@@ -32,7 +32,7 @@ class DocumentRepositoryWrapper(
     fun findAllWithException(pageable: Pageable): Page<Document> {
         return try {
             documentRepository.findAll(pageable)
-        } catch (e: Exception) {
+        } catch (e: DataAccessException) {
             throw documentExceptionFactory.createOperationException("retrieve", e)
         }
     }
@@ -40,20 +40,19 @@ class DocumentRepositoryWrapper(
     fun findByEntityIdAndEntityTypeWithException(entityId: UUID, entityType: String): List<Document> {
         return try {
             documentRepository.findByEntityIdAndEntityType(entityId, entityType)
-        } catch (e: Exception) {
+        } catch (e: DataAccessException) {
             throw documentExceptionFactory.createOperationException("retrieve.entity", e)
         }
     }
 
     fun deleteByIdWithException(id: UUID) {
+        if (!documentRepository.existsById(id)) {
+            throw documentExceptionFactory.createNotFoundException(id)
+        }
+
         try {
-            if (!documentRepository.existsById(id)) {
-                throw documentExceptionFactory.createNotFoundException(id)
-            }
             documentRepository.deleteById(id)
-        } catch (e: DocumentNotFoundException) {
-            throw e
-        } catch (e: Exception) {
+        } catch (e: DataAccessException) {
             throw documentExceptionFactory.createOperationException("delete", e)
         }
     }
@@ -65,7 +64,7 @@ class DocumentRepositoryWrapper(
     ): Boolean {
         return try {
             documentRepository.existsByEntityIdAndEntityTypeAndDocumentType(entityId, entityType, documentType)
-        } catch (e: Exception) {
+        } catch (e: DataAccessException) {
             throw documentExceptionFactory.createOperationException("check existence", e)
         }
     }

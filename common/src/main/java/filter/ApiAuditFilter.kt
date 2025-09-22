@@ -27,6 +27,12 @@ class ApiAuditFilter(
         response: HttpServletResponse,
         filterChain: FilterChain
     ) {
+        // Skip audit filter for download endpoints to avoid Content-Type conflicts
+        if (request.requestURI.contains("/download") && request.method == "GET") {
+            filterChain.doFilter(request, response)
+            return
+        }
+
         val wrappedRequest = ContentCachingRequestWrapper(request)
         val wrappedResponse = ContentCachingResponseWrapper(response)
         val startTime = System.currentTimeMillis()
