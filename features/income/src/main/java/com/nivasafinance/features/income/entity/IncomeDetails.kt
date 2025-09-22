@@ -25,14 +25,14 @@ import java.util.UUID
 class IncomeDetails(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "employment_id")
-    var employmentId: UUID? = null,
-
-    @Column(name = "entity_id", nullable = false)
-    var entityId: UUID? = null,
+    @Column(name = "id")
+    var id: UUID? = null,
 
     @Column(name = "entity_type", nullable = false)
     var entityType: String? = null,
+
+    @Column(name = "entity_id", nullable = false)
+    var entityId: UUID? = null,
 
     @Column(name = "employment_type", nullable = false)
     var employmentType: String? = null,
@@ -41,8 +41,7 @@ class IncomeDetails(
     var employerName: String? = null,
 
     @Column(name = "employer_type")
-    @Enumerated(EnumType.STRING)
-    var employerType: EmployerType? = null,
+    var employerType: String? = null,
 
     @Column(name = "job_title")
     var jobTitle: String? = null,
@@ -56,10 +55,11 @@ class IncomeDetails(
     @Column(name = "salary", precision = 12, scale = 2)
     var salary: BigDecimal? = null,
 
-    @Type(JsonType::class)
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "documents", columnDefinition = "jsonb")
-    var documents: Map<String, Any>? = null,
+    @Column(name = "verification_status")
+    var verificationStatus: String? = null,
+
+    @Column(name = "verification_notes")
+    var verificationNotes: String? = null,
 
     @Type(JsonType::class)
     @JdbcTypeCode(SqlTypes.JSON)
