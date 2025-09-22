@@ -7,7 +7,6 @@ plugins {
 
 dependencies {
     implementation(project(":common"))
-    implementation(project(":features:master"))
 }
 
 springBoot {
