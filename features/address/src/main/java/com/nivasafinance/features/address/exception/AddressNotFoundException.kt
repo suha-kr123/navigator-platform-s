@@ -1,15 +1,16 @@
-package com.nivasafinance.features.master.pincode.exception
+package com.nivasafinance.features.address.exception
 
 import exception.ResourceNotFoundException
 import org.springframework.context.MessageSource
+import java.util.UUID
 
-class PincodeNotFoundException(
-    pincode: String,
+class AddressNotFoundException(
+    addressId: UUID,
     messageSource: MessageSource
 ) : ResourceNotFoundException(
     exception.ExceptionUtils.createLocalizedMessage(
-        "error.pincode.not.found",
-        arrayOf(pincode),
+        "error.address.not.found",
+        arrayOf(addressId.toString()),
         messageSource
     )
 )
