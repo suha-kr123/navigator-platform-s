@@ -17,6 +17,7 @@ import com.nivasafinance.features.stages.repository.StageRepositoryWrapper
 import com.nivasafinance.features.stages.enum.EntityType as StageEntityType
 import com.nivasafinance.features.stagedefinitions.repository.StageDefinitionRepositoryWrapper
 import com.nivasafinance.features.stages.enum.Status
+import com.nivasafinance.features.lead.enum.LeadStatus
 
 @Service
 @Transactional
@@ -32,7 +33,7 @@ class LeadServiceImpl(
             leadCreateRequest.requestedAmount,
             leadCreateRequest.purpose,
             leadCreateRequest.productCode,
-            null,
+            LeadStatus.ACTIVE,
             leadCreateRequest.sourcingChannel,
             messageSource
         )
@@ -79,7 +80,7 @@ class LeadServiceImpl(
             requestedAmount = leadCreateRequest.requestedAmount,
             purpose = leadCreateRequest.purpose,
             productCode = leadCreateRequest.productCode,
-            status = null,
+            status = LeadStatus.ACTIVE,
             preliminaryInformation = leadCreateRequest.preliminaryInformation,
             leadContacts = leadCreateRequest.leadContacts,
             sourcingChannel = leadCreateRequest.sourcingChannel,

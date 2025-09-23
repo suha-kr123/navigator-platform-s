@@ -1,6 +1,7 @@
 package com.nivasafinance.features.lead.repository
 
 import com.nivasafinance.features.lead.entity.Lead
+import com.nivasafinance.features.lead.exception.LeadNotFoundException
 import com.nivasafinance.features.lead.exception.LeadExceptionFactory
 import org.springframework.context.MessageSource
 import org.springframework.data.domain.Page
@@ -27,6 +28,8 @@ class LeadRepositoryWrapper(
             leadRepository.findById(id).orElseThrow {
                 LeadExceptionFactory.notFound(id, messageSource)
             }
+        } catch (e: LeadNotFoundException) {
+            throw e
         } catch (e: Exception) {
             throw LeadExceptionFactory.retrieveEntityFailed(messageSource)
         }
