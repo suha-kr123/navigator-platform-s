@@ -14,7 +14,6 @@ data class LeadResponse(
     val status: LeadStatus?,
     val sourcingChannel: SourcingChannel?,
     val preliminaryInformation: LeadPreliminaryInformation?,
-    val leadContacts: LeadContacts?,
     val extData: Map<String, Any>?,
     val createdAt: LocalDateTime,
     val createdBy: String?,

@@ -18,22 +18,17 @@ data class TaskDefinition(
     @Column(name = "name", nullable = false)
     val name: String,
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "type", nullable = false)
-    val type: TaskType,
-
     @Column(name = "key", unique = true, nullable = false)
     val key: String,
+
+    @Column(name = "type", nullable = false)
+    val type: String,
 
     @Column(name = "description", columnDefinition = "TEXT")
     val description: String? = null,
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "possible_statuses", columnDefinition = "jsonb")
-    val possibleStatuses: String? = null,
-
-    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "possible_outcomes", columnDefinition = "jsonb")
-    val possibleOutcomes: String? = null
+    val possibleOutcomes: List<String>? = null
 
 ) : AuditableEntity()

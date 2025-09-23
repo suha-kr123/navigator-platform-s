@@ -1,9 +1,7 @@
 package com.nivasafinance.features.tasks.enum
 
 enum class TaskStatus {
-    PENDING,
+    TODO,
     IN_PROGRESS,
-    COMPLETED,
-    CANCELLED,
-    FAILED
+    COMPLETED
 }

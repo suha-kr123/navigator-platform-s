@@ -7,12 +7,7 @@ import com.nivasafinance.features.stages.entity.Stage
 import com.nivasafinance.features.stages.enum.EntityType
 import com.nivasafinance.features.stages.exception.StageExceptionFactory
 import com.nivasafinance.features.stages.repository.StageRepositoryWrapper
-import com.nivasafinance.features.stagetasks.dto.StageTaskRequest
-import com.nivasafinance.features.stagetasks.service.StageTaskService
-import com.nivasafinance.features.tasks.dto.TaskRequest
-import com.nivasafinance.features.tasks.dto.TaskResponse
-import com.nivasafinance.features.tasks.dto.UpdateTaskRequest
-import com.nivasafinance.features.tasks.service.TaskService
+import com.nivasafinance.features.stagedefinitions.repository.StageDefinitionRepositoryWrapper
 import org.springframework.context.MessageSource
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -23,130 +18,29 @@ import java.util.UUID
 @Transactional
 class StageServiceImpl(
     private val stageRepositoryWrapper: StageRepositoryWrapper,
-    private val taskService: TaskService,
-    private val stageTaskService: StageTaskService,
+    private val stageDefinitionRepositoryWrapper: StageDefinitionRepositoryWrapper,
     private val messageSource: MessageSource
 ) : StageService {
 
-    override fun createStage(stageRequest: StageRequest): StageResponse {
-        StageExceptionFactory.validateStageForCreation(
-            stageRequest.entityType,
-            stageRequest.entityId,
-            stageRequest.status,
-            stageRequest.outcome,
-            stageRequest.assignedTo,
-            messageSource
-        )
-        
-        val stage = toStage(stageRequest)
-        val savedStage = stageRepositoryWrapper.saveWithException(stage)
-        
-        val taskResponses = createTasksForStage(savedStage.id!!, stageRequest.tasks)
-        
-        return toStageResponse(savedStage, taskResponses)
-    }
 
-    override fun updateStage(stageId: UUID, stageUpdateRequest: StageUpdateRequest): StageResponse {
-        val stage = stageRepositoryWrapper.findByIdWithException(stageId)
-        val updatedStage = stage.copy(
-            outcome = stageUpdateRequest.outcome,
-            status = stageUpdateRequest.status,
-            assignedTo = stageUpdateRequest.assignedTo
-        )
-        val savedStage = stageRepositoryWrapper.saveWithException(updatedStage)
-        return toStageResponse(savedStage)
-    }
-
-    override fun getStagesByEntityTypeAndEntityId(entityType: EntityType, entityId: UUID): List<StageResponse> {
-        val stages = stageRepositoryWrapper.findAllByEntityTypeAndEntityIdWithException(entityType, entityId)
-        return stages.map { stage ->
-            val tasks = getTasksByStageId(stage.id!!)
-            toStageResponse(stage, tasks)
-        }
-    }
-
-    override fun getStageById(id: UUID): StageResponse {
-        val stage = stageRepositoryWrapper.findByIdWithException(id)
-        val tasks = getTasksByStageId(id)
-        return toStageResponse(stage, tasks)
-    }
-
-    override fun addTasksToStage(stageId: UUID, tasks: List<TaskRequest>): List<TaskResponse> {
-        stageRepositoryWrapper.findByIdWithException(stageId)
-        return createTasksForStage(stageId, tasks)
-    }
-
-    override fun updateTaskInStage(stageId: UUID, taskId: UUID, updateTaskRequest: UpdateTaskRequest): TaskResponse {
-        stageRepositoryWrapper.findByIdWithException(stageId)
-        
-        val stageTasks = stageTaskService.getTasksForStage(stageId)
-        val taskExists = stageTasks.any { it.taskId == taskId }
-        
-        if (!taskExists) {
-            throw StageExceptionFactory.taskNotFoundInStage(taskId, stageId, messageSource)
-        }
-        
-        val savedTask = taskService.updateTask(taskId, updateTaskRequest)
-        
-        return TaskResponse(
-            id = savedTask.id!!,
-            taskDefinitionKey = savedTask.taskDefinitionKey,
-            taskData = savedTask.taskData,
-            assignedTo = savedTask.assignedTo,
-            status = savedTask.status,
-            outcome = savedTask.outcome,
-            dueAt = savedTask.dueAt,
-            completedAt = savedTask.completedAt,
-            rescheduledAt = savedTask.rescheduledAt,
-            createdAt = savedTask.createdAt!!,
-            createdBy = savedTask.createdBy,
-            updatedAt = savedTask.updatedAt!!,
-            updatedBy = savedTask.updatedBy
-        )
-    }
-
-    override fun deleteTaskFromStage(stageId: UUID, taskId: UUID) {
-        stageRepositoryWrapper.findByIdWithException(stageId)
-        
-        val stageTasks = stageTaskService.getTasksForStage(stageId)
-        val taskExists = stageTasks.any { it.taskId == taskId }
-        
-        if (!taskExists) {
-            throw StageExceptionFactory.taskNotFoundInStage(taskId, stageId, messageSource)
-        }
-        
-        stageTaskService.deleteStageTask(stageId, taskId)
-        taskService.deleteTask(taskId)
-    }
-
-    override fun getTasksForStage(stageId: UUID): List<TaskResponse> {
-        val stageTasks = stageTaskService.getTasksForStage(stageId)
-        return stageTasks.map { stageTask ->
-            taskService.getTask(stageTask.taskId)
-        }
-    }
-
-    private fun toStage(stageRequest: StageRequest): Stage {
+    private fun toStage(stageRequest: StageRequest, entityType: String, entityId: UUID): Stage {
         return Stage(
             stageDefinitionKey = stageRequest.stageDefinitionKey,
-            entityType = stageRequest.entityType,
-            entityId = stageRequest.entityId,
+            entityType = entityType,
+            entityId = entityId,
             outcome = stageRequest.outcome,
-            status = stageRequest.status,
             assignedTo = stageRequest.assignedTo
         )
     }
 
-    private fun toStageResponse(stage: Stage, tasks: List<TaskResponse> = emptyList()): StageResponse {
+    private fun toStageResponse(stage: Stage): StageResponse {
         return StageResponse(
             id = stage.id ?: UUID.randomUUID(),
             entityType = stage.entityType,
             entityId = stage.entityId,
             stageDefinitionKey = stage.stageDefinitionKey,
-            outcome = stage.outcome,
-            status = stage.status,
+            outcome = stage.outcome ?: "",
             assignedTo = stage.assignedTo,
-            tasks = tasks,
             createdAt = stage.createdAt ?: LocalDateTime.now(),
             createdBy = stage.createdBy,
             updatedAt = stage.updatedAt ?: LocalDateTime.now(),
@@ -154,42 +48,92 @@ class StageServiceImpl(
         )
     }
 
-    private fun createTasksForStage(stageId: UUID, taskRequests: List<TaskRequest>): List<TaskResponse> {
-        val taskResponses = taskRequests.map { taskRequest ->
-            val createdTask = taskService.createTask(taskRequest)
-            
-            stageTaskService.createStageTask(
-                StageTaskRequest(
-                    stageId = stageId,
-                    taskId = createdTask.id!!,
-                    extData = null
-                )
-            )
-            
-            TaskResponse(
-                id = createdTask.id ?: UUID.randomUUID(),
-                taskDefinitionKey = createdTask.taskDefinitionKey,
-                taskData = createdTask.taskData,
-                assignedTo = createdTask.assignedTo,
-                status = createdTask.status,
-                outcome = createdTask.outcome,
-                dueAt = createdTask.dueAt,
-                completedAt = createdTask.completedAt,
-                rescheduledAt = createdTask.rescheduledAt,
-                createdAt = createdTask.createdAt,
-                createdBy = createdTask.createdBy,
-                updatedAt = createdTask.updatedAt,
-                updatedBy = createdTask.updatedBy
-            )
-        }
+
+    override fun createStageByEntity(entityType: String, entityId: UUID, stageRequest: StageRequest): StageResponse {
+        validateEntityType(entityType)
         
-        return taskResponses
+        StageExceptionFactory.validateStageForCreation(
+            entityType,
+            entityId,
+            stageRequest.outcome,
+            stageRequest.assignedTo,
+            messageSource
+        )
+        
+        val stageDefinition = validateStageDefinitionKey(stageRequest.stageDefinitionKey)
+        
+        validateOutcome(stageRequest.outcome, stageDefinition)
+        
+        validateUniqueStageCombination(entityType, entityId, stageRequest.stageDefinitionKey)
+        
+        val stage = toStage(stageRequest, entityType, entityId)
+        val savedStage = stageRepositoryWrapper.saveWithException(stage)
+        
+        return toStageResponse(savedStage)
     }
 
-    private fun getTasksByStageId(stageId: UUID): List<TaskResponse> {
-        val stageTasks = stageTaskService.getTasksForStage(stageId)
-        return stageTasks.map { stageTask ->
-            taskService.getTask(stageTask.taskId)
+    override fun updateStageByEntity(entityType: String, entityId: UUID, stageId: UUID, stageUpdateRequest: StageUpdateRequest): StageResponse {
+        validateEntityType(entityType)
+        
+        val existingStages = stageRepositoryWrapper.findAllByEntityTypeAndEntityIdWithException(
+            entityType, 
+            entityId
+        )
+        val existingStage = existingStages.firstOrNull { it.id == stageId }
+        
+        if (existingStage == null) {
+            throw StageExceptionFactory.notFound(stageId, messageSource)
+        }
+        
+        val stageDefinition = validateStageDefinitionKey(existingStage.stageDefinitionKey)
+        validateOutcome(stageUpdateRequest.outcome, stageDefinition)
+        
+        val updatedStage = existingStage.copy(
+            outcome = stageUpdateRequest.outcome,
+            assignedTo = stageUpdateRequest.assignedTo
+        )
+        val savedStage = stageRepositoryWrapper.saveWithException(updatedStage)
+        return toStageResponse(savedStage)
+    }
+
+    override fun getStagesByEntity(entityType: String, entityId: UUID): List<StageResponse> {
+        validateEntityType(entityType)
+        
+        val stages = stageRepositoryWrapper.findAllByEntityTypeAndEntityIdWithException(entityType, entityId)
+        return stages.map { stage ->
+            toStageResponse(stage)
+        }
+    }
+
+    private fun validateEntityType(entityType: String) {
+        try {
+            EntityType.valueOf(entityType.uppercase())
+        } catch (e: IllegalArgumentException) {
+            throw StageExceptionFactory.unsupportedEntityType(entityType, messageSource)
+        }
+    }
+
+    private fun validateStageDefinitionKey(stageDefinitionKey: String): com.nivasafinance.features.stagedefinitions.entity.StageDefinition {
+        val stageDefinition = stageDefinitionRepositoryWrapper.findByKeyWithException(stageDefinitionKey)
+        if (stageDefinition == null) {
+            throw StageExceptionFactory.invalidStageDefinitionKey(stageDefinitionKey, messageSource)
+        }
+        return stageDefinition
+    }
+
+    private fun validateOutcome(outcome: String, stageDefinition: com.nivasafinance.features.stagedefinitions.entity.StageDefinition) {
+        val validOutcomes = stageDefinition.possibleOutcomes?.toSet() ?: emptySet<String>()
+        if (validOutcomes.isNotEmpty() && !validOutcomes.contains(outcome)) {
+            throw StageExceptionFactory.invalidOutcome(outcome, stageDefinition.key, messageSource)
+        }
+    }
+
+    private fun validateUniqueStageCombination(entityType: String, entityId: UUID, stageDefinitionKey: String) {
+        val exists = stageRepositoryWrapper.existsByEntityTypeAndEntityIdAndStageDefinitionKeyWithException(
+            entityType, entityId, stageDefinitionKey
+        )
+        if (exists) {
+            throw StageExceptionFactory.duplicateStageCombination(entityType, entityId, stageDefinitionKey, messageSource)
         }
     }
 

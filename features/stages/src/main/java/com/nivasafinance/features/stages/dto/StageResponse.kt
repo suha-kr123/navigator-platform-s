@@ -1,22 +1,17 @@
 package com.nivasafinance.features.stages.dto
 
-import com.nivasafinance.features.stages.enum.Status
-import com.nivasafinance.features.stages.enum.EntityType
-import com.nivasafinance.features.tasks.dto.TaskResponse
 import java.time.LocalDateTime
 import java.util.*
 
 data class StageResponse(
     val id: UUID,
-    val entityType: EntityType,
+    val entityType: String,
     val entityId: UUID,
     val stageDefinitionKey: String,
     val outcome: String,
-    val status: Status,
     val assignedTo: String?,
-    val tasks: List<TaskResponse>,
     val createdAt: LocalDateTime,
     val createdBy: String?,
     val updatedAt: LocalDateTime,
-    val updatedBy: String?,
+    val updatedBy: String?
 )

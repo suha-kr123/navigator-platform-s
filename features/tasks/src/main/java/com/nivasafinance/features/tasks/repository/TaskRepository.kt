@@ -9,7 +9,9 @@ import java.util.*
 
 @Repository
 interface TaskRepository : JpaRepository<Task, UUID> {
-    fun existsByTaskKey(taskKey: String): Boolean
+    fun findAllByEntityTypeAndEntityId(entityType: String, entityId: UUID): List<Task>
     
-    fun findAllByAssignedTo(assignedTo: String, pageable: Pageable): Page<Task>
+    fun existsByEntityTypeAndEntityIdAndTaskDefinitionKey(entityType: String, entityId: UUID, taskDefinitionKey: String): Boolean
+    
+    fun findAllByEntityTypeAndEntityIdIn(entityType: String, entityIds: List<UUID>, pageable: Pageable): Page<Task>
 }

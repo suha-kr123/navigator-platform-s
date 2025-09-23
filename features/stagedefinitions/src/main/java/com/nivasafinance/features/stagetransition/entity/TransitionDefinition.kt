@@ -4,6 +4,7 @@ import jakarta.persistence.*
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import java.util.*
+import audit.AuditableEntity
 
 @Entity
 @Table(name = "transition_definitions")
@@ -23,5 +24,6 @@ data class TransitionDefinition(
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "condition_on_transition", columnDefinition = "jsonb")
-    val conditionOnTransition: String? = null
-)
+    val conditionOnTransition: Map<String, Any>? = null
+
+): AuditableEntity()
