@@ -45,7 +45,7 @@ class S3ContentRepository(
     @Suppress("VarCouldBeVal") // lateinit requires var, not val
     private lateinit var bucketName: String
 
-    @Value("\${document.signed-url.expiration-seconds:300}")
+    @Value("\${document.storage.signed-url.expiration-seconds:300}")
     private val defaultExpirationSeconds: Long = DEFAULT_EXPIRATION_SECONDS
 
     override fun saveFile(inputStream: InputStream, documentPath: String): String {
@@ -63,8 +63,8 @@ class S3ContentRepository(
             amazonS3.putObject(putObjectRequest)
 
             logger.debug("Successfully uploaded file to S3: $documentPath")
-            // Return S3 URL format for consistency with FileSystemRepository
-            return "s3://$bucketName/$documentPath"
+            // Return just the document path as the storage key
+            return documentPath
         } catch (e: AmazonServiceException) {
             logger.error("Failed to upload file to S3: $documentPath", e)
             val exception = S3UploadException(
@@ -84,13 +84,13 @@ class S3ContentRepository(
         }
     }
 
-    override fun deleteFile(documentPath: String) {
+    override fun deleteFile(storageKey: String) {
         try {
-            logger.debug("Deleting file from S3: $documentPath")
-            amazonS3.deleteObject(bucketName, documentPath)
-            logger.debug("Successfully deleted file from S3: $documentPath")
+            logger.debug("Deleting file from S3: $storageKey")
+            amazonS3.deleteObject(bucketName, storageKey)
+            logger.debug("Successfully deleted file from S3: $storageKey")
         } catch (e: AmazonServiceException) {
-            logger.error("Failed to delete file from S3: $documentPath", e)
+            logger.error("Failed to delete file from S3: $storageKey", e)
             val exception = S3DeleteException(
                 e.message ?: "Unknown error",
                 messageSource
@@ -98,7 +98,7 @@ class S3ContentRepository(
             exception.initCause(e)
             throw exception
         } catch (e: AmazonClientException) {
-            logger.error("Client error deleting file from S3: $documentPath", e)
+            logger.error("Client error deleting file from S3: $storageKey", e)
             val exception = S3DeleteException(
                 e.message ?: "Unknown error",
                 messageSource
@@ -108,14 +108,14 @@ class S3ContentRepository(
         }
     }
 
-    override fun fetchFile(documentPath: String): InputStream {
+    override fun fetchFile(storageKey: String): InputStream {
         try {
-            logger.debug("Fetching file from S3: $documentPath")
-            val s3Object: S3Object = amazonS3.getObject(bucketName, documentPath)
-            logger.debug("Successfully fetched file from S3: $documentPath")
+            logger.debug("Fetching file from S3: $storageKey")
+            val s3Object: S3Object = amazonS3.getObject(bucketName, storageKey)
+            logger.debug("Successfully fetched file from S3: $storageKey")
             return s3Object.objectContent
         } catch (e: AmazonServiceException) {
-            logger.error("Failed to fetch file from S3: $documentPath", e)
+            logger.error("Failed to fetch file from S3: $storageKey", e)
             val exception = S3DownloadException(
                 e.message ?: "Unknown error",
                 messageSource
@@ -123,7 +123,7 @@ class S3ContentRepository(
             exception.initCause(e)
             throw exception
         } catch (e: AmazonClientException) {
-            logger.error("Client error fetching file from S3: $documentPath", e)
+            logger.error("Client error fetching file from S3: $storageKey", e)
             val exception = S3DownloadException(
                 e.message ?: "Unknown error",
                 messageSource
@@ -133,7 +133,7 @@ class S3ContentRepository(
         }
     }
 
-    override fun getSignedDownloadUrl(documentPath: String, expiresIn: Long): String? {
+    override fun getSignedDownloadUrl(storageKey: String, expiresIn: Long): String? {
         try {
             // Use default expiration if not specified or invalid
             val actualExpiration = if (expiresIn <= 0) defaultExpirationSeconds else expiresIn
@@ -143,21 +143,21 @@ class S3ContentRepository(
                 throw S3ExpirationException(messageSource)
             }
 
-            logger.debug("Generating signed URL for S3 object: $documentPath, expires in: ${actualExpiration}s")
+            logger.debug("Generating signed URL for S3 object: $storageKey, expires in: ${actualExpiration}s")
 
             val expiration = Date(System.currentTimeMillis() + actualExpiration * MILLISECONDS_PER_SECOND)
-            val generatePresignedUrlRequest = GeneratePresignedUrlRequest(bucketName, documentPath)
+            val generatePresignedUrlRequest = GeneratePresignedUrlRequest(bucketName, storageKey)
                 .withMethod(com.amazonaws.HttpMethod.GET)
                 .withExpiration(expiration)
 
             val signedUrl = amazonS3.generatePresignedUrl(generatePresignedUrlRequest).toString()
-            logger.debug("Successfully generated signed URL for S3 object: $documentPath")
+            logger.debug("Successfully generated signed URL for S3 object: $storageKey")
             return signedUrl
         } catch (e: S3ExpirationException) {
             // Re-throw validation exceptions
             throw e
         } catch (e: AmazonServiceException) {
-            logger.error("Failed to generate signed URL for S3 object: $documentPath", e)
+            logger.error("Failed to generate signed URL for S3 object: $storageKey", e)
             val exception = S3UrlGenerationException(
                 e.message ?: "Unknown error",
                 messageSource
@@ -165,7 +165,7 @@ class S3ContentRepository(
             exception.initCause(e)
             throw exception
         } catch (e: AmazonClientException) {
-            logger.error("Client error generating signed URL for S3 object: $documentPath", e)
+            logger.error("Client error generating signed URL for S3 object: $storageKey", e)
             val exception = S3UrlGenerationException(
                 e.message ?: "Unknown error",
                 messageSource

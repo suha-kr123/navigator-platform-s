@@ -26,20 +26,20 @@ class FileSystemRepository : ContentRepository {
         return "file://$basePath/$documentPath"
     }
 
-    override fun deleteFile(documentPath: String) {
-        val file = File(basePath, documentPath)
+    override fun deleteFile(storageKey: String) {
+        val file = File(basePath, storageKey)
         if (file.exists()) {
             file.delete()
         }
     }
 
-    override fun fetchFile(documentPath: String): InputStream {
-        val file = File(basePath, documentPath)
-        require(file.exists()) { "File not found: $documentPath" }
+    override fun fetchFile(storageKey: String): InputStream {
+        val file = File(basePath, storageKey)
+        require(file.exists()) { "File not found: $storageKey" }
         return FileInputStream(file)
     }
 
-    override fun getSignedDownloadUrl(documentPath: String, expiresIn: Long): String? {
+    override fun getSignedDownloadUrl(storageKey: String, expiresIn: Long): String? {
         // For local file system, we don't support signed URLs
         // Return null to indicate this provider doesn't support signed URLs
         return null
