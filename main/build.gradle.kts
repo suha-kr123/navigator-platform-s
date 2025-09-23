@@ -15,8 +15,13 @@ dependencies {
     implementation(project(":features:master"))
     implementation(project(":features:address"))
     implementation(project(":features:lead"))
+    implementation(project(":features:leadpersons"))
     implementation(project(":features:document"))
     implementation(project(":features:identifiers"))
     implementation(project(":features:income"))
     implementation(project(":features:notes"))
+    implementation(project(":features:stages"))
+    implementation(project(":features:stagedefinitions"))
+    implementation(project(":features:tasks"))
+    implementation(project(":features:taskdefinitions"))
 }

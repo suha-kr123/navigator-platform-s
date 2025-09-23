@@ -6,4 +6,6 @@ import org.springframework.stereotype.Repository
 import java.util.*
 
 @Repository
-interface TaskDefinitionRepository : JpaRepository<TaskDefinition, UUID>
+interface TaskDefinitionRepository : JpaRepository<TaskDefinition, UUID> {
+    fun findByKey(key: String): TaskDefinition?
+}

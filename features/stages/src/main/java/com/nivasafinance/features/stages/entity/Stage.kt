@@ -2,7 +2,6 @@ package com.nivasafinance.features.stages.entity
 
 import audit.AuditableEntity
 import com.nivasafinance.features.stages.enum.EntityType
-import com.nivasafinance.features.stages.enum.Status
 import jakarta.persistence.*
 import java.util.*
 
@@ -15,20 +14,15 @@ data class Stage(
 
     @Column(name = "stage_definition_key", nullable = false)
     val stageDefinitionKey: String,
-
-    @Enumerated(EnumType.STRING)
+    
     @Column(name = "entity_type", nullable = false)
-    val entityType: EntityType,
+    val entityType: String,
 
     @Column(name = "entity_id", nullable = false)
     val entityId: UUID,
 
     @Column(name = "outcome", nullable = false)
-    val outcome: String,
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
-    val status: Status,
+    val outcome: String?,
 
     @Column(name = "assigned_to")
     val assignedTo: String? = null

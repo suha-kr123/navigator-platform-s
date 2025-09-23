@@ -5,20 +5,15 @@ import base.model.PaginationRequest
 import com.nivasafinance.features.tasks.dto.TaskRequest
 import com.nivasafinance.features.tasks.dto.TaskResponse
 import com.nivasafinance.features.tasks.dto.UpdateTaskRequest
-import com.nivasafinance.features.tasks.entity.Task
 import java.util.UUID
 
 interface TaskService {
 
-    fun createTask(taskRequest: TaskRequest): TaskResponse
+    fun createTaskByEntity(entityType: String, entityId: UUID, taskRequest: TaskRequest): TaskResponse
 
-    fun updateTask(taskId: UUID, taskRequest: UpdateTaskRequest): TaskResponse
+    fun updateTaskByEntity(entityType: String, entityId: UUID, taskId: UUID, taskRequest: UpdateTaskRequest): TaskResponse
 
-    fun deleteTask(taskId: UUID)
+    fun getTasksByEntity(entityType: String, entityId: UUID): List<TaskResponse>
 
-    fun getTask(taskId: UUID): TaskResponse
-
-    fun getTasks(taskIds: List<UUID>): List<TaskResponse>
-
-    fun getTasksByAssignedTo(assignedTo: String, paginationRequest: PaginationRequest): PaginatedResponse<TaskResponse>
+    fun getTasksByEntityTypeAndEntityIds(entityType: String, entityIds: List<UUID>, paginationRequest: PaginationRequest): PaginatedResponse<TaskResponse>
 }

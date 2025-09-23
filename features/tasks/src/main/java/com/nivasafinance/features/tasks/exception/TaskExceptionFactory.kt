@@ -16,6 +16,14 @@ object TaskExceptionFactory {
         return TaskKeyAlreadyExistsException(taskKey, messageSource)
     }
 
+    fun taskAlreadyExists(taskDefinitionKey: String, messageSource: MessageSource): TaskKeyAlreadyExistsException {
+        return TaskKeyAlreadyExistsException(taskDefinitionKey, messageSource)
+    }
+
+    fun unsupportedEntityType(entityType: String, messageSource: MessageSource): TaskOperationException {
+        return TaskOperationException("error.task.unsupported.entity.type", messageSource)
+    }
+
     fun operationFailed(operation: String, messageSource: MessageSource): TaskOperationException {
         return TaskOperationException(operation, messageSource)
     }

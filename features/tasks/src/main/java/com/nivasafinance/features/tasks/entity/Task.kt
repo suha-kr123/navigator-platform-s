@@ -18,19 +18,24 @@ data class Task(
     @Column(name = "task_definition_key", nullable = false, unique = true)
     val taskDefinitionKey: String,
 
+    @Column(name = "entity_type", nullable = false)
+    val entityType: String,
+
+    @Column(name = "entity_id", nullable = false)
+    val entityId: UUID,
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "task_data", columnDefinition = "jsonb")
-    val taskData: String? = null,
-
-    @Column(name = "assigned_to")
-    val assignedTo: String? = null,
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
-    val status: TaskStatus,
+    val taskData: Map<String, Any>? = null,
 
     @Column(name = "outcome", nullable = false)
     val outcome: String,
+
+    @Column(name = "status", nullable = false)
+    val status: String,
+
+    @Column(name = "assigned_to")
+    val assignedTo: String? = null,
 
     @Column(name = "due_at")
     val dueAt: LocalDateTime? = null,

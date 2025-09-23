@@ -16,8 +16,6 @@ import com.nivasafinance.features.stages.entity.Stage
 import com.nivasafinance.features.stages.repository.StageRepositoryWrapper
 import com.nivasafinance.features.stages.enum.EntityType as StageEntityType
 import com.nivasafinance.features.stagedefinitions.repository.StageDefinitionRepositoryWrapper
-import com.nivasafinance.features.stages.enum.Status
-import com.nivasafinance.features.lead.enum.LeadStatus
 
 @Service
 @Transactional
@@ -33,7 +31,7 @@ class LeadServiceImpl(
             leadCreateRequest.requestedAmount,
             leadCreateRequest.purpose,
             leadCreateRequest.productCode,
-            LeadStatus.ACTIVE,
+            null,
             leadCreateRequest.sourcingChannel,
             messageSource
         )
@@ -80,10 +78,12 @@ class LeadServiceImpl(
             requestedAmount = leadCreateRequest.requestedAmount,
             purpose = leadCreateRequest.purpose,
             productCode = leadCreateRequest.productCode,
-            status = LeadStatus.ACTIVE,
-            preliminaryInformation = leadCreateRequest.preliminaryInformation,
-            leadContacts = leadCreateRequest.leadContacts,
-            sourcingChannel = leadCreateRequest.sourcingChannel,
+            pipelineKey = leadCreateRequest.pipelineKey,
+            currentStage = leadCreateRequest.currentStage,
+            sourcingChannel = leadCreateRequest.sourcingChannel?.name,
+            preliminaryInformation = leadCreateRequest.preliminaryInformation?.let { 
+                mapOf("data" to it) 
+            },
             extData = leadCreateRequest.extData
         )
     }
@@ -94,10 +94,9 @@ class LeadServiceImpl(
             requestedAmount = lead.requestedAmount,
             purpose = lead.purpose,
             productCode = lead.productCode,
-            status = lead.status,
-            preliminaryInformation = lead.preliminaryInformation,
-            leadContacts = lead.leadContacts,
-            sourcingChannel = lead.sourcingChannel,
+            status = null,
+            preliminaryInformation = lead.preliminaryInformation?.get("data") as? com.nivasafinance.features.lead.dto.LeadPreliminaryInformation,
+            sourcingChannel = lead.sourcingChannel?.let { com.nivasafinance.features.lead.enum.SourcingChannel.valueOf(it) },
             extData = lead.extData,
             createdAt = lead.createdAt ?: java.time.LocalDateTime.now(),
             createdBy = lead.createdBy,
@@ -117,10 +116,9 @@ class LeadServiceImpl(
         stageDefinitions.forEach { stageDefinition ->
             val stage = Stage(
                 stageDefinitionKey = stageDefinition.key,
-                entityType = StageEntityType.LEAD,
+                entityType = StageEntityType.LEAD.name,
                 entityId = leadId,
-                outcome = "",
-                status = Status.PENDING,
+                outcome = null,
                 assignedTo = null
             )
             val savedStage = stageRepositoryWrapper.saveWithException(stage)
