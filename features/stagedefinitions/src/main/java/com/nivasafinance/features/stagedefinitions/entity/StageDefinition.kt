@@ -5,6 +5,7 @@ import jakarta.persistence.*
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import java.util.*
+import audit.AuditableEntity
 
 @Entity
 @Table(name = "stage_definitions")
@@ -26,6 +27,7 @@ data class StageDefinition(
     val pipelineKey: String,
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "outcomes", columnDefinition = "jsonb")
-    val outcomes: String? = null
-)
+    @Column(name = "possible_outcomes", columnDefinition = "jsonb")
+    val possibleOutcomes: List<String>? = null
+
+) : AuditableEntity()

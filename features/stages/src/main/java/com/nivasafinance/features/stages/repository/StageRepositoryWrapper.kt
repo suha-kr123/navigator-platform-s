@@ -1,7 +1,6 @@
 package com.nivasafinance.features.stages.repository
 
 import com.nivasafinance.features.stages.entity.Stage
-import com.nivasafinance.features.stages.enum.EntityType
 import com.nivasafinance.features.stages.exception.StageExceptionFactory
 import org.springframework.context.MessageSource
 import org.springframework.stereotype.Service
@@ -31,7 +30,7 @@ class StageRepositoryWrapper(
         }
     }
 
-    fun findAllByEntityTypeAndEntityIdWithException(entityType: EntityType, entityId: UUID): List<Stage> {
+    fun findAllByEntityTypeAndEntityIdWithException(entityType: String, entityId: UUID): List<Stage> {
         return try {
             stageRepository.findAllByEntityTypeAndEntityId(entityType, entityId)
         } catch (e: Exception) {
@@ -47,9 +46,9 @@ class StageRepositoryWrapper(
         }
     }
 
-    fun findByStageKeyWithException(stageKey: String): Stage {
+    fun existsByEntityTypeAndEntityIdAndStageDefinitionKeyWithException(entityType: String, entityId: UUID, stageDefinitionKey: String): Boolean {
         return try {
-            stageRepository.findByStageKey(stageKey)
+            stageRepository.existsByEntityTypeAndEntityIdAndStageDefinitionKey(entityType, entityId, stageDefinitionKey)
         } catch (e: Exception) {
             throw StageExceptionFactory.retrieveEntityFailed(messageSource)
         }

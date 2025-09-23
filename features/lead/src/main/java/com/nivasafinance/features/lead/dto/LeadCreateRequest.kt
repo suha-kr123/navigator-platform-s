@@ -9,8 +9,8 @@ data class LeadCreateRequest(
     val purpose: String?,
     val productCode: String?,
     val pipelineKey: String?,
+    val currentStage: String,
     val sourcingChannel: SourcingChannel?,
     val preliminaryInformation: LeadPreliminaryInformation?,
-    val leadContacts: LeadContacts?,
     val extData: Map<String, Any>?
 )

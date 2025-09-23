@@ -38,22 +38,21 @@ data class Lead(
     @Column(name = "product_code", nullable = false)
     var productCode: String?,
 
-    @Column(name = "status", length = 20, nullable = false)
-    @Enumerated(EnumType.STRING)
-    var status: LeadStatus?,
+    @Column(name = "pipeline_key", nullable = false)
+    var pipelineKey: String?,
+
+    @Column(name = "current_stage", nullable = false)
+    var currentStage: String?,
+
+    @Column(name = "sourcing_channel")
+    var sourcingChannel: String?,
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "preliminary_information", columnDefinition = "jsonb")
-    var preliminaryInformation: LeadPreliminaryInformation?,
+    var preliminaryInformation: Map<String, Any>? = null,
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "lead_contacts", columnDefinition = "jsonb")
-    var leadContacts: LeadContacts?,
-
-    @Column(name = "sourcing_channel", length = 50)
-    var sourcingChannel: SourcingChannel?,
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "data_ext", columnDefinition = "jsonb")
+    @Column(name = "ext_data", columnDefinition = "jsonb")
     var extData: Map<String, Any>? = null
+    
 ) : AuditableEntity()

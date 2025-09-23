@@ -13,7 +13,6 @@ import org.springframework.context.MessageSource
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDateTime
 import java.util.*
 
 @Service
@@ -23,19 +22,20 @@ class TaskServiceImpl(
     private val messageSource: MessageSource
 ) : TaskService {
 
-    override fun createTask(taskRequest: TaskRequest): TaskResponse {
-        TaskExceptionFactory.validateTaskForCreation(
-            taskRequest.taskDefinitionKey,
-            taskRequest.taskDefinitionKey,
-            taskRequest.status,
-            taskRequest.outcome,
-            null,
-            taskRequest.assignedTo,
-            messageSource
+    override fun createTaskByEntity(entityType: String, entityId: UUID, taskRequest: TaskRequest): TaskResponse {
+        validateEntityType(entityType)
+        
+        val exists = taskRepositoryWrapper.existsByEntityTypeAndEntityIdAndTaskDefinitionKeyWithException(
+            entityType, entityId, taskRequest.taskDefinitionKey
         )
+        if (exists) {
+            throw TaskExceptionFactory.taskAlreadyExists(taskRequest.taskDefinitionKey, messageSource)
+        }
         
         val task = Task(
             taskDefinitionKey = taskRequest.taskDefinitionKey,
+            entityType = entityType,
+            entityId = entityId,
             taskData = taskRequest.taskData,
             assignedTo = taskRequest.assignedTo,
             status = taskRequest.status,
@@ -49,23 +49,22 @@ class TaskServiceImpl(
         return toTaskResponse(savedTask)
     }
 
-    override fun updateTask(taskId: UUID, taskRequest: UpdateTaskRequest): TaskResponse {
-        val existingTask = getTaskById(taskId)
+    override fun updateTaskByEntity(entityType: String, entityId: UUID, taskId: UUID, taskRequest: UpdateTaskRequest): TaskResponse {
+        validateEntityType(entityType)
         
-        TaskExceptionFactory.validateTaskForUpdate(
-            taskId,
-            existingTask.taskDefinitionKey,
-            existingTask.taskDefinitionKey,
-            taskRequest.status,
-            taskRequest.outcome,
-            existingTask.dueAt,
-            taskRequest.assignedTo,
-            messageSource
-        )
+        val existingTasks = taskRepositoryWrapper.findAllByEntityTypeAndEntityIdWithException(entityType, entityId)
+        val existingTask = existingTasks.firstOrNull { it.id == taskId }
+        
+        if (existingTask == null) {
+            throw TaskExceptionFactory.taskNotFound(taskId, messageSource)
+        }
         
         val updatedTask = existingTask.copy(
             taskData = taskRequest.taskData,
             assignedTo = taskRequest.assignedTo,
+            dueAt = taskRequest.dueAt,
+            completedAt = taskRequest.completedAt,
+            rescheduledAt = taskRequest.rescheduledAt,
             status = taskRequest.status,
             outcome = taskRequest.outcome
         )
@@ -74,31 +73,22 @@ class TaskServiceImpl(
         return toTaskResponse(savedTask)
     }
 
-    override fun deleteTask(taskId: UUID) {
-        getTaskById(taskId)
-        taskRepositoryWrapper.deleteByIdWithException(taskId)
-    }
-
-    override fun getTask(taskId: UUID): TaskResponse {
-        val task = getTaskById(taskId)
-        return toTaskResponse(task)
-    }
-
-    private fun getTaskById(taskId: UUID): Task {
-        return taskRepositoryWrapper.findByIdWithException(taskId)
-    }
-
-    override fun getTasks(taskIds: List<UUID>): List<TaskResponse> {
-        val tasks = taskRepositoryWrapper.findAllWithException(taskIds)
+    override fun getTasksByEntity(entityType: String, entityId: UUID): List<TaskResponse> {
+        validateEntityType(entityType)
+        
+        val tasks = taskRepositoryWrapper.findAllByEntityTypeAndEntityIdWithException(entityType, entityId)
         return tasks.map { toTaskResponse(it) }
     }
 
-    override fun getTasksByAssignedTo(assignedTo: String, paginationRequest: PaginationRequest): PaginatedResponse<TaskResponse> {
+    override fun getTasksByEntityTypeAndEntityIds(entityType: String, entityIds: List<UUID>, paginationRequest: PaginationRequest): PaginatedResponse<TaskResponse> {
+        validateEntityType(entityType)
+        
         val pageable = PageRequest.of(
             paginationRequest.offset / paginationRequest.limit,
             paginationRequest.limit
         )
-        val taskPage = taskRepositoryWrapper.findAllByAssignedToWithException(assignedTo, pageable)
+        
+        val taskPage = taskRepositoryWrapper.findAllByEntityTypeAndEntityIdInWithException(entityType, entityIds, pageable)
         val taskResponses = taskPage.toList().map { toTaskResponse(it) }
 
         val totalElements = taskPage.totalElements
@@ -117,6 +107,12 @@ class TaskServiceImpl(
                 hasPrevious = currentPage > 0
             )
         )
+    }
+
+    private fun validateEntityType(entityType: String) {
+        if (entityType != "STAGE") {
+            throw TaskExceptionFactory.unsupportedEntityType(entityType, messageSource)
+        }
     }
 
     private fun toTaskResponse(task: Task): TaskResponse {
