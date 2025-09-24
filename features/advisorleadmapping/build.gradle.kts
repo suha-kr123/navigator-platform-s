@@ -5,6 +5,8 @@ plugins {
 
 dependencies {
     implementation(project(":common"))
+    implementation(project(":features:advisor"))
+    implementation(project(":features:lead"))
 }
 
 springBoot {

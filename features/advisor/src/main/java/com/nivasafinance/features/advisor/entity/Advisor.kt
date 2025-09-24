@@ -2,12 +2,9 @@ package com.nivasafinance.features.advisor.entity
 
 import annotations.NoArg
 import audit.AuditableEntity
-import com.nivasafinance.features.advisor.enum.AdvisorStatus
 import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
-import jakarta.persistence.EnumType
-import jakarta.persistence.Enumerated
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
@@ -23,44 +20,25 @@ import java.util.UUID
 @Table(name = "advisor")
 @NoArg
 @Suppress("LongParameterList")
-class Advisor(
+data class Advisor(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    val id: UUID? = null,
+    var id: UUID? = null,
 
     @Column(name = "person_id")
-    val personId: UUID,
+    var personId: UUID? = null,
 
-    @Column(name = "advisor_code")
-    val advisorCode: String?,
+    @Column(name = "advisor_code", length = 50)
+    var advisorCode: String? = null,
 
-    @Column(name = "is_employee")
-    val isEmployee: Boolean = false,
+    @Column(name = "verification_status", length = 50)
+    var verificationStatus: String? = null,
 
-    @Column(name = "status")
-    @Enumerated(EnumType.STRING)
-    val status: AdvisorStatus,
-
-    @Column(name = "is_experienced_dsa")
-    val isExperiencedDsa: Boolean = false,
-
-    @Column(name = "remarks", length = 1000)
-    val remarks: String? = null,
-
-    @Column(name = "rejection_reason", length = 1000)
-    val rejectionReason: String? = null,
-
-    @Column(name = "advisor_feedback", length = 2000)
-    val advisorFeedback: String? = null,
-
-    @Column(name = "welcome_kit_sent")
-    val welcomeKitSent: Boolean = false,
-
-    @Column(name = "attended_advisor_meeting")
-    val attendedAdvisorMeeting: Boolean = false,
+    @Column(name = "verification_notes", columnDefinition = "TEXT")
+    var verificationNotes: String? = null,
 
     @Type(JsonType::class)
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "data_ext", columnDefinition = "jsonb")
-    val extData: Map<String, Any>? = null
+    var extData: Map<String, Any>? = null
 ) : AuditableEntity()
