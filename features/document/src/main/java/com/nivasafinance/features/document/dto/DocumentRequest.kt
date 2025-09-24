@@ -1,6 +1,5 @@
 package com.nivasafinance.features.document.dto
 
-import com.nivasafinance.features.document.enum.ProviderType
 import java.util.*
 
 data class DocumentRequest(

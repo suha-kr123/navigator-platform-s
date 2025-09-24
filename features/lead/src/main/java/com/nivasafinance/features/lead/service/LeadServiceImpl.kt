@@ -94,6 +94,7 @@ class LeadServiceImpl(
             requestedAmount = lead.requestedAmount,
             purpose = lead.purpose,
             productCode = lead.productCode,
+            currentStage = lead.currentStage,
             status = null,
             preliminaryInformation = lead.preliminaryInformation?.get("data") as? com.nivasafinance.features.lead.dto.LeadPreliminaryInformation,
             sourcingChannel = lead.sourcingChannel?.let { com.nivasafinance.features.lead.enum.SourcingChannel.valueOf(it) },

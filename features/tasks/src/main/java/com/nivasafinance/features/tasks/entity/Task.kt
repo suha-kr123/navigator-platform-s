@@ -1,7 +1,6 @@
 package com.nivasafinance.features.tasks.entity
 
 import audit.AuditableEntity
-import com.nivasafinance.features.tasks.enum.TaskStatus
 import jakarta.persistence.*
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
@@ -18,6 +17,9 @@ data class Task(
     @Column(name = "task_definition_key", nullable = false, unique = true)
     val taskDefinitionKey: String,
 
+    @Column(name = "description")
+    var description: String? = null,
+
     @Column(name = "entity_type", nullable = false)
     val entityType: String,
 
@@ -26,24 +28,28 @@ data class Task(
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "task_data", columnDefinition = "jsonb")
-    val taskData: Map<String, Any>? = null,
+    var taskData: Map<String, Any>? = null,
 
     @Column(name = "outcome", nullable = false)
-    val outcome: String,
+    var outcome: String,
 
     @Column(name = "status", nullable = false)
-    val status: String,
+    var status: String,
 
     @Column(name = "assigned_to")
-    val assignedTo: String? = null,
+    var assignedTo: String? = null,
 
     @Column(name = "due_at")
-    val dueAt: LocalDateTime? = null,
+    var dueAt: LocalDateTime? = null,
 
     @Column(name = "completed_at")
-    val completedAt: LocalDateTime? = null,
+    var completedAt: LocalDateTime? = null,
 
     @Column(name = "rescheduled_at")
-    val rescheduledAt: LocalDateTime? = null
+    var rescheduledAt: LocalDateTime? = null,
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "note_ids", columnDefinition = "jsonb")
+    var noteIds: List<UUID>? = null
 
 ) : AuditableEntity()

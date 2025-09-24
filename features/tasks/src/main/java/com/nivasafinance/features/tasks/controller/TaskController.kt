@@ -18,6 +18,30 @@ class TaskController(
     private val taskService: TaskService
 ) {
 
+    @GetMapping("/{entityType}")
+    fun getAllTasksByEntityType(
+        @PathVariable entityType: String,
+        @RequestParam(defaultValue = "0") offset: Int,
+        @RequestParam(defaultValue = "20") limit: Int,
+        @RequestParam(defaultValue = "createdAt") sortBy: String,
+        @RequestParam(defaultValue = "ASC") sortDirection: String
+    ): ResponseEntity<PaginatedResponse<TaskResponse>> {
+        val paginationRequest = PaginationRequest(
+            offset = offset,
+            limit = limit,
+            sortBy = sortBy,
+            sortDirection = SortDirection.valueOf(sortDirection.uppercase())
+        )
+        val tasks = taskService.getAllTasksByEntityType(entityType, paginationRequest)
+        return ResponseEntity.ok(tasks)
+    }
+
+    @GetMapping("/task/{taskId}")
+    fun getTaskById(@PathVariable taskId: UUID): ResponseEntity<TaskResponse> {
+        val task = taskService.getTaskById(taskId)
+        return ResponseEntity.ok(task)
+    }
+
     @GetMapping("/{entityType}/{entityId}")
     fun getTasksByEntity(
         @PathVariable entityType: String,
@@ -35,6 +59,24 @@ class TaskController(
     ): ResponseEntity<TaskResponse> {
         val createdTask = taskService.createTaskByEntity(entityType, entityId, taskRequest)
         return ResponseEntity.status(HttpStatus.CREATED).body(createdTask)
+    }
+
+    @PutMapping("/task/{taskId}")
+    fun updateTaskById(
+        @PathVariable taskId: UUID,
+        @RequestBody taskRequest: UpdateTaskRequest
+    ): ResponseEntity<TaskResponse> {
+        val updatedTask = taskService.updateTaskById(taskId, taskRequest)
+        return ResponseEntity.ok(updatedTask)
+    }
+
+    @PatchMapping("/task/{taskId}")
+    fun patchTaskById(
+        @PathVariable taskId: UUID,
+        @RequestBody taskRequest: UpdateTaskRequest
+    ): ResponseEntity<TaskResponse> {
+        val updatedTask = taskService.patchTaskById(taskId, taskRequest)
+        return ResponseEntity.ok(updatedTask)
     }
 
     @PutMapping("/{entityType}/{entityId}/{taskId}")

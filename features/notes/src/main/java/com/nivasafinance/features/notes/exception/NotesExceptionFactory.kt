@@ -21,7 +21,4 @@ object NotesExceptionFactory {
         return NotesOperationException("error.notes.operation.retrieve", messageSource)
     }
 
-    fun unsupportedEntityType(entityType: String, messageSource: MessageSource): NotesOperationException {
-        return NotesOperationException("error.notes.unsupported.entity.type", messageSource)
-    }
 }

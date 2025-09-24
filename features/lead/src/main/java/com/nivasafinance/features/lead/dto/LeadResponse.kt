@@ -11,6 +11,7 @@ data class LeadResponse(
     val requestedAmount: BigDecimal?,
     val purpose: String?,
     val productCode: String?,
+    val currentStage: String?,
     val status: LeadStatus?,
     val sourcingChannel: SourcingChannel?,
     val preliminaryInformation: LeadPreliminaryInformation?,

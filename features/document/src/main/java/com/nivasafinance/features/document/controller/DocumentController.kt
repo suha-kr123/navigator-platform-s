@@ -40,7 +40,7 @@ class DocumentController(
             docType = docType,
             tags = tags
         )
-        
+
         val document = documentService.createDocument(documentRequest, file.inputStream)
         return ResponseEntity.status(HttpStatus.CREATED).body(document)
     }
@@ -70,7 +70,7 @@ class DocumentController(
     fun downloadDocument(@PathVariable id: UUID): ResponseEntity<Resource> {
         val document = documentService.getDocumentById(id)
         val resource = documentService.downloadDocument(id)
-        
+
         return ResponseEntity.ok()
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"${document.fileName}\"")
             .header(HttpHeaders.CONTENT_TYPE, document.fileType ?: MediaType.APPLICATION_OCTET_STREAM_VALUE)

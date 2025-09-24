@@ -18,10 +18,8 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/api/notes")
 class NotesController(private val notesService: NotesService) {
 
-    @GetMapping("/{entityType}/{entityId}")
-    fun getNotesByEntity(
-            @PathVariable entityType: String,
-            @PathVariable entityId: UUID,
+    @GetMapping
+    fun getAllNotes(
             @RequestParam(defaultValue = "0") offset: Int,
             @RequestParam(defaultValue = "20") limit: Int,
             @RequestParam(required = false) sortBy: String?,
@@ -36,39 +34,43 @@ class NotesController(private val notesService: NotesService) {
                                 if (sortDirection == "ASC") SortDirection.ASC
                                 else SortDirection.DESC
                 )
-        val notes = notesService.getNotesByEntity(entityType, entityId, paginationRequest)
+        val notes = notesService.getAllNotes(paginationRequest)
         return ResponseEntity.ok(notes)
     }
 
-    @PostMapping("/{entityType}/{entityId}")
-    fun createNotes(
-            @PathVariable entityType: String,
-            @PathVariable entityId: UUID,
-            @RequestBody notesRequest: NotesRequest
-    ): ResponseEntity<NotesResponse> {
-        val createdNotes = notesService.createNotesByEntity(entityType, entityId, notesRequest)
+    @GetMapping("/{notesId}")
+    fun getNotesById(@PathVariable notesId: UUID): ResponseEntity<NotesResponse> {
+        val notes = notesService.getNotesById(notesId)
+        return ResponseEntity.ok(notes)
+    }
+
+    @PostMapping
+    fun createNotes(@RequestBody notesRequest: NotesRequest): ResponseEntity<NotesResponse> {
+        val createdNotes = notesService.createNotes(notesRequest)
         return ResponseEntity.status(HttpStatus.CREATED).body(createdNotes)
     }
 
-    @PutMapping("/{entityType}/{entityId}/{notesId}")
+    @PutMapping("/{notesId}")
     fun updateNotes(
-            @PathVariable entityType: String,
-            @PathVariable entityId: UUID,
             @PathVariable notesId: UUID,
             @RequestBody notesUpdateRequest: NotesUpdateRequest
     ): ResponseEntity<NotesResponse> {
-        val updatedNotes =
-                notesService.updateNotesByEntity(entityType, entityId, notesId, notesUpdateRequest)
+        val updatedNotes = notesService.updateNotes(notesId, notesUpdateRequest)
         return ResponseEntity.ok(updatedNotes)
     }
 
-    @DeleteMapping("/{entityType}/{entityId}/{notesId}")
-    fun deleteNotes(
-            @PathVariable entityType: String,
-            @PathVariable entityId: UUID,
-            @PathVariable notesId: UUID
-    ): ResponseEntity<Void> {
-        notesService.deleteNotesByEntity(entityType, entityId, notesId)
+    @PatchMapping("/{notesId}")
+    fun patchNotes(
+            @PathVariable notesId: UUID,
+            @RequestBody notesUpdateRequest: NotesUpdateRequest
+    ): ResponseEntity<NotesResponse> {
+        val updatedNotes = notesService.patchNotes(notesId, notesUpdateRequest)
+        return ResponseEntity.ok(updatedNotes)
+    }
+
+    @DeleteMapping("/{notesId}")
+    fun deleteNotes(@PathVariable notesId: UUID): ResponseEntity<Void> {
+        notesService.deleteNotes(notesId)
         return ResponseEntity.noContent().build()
     }
 }

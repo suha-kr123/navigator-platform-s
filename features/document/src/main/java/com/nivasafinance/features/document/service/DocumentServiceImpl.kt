@@ -1,14 +1,13 @@
 package com.nivasafinance.features.document.service
 
+import com.nivasafinance.features.document.config.DocumentStorageProperties
 import com.nivasafinance.features.document.dto.DocumentRequest
 import com.nivasafinance.features.document.dto.DocumentResponse
 import com.nivasafinance.features.document.dto.DocumentVerificationRequest
 import com.nivasafinance.features.document.entity.Document
 import com.nivasafinance.features.document.exception.DocumentExceptionFactory
 import com.nivasafinance.features.document.repository.DocumentRepositoryWrapper
-import com.nivasafinance.features.document.storage.ContentRepository
 import com.nivasafinance.features.document.storage.ContentRepositoryFactory
-import com.nivasafinance.features.document.config.DocumentStorageProperties
 import org.springframework.context.MessageSource
 import org.springframework.core.io.InputStreamResource
 import org.springframework.core.io.Resource
@@ -34,9 +33,9 @@ class DocumentServiceImpl(
 
         val contentRepository = contentRepositoryFactory.getRepository(documentStorageProperties.provider)
         val documentPath = generateDocumentPath(documentRequest)
-        
+
         val storageKey = contentRepository.saveFile(fileInputStream, documentPath)
-        
+
         val document = toDocument(documentRequest, storageKey)
         val savedDocument = documentRepositoryWrapper.saveWithException(document)
         return toDocumentResponse(savedDocument)
@@ -55,7 +54,7 @@ class DocumentServiceImpl(
     override fun deleteDocumentById(id: UUID) {
         val document = documentRepositoryWrapper.findByIdWithException(id)
         val contentRepository = contentRepositoryFactory.getRepository(document.provider)
-        
+
         try {
             contentRepository.deleteFile(document.storageKey)
         } catch (e: Exception) {
@@ -74,16 +73,16 @@ class DocumentServiceImpl(
     override fun getDocumentDownloadUrl(id: UUID, expiresIn: Long): String {
         val document = documentRepositoryWrapper.findByIdWithException(id)
         val contentRepository = contentRepositoryFactory.getRepository(document.provider)
-        return contentRepository.getSignedDownloadUrl(document.storageKey, expiresIn) 
+        return contentRepository.getSignedDownloadUrl(document.storageKey, expiresIn)
             ?: throw documentExceptionFactory.createOperationException("generate download URL")
     }
 
     override fun verifyDocument(id: UUID, verificationRequest: DocumentVerificationRequest): DocumentResponse {
         val document = documentRepositoryWrapper.findByIdWithException(id)
-        
+
         document.isVerified = verificationRequest.isVerified
         document.verificationNotes = verificationRequest.verificationNotes
-        
+
         val updatedDocument = documentRepositoryWrapper.saveWithException(document)
         return toDocumentResponse(updatedDocument)
     }

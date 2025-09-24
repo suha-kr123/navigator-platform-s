@@ -38,7 +38,6 @@ class Document(
     @Column(name = "document_type", nullable = false)
     var documentType: String? = null,
 
-
     @Column(name = "is_verified", nullable = false)
     var isVerified: Boolean = false,
 

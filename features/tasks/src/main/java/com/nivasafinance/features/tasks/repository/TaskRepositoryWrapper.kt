@@ -22,6 +22,16 @@ class TaskRepositoryWrapper(
         }
     }
 
+    fun findByIdWithException(id: UUID): Task {
+        return try {
+            taskRepository.findById(id).orElseThrow {
+                TaskExceptionFactory.taskNotFound(id, messageSource)
+            }
+        } catch (e: Exception) {
+            throw TaskExceptionFactory.retrieveEntityFailed(messageSource)
+        }
+    }
+
     fun findAllByEntityTypeAndEntityIdWithException(entityType: String, entityId: UUID): List<Task> {
         return try {
             taskRepository.findAllByEntityTypeAndEntityId(entityType, entityId)
@@ -41,6 +51,14 @@ class TaskRepositoryWrapper(
     fun findAllByEntityTypeAndEntityIdInWithException(entityType: String, entityIds: List<UUID>, pageable: Pageable): Page<Task> {
         return try {
             taskRepository.findAllByEntityTypeAndEntityIdIn(entityType, entityIds, pageable)
+        } catch (e: Exception) {
+            throw TaskExceptionFactory.retrieveEntityFailed(messageSource)
+        }
+    }
+
+    fun findAllByEntityTypeWithException(entityType: String, pageable: Pageable): Page<Task> {
+        return try {
+            taskRepository.findAllByEntityType(entityType, pageable)
         } catch (e: Exception) {
             throw TaskExceptionFactory.retrieveEntityFailed(messageSource)
         }

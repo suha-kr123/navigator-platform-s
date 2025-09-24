@@ -7,8 +7,6 @@ import com.nivasafinance.features.notes.dto.NotesRequest
 import com.nivasafinance.features.notes.dto.NotesResponse
 import com.nivasafinance.features.notes.dto.NotesUpdateRequest
 import com.nivasafinance.features.notes.entity.Notes
-import com.nivasafinance.features.notes.enum.EntityType
-import com.nivasafinance.features.notes.exception.NotesExceptionFactory
 import com.nivasafinance.features.notes.repository.NotesRepositoryWrapper
 import org.springframework.context.MessageSource
 import org.springframework.data.domain.PageRequest
@@ -22,19 +20,8 @@ class NotesServiceImpl(
     private val messageSource: MessageSource
 ) : NotesService {
 
-    private fun validateEntityType(entityType: String) {
-        try {
-            EntityType.valueOf(entityType.uppercase())
-        } catch (e: IllegalArgumentException) {
-            throw NotesExceptionFactory.unsupportedEntityType(entityType, messageSource)
-        }
-    }
-
-    override fun createNotesByEntity(entityType: String, entityId: UUID, notesRequest: NotesRequest): NotesResponse {
-        validateEntityType(entityType)
+    override fun createNotes(notesRequest: NotesRequest): NotesResponse {
         val notes = Notes(
-            entityType = entityType,
-            entityId = entityId,
             title = notesRequest.title,
             content = notesRequest.content
         )
@@ -42,24 +29,41 @@ class NotesServiceImpl(
         return toNotesResponse(savedNotes)
     }
 
-    override fun updateNotesByEntity(entityType: String, entityId: UUID, notesId: UUID, notesUpdateRequest: NotesUpdateRequest): NotesResponse {
-        validateEntityType(entityType)
+    override fun updateNotes(notesId: UUID, notesUpdateRequest: NotesUpdateRequest): NotesResponse {
         val existingNotes = notesRepositoryWrapper.findByIdWithException(notesId)
         val updatedNotes = existingNotes.copy(
-            title = notesUpdateRequest.title,
-            content = notesUpdateRequest.content
+            title = notesUpdateRequest.title ?: existingNotes.title,
+            content = notesUpdateRequest.content ?: existingNotes.content
         )
         val savedNotes = notesRepositoryWrapper.saveWithException(updatedNotes)
         return toNotesResponse(savedNotes)
     }
+
+    override fun patchNotes(notesId: UUID, notesUpdateRequest: NotesUpdateRequest): NotesResponse {
+        val existingNotes = notesRepositoryWrapper.findByIdWithException(notesId)
+
+        // Update only the fields that are provided in the request
+        if (notesUpdateRequest.title != null) {
+            existingNotes.title = notesUpdateRequest.title
+        }
+        if (notesUpdateRequest.content != null) {
+            existingNotes.content = notesUpdateRequest.content
+        }
+
+        val savedNotes = notesRepositoryWrapper.saveWithException(existingNotes)
+        return toNotesResponse(savedNotes)
+    }
     
-    override fun deleteNotesByEntity(entityType: String, entityId: UUID, notesId: UUID) {
-        validateEntityType(entityType)
+    override fun deleteNotes(notesId: UUID) {
         notesRepositoryWrapper.deleteByIdWithException(notesId)
     }
 
-    override fun getNotesByEntity(entityType: String, entityId: UUID, paginationRequest: PaginationRequest): PaginatedResponse<NotesResponse> {
-        validateEntityType(entityType)
+    override fun getNotesById(notesId: UUID): NotesResponse {
+        val notes = notesRepositoryWrapper.findByIdWithException(notesId)
+        return toNotesResponse(notes)
+    }
+
+    override fun getAllNotes(paginationRequest: PaginationRequest): PaginatedResponse<NotesResponse> {
         val sort = if (paginationRequest.sortBy != null) {
             Sort.by(if (paginationRequest.sortDirection.name == "ASC") Sort.Direction.ASC else Sort.Direction.DESC, paginationRequest.sortBy)
         } else {
@@ -67,7 +71,7 @@ class NotesServiceImpl(
         }
         
         val pageable = PageRequest.of(paginationRequest.offset / paginationRequest.limit, paginationRequest.limit, sort)
-        val notesPage = notesRepositoryWrapper.findAllByEntityTypeAndEntityId(entityType, entityId, pageable)
+        val notesPage = notesRepositoryWrapper.findAll(pageable)
         
         return PaginatedResponse(
             content = notesPage.content.map { toNotesResponse(it) },
@@ -88,8 +92,6 @@ class NotesServiceImpl(
             id = notes.id!!,
             title = notes.title,
             content = notes.content,
-            entityType = notes.entityType,
-            entityId = notes.entityId,
             createdAt = notes.createdAt!!,    
             updatedAt = notes.updatedAt!!,
             createdBy = notes.createdBy,

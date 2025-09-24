@@ -135,4 +135,12 @@ object TaskExceptionFactory {
             throw assignmentRequired(status!!, messageSource)
         }
     }
+
+    fun unsupportedTaskType(taskType: String, messageSource: MessageSource): TaskOperationException {
+        return TaskOperationException("task.unsupported.type", messageSource)
+    }
+
+    fun taskDefinitionNotFound(taskDefinitionKey: String, messageSource: MessageSource): TaskOperationException {
+        return TaskOperationException("task.definition.not.found", messageSource)
+    }
 }
