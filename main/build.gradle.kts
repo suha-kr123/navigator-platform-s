@@ -15,4 +15,5 @@ dependencies {
     implementation(project(":features:address"))
     implementation(project(":features:lead"))
     implementation(project(":features:document"))
+    implementation(project(":features:offices"))
 }
