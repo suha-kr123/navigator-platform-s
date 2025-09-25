@@ -13,10 +13,10 @@ interface LeadNotesService {
         leadId: UUID,
         taskId: UUID,
         paginationRequest: PaginationRequest
-    ): PaginatedResponse<LeadTaskNotesResponse>
+    ): PaginatedResponse<List<LeadTaskNotesResponse>>
     fun getNotesById(leadId: UUID, taskId: UUID, notesId: UUID): LeadTaskNotesResponse
-    fun getLeadNotes(leadId: UUID, paginationRequest: PaginationRequest): PaginatedResponse<LeadTaskNotesResponse>
-    fun getAllLeadsNotes(paginationRequest: PaginationRequest): PaginatedResponse<LeadTaskNotesResponse>
+    fun getLeadNotes(leadId: UUID, paginationRequest: PaginationRequest): PaginatedResponse<List<LeadTaskNotesResponse>>
+    fun getAllLeadsNotes(paginationRequest: PaginationRequest): PaginatedResponse<List<LeadTaskNotesResponse>>
     fun updateNotesById(
         leadId: UUID,
         taskId: UUID,

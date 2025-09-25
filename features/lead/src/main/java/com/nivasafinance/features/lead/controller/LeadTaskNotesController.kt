@@ -23,7 +23,7 @@ class LeadTaskNotesController(
         @RequestParam(defaultValue = "20") limit: Int,
         @RequestParam(defaultValue = "createdAt") sortBy: String,
         @RequestParam(defaultValue = "ASC") sortDirection: String
-    ): ResponseEntity<PaginatedResponse<LeadTaskNotesResponse>> {
+    ): ResponseEntity<PaginatedResponse<List<LeadTaskNotesResponse>>> {
         val paginationRequest = PaginationRequest(
             offset = offset,
             limit = limit,
@@ -41,7 +41,7 @@ class LeadTaskNotesController(
         @RequestParam(defaultValue = "20") limit: Int,
         @RequestParam(defaultValue = "createdAt") sortBy: String,
         @RequestParam(defaultValue = "ASC") sortDirection: String
-    ): ResponseEntity<PaginatedResponse<LeadTaskNotesResponse>> {
+    ): ResponseEntity<PaginatedResponse<List<LeadTaskNotesResponse>>> {
         val paginationRequest = PaginationRequest(
             offset = offset,
             limit = limit,
@@ -80,7 +80,7 @@ class LeadTaskNotesController(
         @RequestParam(defaultValue = "20") limit: Int,
         @RequestParam(defaultValue = "createdAt") sortBy: String,
         @RequestParam(defaultValue = "ASC") sortDirection: String
-    ): ResponseEntity<PaginatedResponse<LeadTaskNotesResponse>> {
+    ): ResponseEntity<PaginatedResponse<List<LeadTaskNotesResponse>>> {
         val paginationRequest = PaginationRequest(
             offset = offset,
             limit = limit,
@@ -88,20 +88,8 @@ class LeadTaskNotesController(
             sortDirection = sortDirection
         )
 
-        val leadNotes = leadNotesService.getLeadNotes(leadId, paginationRequest)
-        // Filter notes by taskId
-        val filteredNotes = leadNotes.content.filter { leadNotesResponse ->
-            // We need to check if the notes belong to this specific task
-            // This would require a more complex query, but for now we'll return all notes for the lead
-            true
-        }
-
-        val filteredResponse = PaginatedResponse(
-            content = filteredNotes,
-            pagination = leadNotes.pagination
-        )
-
-        return ResponseEntity.ok(filteredResponse)
+        val leadNotes = leadNotesService.getTaskNotes(leadId, taskId, paginationRequest)
+        return ResponseEntity.ok(leadNotes)
     }
 
     @PutMapping("/{leadId}/tasks/{taskId}/notes/{notesId}")

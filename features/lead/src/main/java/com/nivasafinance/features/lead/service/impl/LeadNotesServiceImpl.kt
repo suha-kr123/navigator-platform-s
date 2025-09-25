@@ -7,6 +7,7 @@ import com.nivasafinance.features.lead.dto.LeadTaskNotesResponse
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper
 import com.nivasafinance.features.lead.service.LeadNotesService
 import com.nivasafinance.features.notes.dto.NotesRequest
+import com.nivasafinance.features.notes.dto.NotesResponse
 import com.nivasafinance.features.notes.dto.NotesUpdateRequest
 import com.nivasafinance.features.notes.service.NotesService
 import org.springframework.stereotype.Service
@@ -19,6 +20,23 @@ class LeadNotesServiceImpl(
     private val notesService: NotesService,
     private val leadRepositoryWrapper: LeadRepositoryWrapper
 ) : LeadNotesService {
+
+    /**
+     * Converts NotesResponse to LeadTaskNotesResponse
+     */
+    private fun NotesResponse.toLeadTaskNotesResponse(leadId: UUID, taskId: UUID): LeadTaskNotesResponse {
+        return LeadTaskNotesResponse(
+            leadId = leadId,
+            taskId = taskId,
+            noteId = this.id,
+            noteTitle = this.title,
+            noteContent = this.content,
+            noteCreatedAt = this.createdAt,
+            noteCreatedBy = this.createdBy ?: "system",
+            noteUpdatedAt = this.updatedAt,
+            noteUpdatedBy = this.updatedBy ?: "system"
+        )
+    }
 
     override fun addNotesToLead(leadId: UUID, taskId: UUID, addNotesToLeadRequest: NotesRequest): LeadTaskNotesResponse {
         // Verify lead exists
@@ -48,14 +66,10 @@ class LeadNotesServiceImpl(
         lead.taskData = updatedTaskData
         leadRepositoryWrapper.saveWithException(lead)
 
-        return LeadTaskNotesResponse(
-            leadId = leadId,
-            taskId = taskId,
-            notes = listOf(notesResponse)
-        )
+        return notesResponse.toLeadTaskNotesResponse(leadId, taskId)
     }
 
-    override fun getTaskNotes(leadId: UUID, taskId: UUID, paginationRequest: PaginationRequest): PaginatedResponse<LeadTaskNotesResponse> {
+    override fun getTaskNotes(leadId: UUID, taskId: UUID, paginationRequest: PaginationRequest): PaginatedResponse<List<LeadTaskNotesResponse>> {
         // Verify lead exists
         val lead = leadRepositoryWrapper.findByIdWithException(leadId)
 
@@ -72,17 +86,13 @@ class LeadNotesServiceImpl(
         // Convert to LeadTaskNotesResponse
         val leadTaskNotesResponses = notesIds.map { notesId ->
             val notes = notesService.getNotesById(notesId)
-            LeadTaskNotesResponse(
-                leadId = leadId,
-                taskId = taskId,
-                notes = listOf(notes)
-            )
+            notes.toLeadTaskNotesResponse(leadId, taskId)
         }
 
         // For now, return all notes without pagination
         // In a real implementation, you might want to implement proper pagination
         return PaginatedResponse(
-            content = leadTaskNotesResponses,
+            content = listOf(leadTaskNotesResponses),
             pagination = PaginationInfo(
                 offset = paginationRequest.offset,
                 limit = paginationRequest.limit,
@@ -114,14 +124,10 @@ class LeadNotesServiceImpl(
         }
 
         val notes = notesService.getNotesById(notesId)
-        return LeadTaskNotesResponse(
-            leadId = leadId,
-            taskId = taskId,
-            notes = listOf(notes)
-        )
+        return notes.toLeadTaskNotesResponse(leadId, taskId)
     }
 
-    override fun getLeadNotes(leadId: UUID, paginationRequest: PaginationRequest): PaginatedResponse<LeadTaskNotesResponse> {
+    override fun getLeadNotes(leadId: UUID, paginationRequest: PaginationRequest): PaginatedResponse<List<LeadTaskNotesResponse>> {
         // Verify lead exists
         val lead = leadRepositoryWrapper.findByIdWithException(leadId)
 
@@ -132,7 +138,7 @@ class LeadNotesServiceImpl(
 
         if (allNotesIds.isEmpty()) {
             return PaginatedResponse(
-                content = emptyList(),
+                content = listOf(emptyList()),
                 pagination = PaginationInfo(
                     offset = paginationRequest.offset,
                     limit = paginationRequest.limit,
@@ -155,16 +161,13 @@ class LeadNotesServiceImpl(
         val leadTaskNotesResponses = filteredNotes.map { notes ->
             // We need to find which task this notes belongs to
             val taskData = lead.taskData?.find { it.notesIds?.contains(notes.id) == true }
-            LeadTaskNotesResponse(
-                leadId = leadId,
-                taskId = taskData?.taskId ?: UUID.randomUUID(), // fallback if not found
-                notes = listOf(notes)
-            )
+            val taskId = taskData?.taskId ?: UUID.randomUUID() // fallback if not found
+            notes.toLeadTaskNotesResponse(leadId, taskId)
         }
 
         // Create a new paginated response with filtered notes
         return PaginatedResponse(
-            content = leadTaskNotesResponses,
+            content = listOf(leadTaskNotesResponses),
             pagination = PaginationInfo(
                 offset = paginationRequest.offset,
                 limit = paginationRequest.limit,
@@ -177,7 +180,7 @@ class LeadNotesServiceImpl(
         )
     }
 
-    override fun getAllLeadsNotes(paginationRequest: PaginationRequest): PaginatedResponse<LeadTaskNotesResponse> {
+    override fun getAllLeadsNotes(paginationRequest: PaginationRequest): PaginatedResponse<List<LeadTaskNotesResponse>> {
         // Get all leads that have notes
         val pageable = org.springframework.data.domain.PageRequest.of(
             paginationRequest.offset / paginationRequest.limit,
@@ -194,11 +197,7 @@ class LeadNotesServiceImpl(
                     try {
                         val notes = notesService.getNotesById(notesId)
                         allLeadTaskNotesResponses.add(
-                            LeadTaskNotesResponse(
-                                leadId = lead.id!!,
-                                taskId = taskData.taskId,
-                                notes = listOf(notes)
-                            )
+                            notes.toLeadTaskNotesResponse(lead.id!!, taskData.taskId)
                         )
                     } catch (e: Exception) {
                         // Skip notes that no longer exist
@@ -211,7 +210,7 @@ class LeadNotesServiceImpl(
         val currentPage = paginationRequest.offset / paginationRequest.limit
 
         return PaginatedResponse(
-            content = allLeadTaskNotesResponses,
+            content = listOf(allLeadTaskNotesResponses),
             pagination = PaginationInfo(
                 offset = paginationRequest.offset,
                 limit = paginationRequest.limit,
@@ -243,11 +242,7 @@ class LeadNotesServiceImpl(
         }
 
         val updatedNotes = notesService.updateNotes(notesId, updateNotesRequest)
-        return LeadTaskNotesResponse(
-            leadId = leadId,
-            taskId = taskId,
-            notes = listOf(updatedNotes)
-        )
+        return updatedNotes.toLeadTaskNotesResponse(leadId, taskId)
     }
 
     override fun patchNotesById(leadId: UUID, taskId: UUID, notesId: UUID, updateNotesRequest: NotesUpdateRequest): LeadTaskNotesResponse {
@@ -269,11 +264,7 @@ class LeadNotesServiceImpl(
         }
 
         val updatedNotes = notesService.patchNotes(notesId, updateNotesRequest)
-        return LeadTaskNotesResponse(
-            leadId = leadId,
-            taskId = taskId,
-            notes = listOf(updatedNotes)
-        )
+        return updatedNotes.toLeadTaskNotesResponse(leadId, taskId)
     }
 
     override fun deleteNotesById(leadId: UUID, taskId: UUID, notesId: UUID) {
