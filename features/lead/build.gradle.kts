@@ -12,6 +12,7 @@ dependencies {
     implementation(project(":features:stagedefinitions"))
     implementation(project(":features:notes"))
     implementation(project(":features:document"))
+    implementation(project(":features:person"))
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
 }
 

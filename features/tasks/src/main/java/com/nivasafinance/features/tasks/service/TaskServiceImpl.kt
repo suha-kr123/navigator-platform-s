@@ -28,9 +28,9 @@ class TaskServiceImpl(
             taskDefinitionKey = taskRequest.taskDefinitionKey,
             description = taskRequest.description,
             assignedTo = taskRequest.assignedTo,
-            status = taskRequest.status,
-            outcome = taskRequest.outcome,
-            dueAt = null,
+            status = "PENDING", // Default status for new tasks
+            outcome = "IN_PROGRESS", // Default outcome for new tasks
+            dueAt = taskRequest.dueAt,
             completedAt = null,
             rescheduledAt = null
         )

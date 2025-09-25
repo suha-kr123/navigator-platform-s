@@ -43,6 +43,7 @@ class AppConfig {
         val dateFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy")
         val timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss")
         val dateTimeFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss")
+        val isoDateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")
 
         val javaTimeModule = JavaTimeModule().apply {
             addSerializer(LocalDate::class.java, LocalDateSerializer(dateFormatter))
@@ -50,7 +51,7 @@ class AppConfig {
             addSerializer(java.time.LocalTime::class.java, LocalTimeSerializer(timeFormatter))
             addDeserializer(java.time.LocalTime::class.java, LocalTimeDeserializer(timeFormatter))
             addSerializer(java.time.LocalDateTime::class.java, LocalDateTimeSerializer(dateTimeFormatter))
-            addDeserializer(java.time.LocalDateTime::class.java, LocalDateTimeDeserializer(dateTimeFormatter))
+            addDeserializer(java.time.LocalDateTime::class.java, LocalDateTimeDeserializer(isoDateTimeFormatter))
         }
         setSerializationInclusion(JsonInclude.Include.NON_NULL)
         registerModule(javaTimeModule)

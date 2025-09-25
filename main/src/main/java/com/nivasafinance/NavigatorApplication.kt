@@ -16,7 +16,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories
         "com.nivasafinance.features.tasks",
         "com.nivasafinance.features.taskdefinitions",
         "com.nivasafinance.features.lead",
-        "com.nivasafinance.features.leadpersons",
+        "com.nivasafinance.features.person",
         "configs",
         "exception",
         "audit",
@@ -35,7 +35,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories
     "com.nivasafinance.features.tasks",
     "com.nivasafinance.features.taskdefinitions",
     "com.nivasafinance.features.lead",
-    "com.nivasafinance.features.leadpersons",
+    "com.nivasafinance.features.person",
     "repository"
 )
 @EntityScan(
@@ -48,7 +48,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories
     "com.nivasafinance.features.tasks",
     "com.nivasafinance.features.taskdefinitions",
     "com.nivasafinance.features.lead",
-    "com.nivasafinance.features.leadpersons",
+    "com.nivasafinance.features.person",
     "audit"
 )
 class NavigatorApplication

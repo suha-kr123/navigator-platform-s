@@ -1,5 +1,6 @@
 package com.nivasafinance.features.lead.dto
 
+import com.nivasafinance.features.person.entity.MobileNumberDetails
 import java.math.BigDecimal
 
 data class LeadCreateRequest(
@@ -11,5 +12,22 @@ data class LeadCreateRequest(
     val currentStage: String,
     val sourcingChannel: String?,
     val preliminaryInformation: LeadPreliminaryInformation?,
-    val extData: Map<String, Any>?
+    val extData: Map<String, Any>?,
+    val leadPersons: List<PersonRequest>?
+)
+
+data class PersonRequest(
+    val firstName: String?,
+    val middleName: String?,
+    val lastName: String?,
+    val mobileNumbers: List<MobileNumberDetails>?,
+    val email: String?,
+    val dateOfBirth: String?,
+    val gender: String?,
+    val extData: Map<String, Any>?,
+    val applicantType: String?, 
+    val relationshipToPrimary: String?,
+    val tags: List<String>?,
+    val verificationStatus: String?,
+    val verificationNotes: String?
 )
