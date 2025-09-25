@@ -4,7 +4,6 @@ import base.model.PaginatedResponse
 import base.model.PaginationInfo
 import base.model.PaginationRequest
 import com.nivasafinance.features.lead.dto.LeadTasksResponse
-import com.nivasafinance.features.lead.entity.Lead
 import com.nivasafinance.features.lead.entity.TaskData
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper
 import com.nivasafinance.features.lead.service.LeadTaskService
@@ -91,8 +90,11 @@ class LeadTaskServiceImpl(
                 offset = paginationRequest.offset,
                 limit = paginationRequest.limit,
                 totalElements = leadTasksResponses.size.toLong(),
-                totalPages = if (leadTasksResponses.isEmpty()) 0 else
-                    ((leadTasksResponses.size - 1) / paginationRequest.limit + 1),
+                totalPages = if (leadTasksResponses.isEmpty()) {
+                    0
+                } else {
+                    ((leadTasksResponses.size - 1) / paginationRequest.limit + 1)
+                },
                 currentPage = paginationRequest.offset / paginationRequest.limit,
                 hasNext = (paginationRequest.offset + paginationRequest.limit) <
                     leadTasksResponses.size,
@@ -279,4 +281,3 @@ class LeadTaskServiceImpl(
         }
     }
 }
-

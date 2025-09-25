@@ -229,7 +229,6 @@ class LeadDocumentsServiceImpl(
         )
     }
 
-
     override fun deleteDocumentById(leadId: UUID, taskId: UUID, documentId: UUID) {
         // Verify lead exists and contains the document
         val lead = leadRepositoryWrapper.findByIdWithException(leadId)
