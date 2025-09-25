@@ -71,6 +71,16 @@ class DocumentServiceImpl(
         return contentRepository.getSignedDownloadUrl(document.storageKey, expiresIn)
             ?: "/api/documents/$id/download" // Return direct download URL for local storage
     }
+
+    override fun getContentRepository(provider: String): com.nivasafinance.features.document.storage.ContentRepository {
+        return contentRepositoryFactory.getRepository(provider)
+    }
+
+    override fun getDocumentStream(id: UUID): InputStream {
+        val document = documentRepositoryWrapper.findByIdWithException(id)
+        val contentRepository = contentRepositoryFactory.getRepository(document.provider)
+        return contentRepository.fetchFile(document.storageKey)
+    }
     private fun toDocument(documentRequest: DocumentRequest, storageKey: String): Document {
         return Document(
             documentType = documentRequest.documentType,

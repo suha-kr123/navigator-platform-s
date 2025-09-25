@@ -22,7 +22,7 @@ class LeadTaskDocumentsController(
         @RequestParam(defaultValue = "20") limit: Int,
         @RequestParam(defaultValue = "createdAt") sortBy: String,
         @RequestParam(defaultValue = "ASC") sortDirection: String
-    ): ResponseEntity<PaginatedResponse<LeadTaskDocumentsResponse>> {
+    ): ResponseEntity<PaginatedResponse<List<LeadTaskDocumentsResponse>>> {
         val paginationRequest = PaginationRequest(
             offset = offset,
             limit = limit,
@@ -40,7 +40,7 @@ class LeadTaskDocumentsController(
         @RequestParam(defaultValue = "20") limit: Int,
         @RequestParam(defaultValue = "createdAt") sortBy: String,
         @RequestParam(defaultValue = "ASC") sortDirection: String
-    ): ResponseEntity<PaginatedResponse<LeadTaskDocumentsResponse>> {
+    ): ResponseEntity<PaginatedResponse<List<LeadTaskDocumentsResponse>>> {
         val paginationRequest = PaginationRequest(
             offset = offset,
             limit = limit,
@@ -79,7 +79,7 @@ class LeadTaskDocumentsController(
         @RequestParam(defaultValue = "20") limit: Int,
         @RequestParam(defaultValue = "createdAt") sortBy: String,
         @RequestParam(defaultValue = "ASC") sortDirection: String
-    ): ResponseEntity<PaginatedResponse<LeadTaskDocumentsResponse>> {
+    ): ResponseEntity<PaginatedResponse<List<LeadTaskDocumentsResponse>>> {
         val paginationRequest = PaginationRequest(
             offset = offset,
             limit = limit,
