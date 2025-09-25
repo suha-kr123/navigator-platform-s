@@ -67,12 +67,11 @@ data class Lead(
     @Column(name = "income_detail_ids", columnDefinition = "jsonb", nullable = true)
     var incomeDetailIds: List<UUID>? = null,
 
-   @JdbcTypeCode(SqlTypes.JSON)
-   @Column(name = "stage_ids", columnDefinition = "jsonb", nullable = true)
-   var stageIds: List<UUID>? = null
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "stage_ids", columnDefinition = "jsonb", nullable = true)
+    var stageIds: List<UUID>? = null
 
 ) : AuditableEntity()
-
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class TaskData(

@@ -5,15 +5,14 @@ import base.model.PaginationInfo
 import base.model.PaginationRequest
 import com.nivasafinance.features.lead.dto.LeadCreateRequest
 import com.nivasafinance.features.lead.dto.LeadResponse
-import com.nivasafinance.features.lead.service.LeadService
 import com.nivasafinance.features.lead.entity.Lead
 import com.nivasafinance.features.lead.exception.LeadExceptionFactory
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper
+import com.nivasafinance.features.lead.service.LeadService
 import com.nivasafinance.features.stagedefinitions.repository.StageDefinitionRepositoryWrapper
-import com.nivasafinance.features.stages.entity.Stage
+import com.nivasafinance.features.stages.dto.StageRequest
 import com.nivasafinance.features.stages.repository.StageRepositoryWrapper
 import com.nivasafinance.features.stages.service.StageService
-import com.nivasafinance.features.stages.dto.StageRequest
 import org.springframework.context.MessageSource
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -22,7 +21,7 @@ import java.util.UUID
 @Service
 @Transactional
 class LeadServiceImpl(
-    private val leadRepositoryWrapper: LeadRepositoryWrapper,   
+    private val leadRepositoryWrapper: LeadRepositoryWrapper,
     private val stageRepositoryWrapper: StageRepositoryWrapper,
     private val stageDefinitionRepositoryWrapper: StageDefinitionRepositoryWrapper,
     private val stageService: StageService,
@@ -42,7 +41,7 @@ class LeadServiceImpl(
         val savedLead = leadRepositoryWrapper.saveWithException(lead)
 
         val stages = createStagesForLead(savedLead.id!!, leadCreateRequest.pipelineKey)
-        
+
         // Update the lead with the stage IDs
         val stageIds = stages.map { it.id }
         val updatedLead = savedLead.copy(stageIds = stageIds)
@@ -53,7 +52,7 @@ class LeadServiceImpl(
 
     override fun updateLead(id: UUID, leadUpdateRequest: com.nivasafinance.features.lead.dto.LeadUpdateRequest): LeadResponse {
         val existingLead = leadRepositoryWrapper.findByIdWithException(id)
-        
+
         // Create a mutable copy to update only provided fields
         val updatedLead = existingLead.copy(
             requestedAmount = leadUpdateRequest.requestedAmount ?: existingLead.requestedAmount,
@@ -69,7 +68,7 @@ class LeadServiceImpl(
             },
             extData = leadUpdateRequest.extData ?: existingLead.extData
         )
-        
+
         val savedLead = leadRepositoryWrapper.saveWithException(updatedLead)
         return toLeadResponse(savedLead)
     }
@@ -170,5 +169,4 @@ class LeadServiceImpl(
 
         return stages
     }
-
 }

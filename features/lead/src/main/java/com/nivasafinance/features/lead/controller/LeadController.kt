@@ -54,5 +54,4 @@ class LeadController(
         val leads = leadService.getAllLeads(paginationRequest)
         return ResponseEntity.ok(leads)
     }
-
 }

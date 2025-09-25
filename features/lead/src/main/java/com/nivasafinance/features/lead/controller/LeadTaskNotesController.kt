@@ -3,9 +3,8 @@ package com.nivasafinance.features.lead.controller
 import base.model.PaginatedResponse
 import base.model.PaginationRequest
 import com.nivasafinance.features.lead.dto.LeadTaskNotesResponse
-import com.nivasafinance.features.notes.dto.NotesRequest
 import com.nivasafinance.features.lead.service.LeadNotesService
-import com.nivasafinance.features.notes.dto.NotesResponse
+import com.nivasafinance.features.notes.dto.NotesRequest
 import com.nivasafinance.features.notes.dto.NotesUpdateRequest
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -88,7 +87,7 @@ class LeadTaskNotesController(
             sortBy = sortBy,
             sortDirection = sortDirection
         )
-        
+
         val leadNotes = leadNotesService.getLeadNotes(leadId, paginationRequest)
         // Filter notes by taskId
         val filteredNotes = leadNotes.content.filter { leadNotesResponse ->
@@ -96,12 +95,12 @@ class LeadTaskNotesController(
             // This would require a more complex query, but for now we'll return all notes for the lead
             true
         }
-        
+
         val filteredResponse = PaginatedResponse(
             content = filteredNotes,
             pagination = leadNotes.pagination
         )
-        
+
         return ResponseEntity.ok(filteredResponse)
     }
 

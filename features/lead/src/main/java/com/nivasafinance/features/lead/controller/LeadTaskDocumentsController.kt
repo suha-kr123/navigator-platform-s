@@ -2,11 +2,9 @@ package com.nivasafinance.features.lead.controller
 
 import base.model.PaginatedResponse
 import base.model.PaginationRequest
-import com.nivasafinance.features.lead.dto.LeadTaskDocumentsResponse
 import com.nivasafinance.features.document.dto.DocumentRequest
-import com.nivasafinance.features.document.dto.DocumentVerificationRequest
+import com.nivasafinance.features.lead.dto.LeadTaskDocumentsResponse
 import com.nivasafinance.features.lead.service.LeadDocumentsService
-import com.nivasafinance.features.document.dto.DocumentResponse
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -88,11 +86,10 @@ class LeadTaskDocumentsController(
             sortBy = sortBy,
             sortDirection = sortDirection
         )
-        
+
         val taskDocuments = leadDocumentsService.getTaskDocuments(leadId, taskId, paginationRequest)
         return ResponseEntity.ok(taskDocuments)
     }
-
 
     @DeleteMapping("/{leadId}/tasks/{taskId}/documents/{documentId}")
     fun deleteDocumentById(

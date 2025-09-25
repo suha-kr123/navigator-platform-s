@@ -21,7 +21,7 @@ class LeadRepositoryWrapper(
             // Log the actual exception for debugging
             println("Error saving lead: ${e.message}")
             e.printStackTrace()
-            
+
             // Determine if this is a create or update operation
             if (lead.id == null) {
                 throw LeadExceptionFactory.createFailed(messageSource)

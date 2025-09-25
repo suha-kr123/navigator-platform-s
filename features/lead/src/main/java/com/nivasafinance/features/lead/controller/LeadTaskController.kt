@@ -3,9 +3,8 @@ package com.nivasafinance.features.lead.controller
 import base.model.PaginatedResponse
 import base.model.PaginationRequest
 import com.nivasafinance.features.lead.dto.LeadTasksResponse
-import com.nivasafinance.features.tasks.dto.TaskRequest
 import com.nivasafinance.features.lead.service.LeadTaskService
-import com.nivasafinance.features.tasks.dto.TaskResponse
+import com.nivasafinance.features.tasks.dto.TaskRequest
 import com.nivasafinance.features.tasks.dto.UpdateTaskRequest
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -49,7 +48,7 @@ class LeadTaskController(
             sortBy = sortBy,
             sortDirection = sortDirection
         )
-        
+
         val leadTasks = leadTaskService.getLeadTasks(leadId, paginationRequest)
         return ResponseEntity.ok(leadTasks)
     }
