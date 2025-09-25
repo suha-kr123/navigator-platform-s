@@ -291,8 +291,9 @@ class LeadNotesServiceImpl(
             taskData.copy(notesIds = updatedNotesIds)
         } ?: emptyList()
 
-        val updatedLead = lead.copy(taskData = updatedTaskData)
-        leadRepositoryWrapper.saveWithException(updatedLead)
+        // Update the lead entity directly instead of using copy() to preserve version
+        lead.taskData = updatedTaskData
+        leadRepositoryWrapper.saveWithException(lead)
 
         // Delete the notes
         notesService.deleteNotes(notesId)
