@@ -13,6 +13,8 @@ import com.nivasafinance.features.person.repository.PersonRepositoryWrapper
 import org.springframework.context.MessageSource
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
@@ -23,6 +25,16 @@ class PersonServiceImpl(
     private val personRepositoryWrapper: PersonRepositoryWrapper,
     private val messageSource: MessageSource
 ) : PersonService {
+
+    private val dateFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy")
+
+    private fun parseDate(dateString: String?): LocalDate? {
+        return if (dateString.isNullOrBlank()) null else LocalDate.parse(dateString, dateFormatter)
+    }
+
+    private fun formatDate(date: LocalDate?): String? {
+        return date?.format(dateFormatter)
+    }
 
     private fun validatePrimaryMobileNumber(mobileNumbers: List<MobileNumberDetails>?, excludePersonId: UUID? = null) {
         mobileNumbers?.forEach { mobileNumber ->
@@ -54,7 +66,7 @@ class PersonServiceImpl(
             lastName = personRequest.lastName,
             mobileNumbers = personRequest.mobileNumbers,
             email = personRequest.email,
-            dateOfBirth = personRequest.dateOfBirth,
+            dateOfBirth = parseDate(personRequest.dateOfBirth),
             gender = personRequest.gender,
             extData = personRequest.extData
         )
@@ -77,7 +89,7 @@ class PersonServiceImpl(
         personUpdateRequest.lastName?.let { existingPerson.lastName = it }
         personUpdateRequest.mobileNumbers?.let { existingPerson.mobileNumbers = it }
         personUpdateRequest.email?.let { existingPerson.email = it }
-        personUpdateRequest.dateOfBirth?.let { existingPerson.dateOfBirth = it }
+        personUpdateRequest.dateOfBirth?.let { existingPerson.dateOfBirth = parseDate(it) }
         personUpdateRequest.gender?.let { existingPerson.gender = it }
         personUpdateRequest.extData?.let { existingPerson.extData = it }
 
@@ -93,7 +105,7 @@ class PersonServiceImpl(
     override fun getAllPersons(paginationRequest: PaginationRequest): PaginatedResponse<PersonResponse> {
         val sort = if (paginationRequest.sortBy != null) {
             Sort.by(
-                if (paginationRequest.sortDirection.name == "ASC") Sort.Direction.ASC else Sort.Direction.DESC,
+                if (paginationRequest.sortDirection == "ASC") Sort.Direction.ASC else Sort.Direction.DESC,
                 paginationRequest.sortBy
             )
         } else {
@@ -125,7 +137,7 @@ class PersonServiceImpl(
             lastName = person.lastName,
             mobileNumbers = person.mobileNumbers,
             email = person.email,
-            dateOfBirth = person.dateOfBirth,
+            dateOfBirth = formatDate(person.dateOfBirth),
             gender = person.gender,
             extData = person.extData,
             createdAt = person.createdAt ?: java.time.LocalDateTime.now(),

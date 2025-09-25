@@ -20,5 +20,4 @@ object IdentifierExceptionFactory {
     fun retrieveEntityFailed(messageSource: MessageSource): IdentifierOperationException {
         return IdentifierOperationException("error.identifier.operation.retrieve", messageSource)
     }
-
 }

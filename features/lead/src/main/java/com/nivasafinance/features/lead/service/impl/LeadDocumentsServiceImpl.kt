@@ -4,7 +4,6 @@ import base.model.PaginatedResponse
 import base.model.PaginationInfo
 import base.model.PaginationRequest
 import com.nivasafinance.features.document.dto.DocumentRequest
-import com.nivasafinance.features.document.dto.DocumentVerificationRequest
 import com.nivasafinance.features.document.service.DocumentService
 import com.nivasafinance.features.lead.dto.LeadTaskDocumentsResponse
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper
@@ -230,35 +229,6 @@ class LeadDocumentsServiceImpl(
         )
     }
 
-    override fun verifyDocument(leadId: UUID, taskId: UUID, documentId: UUID, verifyDocumentRequest: DocumentVerificationRequest): LeadTaskDocumentsResponse {
-        // Verify lead exists and contains the document
-        val lead = leadRepositoryWrapper.findByIdWithException(leadId)
-
-        // Verify that the taskId belongs to this lead
-        val taskExists = lead.taskData?.any { it.taskId == taskId } ?: false
-        if (!taskExists) {
-            throw IllegalArgumentException("Task with ID $taskId does not belong to lead $leadId")
-        }
-
-        val documentExists = lead.taskData?.any { taskData ->
-            taskData.taskId == taskId && taskData.documentIds.contains(documentId)
-        } ?: false
-
-        if (!documentExists) {
-            throw IllegalArgumentException(
-                "Document with ID $documentId does not belong to task $taskId in lead $leadId"
-            )
-        }
-
-        // For now, we'll just return the existing document since DocumentService doesn't have verification methods
-        // In a real implementation, you would need to add verification methods to DocumentService
-        val document = documentService.getDocumentById(documentId)
-        return LeadTaskDocumentsResponse(
-            leadId = leadId,
-            taskId = taskId,
-            documents = listOf(document)
-        )
-    }
 
     override fun deleteDocumentById(leadId: UUID, taskId: UUID, documentId: UUID) {
         // Verify lead exists and contains the document
