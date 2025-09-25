@@ -25,7 +25,31 @@ class LeadTaskServiceImpl(
 
     private val logger = LoggerFactory.getLogger(LeadTaskServiceImpl::class.java)
 
-    override fun getAllTasks(paginationRequest: PaginationRequest): PaginatedResponse<LeadTasksResponse> {
+    /**
+     * Converts TaskResponse to LeadTasksResponse
+     */
+    private fun TaskResponse.toLeadTasksResponse(leadId: UUID): LeadTasksResponse {
+        return LeadTasksResponse(
+            leadId = leadId,
+            taskId = this.id,
+            taskDefinitionKey = this.taskDefinitionKey,
+            taskName = this.name,
+            taskType = this.taskType,
+            taskDescription = this.description,
+            taskAssignedTo = this.assignedTo,
+            taskStatus = this.status,
+            taskOutcome = this.outcome,
+            taskDueAt = this.dueAt,
+            taskCompletedAt = this.completedAt,
+            taskRescheduledAt = this.rescheduledAt,
+            taskCreatedAt = this.createdAt,
+            taskCreatedBy = this.createdBy,
+            taskUpdatedAt = this.updatedAt,
+            taskUpdatedBy = this.updatedBy
+        )
+    }
+
+    override fun getAllTasks(paginationRequest: PaginationRequest): PaginatedResponse<List<LeadTasksResponse>> {
         return try {
             // Get all tasks from TaskService
             val allTasks = taskService.getAllTasks(paginationRequest)
@@ -59,10 +83,7 @@ class LeadTaskServiceImpl(
                 .filter { task -> taskToLeadMap.containsKey(task.id) }
                 .map { task ->
                     val leadId = taskToLeadMap[task.id]!!
-                    LeadTasksResponse(
-                        leadId = leadId,
-                        tasks = listOf(task)
-                    )
+                    task.toLeadTasksResponse(leadId)
                 }
 
             // Update pagination to reflect the filtered results
@@ -79,7 +100,7 @@ class LeadTaskServiceImpl(
             )
 
             PaginatedResponse(
-                content = leadTasksResponses,
+                content = listOf(leadTasksResponses),
                 pagination = filteredPagination
             )
         } catch (e: Exception) {
@@ -87,7 +108,7 @@ class LeadTaskServiceImpl(
         }
     }
 
-    override fun getLeadTasks(leadId: UUID, paginationRequest: PaginationRequest): PaginatedResponse<LeadTasksResponse> {
+    override fun getLeadTasks(leadId: UUID, paginationRequest: PaginationRequest): PaginatedResponse<List<LeadTasksResponse>> {
         return try {
             // Verify lead exists
             val lead = leadRepositoryWrapper.findByIdWithException(leadId)
@@ -105,10 +126,7 @@ class LeadTaskServiceImpl(
                         e
                     )
                 }
-                LeadTasksResponse(
-                    leadId = leadId,
-                    tasks = listOf(task)
-                )
+                task.toLeadTasksResponse(leadId)
             }
 
             // Implement proper pagination for lead tasks
@@ -122,7 +140,7 @@ class LeadTaskServiceImpl(
                 .take(paginationRequest.limit)
 
             PaginatedResponse(
-                content = paginatedContent,
+                content = listOf(paginatedContent),
                 pagination = PaginationInfo(
                     offset = paginationRequest.offset,
                     limit = paginationRequest.limit,
@@ -164,10 +182,7 @@ class LeadTaskServiceImpl(
             lead.taskData = currentTaskData + newTaskData
             leadRepositoryWrapper.saveWithException(lead)
 
-            LeadTasksResponse(
-                leadId = leadId,
-                tasks = listOf(taskResponse)
-            )
+            taskResponse.toLeadTasksResponse(leadId)
         } catch (e: Exception) {
             throw IllegalStateException("Failed to create task for lead $leadId: ${e.message}", e)
         }
@@ -185,10 +200,7 @@ class LeadTaskServiceImpl(
             throw IllegalStateException("Failed to update task $taskId for lead $leadId: ${e.message}", e)
         }
 
-        return LeadTasksResponse(
-            leadId = leadId,
-            tasks = listOf(updatedTask)
-        )
+        return updatedTask.toLeadTasksResponse(leadId)
     }
 
     @Transactional(rollbackFor = [Exception::class])
@@ -216,6 +228,27 @@ class LeadTaskServiceImpl(
             }
         } catch (e: Exception) {
             throw IllegalStateException("Failed to delete task $taskId for lead $leadId: ${e.message}", e)
+        }
+    }
+
+    override fun getTaskForLead(leadId: UUID, taskId: UUID): LeadTasksResponse {
+        return try {
+            // Validate task-lead relationship
+            validateTaskLeadRelationship(leadId, taskId)
+
+            // Get the task with proper error handling
+            val task = try {
+                taskService.getTaskById(taskId)
+            } catch (e: Exception) {
+                throw IllegalStateException(
+                    "Failed to retrieve task $taskId for lead $leadId: ${e.message}",
+                    e
+                )
+            }
+
+            task.toLeadTasksResponse(leadId)
+        } catch (e: Exception) {
+            throw IllegalStateException("Failed to retrieve task $taskId for lead $leadId: ${e.message}", e)
         }
     }
 

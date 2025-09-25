@@ -23,7 +23,7 @@ class LeadTaskController(
         @RequestParam(defaultValue = "20") limit: Int,
         @RequestParam(defaultValue = "createdAt") sortBy: String,
         @RequestParam(defaultValue = "ASC") sortDirection: String
-    ): ResponseEntity<PaginatedResponse<LeadTasksResponse>> {
+    ): ResponseEntity<PaginatedResponse<List<LeadTasksResponse>>> {
         val paginationRequest = PaginationRequest(
             offset = offset,
             limit = limit,
@@ -41,7 +41,7 @@ class LeadTaskController(
         @RequestParam(defaultValue = "20") limit: Int,
         @RequestParam(defaultValue = "createdAt") sortBy: String,
         @RequestParam(defaultValue = "ASC") sortDirection: String
-    ): ResponseEntity<PaginatedResponse<LeadTasksResponse>> {
+    ): ResponseEntity<PaginatedResponse<List<LeadTasksResponse>>> {
         val paginationRequest = PaginationRequest(
             offset = offset,
             limit = limit,
@@ -51,6 +51,15 @@ class LeadTaskController(
 
         val leadTasks = leadTaskService.getLeadTasks(leadId, paginationRequest)
         return ResponseEntity.ok(leadTasks)
+    }
+
+    @GetMapping("/{leadId}/tasks/{taskId}")
+    fun getTaskForLead(
+        @PathVariable leadId: UUID,
+        @PathVariable taskId: UUID
+    ): ResponseEntity<LeadTasksResponse> {
+        val leadTask = leadTaskService.getTaskForLead(leadId, taskId)
+        return ResponseEntity.ok(leadTask)
     }
 
     @PostMapping("/{leadId}/tasks")
