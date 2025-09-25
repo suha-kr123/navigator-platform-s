@@ -37,6 +37,10 @@ data class AdvisorLeadMapping(
 
     @Type(JsonType::class)
     @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "payment_ids", columnDefinition = "jsonb", nullable = true)
+    var paymentIds: List<UUID>? = null,
+
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "data_ext", columnDefinition = "jsonb")
     var extData: Map<String, Any>? = null
 ) : AuditableEntity()

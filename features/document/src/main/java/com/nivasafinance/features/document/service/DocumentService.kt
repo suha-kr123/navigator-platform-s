@@ -9,7 +9,7 @@ import java.util.*
 
 interface DocumentService {
     fun createDocument(documentRequest: DocumentRequest, fileInputStream: InputStream): DocumentResponse
-    fun getDocumentsByEntityTypeAndEntityId(entityType: String, entityId: UUID): List<DocumentResponse>
+    fun getAllDocuments(): List<DocumentResponse>
     fun getDocumentById(id: UUID): DocumentResponse
     fun updateDocument(id: UUID, documentRequest: DocumentRequest): DocumentResponse
     fun deleteDocumentById(id: UUID)

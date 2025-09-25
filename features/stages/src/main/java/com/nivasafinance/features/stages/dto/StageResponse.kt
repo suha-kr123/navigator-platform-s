@@ -5,8 +5,6 @@ import java.util.*
 
 data class StageResponse(
     val id: UUID,
-    val entityType: String,
-    val entityId: UUID,
     val stageDefinitionKey: String,
     val outcome: String,
     val assignedTo: String?,

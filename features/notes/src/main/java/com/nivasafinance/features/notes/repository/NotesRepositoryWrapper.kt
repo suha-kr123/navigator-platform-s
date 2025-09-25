@@ -40,17 +40,9 @@ class NotesRepositoryWrapper(
         }
     }
 
-    fun findAllByEntityTypeAndEntityId(entityType: String, entityId: UUID, pageable: Pageable): Page<Notes> {
+    fun findAll(pageable: Pageable): Page<Notes> {
         return try {
-            notesRepository.findAllByEntityTypeAndEntityId(entityType, entityId, pageable)
-        } catch (e: Exception) {
-            throw NotesExceptionFactory.retrieveEntityFailed(messageSource)
-        }
-    }
-
-    fun findAllByEntityTypeAndEntityId(entityType: String, entityId: UUID): List<Notes> {
-        return try {
-            notesRepository.findAllByEntityTypeAndEntityId(entityType, entityId, Pageable.unpaged()).content
+            notesRepository.findAll(pageable)
         } catch (e: Exception) {
             throw NotesExceptionFactory.retrieveEntityFailed(messageSource)
         }

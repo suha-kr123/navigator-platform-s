@@ -6,7 +6,9 @@ import java.util.*
 data class TaskResponse(
     val id: UUID,
     val taskDefinitionKey: String,
-    val taskData: Map<String, Any>?,
+    val name: String,
+    val taskType: String,
+    val description: String?,
     val assignedTo: String?,
     val status: String,
     val outcome: String,

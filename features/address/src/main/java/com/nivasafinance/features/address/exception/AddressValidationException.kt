@@ -20,13 +20,3 @@ class AddressPincodeValidationException(
     arrayOf(pincode ?: "null"),
     messageSource
 )
-
-class AddressEntityValidationException(
-    entityType: String?,
-    entityId: String?,
-    messageSource: MessageSource
-) : AddressValidationException(
-    "error.address.entity.invalid",
-    arrayOf(entityType ?: "null", entityId ?: "null"),
-    messageSource
-)

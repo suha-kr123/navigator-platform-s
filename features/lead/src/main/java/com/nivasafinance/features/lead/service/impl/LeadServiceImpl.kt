@@ -1,4 +1,4 @@
-package com.nivasafinance.features.lead.service
+package com.nivasafinance.features.lead.service.impl
 
 import base.model.PaginatedResponse
 import base.model.PaginationInfo
@@ -8,14 +8,15 @@ import com.nivasafinance.features.lead.dto.LeadResponse
 import com.nivasafinance.features.lead.entity.Lead
 import com.nivasafinance.features.lead.exception.LeadExceptionFactory
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper
+import com.nivasafinance.features.lead.service.LeadService
+import com.nivasafinance.features.stagedefinitions.repository.StageDefinitionRepositoryWrapper
+import com.nivasafinance.features.stages.dto.StageRequest
+import com.nivasafinance.features.stages.repository.StageRepositoryWrapper
+import com.nivasafinance.features.stages.service.StageService
 import org.springframework.context.MessageSource
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
-import com.nivasafinance.features.stages.entity.Stage
-import com.nivasafinance.features.stages.repository.StageRepositoryWrapper
-import com.nivasafinance.features.stages.enum.EntityType as StageEntityType
-import com.nivasafinance.features.stagedefinitions.repository.StageDefinitionRepositoryWrapper
 
 @Service
 @Transactional
@@ -23,6 +24,7 @@ class LeadServiceImpl(
     private val leadRepositoryWrapper: LeadRepositoryWrapper,
     private val stageRepositoryWrapper: StageRepositoryWrapper,
     private val stageDefinitionRepositoryWrapper: StageDefinitionRepositoryWrapper,
+    private val stageService: StageService,
     private val messageSource: MessageSource
 ) : LeadService {
 
@@ -37,9 +39,37 @@ class LeadServiceImpl(
         )
         val lead = toLead(leadCreateRequest)
         val savedLead = leadRepositoryWrapper.saveWithException(lead)
-        
-        createStagesForLead(savedLead.id!!, leadCreateRequest.pipelineKey)
-        
+
+        val stages = createStagesForLead(savedLead.id!!, leadCreateRequest.pipelineKey)
+
+        // Update the lead with the stage IDs
+        val stageIds = stages.map { it.id }
+        val updatedLead = savedLead.copy(stageIds = stageIds)
+        val finalLead = leadRepositoryWrapper.saveWithException(updatedLead)
+
+        return toLeadResponse(finalLead)
+    }
+
+    override fun updateLead(id: UUID, leadUpdateRequest: com.nivasafinance.features.lead.dto.LeadUpdateRequest): LeadResponse {
+        val existingLead = leadRepositoryWrapper.findByIdWithException(id)
+
+        // Create a mutable copy to update only provided fields
+        val updatedLead = existingLead.copy(
+            requestedAmount = leadUpdateRequest.requestedAmount ?: existingLead.requestedAmount,
+            purpose = leadUpdateRequest.purpose ?: existingLead.purpose,
+            productCode = leadUpdateRequest.productCode ?: existingLead.productCode,
+            pipelineKey = leadUpdateRequest.pipelineKey ?: existingLead.pipelineKey,
+            currentStage = leadUpdateRequest.currentStage ?: existingLead.currentStage,
+            sourcingChannel = leadUpdateRequest.sourcingChannel ?: existingLead.sourcingChannel,
+            preliminaryInformation = if (leadUpdateRequest.preliminaryInformation != null) {
+                mapOf("data" to leadUpdateRequest.preliminaryInformation)
+            } else {
+                existingLead.preliminaryInformation
+            },
+            extData = leadUpdateRequest.extData ?: existingLead.extData
+        )
+
+        val savedLead = leadRepositoryWrapper.saveWithException(updatedLead)
         return toLeadResponse(savedLead)
     }
 
@@ -80,9 +110,9 @@ class LeadServiceImpl(
             productCode = leadCreateRequest.productCode,
             pipelineKey = leadCreateRequest.pipelineKey,
             currentStage = leadCreateRequest.currentStage,
-            sourcingChannel = leadCreateRequest.sourcingChannel?.name,
-            preliminaryInformation = leadCreateRequest.preliminaryInformation?.let { 
-                mapOf("data" to it) 
+            sourcingChannel = leadCreateRequest.sourcingChannel,
+            preliminaryInformation = leadCreateRequest.preliminaryInformation?.let {
+                mapOf("data" to it)
             },
             extData = leadCreateRequest.extData
         )
@@ -94,10 +124,22 @@ class LeadServiceImpl(
             requestedAmount = lead.requestedAmount,
             purpose = lead.purpose,
             productCode = lead.productCode,
+            currentStage = lead.currentStage,
             status = null,
-            preliminaryInformation = lead.preliminaryInformation?.get("data") as? com.nivasafinance.features.lead.dto.LeadPreliminaryInformation,
-            sourcingChannel = lead.sourcingChannel?.let { com.nivasafinance.features.lead.enum.SourcingChannel.valueOf(it) },
+            preliminaryInformation = lead.preliminaryInformation?.get(
+                "data"
+            ) as? com.nivasafinance.features.lead.dto.LeadPreliminaryInformation,
+            sourcingChannel = lead.sourcingChannel,
             extData = lead.extData,
+            taskData = lead.taskData?.let { taskDataList ->
+                taskDataList.associate { taskData ->
+                    taskData.taskId to mapOf(
+                        "documentIds" to taskData.documentIds,
+                        "notesIds" to taskData.notesIds,
+                        "callIds" to taskData.callIds
+                    )
+                }
+            },
             createdAt = lead.createdAt ?: java.time.LocalDateTime.now(),
             createdBy = lead.createdBy,
             updatedAt = lead.updatedAt ?: java.time.LocalDateTime.now(),
@@ -105,27 +147,26 @@ class LeadServiceImpl(
         )
     }
 
-    private fun createStagesForLead(leadId: UUID, pipelineKey: String?): List<Stage> {
+    private fun createStagesForLead(leadId: UUID, pipelineKey: String?): List<com.nivasafinance.features.stages.dto.StageResponse> {
         if (pipelineKey.isNullOrBlank()) {
             return emptyList()
         }
-        
+
         val stageDefinitions = stageDefinitionRepositoryWrapper.findByPipelineKeyWithException(pipelineKey)
-        val stages = mutableListOf<Stage>()
-        
+        val stages = mutableListOf<com.nivasafinance.features.stages.dto.StageResponse>()
+
         stageDefinitions.forEach { stageDefinition ->
-            val stage = Stage(
+            // Use the first valid outcome from the stage definition
+            val validOutcome = stageDefinition.possibleOutcomes?.firstOrNull() ?: "PENDING"
+            val stageRequest = StageRequest(
                 stageDefinitionKey = stageDefinition.key,
-                entityType = StageEntityType.LEAD.name,
-                entityId = leadId,
-                outcome = null,
+                outcome = validOutcome,
                 assignedTo = null
             )
-            val savedStage = stageRepositoryWrapper.saveWithException(stage)
+            val savedStage = stageService.createStage(stageRequest)
             stages.add(savedStage)
         }
-        
+
         return stages
     }
-
 }

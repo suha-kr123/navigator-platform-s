@@ -8,9 +8,13 @@ import java.util.UUID
 
 interface StageService {
 
-    fun createStageByEntity(entityType: String, entityId: UUID, stageRequest: StageRequest): StageResponse
+    fun createStage(stageRequest: StageRequest): StageResponse
 
-    fun updateStageByEntity(entityType: String, entityId: UUID, stageId: UUID, stageUpdateRequest: StageUpdateRequest): StageResponse
+    fun updateStage(stageId: UUID, stageUpdateRequest: StageUpdateRequest): StageResponse
 
-    fun getStagesByEntity(entityType: String, entityId: UUID): List<StageResponse>
+    fun getStageById(stageId: UUID): StageResponse
+
+    fun getStagesByDefinitionKey(stageDefinitionKey: String): List<StageResponse>
+
+    fun getAllStages(): List<StageResponse>
 }

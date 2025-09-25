@@ -8,7 +8,4 @@ import org.springframework.stereotype.Repository
 import java.util.UUID
 
 @Repository
-interface IncomeDetailsRepository : JpaRepository<IncomeDetails, UUID> {
-    
-    fun findAllByEntityTypeAndEntityId(entityType: String, entityId: UUID): List<IncomeDetails>
-}
+interface IncomeDetailsRepository : JpaRepository<IncomeDetails, UUID>

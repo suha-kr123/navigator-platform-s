@@ -8,7 +8,4 @@ import org.springframework.stereotype.Repository
 import java.util.*
 
 @Repository
-interface NotesRepository : JpaRepository<Notes, UUID> {
-    
-    fun findAllByEntityTypeAndEntityId(entityType: String, entityId: UUID, pageable: Pageable): Page<Notes>
-}
+interface NotesRepository : JpaRepository<Notes, UUID>

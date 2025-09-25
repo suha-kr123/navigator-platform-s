@@ -1,13 +1,9 @@
 package com.nivasafinance.features.address.entity
 
 import audit.AuditableEntity
-import com.nivasafinance.features.address.enum.AddressSource
-import com.nivasafinance.features.address.enum.AddressType
 import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
-import jakarta.persistence.EnumType
-import jakarta.persistence.Enumerated
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
@@ -26,15 +22,8 @@ data class Address(
     @Column(columnDefinition = "UUID")
     val id: UUID? = null,
 
-    @Column(name = "entity_id", nullable = false)
-    var entityId: UUID? = null,
-
-    @Column(name = "entity_type", nullable = false)
-    var entityType: String? = null,
-
-    @Enumerated(EnumType.STRING)
     @Column(name = "address_type", nullable = false)
-    var addressType: AddressType? = null,
+    var addressType: String? = null,
 
     @Column(name = "is_primary", nullable = false)
     var isPrimary: Boolean = false,
@@ -57,9 +46,8 @@ data class Address(
     @Column(name = "pincode")
     var pincode: String,
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "address_source")
-    var addressSource: AddressSource? = null,
+    var addressSource: String? = null,
 
     @Type(JsonType::class)
     @JdbcTypeCode(SqlTypes.JSON)

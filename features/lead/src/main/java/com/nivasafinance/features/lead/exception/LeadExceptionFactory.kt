@@ -1,7 +1,5 @@
 package com.nivasafinance.features.lead.exception
 
-import com.nivasafinance.features.lead.enum.LeadStatus
-import com.nivasafinance.features.lead.enum.SourcingChannel
 import exception.ExceptionUtils
 import org.springframework.context.MessageSource
 import java.math.BigDecimal
@@ -45,8 +43,8 @@ object LeadExceptionFactory {
         return LeadProductCodeValidationException(productCode, messageSource)
     }
 
-    fun statusInvalid(status: LeadStatus?, messageSource: MessageSource): LeadStatusValidationException {
-        return LeadStatusValidationException(status?.name, messageSource)
+    fun statusInvalid(status: String?, messageSource: MessageSource): LeadStatusValidationException {
+        return LeadStatusValidationException(status, messageSource)
     }
 
     fun cannotUpdateCompleted(leadId: UUID, messageSource: MessageSource): LeadCannotUpdateCompletedException {
@@ -57,16 +55,16 @@ object LeadExceptionFactory {
         return LeadCannotDeleteCompletedException(leadId, messageSource)
     }
 
-    fun invalidStatusTransition(currentStatus: LeadStatus, newStatus: LeadStatus, messageSource: MessageSource): LeadInvalidStatusTransitionException {
-        return LeadInvalidStatusTransitionException(currentStatus.name, newStatus.name, messageSource)
+    fun invalidStatusTransition(currentStatus: String, newStatus: String, messageSource: MessageSource): LeadInvalidStatusTransitionException {
+        return LeadInvalidStatusTransitionException(currentStatus, newStatus, messageSource)
     }
 
     fun validateLeadForCreation(
         requestedAmount: BigDecimal?,
         purpose: String?,
         productCode: String?,
-        status: LeadStatus?,
-        sourcingChannel: SourcingChannel?,
+        status: String?,
+        sourcingChannel: String?,
         messageSource: MessageSource
     ) {
         ExceptionUtils.requireNotNull(requestedAmount, "requestedAmount", "error.invalid", messageSource)
@@ -83,8 +81,8 @@ object LeadExceptionFactory {
         requestedAmount: BigDecimal?,
         purpose: String?,
         productCode: String?,
-        status: LeadStatus?,
-        sourcingChannel: SourcingChannel?,
+        status: String?,
+        sourcingChannel: String?,
         messageSource: MessageSource
     ) {
         ExceptionUtils.requireNotNull(leadId, "id", "error.invalid", messageSource)

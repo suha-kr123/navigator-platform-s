@@ -1,10 +1,10 @@
 package com.nivasafinance.features.lead.controller
 
-import base.model.PaginationRequest
 import base.model.PaginatedResponse
-import base.model.SortDirection
+import base.model.PaginationRequest
 import com.nivasafinance.features.lead.dto.LeadCreateRequest
 import com.nivasafinance.features.lead.dto.LeadResponse
+import com.nivasafinance.features.lead.dto.LeadUpdateRequest
 import com.nivasafinance.features.lead.service.LeadService
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -29,7 +29,16 @@ class LeadController(
         return ResponseEntity.ok(lead)
     }
 
-    @GetMapping
+    @PatchMapping("/{id}")
+    fun updateLead(
+        @PathVariable id: UUID,
+        @RequestBody leadUpdateRequest: LeadUpdateRequest
+    ): ResponseEntity<LeadResponse> {
+        val updatedLead = leadService.updateLead(id, leadUpdateRequest)
+        return ResponseEntity.ok(updatedLead)
+    }
+
+    @GetMapping("/all")
     fun getAllLeads(
         @RequestParam(defaultValue = "0") offset: Int,
         @RequestParam(defaultValue = "20") limit: Int,
@@ -40,7 +49,7 @@ class LeadController(
             offset = offset,
             limit = limit,
             sortBy = sortBy,
-            sortDirection = SortDirection.valueOf(sortDirection.uppercase())
+            sortDirection = sortDirection
         )
         val leads = leadService.getAllLeads(paginationRequest)
         return ResponseEntity.ok(leads)

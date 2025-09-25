@@ -22,27 +22,33 @@ class TaskRepositoryWrapper(
         }
     }
 
-    fun findAllByEntityTypeAndEntityIdWithException(entityType: String, entityId: UUID): List<Task> {
+    fun findByIdWithException(id: UUID): Task {
         return try {
-            taskRepository.findAllByEntityTypeAndEntityId(entityType, entityId)
+            taskRepository.findById(id).orElseThrow {
+                TaskExceptionFactory.taskNotFound(id, messageSource)
+            }
         } catch (e: Exception) {
             throw TaskExceptionFactory.retrieveEntityFailed(messageSource)
         }
     }
 
-    fun existsByEntityTypeAndEntityIdAndTaskDefinitionKeyWithException(entityType: String, entityId: UUID, taskDefinitionKey: String): Boolean {
+
+    fun findAllWithException(pageable: Pageable): Page<Task> {
         return try {
-            taskRepository.existsByEntityTypeAndEntityIdAndTaskDefinitionKey(entityType, entityId, taskDefinitionKey)
+            taskRepository.findAll(pageable)
         } catch (e: Exception) {
             throw TaskExceptionFactory.retrieveEntityFailed(messageSource)
         }
     }
 
-    fun findAllByEntityTypeAndEntityIdInWithException(entityType: String, entityIds: List<UUID>, pageable: Pageable): Page<Task> {
-        return try {
-            taskRepository.findAllByEntityTypeAndEntityIdIn(entityType, entityIds, pageable)
+    fun deleteByIdWithException(id: UUID) {
+        try {
+            if (!taskRepository.existsById(id)) {
+                throw TaskExceptionFactory.taskNotFound(id, messageSource)
+            }
+            taskRepository.deleteById(id)
         } catch (e: Exception) {
-            throw TaskExceptionFactory.retrieveEntityFailed(messageSource)
+            throw TaskExceptionFactory.deleteFailed(messageSource)
         }
     }
 }

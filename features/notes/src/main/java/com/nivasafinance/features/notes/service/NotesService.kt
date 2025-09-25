@@ -8,8 +8,10 @@ import com.nivasafinance.features.notes.dto.NotesUpdateRequest
 import java.util.UUID
 
 interface NotesService {
-    fun createNotesByEntity(entityType: String, entityId: UUID, notesRequest: NotesRequest): NotesResponse
-    fun updateNotesByEntity(entityType: String, entityId: UUID, notesId: UUID, notesUpdateRequest: NotesUpdateRequest): NotesResponse
-    fun deleteNotesByEntity(entityType: String, entityId: UUID, notesId: UUID)
-    fun getNotesByEntity(entityType: String, entityId: UUID, paginationRequest: PaginationRequest): PaginatedResponse<NotesResponse>
+    fun createNotes(notesRequest: NotesRequest): NotesResponse
+    fun updateNotes(notesId: UUID, notesUpdateRequest: NotesUpdateRequest): NotesResponse
+    fun patchNotes(notesId: UUID, notesUpdateRequest: NotesUpdateRequest): NotesResponse
+    fun deleteNotes(notesId: UUID)
+    fun getNotesById(notesId: UUID): NotesResponse
+    fun getAllNotes(paginationRequest: PaginationRequest): PaginatedResponse<NotesResponse>
 }       

@@ -25,3 +25,7 @@ dependencies {
     implementation(project(":features:tasks"))
     implementation(project(":features:taskdefinitions"))
 }
+
+springBoot {
+    mainClass.set("com.nivasafinance.NavigatorApplicationKt")
+}

@@ -37,11 +37,11 @@ class DocumentRepositoryWrapper(
         }
     }
 
-    fun findByEntityIdAndEntityTypeWithException(entityId: UUID, entityType: String): List<Document> {
+    fun findAllWithException(): List<Document> {
         return try {
-            documentRepository.findByEntityIdAndEntityType(entityId, entityType)
+            documentRepository.findAll()
         } catch (e: DataAccessException) {
-            throw documentExceptionFactory.createOperationException("retrieve.entity", e)
+            throw documentExceptionFactory.createOperationException("retrieve", e)
         }
     }
 
@@ -54,18 +54,6 @@ class DocumentRepositoryWrapper(
             documentRepository.deleteById(id)
         } catch (e: DataAccessException) {
             throw documentExceptionFactory.createOperationException("delete", e)
-        }
-    }
-
-    fun existsByEntityIdAndEntityTypeAndDocumentTypeWithException(
-        entityId: UUID,
-        entityType: String,
-        documentType: String
-    ): Boolean {
-        return try {
-            documentRepository.existsByEntityIdAndEntityTypeAndDocumentType(entityId, entityType, documentType)
-        } catch (e: DataAccessException) {
-            throw documentExceptionFactory.createOperationException("check existence", e)
         }
     }
 }

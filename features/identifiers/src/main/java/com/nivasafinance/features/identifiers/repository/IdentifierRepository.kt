@@ -6,7 +6,4 @@ import org.springframework.stereotype.Repository
 import java.util.UUID
 
 @Repository
-interface IdentifierRepository : JpaRepository<Identifier, UUID> {
-    
-    fun findAllByEntityTypeAndEntityId(entityType: String, entityId: UUID): List<Identifier>
-}
+interface IdentifierRepository : JpaRepository<Identifier, UUID>

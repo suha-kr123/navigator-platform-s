@@ -2,7 +2,6 @@ package com.nivasafinance.features.payment.entity
 
 import annotations.NoArg
 import audit.AuditableEntity
-import com.nivasafinance.features.payment.enum.PaymentStatus
 import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -28,18 +27,11 @@ class Payment(
     @GeneratedValue(strategy = GenerationType.UUID)
     val id: UUID? = null,
 
-    @Column(name = "entity_id", nullable = false)
-    val entityId: UUID? = null,
-
-    @Column(name = "entity_type", nullable = false)
-    val entityType: String? = null,
-
     @Column(name = "payment_type", nullable = false)
     val paymentType: String? = null,
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "payment_status", nullable = false)
-    val paymentStatus: PaymentStatus = PaymentStatus.PENDING_PAYMENT,
+    val paymentStatus: String = "PENDING_PAYMENT",
 
     @Column(name = "amount_paid", precision = 19, scale = 2)
     val amountPaid: BigDecimal? = null,

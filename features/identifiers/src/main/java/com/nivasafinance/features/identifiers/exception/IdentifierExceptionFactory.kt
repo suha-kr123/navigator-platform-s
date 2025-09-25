@@ -21,7 +21,4 @@ object IdentifierExceptionFactory {
         return IdentifierOperationException("error.identifier.operation.retrieve", messageSource)
     }
 
-    fun unsupportedEntityType(entityType: String, messageSource: MessageSource): IdentifierOperationException {
-        return IdentifierOperationException("error.identifier.unsupported.entity.type", messageSource)
-    }
 }

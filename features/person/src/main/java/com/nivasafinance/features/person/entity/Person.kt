@@ -5,6 +5,8 @@ import audit.AuditableEntity
 import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
+import jakarta.persistence.EnumType
+import jakarta.persistence.Enumerated
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
@@ -14,6 +16,7 @@ import org.hibernate.annotations.Type
 import org.hibernate.type.SqlTypes
 import org.javers.core.metamodel.annotation.TypeName
 import org.javers.core.metamodel.annotation.Value
+import java.time.LocalDate
 import java.util.UUID
 
 @Entity
@@ -21,7 +24,7 @@ import java.util.UUID
 @Table(name = "person")
 @NoArg
 @Suppress("LongParameterList")
-data class Person(
+class Person(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     var id: UUID? = null,
@@ -43,10 +46,10 @@ data class Person(
     @Column(name = "email", length = 100)
     var email: String? = null,
 
-    @Column(name = "date_of_birth", length = 20)
-    var dateOfBirth: String? = null,
+    @Column(name = "date_of_birth")
+    var dateOfBirth: LocalDate? = null,
 
-    @Column(name = "gender", length = 20)
+    @Column(name = "gender", length = 10)
     var gender: String? = null,
 
     @Type(JsonType::class)

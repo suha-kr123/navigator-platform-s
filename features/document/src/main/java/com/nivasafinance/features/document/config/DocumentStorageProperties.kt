@@ -1,11 +1,10 @@
 package com.nivasafinance.features.document.config
 
-import com.nivasafinance.features.document.enum.ProviderType
 import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties(prefix = "document.storage")
 data class DocumentStorageProperties(
-    val provider: ProviderType = ProviderType.LOCAL,
+    val provider: String = "LOCAL",
 
     val signedUrl: SignedUrlProperties = SignedUrlProperties(),
 

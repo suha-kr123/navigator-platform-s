@@ -10,4 +10,5 @@ interface LeadService {
     fun createLead(leadCreateRequest: LeadCreateRequest): LeadResponse
     fun getLeadById(id: UUID): LeadResponse
     fun getAllLeads(paginationRequest: PaginationRequest): PaginatedResponse<LeadResponse>
+    fun updateLead(id: UUID, leadUpdateRequest: com.nivasafinance.features.lead.dto.LeadUpdateRequest): LeadResponse
 }

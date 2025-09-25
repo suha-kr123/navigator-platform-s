@@ -14,10 +14,11 @@ import org.springframework.core.io.InputStreamResource
 import org.springframework.core.io.Resource
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.io.FileNotFoundException
 import java.io.IOException
 import java.io.InputStream
 import java.time.LocalDateTime
-import java.util.UUID
+import java.util.*
 
 @Service
 @Transactional
@@ -44,8 +45,8 @@ class DocumentServiceImpl(
         return toDocumentResponse(savedDocument)
     }
 
-    override fun getDocumentsByEntityTypeAndEntityId(entityType: String, entityId: UUID): List<DocumentResponse> {
-        val documents = documentRepositoryWrapper.findByEntityIdAndEntityTypeWithException(entityId, entityType)
+    override fun getAllDocuments(): List<DocumentResponse> {
+        val documents = documentRepositoryWrapper.findAllWithException()
         return documents.map { toDocumentResponse(it) }
     }
 
@@ -54,34 +55,16 @@ class DocumentServiceImpl(
         return toDocumentResponse(document)
     }
 
-    override fun updateDocument(id: UUID, documentRequest: DocumentRequest): DocumentResponse {
-        val existingDocument = documentRepositoryWrapper.findByIdWithException(id)
-
-        // Update the document fields
-        existingDocument.entityId = documentRequest.entityId
-        existingDocument.entityType = documentRequest.entityType
-        existingDocument.documentType = documentRequest.documentType
-        existingDocument.verificationStatus = documentRequest.verificationStatus
-        existingDocument.verificationNotes = documentRequest.verificationNotes
-        existingDocument.fileName = documentRequest.fileName
-        existingDocument.fileType = documentRequest.fileType
-        existingDocument.fileSize = documentRequest.fileSize
-        existingDocument.provider = documentRequest.provider
-        existingDocument.fileUrl = documentRequest.fileUrl
-        existingDocument.tags = documentRequest.tags
-
-        val updatedDocument = documentRepositoryWrapper.saveWithException(existingDocument)
-        return toDocumentResponse(updatedDocument)
-    }
-
     override fun deleteDocumentById(id: UUID) {
         val document = documentRepositoryWrapper.findByIdWithException(id)
         val contentRepository = contentRepositoryFactory.getRepository(document.provider)
 
         try {
             contentRepository.deleteFile(document.storageKey)
+        } catch (e: FileNotFoundException) {
+            logger.warn("File not found during deletion: ${document.storageKey}", e)
         } catch (e: IOException) {
-            logger.warn("Failed to delete file from storage: ${document.storageKey}", e)
+            logger.warn("IO error during file deletion: ${document.storageKey}", e)
         }
         documentRepositoryWrapper.deleteByIdWithException(id)
     }
@@ -97,13 +80,13 @@ class DocumentServiceImpl(
         val document = documentRepositoryWrapper.findByIdWithException(id)
         val contentRepository = contentRepositoryFactory.getRepository(document.provider)
         return contentRepository.getSignedDownloadUrl(document.storageKey, expiresIn)
-            ?: throw documentExceptionFactory.createOperationException("generate download URL")
+            ?: "/api/documents/$id/download" // Return direct download URL for local storage
     }
 
     override fun verifyDocument(id: UUID, verificationRequest: DocumentVerificationRequest): DocumentResponse {
         val document = documentRepositoryWrapper.findByIdWithException(id)
 
-        document.verificationStatus = verificationRequest.verificationStatus
+        document.isVerified = verificationRequest.isVerified
         document.verificationNotes = verificationRequest.verificationNotes
 
         val updatedDocument = documentRepositoryWrapper.saveWithException(document)
@@ -112,42 +95,42 @@ class DocumentServiceImpl(
 
     private fun toDocument(documentRequest: DocumentRequest, storageKey: String): Document {
         return Document(
-            entityId = documentRequest.entityId,
-            entityType = documentRequest.entityType,
             documentType = documentRequest.documentType,
-            verificationStatus = documentRequest.verificationStatus,
-            verificationNotes = documentRequest.verificationNotes,
+            isVerified = false, // Default to false, will be set via verification API
+            verificationNotes = null, // Will be set via verification API
             fileName = documentRequest.fileName,
             fileType = documentRequest.fileType,
             fileSize = documentRequest.fileSize,
-            provider = documentRequest.provider,
+            provider = documentStorageProperties.provider,
             storageKey = storageKey,
-            fileUrl = documentRequest.fileUrl,
-            tags = documentRequest.tags
+            fileUrl = documentRequest.fileUrl.orEmpty(),
+            category = documentRequest.category,
+            docType = documentRequest.docType,
+            tags = documentRequest.tags,
+            extData = documentRequest.extData
         )
     }
 
     private fun generateDocumentPath(documentRequest: DocumentRequest): String {
         val timestamp = System.currentTimeMillis()
-        return "${documentRequest.entityType}/${documentRequest.entityId}/" +
-            "${documentRequest.documentType}/${timestamp}_${documentRequest.fileName}"
+        return "documents/${documentRequest.documentType}/${timestamp}_${documentRequest.fileName}"
     }
 
     private fun toDocumentResponse(document: Document): DocumentResponse {
         return DocumentResponse(
-            id = document.id ?: UUID.randomUUID(),
-            entityId = document.entityId ?: UUID.randomUUID(),
-            entityType = document.entityType.orEmpty(),
+            documentId = document.documentId ?: UUID.randomUUID(),
             documentType = document.documentType.orEmpty(),
-            verificationStatus = document.verificationStatus,
+            isVerified = document.isVerified,
             verificationNotes = document.verificationNotes,
             fileName = document.fileName,
             fileType = document.fileType,
             fileSize = document.fileSize,
-            provider = document.provider.name,
             storageKey = document.storageKey,
             fileUrl = document.fileUrl,
+            category = document.category,
+            docType = document.docType,
             tags = document.tags,
+            extData = document.extData,
             createdAt = document.createdAt ?: LocalDateTime.now(),
             createdBy = document.createdBy,
             updatedAt = document.updatedAt ?: LocalDateTime.now(),

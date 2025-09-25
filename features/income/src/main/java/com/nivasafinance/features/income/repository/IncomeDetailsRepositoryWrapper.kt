@@ -30,9 +30,20 @@ class IncomeDetailsRepositoryWrapper(
         }
     }
 
-    fun findAllByEntityTypeAndEntityId(entityType: String, entityId: UUID): List<IncomeDetails> {
+
+    fun findByIdWithException(incomeDetailsId: UUID): IncomeDetails {
         return try {
-            incomeDetailsRepository.findAllByEntityTypeAndEntityId(entityType, entityId)
+            incomeDetailsRepository.findById(incomeDetailsId).orElseThrow {
+                IncomeDetailsExceptionFactory.notFound(incomeDetailsId, messageSource)
+            }
+        } catch (e: Exception) {
+            throw IncomeDetailsExceptionFactory.retrieveEntityFailed(messageSource)
+        }
+    }
+
+    fun findAllWithException(): List<IncomeDetails> {
+        return try {
+            incomeDetailsRepository.findAll()
         } catch (e: Exception) {
             throw IncomeDetailsExceptionFactory.retrieveEntityFailed(messageSource)
         }

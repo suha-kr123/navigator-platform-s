@@ -18,16 +18,10 @@ data class Notes(
     @GeneratedValue(strategy = GenerationType.UUID)
     val id: UUID? = null,
 
-    @Column(name = "entity_type", nullable = false)
-    val entityType: String,
-
-    @Column(name = "entity_id", nullable = false)
-    val entityId: UUID,
-
     @Column(name = "title", nullable = false)
-    val title: String,
+    var title: String,
 
     @Column(name = "content", columnDefinition = "TEXT", nullable = false)
-    val content: String
+    var content: String
 
 ) : AuditableEntity()

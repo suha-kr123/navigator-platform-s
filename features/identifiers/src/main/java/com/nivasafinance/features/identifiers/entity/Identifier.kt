@@ -23,12 +23,6 @@ class Identifier(
     @GeneratedValue(strategy = GenerationType.UUID)
     var id: UUID? = null,
 
-    @Column(name = "entity_id", nullable = false)
-    var entityId: UUID? = null,
-
-    @Column(name = "entity_type", nullable = false)
-    var entityType: String? = null,
-
     @Column(name = "identifier", nullable = false, length = 100)
     var identifier: String? = null,
 

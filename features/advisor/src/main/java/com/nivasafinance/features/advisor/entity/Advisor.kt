@@ -20,25 +20,43 @@ import java.util.UUID
 @Table(name = "advisor")
 @NoArg
 @Suppress("LongParameterList")
-data class Advisor(
+class Advisor(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    var id: UUID? = null,
+    val id: UUID? = null,
 
     @Column(name = "person_id")
-    var personId: UUID? = null,
+    val personId: UUID,
 
-    @Column(name = "advisor_code", length = 50)
-    var advisorCode: String? = null,
+    @Column(name = "advisor_code")
+    val advisorCode: String?,
 
-    @Column(name = "verification_status", length = 50)
-    var verificationStatus: String? = null,
+    @Column(name = "is_employee")
+    val isEmployee: Boolean = false,
 
-    @Column(name = "verification_notes", columnDefinition = "TEXT")
-    var verificationNotes: String? = null,
+    @Column(name = "status")
+    val status: String,
+
+    @Column(name = "is_experienced_dsa")
+    val isExperiencedDsa: Boolean = false,
+
+    @Column(name = "remarks", length = 1000)
+    val remarks: String? = null,
+
+    @Column(name = "rejection_reason", length = 1000)
+    val rejectionReason: String? = null,
+
+    @Column(name = "advisor_feedback", length = 2000)
+    val advisorFeedback: String? = null,
+
+    @Column(name = "welcome_kit_sent")
+    val welcomeKitSent: Boolean = false,
+
+    @Column(name = "attended_advisor_meeting")
+    val attendedAdvisorMeeting: Boolean = false,
 
     @Type(JsonType::class)
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "data_ext", columnDefinition = "jsonb")
-    var extData: Map<String, Any>? = null
+    val extData: Map<String, Any>? = null
 ) : AuditableEntity()

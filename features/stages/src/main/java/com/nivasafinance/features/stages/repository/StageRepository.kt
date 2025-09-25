@@ -8,7 +8,7 @@ import java.util.*
 @Repository
 interface StageRepository : JpaRepository<Stage, UUID> {
 
-    fun findAllByEntityTypeAndEntityId(entityType: String, entityId: UUID): List<Stage>
+    fun findAllByStageDefinitionKey(stageDefinitionKey: String): List<Stage>
 
-    fun existsByEntityTypeAndEntityIdAndStageDefinitionKey(entityType: String, entityId: UUID, stageDefinitionKey: String): Boolean
+    fun existsByStageDefinitionKey(stageDefinitionKey: String): Boolean
 }
