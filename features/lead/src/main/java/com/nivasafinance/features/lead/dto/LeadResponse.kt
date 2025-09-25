@@ -10,7 +10,6 @@ data class LeadResponse(
     val purpose: String?,
     val productCode: String?,
     val currentStage: String?,
-    val status: String?,
     val sourcingChannel: String?,
     val preliminaryInformation: LeadPreliminaryInformation?,
     val extData: Map<String, Any>?,
