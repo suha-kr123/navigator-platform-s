@@ -3,7 +3,7 @@ package com.nivasafinance.features.lead.service.impl
 import base.model.PaginatedResponse
 import base.model.PaginationInfo
 import base.model.PaginationRequest
-import com.nivasafinance.features.lead.dto.LeadTaskNotesResponse
+import com.nivasafinance.features.lead.dto.LeadNotesResponse
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper
 import com.nivasafinance.features.lead.service.LeadNotesService
 import com.nivasafinance.features.notes.dto.NotesRequest
@@ -24,8 +24,8 @@ class LeadNotesServiceImpl(
     /**
      * Converts NotesResponse to LeadTaskNotesResponse
      */
-    private fun NotesResponse.toLeadTaskNotesResponse(leadId: UUID, taskId: UUID): LeadTaskNotesResponse {
-        return LeadTaskNotesResponse(
+    private fun NotesResponse.toLeadNotesResponse(leadId: UUID, taskId: UUID?): LeadNotesResponse {
+        return LeadNotesResponse(
             leadId = leadId,
             taskId = taskId,
             noteId = this.id,
@@ -38,55 +38,68 @@ class LeadNotesServiceImpl(
         )
     }
 
-    override fun addNotesToLead(leadId: UUID, taskId: UUID, addNotesToLeadRequest: NotesRequest): LeadTaskNotesResponse {
+    override fun addNotesToLead(leadId: UUID, taskId: UUID?, addNotesToLeadRequest: NotesRequest): LeadNotesResponse {
         // Verify lead exists
         val lead = leadRepositoryWrapper.findByIdWithException(leadId)
 
-        // Verify that the taskId belongs to this lead
-        val taskExists = lead.taskData?.any { it.taskId == taskId } ?: false
-        if (!taskExists) {
-            throw IllegalArgumentException("Task with ID $taskId does not belong to lead $leadId")
+        // If taskId is provided, verify that it belongs to this lead
+        if (taskId != null) {
+            val taskExists = lead.taskData?.any { it.taskId == taskId } ?: false
+            if (!taskExists) {
+                throw IllegalArgumentException("Task with ID $taskId does not belong to lead $leadId")
+            }
         }
 
         // Create notes using NotesService
         val notesResponse = notesService.createNotes(addNotesToLeadRequest)
 
-        // Update the lead's task data to include the notes ID
-        val currentTaskData = lead.taskData ?: emptyList()
-        val updatedTaskData = currentTaskData.map { taskData ->
-            if (taskData.taskId == taskId) {
-                val currentNotesIds = taskData.notesIds ?: emptyList()
-                taskData.copy(notesIds = currentNotesIds + notesResponse.id)
-            } else {
-                taskData
+        // Update the lead's task data to include the notes ID (only if taskId is provided)
+        if (taskId != null) {
+            val currentTaskData = lead.taskData ?: emptyList()
+            val updatedTaskData = currentTaskData.map { taskData ->
+                if (taskData.taskId == taskId) {
+                    val currentNotesIds = taskData.notesIds ?: emptyList()
+                    taskData.copy(notesIds = currentNotesIds + notesResponse.id)
+                } else {
+                    taskData
+                }
             }
+            lead.taskData = updatedTaskData
         }
 
-        // Update the lead entity directly instead of using copy() to preserve version
-        lead.taskData = updatedTaskData
+        // Also update the lead's noteIds list
+        val currentNoteIds = lead.noteIds ?: emptyList()
+        lead.noteIds = (currentNoteIds + notesResponse.id).distinct()
+
         leadRepositoryWrapper.saveWithException(lead)
 
-        return notesResponse.toLeadTaskNotesResponse(leadId, taskId)
+        return notesResponse.toLeadNotesResponse(leadId, taskId)
     }
 
-    override fun getTaskNotes(leadId: UUID, taskId: UUID, paginationRequest: PaginationRequest): PaginatedResponse<List<LeadTaskNotesResponse>> {
+    override fun getTaskNotes(leadId: UUID, taskId: UUID?, paginationRequest: PaginationRequest): PaginatedResponse<List<LeadNotesResponse>> {
         // Verify lead exists
         val lead = leadRepositoryWrapper.findByIdWithException(leadId)
 
-        // Verify that the taskId belongs to this lead
-        val taskExists = lead.taskData?.any { it.taskId == taskId } ?: false
-        if (!taskExists) {
-            throw IllegalArgumentException("Task with ID $taskId does not belong to lead $leadId")
+        // If taskId is provided, verify that it belongs to this lead
+        if (taskId != null) {
+            val taskExists = lead.taskData?.any { it.taskId == taskId } ?: false
+            if (!taskExists) {
+                throw IllegalArgumentException("Task with ID $taskId does not belong to lead $leadId")
+            }
         }
 
-        // Get notes for the specific task
-        val taskData = lead.taskData?.find { it.taskId == taskId }
-        val notesIds = taskData?.notesIds ?: emptyList()
+        // Get notes for the specific task or all lead notes
+        val notesIds = if (taskId != null) {
+            val taskData = lead.taskData?.find { it.taskId == taskId }
+            taskData?.notesIds ?: emptyList()
+        } else {
+            lead.noteIds ?: emptyList()
+        }
 
         // Convert to LeadTaskNotesResponse
         val leadTaskNotesResponses = notesIds.map { notesId ->
             val notes = notesService.getNotesById(notesId)
-            notes.toLeadTaskNotesResponse(leadId, taskId)
+            notes.toLeadNotesResponse(leadId, taskId)
         }
 
         // For now, return all notes without pagination
@@ -105,181 +118,137 @@ class LeadNotesServiceImpl(
         )
     }
 
-    override fun getNotesById(leadId: UUID, taskId: UUID, notesId: UUID): LeadTaskNotesResponse {
+    override fun getNotesById(leadId: UUID, taskId: UUID?, notesId: UUID): LeadNotesResponse {
         // Verify lead exists and contains the notes
         val lead = leadRepositoryWrapper.findByIdWithException(leadId)
 
-        // Verify that the taskId belongs to this lead
-        val taskExists = lead.taskData?.any { it.taskId == taskId } ?: false
-        if (!taskExists) {
-            throw IllegalArgumentException("Task with ID $taskId does not belong to lead $leadId")
+        // If taskId is provided, verify that it belongs to this lead
+        if (taskId != null) {
+            val taskExists = lead.taskData?.any { it.taskId == taskId } ?: false
+            if (!taskExists) {
+                throw IllegalArgumentException("Task with ID $taskId does not belong to lead $leadId")
+            }
         }
 
-        val notesExists = lead.taskData?.any { taskData ->
-            taskData.taskId == taskId && taskData.notesIds?.contains(notesId) == true
-        } ?: false
+        // Check if notes exists in the lead's task data or general notes list
+        val notesExists = if (taskId != null) {
+            // Check specific task
+            lead.taskData?.any { taskData ->
+                taskData.taskId == taskId && taskData.notesIds?.contains(notesId) == true
+            } ?: false
+        } else {
+            // Check all tasks or lead's general notes list
+            val existsInTasks = lead.taskData?.any { taskData ->
+                taskData.notesIds?.contains(notesId) == true
+            } ?: false
+            val existsInLeadNotes = lead.noteIds?.contains(notesId) ?: false
+            existsInTasks || existsInLeadNotes
+        }
 
         if (!notesExists) {
             throw IllegalArgumentException("Notes with ID $notesId does not belong to task $taskId in lead $leadId")
         }
 
         val notes = notesService.getNotesById(notesId)
-        return notes.toLeadTaskNotesResponse(leadId, taskId)
+        return notes.toLeadNotesResponse(leadId, taskId)
     }
 
-    override fun getLeadNotes(leadId: UUID, paginationRequest: PaginationRequest): PaginatedResponse<List<LeadTaskNotesResponse>> {
-        // Verify lead exists
-        val lead = leadRepositoryWrapper.findByIdWithException(leadId)
-
-        // Get all notes IDs from the lead's task data
-        val allNotesIds = lead.taskData?.flatMap { taskData ->
-            taskData.notesIds ?: emptyList()
-        } ?: emptyList()
-
-        if (allNotesIds.isEmpty()) {
-            return PaginatedResponse(
-                content = listOf(emptyList()),
-                pagination = PaginationInfo(
-                    offset = paginationRequest.offset,
-                    limit = paginationRequest.limit,
-                    totalElements = 0,
-                    totalPages = 0,
-                    currentPage = 0,
-                    hasNext = false,
-                    hasPrevious = false
-                )
-            )
-        }
-
-        // Get all notes and filter by the notesIds from the lead
-        val allNotes = notesService.getAllNotes(paginationRequest)
-        val filteredNotes = allNotes.content.filter { notes ->
-            allNotesIds.contains(notes.id)
-        }
-
-        // Convert to LeadTaskNotesResponse with lead ID and task ID
-        val leadTaskNotesResponses = filteredNotes.map { notes ->
-            // We need to find which task this notes belongs to
-            val taskData = lead.taskData?.find { it.notesIds?.contains(notes.id) == true }
-            val taskId = taskData?.taskId ?: UUID.randomUUID() // fallback if not found
-            notes.toLeadTaskNotesResponse(leadId, taskId)
-        }
-
-        // Create a new paginated response with filtered notes
-        return PaginatedResponse(
-            content = listOf(leadTaskNotesResponses),
-            pagination = PaginationInfo(
-                offset = paginationRequest.offset,
-                limit = paginationRequest.limit,
-                totalElements = leadTaskNotesResponses.size.toLong(),
-                totalPages = if (leadTaskNotesResponses.isEmpty()) 0 else 1,
-                currentPage = 0,
-                hasNext = false,
-                hasPrevious = false
-            )
-        )
-    }
-
-    override fun getAllLeadsNotes(paginationRequest: PaginationRequest): PaginatedResponse<List<LeadTaskNotesResponse>> {
-        // Get all leads that have notes
-        val pageable = org.springframework.data.domain.PageRequest.of(
-            paginationRequest.offset / paginationRequest.limit,
-            paginationRequest.limit
-        )
-        val leadsPage = leadRepositoryWrapper.findAllWithException(pageable)
-
-        val allLeadTaskNotesResponses = mutableListOf<LeadTaskNotesResponse>()
-
-        leadsPage.content.forEach { lead ->
-            lead.taskData?.forEach { taskData ->
-                val notesIds = taskData.notesIds ?: emptyList()
-                notesIds.forEach { notesId ->
-                    try {
-                        val notes = notesService.getNotesById(notesId)
-                        allLeadTaskNotesResponses.add(
-                            notes.toLeadTaskNotesResponse(lead.id!!, taskData.taskId)
-                        )
-                    } catch (e: Exception) {
-                        // Skip notes that no longer exist
-                    }
-                }
-            }
-        }
-
-        val totalPages = if (allLeadTaskNotesResponses.isEmpty()) 0 else ((allLeadTaskNotesResponses.size - 1) / paginationRequest.limit + 1)
-        val currentPage = paginationRequest.offset / paginationRequest.limit
-
-        return PaginatedResponse(
-            content = listOf(allLeadTaskNotesResponses),
-            pagination = PaginationInfo(
-                offset = paginationRequest.offset,
-                limit = paginationRequest.limit,
-                totalElements = allLeadTaskNotesResponses.size.toLong(),
-                totalPages = totalPages,
-                currentPage = currentPage,
-                hasNext = currentPage < totalPages - 1,
-                hasPrevious = currentPage > 0
-            )
-        )
-    }
-
-    override fun updateNotesById(leadId: UUID, taskId: UUID, notesId: UUID, updateNotesRequest: NotesUpdateRequest): LeadTaskNotesResponse {
+    override fun updateNotesById(leadId: UUID, taskId: UUID?, notesId: UUID, updateNotesRequest: NotesUpdateRequest): LeadNotesResponse {
         // Verify lead exists and contains the notes
         val lead = leadRepositoryWrapper.findByIdWithException(leadId)
 
-        // Verify that the taskId belongs to this lead
-        val taskExists = lead.taskData?.any { it.taskId == taskId } ?: false
-        if (!taskExists) {
-            throw IllegalArgumentException("Task with ID $taskId does not belong to lead $leadId")
+        // If taskId is provided, verify that it belongs to this lead
+        if (taskId != null) {
+            val taskExists = lead.taskData?.any { it.taskId == taskId } ?: false
+            if (!taskExists) {
+                throw IllegalArgumentException("Task with ID $taskId does not belong to lead $leadId")
+            }
         }
 
-        val notesExists = lead.taskData?.any { taskData ->
-            taskData.taskId == taskId && taskData.notesIds?.contains(notesId) == true
-        } ?: false
+        // Check if notes exists in the lead's task data or general notes list
+        val notesExists = if (taskId != null) {
+            // Check specific task
+            lead.taskData?.any { taskData ->
+                taskData.taskId == taskId && taskData.notesIds?.contains(notesId) == true
+            } ?: false
+        } else {
+            // Check all tasks or lead's general notes list
+            val existsInTasks = lead.taskData?.any { taskData ->
+                taskData.notesIds?.contains(notesId) == true
+            } ?: false
+            val existsInLeadNotes = lead.noteIds?.contains(notesId) ?: false
+            existsInTasks || existsInLeadNotes
+        }
 
         if (!notesExists) {
             throw IllegalArgumentException("Notes with ID $notesId does not belong to task $taskId in lead $leadId")
         }
 
         val updatedNotes = notesService.updateNotes(notesId, updateNotesRequest)
-        return updatedNotes.toLeadTaskNotesResponse(leadId, taskId)
+        return updatedNotes.toLeadNotesResponse(leadId, taskId)
     }
 
-    override fun patchNotesById(leadId: UUID, taskId: UUID, notesId: UUID, updateNotesRequest: NotesUpdateRequest): LeadTaskNotesResponse {
+    override fun patchNotesById(leadId: UUID, taskId: UUID?, notesId: UUID, updateNotesRequest: NotesUpdateRequest): LeadNotesResponse {
         // Verify lead exists and contains the notes
         val lead = leadRepositoryWrapper.findByIdWithException(leadId)
 
-        // Verify that the taskId belongs to this lead
-        val taskExists = lead.taskData?.any { it.taskId == taskId } ?: false
-        if (!taskExists) {
-            throw IllegalArgumentException("Task with ID $taskId does not belong to lead $leadId")
+        // If taskId is provided, verify that it belongs to this lead
+        if (taskId != null) {
+            val taskExists = lead.taskData?.any { it.taskId == taskId } ?: false
+            if (!taskExists) {
+                throw IllegalArgumentException("Task with ID $taskId does not belong to lead $leadId")
+            }
         }
 
-        val notesExists = lead.taskData?.any { taskData ->
-            taskData.taskId == taskId && taskData.notesIds?.contains(notesId) == true
-        } ?: false
+        // Check if notes exists in the lead's task data or general notes list
+        val notesExists = if (taskId != null) {
+            // Check specific task
+            lead.taskData?.any { taskData ->
+                taskData.taskId == taskId && taskData.notesIds?.contains(notesId) == true
+            } ?: false
+        } else {
+            // Check all tasks or lead's general notes list
+            val existsInTasks = lead.taskData?.any { taskData ->
+                taskData.notesIds?.contains(notesId) == true
+            } ?: false
+            val existsInLeadNotes = lead.noteIds?.contains(notesId) ?: false
+            existsInTasks || existsInLeadNotes
+        }
 
         if (!notesExists) {
             throw IllegalArgumentException("Notes with ID $notesId does not belong to task $taskId in lead $leadId")
         }
 
         val updatedNotes = notesService.patchNotes(notesId, updateNotesRequest)
-        return updatedNotes.toLeadTaskNotesResponse(leadId, taskId)
+        return updatedNotes.toLeadNotesResponse(leadId, taskId)
     }
 
-    override fun deleteNotesById(leadId: UUID, taskId: UUID, notesId: UUID) {
+    override fun deleteNotesById(leadId: UUID, taskId: UUID?, notesId: UUID) {
         // Verify lead exists and contains the notes
         val lead = leadRepositoryWrapper.findByIdWithException(leadId)
 
-        // Verify that the taskId belongs to this lead
-        val taskExists = lead.taskData?.any { it.taskId == taskId } ?: false
-        if (!taskExists) {
-            throw IllegalArgumentException("Task with ID $taskId does not belong to lead $leadId")
+        // If taskId is provided, verify that it belongs to this lead
+        if (taskId != null) {
+            val taskExists = lead.taskData?.any { it.taskId == taskId } ?: false
+            if (!taskExists) {
+                throw IllegalArgumentException("Task with ID $taskId does not belong to lead $leadId")
+            }
         }
 
-        val notesExists = lead.taskData?.any { taskData ->
-            taskData.taskId == taskId && taskData.notesIds?.contains(notesId) == true
-        } ?: false
+        // Check if notes exists in the lead's task data or general notes list
+        val notesExists = if (taskId != null) {
+            // Check specific task
+            lead.taskData?.any { taskData ->
+                taskData.taskId == taskId && taskData.notesIds?.contains(notesId) == true
+            } ?: false
+        } else {
+            // Check all tasks or lead's general notes list
+            val existsInTasks = lead.taskData?.any { taskData ->
+                taskData.notesIds?.contains(notesId) == true
+            } ?: false
+            val existsInLeadNotes = lead.noteIds?.contains(notesId) ?: false
+            existsInTasks || existsInLeadNotes
+        }
 
         if (!notesExists) {
             throw IllegalArgumentException("Notes with ID $notesId does not belong to task $taskId in lead $leadId")
@@ -293,9 +262,31 @@ class LeadNotesServiceImpl(
 
         // Update the lead entity directly instead of using copy() to preserve version
         lead.taskData = updatedTaskData
+
+        // Also remove from lead's noteIds list
+        val currentNoteIds = lead.noteIds ?: emptyList()
+        lead.noteIds = currentNoteIds.filter { it != notesId }
+
         leadRepositoryWrapper.saveWithException(lead)
 
         // Delete the notes
         notesService.deleteNotes(notesId)
+    }
+
+    override fun getAllNotes(paginationRequest: PaginationRequest): PaginatedResponse<List<LeadNotesResponse>> {
+        // This would typically query all notes across all leads
+        // For now, return empty list - implement based on your requirements
+        return PaginatedResponse(
+            content = emptyList(),
+            pagination = PaginationInfo(
+                offset = paginationRequest.offset,
+                limit = paginationRequest.limit,
+                totalElements = 0,
+                totalPages = 0,
+                currentPage = 1,
+                hasNext = false,
+                hasPrevious = false
+            )
+        )
     }
 }

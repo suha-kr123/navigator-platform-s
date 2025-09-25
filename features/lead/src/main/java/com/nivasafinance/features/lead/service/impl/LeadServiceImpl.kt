@@ -40,7 +40,7 @@ class LeadServiceImpl(
         val lead = toLead(leadCreateRequest)
         val savedLead = leadRepositoryWrapper.saveWithException(lead)
 
-        val stages = createStagesForLead(savedLead.id!!, leadCreateRequest.pipelineKey)
+        val stages = createStagesForLead(leadCreateRequest.pipelineKey)
 
         // Update the lead with the stage IDs
         val stageIds = stages.map { it.id }
@@ -146,7 +146,7 @@ class LeadServiceImpl(
         )
     }
 
-    private fun createStagesForLead(leadId: UUID, pipelineKey: String?): List<com.nivasafinance.features.stages.dto.StageResponse> {
+    private fun createStagesForLead(pipelineKey: String?): List<com.nivasafinance.features.stages.dto.StageResponse> {
         if (pipelineKey.isNullOrBlank()) {
             return emptyList()
         }

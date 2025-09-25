@@ -17,7 +17,7 @@ class LeadTaskController(
     private val leadTaskService: LeadTaskService
 ) {
 
-    @GetMapping("/tasks")
+    @GetMapping("/tasks/all")
     fun getAllTasks(
         @RequestParam(defaultValue = "0") offset: Int,
         @RequestParam(defaultValue = "20") limit: Int,
@@ -30,11 +30,12 @@ class LeadTaskController(
             sortBy = sortBy,
             sortDirection = sortDirection
         )
-        val leadTasks = leadTaskService.getAllTasks(paginationRequest)
-        return ResponseEntity.ok(leadTasks)
+
+        val tasks = leadTaskService.getAllTasks(paginationRequest)
+        return ResponseEntity.ok(tasks)
     }
 
-    @GetMapping("/{leadId}/tasks")
+    @GetMapping("/{leadId}/tasks/all")
     fun getLeadTasks(
         @PathVariable leadId: UUID,
         @RequestParam(defaultValue = "0") offset: Int,

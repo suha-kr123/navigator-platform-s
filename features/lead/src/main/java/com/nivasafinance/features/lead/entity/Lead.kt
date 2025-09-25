@@ -69,7 +69,15 @@ data class Lead(
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "stage_ids", columnDefinition = "jsonb", nullable = true)
-    var stageIds: List<UUID>? = null
+    var stageIds: List<UUID>? = null,
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "document_ids", columnDefinition = "jsonb", nullable = true)
+    var documentIds: List<UUID>? = null,
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "note_ids", columnDefinition = "jsonb", nullable = true)
+    var noteIds: List<UUID>? = null
 
 ) : AuditableEntity()
 

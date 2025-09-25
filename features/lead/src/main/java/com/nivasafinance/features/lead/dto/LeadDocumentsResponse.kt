@@ -1,12 +1,11 @@
 package com.nivasafinance.features.lead.dto
 
-import com.nivasafinance.features.document.dto.DocumentResponse
 import java.time.LocalDateTime
 import java.util.UUID
 
-data class LeadTaskDocumentsResponse(
+data class LeadDocumentsResponse(
     val leadId: UUID,
-    val taskId: UUID,
+    val taskId: UUID? = null,
     val documentId: UUID,
     val documentName: String,
     val documentUrl: String,
