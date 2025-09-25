@@ -74,7 +74,7 @@ class LeadDocumentsController(
     @DeleteMapping("/{leadId}/documents/{documentId}")
     fun deleteDocumentById(
         @PathVariable leadId: UUID,
-peni for         @PathVariable documentId: UUID,
+        @PathVariable documentId: UUID,
         @RequestParam taskId: UUID? = null
     ): ResponseEntity<Unit> {
         leadDocumentsService.deleteDocumentById(leadId, taskId, documentId)
