@@ -1,8 +1,8 @@
 package com.nivasafinance.features.lead.repository
 
 import com.nivasafinance.features.lead.entity.Lead
-import com.nivasafinance.features.lead.exception.LeadNotFoundException
 import com.nivasafinance.features.lead.exception.LeadExceptionFactory
+import com.nivasafinance.features.lead.exception.LeadNotFoundException
 import org.springframework.context.MessageSource
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable

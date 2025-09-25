@@ -1,4 +1,4 @@
- package com.nivasafinance.features.lead.service
+package com.nivasafinance.features.lead.service
 
 import base.model.PaginatedResponse
 import base.model.PaginationRequest
