@@ -5,7 +5,10 @@ import base.model.PaginationInfo
 import base.model.PaginationRequest
 import com.nivasafinance.features.lead.dto.LeadCreateRequest
 import com.nivasafinance.features.lead.dto.LeadResponse
+import com.nivasafinance.features.lead.dto.LeadPersonsResponse
+import com.nivasafinance.features.lead.dto.LeadPreliminaryInformation
 import com.nivasafinance.features.lead.entity.Lead
+import com.nivasafinance.features.lead.entity.PersonData
 import com.nivasafinance.features.lead.exception.LeadExceptionFactory
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper
 import com.nivasafinance.features.lead.service.LeadService
@@ -13,9 +16,13 @@ import com.nivasafinance.features.stagedefinitions.repository.StageDefinitionRep
 import com.nivasafinance.features.stages.dto.StageRequest
 import com.nivasafinance.features.stages.repository.StageRepositoryWrapper
 import com.nivasafinance.features.stages.service.StageService
+import com.nivasafinance.features.person.entity.Person
+import com.nivasafinance.features.person.entity.MobileNumberDetails
+import com.nivasafinance.features.person.repository.PersonRepository
 import org.springframework.context.MessageSource
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDate
 import java.util.UUID
 
 @Service
@@ -25,6 +32,7 @@ class LeadServiceImpl(
     private val stageRepositoryWrapper: StageRepositoryWrapper,
     private val stageDefinitionRepositoryWrapper: StageDefinitionRepositoryWrapper,
     private val stageService: StageService,
+    private val personRepository: PersonRepository,
     private val messageSource: MessageSource
 ) : LeadService {
 
@@ -37,7 +45,15 @@ class LeadServiceImpl(
             leadCreateRequest.sourcingChannel,
             messageSource
         )
-        val lead = toLead(leadCreateRequest)
+        
+        // Handle person creation
+        val personData = if (leadCreateRequest.leadPersons != null) {
+            validateAndCreatePersons(leadCreateRequest.leadPersons)
+        } else {
+            emptyList()
+        }
+        
+        val lead = toLead(leadCreateRequest, personData)
         val savedLead = leadRepositoryWrapper.saveWithException(lead)
 
         val stages = createStagesForLead(leadCreateRequest.pipelineKey)
@@ -53,7 +69,7 @@ class LeadServiceImpl(
     override fun updateLead(id: UUID, leadUpdateRequest: com.nivasafinance.features.lead.dto.LeadUpdateRequest): LeadResponse {
         val existingLead = leadRepositoryWrapper.findByIdWithException(id)
 
-        // Create a mutable copy to update only provided fields
+        // Create a mutable copy to update only provided fields (no person data changes in basic update)
         val updatedLead = existingLead.copy(
             requestedAmount = leadUpdateRequest.requestedAmount ?: existingLead.requestedAmount,
             purpose = leadUpdateRequest.purpose ?: existingLead.purpose,
@@ -62,7 +78,7 @@ class LeadServiceImpl(
             currentStage = leadUpdateRequest.currentStage ?: existingLead.currentStage,
             sourcingChannel = leadUpdateRequest.sourcingChannel ?: existingLead.sourcingChannel,
             preliminaryInformation = if (leadUpdateRequest.preliminaryInformation != null) {
-                mapOf("data" to leadUpdateRequest.preliminaryInformation)
+                leadUpdateRequest.preliminaryInformation
             } else {
                 existingLead.preliminaryInformation
             },
@@ -103,7 +119,7 @@ class LeadServiceImpl(
         )
     }
 
-    private fun toLead(leadCreateRequest: LeadCreateRequest): Lead {
+    private fun toLead(leadCreateRequest: LeadCreateRequest, personData: List<PersonData>): Lead {
         return Lead(
             requestedAmount = leadCreateRequest.requestedAmount,
             purpose = leadCreateRequest.purpose,
@@ -114,7 +130,8 @@ class LeadServiceImpl(
             preliminaryInformation = leadCreateRequest.preliminaryInformation?.let {
                 mapOf("data" to it)
             },
-            extData = leadCreateRequest.extData
+            extData = leadCreateRequest.extData,
+            personData = personData
         )
     }
 
@@ -127,7 +144,7 @@ class LeadServiceImpl(
             currentStage = lead.currentStage,
             preliminaryInformation = lead.preliminaryInformation?.get(
                 "data"
-            ) as? com.nivasafinance.features.lead.dto.LeadPreliminaryInformation,
+            ) as? LeadPreliminaryInformation,
             sourcingChannel = lead.sourcingChannel,
             extData = lead.extData,
             taskData = lead.taskData?.let { taskDataList ->
@@ -142,7 +159,10 @@ class LeadServiceImpl(
             createdAt = lead.createdAt ?: java.time.LocalDateTime.now(),
             createdBy = lead.createdBy,
             updatedAt = lead.updatedAt ?: java.time.LocalDateTime.now(),
-            updatedBy = lead.updatedBy
+            updatedBy = lead.updatedBy,
+            leadPersons = lead.personData?.map { personData ->
+                fetchPersonDetails(personData, lead.id!!)
+            }
         )
     }
 
@@ -167,5 +187,207 @@ class LeadServiceImpl(
         }
 
         return stages
+    }
+
+    // Person handling methods
+    private fun validateAndCreatePersons(personRequests: List<com.nivasafinance.features.lead.dto.PersonRequest>): List<PersonData> {
+        val primaryPhones = mutableSetOf<String>()
+        
+        // Validate all persons first
+        personRequests.forEach { personRequest ->
+            if (personRequest.mobileNumbers != null) {
+                val hasPrimaryPhone = personRequest.mobileNumbers.any { it.isPrimary == true }
+                require(hasPrimaryPhone) { 
+                    "Person must have at least one primary phone number" 
+                }
+                
+                personRequest.mobileNumbers
+                    .filter { mobile -> mobile.isPrimary == true }
+                    .forEach { phone ->
+                        require(primaryPhones.add(phone.number ?: "")) { 
+                            "Primary phone number ${phone.number} already exists" 
+                        }
+                    }
+            }
+        }
+        
+        // Create persons and return metadata
+        return personRequests.map { personRequest ->
+            val person = createNewPerson(personRequest)
+            PersonData(
+                personId = person.id!!,
+                applicantType = personRequest.applicantType ?: "PRIMARY",
+                relationshipToPrimary = personRequest.relationshipToPrimary ?: "SELF",
+                tags = personRequest.tags ?: emptyList(),
+                verificationStatus = personRequest.verificationStatus ?: "PENDING",
+                verificationNotes = personRequest.verificationNotes ?: ""
+            )
+        }
+    }
+
+
+    private fun createNewPerson(personRequest: com.nivasafinance.features.lead.dto.PersonRequest): Person {
+        val person = Person(
+            firstName = personRequest.firstName,
+            middleName = personRequest.middleName,
+            lastName = personRequest.lastName,
+            email = personRequest.email,
+            dateOfBirth = personRequest.dateOfBirth?.let { LocalDate.parse(it) },
+            gender = personRequest.gender,
+            mobileNumbers = personRequest.mobileNumbers,
+            extData = personRequest.extData
+        )
+        
+        return personRepository.save(person)
+    }
+
+
+    private fun fetchPersonDetails(personData: PersonData, leadId: UUID): LeadPersonsResponse {
+        // Fetch the actual person from database
+        val person = personRepository.findById(personData.personId).orElse(null)
+        
+        return LeadPersonsResponse(
+            leadId = leadId,
+            personId = personData.personId,
+            firstName = person?.firstName,
+            middleName = person?.middleName,
+            lastName = person?.lastName,
+            email = person?.email,
+            dateOfBirth = person?.dateOfBirth?.toString(),
+            gender = person?.gender,
+            mobileNumbers = person?.mobileNumbers,
+            applicantType = personData.applicantType,
+            relationshipToPrimary = personData.relationshipToPrimary,
+            isPrimary = personData.tags.contains("PRIMARY"),
+            tags = personData.tags,
+            verificationStatus = personData.verificationStatus,
+            verificationNotes = personData.verificationNotes,
+            extData = person?.extData
+        )
+    }
+
+    // New person management methods
+    override fun addLeadPerson(leadId: UUID, addLeadPersonRequest: com.nivasafinance.features.lead.dto.AddLeadPersonRequest): LeadResponse {
+        // Validate phone numbers
+        validatePhoneNumbers(listOf(addLeadPersonRequest))
+        
+        // Create new person
+        val person = Person(
+            firstName = addLeadPersonRequest.firstName,
+            middleName = addLeadPersonRequest.middleName,
+            lastName = addLeadPersonRequest.lastName,
+            email = addLeadPersonRequest.email,
+            dateOfBirth = addLeadPersonRequest.dateOfBirth?.let { LocalDate.parse(it) },
+            gender = addLeadPersonRequest.gender,
+            mobileNumbers = addLeadPersonRequest.mobileNumbers,
+            extData = addLeadPersonRequest.extData
+        )
+        
+        val savedPerson = personRepository.save(person)
+        
+        // Create PersonData for the lead
+        val newPersonData = PersonData(
+            personId = savedPerson.id!!,
+            applicantType = addLeadPersonRequest.applicantType ?: "PRIMARY",
+            relationshipToPrimary = addLeadPersonRequest.relationshipToPrimary ?: "SELF",
+            tags = addLeadPersonRequest.tags ?: emptyList(),
+            verificationStatus = addLeadPersonRequest.verificationStatus ?: "PENDING",
+            verificationNotes = addLeadPersonRequest.verificationNotes ?: ""
+        )
+        
+        // Fetch fresh lead entity and update directly to avoid stale object exception
+        val existingLead = leadRepositoryWrapper.findByIdWithException(leadId)
+        
+        // Add to existing person data by updating the field directly
+        val currentPersonData = existingLead.personData ?: emptyList()
+        existingLead.personData = currentPersonData + newPersonData
+        
+        val savedLead = leadRepositoryWrapper.saveWithException(existingLead)
+        return toLeadResponse(savedLead)
+    }
+
+    override fun updateLeadPerson(leadId: UUID, personId: UUID, updateLeadPersonRequest: com.nivasafinance.features.lead.dto.UpdateLeadPersonRequest): LeadResponse {
+        // Validate phone numbers
+        validatePhoneNumbers(listOf(updateLeadPersonRequest))
+        
+        // Find and update the person
+        val existingPerson = personRepository.findById(personId)
+            .orElseThrow { IllegalArgumentException("Person with ID $personId not found") }
+        
+        // Update person fields
+        existingPerson.firstName = updateLeadPersonRequest.firstName ?: existingPerson.firstName
+        existingPerson.middleName = updateLeadPersonRequest.middleName ?: existingPerson.middleName
+        existingPerson.lastName = updateLeadPersonRequest.lastName ?: existingPerson.lastName
+        existingPerson.email = updateLeadPersonRequest.email ?: existingPerson.email
+        existingPerson.dateOfBirth = updateLeadPersonRequest.dateOfBirth?.let { LocalDate.parse(it) } ?: existingPerson.dateOfBirth
+        existingPerson.gender = updateLeadPersonRequest.gender ?: existingPerson.gender
+        existingPerson.mobileNumbers = updateLeadPersonRequest.mobileNumbers ?: existingPerson.mobileNumbers
+        existingPerson.extData = updateLeadPersonRequest.extData ?: existingPerson.extData
+        
+        personRepository.save(existingPerson)
+        
+        // Fetch fresh lead entity and update directly to avoid stale object exception
+        val existingLead = leadRepositoryWrapper.findByIdWithException(leadId)
+        
+        // Update the PersonData in the lead by modifying the existing list
+        val currentPersonData = existingLead.personData ?: emptyList()
+        val updatedPersonData = currentPersonData.map { personData ->
+            if (personData.personId == personId) {
+                personData.copy(
+                    applicantType = updateLeadPersonRequest.applicantType ?: personData.applicantType,
+                    relationshipToPrimary = updateLeadPersonRequest.relationshipToPrimary ?: personData.relationshipToPrimary,
+                    tags = updateLeadPersonRequest.tags ?: personData.tags,
+                    verificationStatus = updateLeadPersonRequest.verificationStatus ?: personData.verificationStatus,
+                    verificationNotes = updateLeadPersonRequest.verificationNotes ?: personData.verificationNotes
+                )
+            } else {
+                personData
+            }
+        }
+        
+        existingLead.personData = updatedPersonData
+        val savedLead = leadRepositoryWrapper.saveWithException(existingLead)
+        return toLeadResponse(savedLead)
+    }
+
+    override fun getAllLeadPersons(paginationRequest: PaginationRequest): List<LeadPersonsResponse> {
+        val pageable = org.springframework.data.domain.PageRequest.of(
+            paginationRequest.offset / paginationRequest.limit,
+            paginationRequest.limit
+        )
+        val leadPage = leadRepositoryWrapper.findAllWithException(pageable)
+        
+        return leadPage.content.flatMap { lead ->
+            lead.personData?.map { personData ->
+                fetchPersonDetails(personData, lead.id!!)
+            } ?: emptyList()
+        }
+    }
+
+    private fun validatePhoneNumbers(personRequests: List<Any>) {
+        val primaryPhones = mutableSetOf<String>()
+        
+        personRequests.forEach { personRequest ->
+            val mobileNumbers = when (personRequest) {
+                is com.nivasafinance.features.lead.dto.AddLeadPersonRequest -> personRequest.mobileNumbers
+                is com.nivasafinance.features.lead.dto.UpdateLeadPersonRequest -> personRequest.mobileNumbers
+                else -> null
+            }
+            
+            if (mobileNumbers != null) {
+                val hasPrimaryPhone = mobileNumbers.any { it.isPrimary == true }
+                require(hasPrimaryPhone) { 
+                    "Person must have at least one primary phone number" 
+                }
+                
+                mobileNumbers
+                    .filter { mobile -> mobile.isPrimary == true }
+                    .forEach { phone ->
+                        require(primaryPhones.add(phone.number ?: "")) { 
+                            "Primary phone number ${phone.number} already exists" 
+                        }
+                    }
+            }
+        }
     }
 }

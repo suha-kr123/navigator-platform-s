@@ -5,6 +5,9 @@ import base.model.PaginationRequest
 import com.nivasafinance.features.lead.dto.LeadCreateRequest
 import com.nivasafinance.features.lead.dto.LeadResponse
 import com.nivasafinance.features.lead.dto.LeadUpdateRequest
+import com.nivasafinance.features.lead.dto.AddLeadPersonRequest
+import com.nivasafinance.features.lead.dto.UpdateLeadPersonRequest
+import com.nivasafinance.features.lead.dto.LeadPersonsResponse
 import com.nivasafinance.features.lead.service.LeadService
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -16,6 +19,23 @@ import java.util.*
 class LeadController(
     private val leadService: LeadService
 ) {
+
+    @GetMapping("/persons/all")
+    fun getAllLeadPersons(
+        @RequestParam(defaultValue = "0") offset: Int,
+        @RequestParam(defaultValue = "20") limit: Int,
+        @RequestParam(defaultValue = "createdAt") sortBy: String,
+        @RequestParam(defaultValue = "ASC") sortDirection: String
+    ): ResponseEntity<List<LeadPersonsResponse>> {
+        val paginationRequest = PaginationRequest(
+            offset = offset,
+            limit = limit,
+            sortBy = sortBy,
+            sortDirection = sortDirection
+        )
+        val leadPersons = leadService.getAllLeadPersons(paginationRequest)
+        return ResponseEntity.ok(leadPersons)
+    }
 
     @PostMapping
     fun createLead(@RequestBody leadCreateRequest: LeadCreateRequest): ResponseEntity<LeadResponse> {
@@ -53,5 +73,24 @@ class LeadController(
         )
         val leads = leadService.getAllLeads(paginationRequest)
         return ResponseEntity.ok(leads)
+    }
+
+    @PostMapping("/{leadId}/persons")
+    fun addLeadPerson(
+        @PathVariable leadId: UUID,
+        @RequestBody addLeadPersonRequest: AddLeadPersonRequest
+    ): ResponseEntity<LeadResponse> {
+        val leadPerson = leadService.addLeadPerson(leadId, addLeadPersonRequest)
+        return ResponseEntity.status(HttpStatus.CREATED).body(leadPerson)
+    }
+
+    @PatchMapping("/{leadId}/persons/{personId}")
+    fun updateLeadPerson(
+        @PathVariable leadId: UUID,
+        @PathVariable personId: UUID,
+        @RequestBody updateLeadPersonRequest: UpdateLeadPersonRequest
+    ): ResponseEntity<LeadResponse> {
+        val leadPerson = leadService.updateLeadPerson(leadId, personId, updateLeadPersonRequest)
+        return ResponseEntity.ok(leadPerson)
     }
 }

@@ -76,6 +76,10 @@ data class Lead(
     var documentIds: List<UUID>? = null,
 
     @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "person_data", columnDefinition = "jsonb", nullable = true)
+    var personData: List<PersonData>? = null,
+
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "note_ids", columnDefinition = "jsonb", nullable = true)
     var noteIds: List<UUID>? = null
 
@@ -91,4 +95,20 @@ data class TaskData(
     val notesIds: List<UUID> = emptyList(),
     @JsonProperty("callIds")
     val callIds: List<UUID> = emptyList()
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class PersonData(
+    @JsonProperty("personId")
+    val personId: UUID,
+    @JsonProperty("applicantType")
+    val applicantType: String,
+    @JsonProperty("relationshipToPrimary")
+    val relationshipToPrimary: String,
+    @JsonProperty("tags")
+    val tags: List<String>,
+    @JsonProperty("verificationStatus")
+    val verificationStatus: String,
+    @JsonProperty("verificationNotes")
+    val verificationNotes: String
 )
