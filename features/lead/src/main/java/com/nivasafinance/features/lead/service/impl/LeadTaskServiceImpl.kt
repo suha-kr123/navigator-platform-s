@@ -228,9 +228,7 @@ class LeadTaskServiceImpl(
     private fun validateTaskLeadRelationship(leadId: UUID, taskId: UUID) {
         val lead = leadRepositoryWrapper.findByIdWithException(leadId)
         val taskExists = lead.taskData?.any { it.taskId == taskId } ?: false
-        if (!taskExists) {
-            throw IllegalArgumentException("Task with ID $taskId does not belong to lead $leadId")
-        }
+        require(taskExists) { "Task with ID $taskId does not belong to lead $leadId" }
     }
 
     /**
@@ -241,10 +239,11 @@ class LeadTaskServiceImpl(
      */
     private fun validateTaskLeadRelationships(leadId: UUID, taskIds: List<UUID>) {
         val lead = leadRepositoryWrapper.findByIdWithException(leadId)
-        val leadTaskIds = lead.taskData?.map { it.taskId } ?: emptyList()
+        val leadTaskIds = lead.taskData?.map { it.taskId }.orEmpty()
         val invalidTaskIds = taskIds.filter { it !in leadTaskIds }
-        if (invalidTaskIds.isNotEmpty()) {
-            throw IllegalArgumentException("Tasks with IDs $invalidTaskIds do not belong to lead $leadId")
+        require(invalidTaskIds.isEmpty()) {
+            "Tasks with IDs $invalidTaskIds do not belong to lead $leadId"
         }
     }
 }
+
