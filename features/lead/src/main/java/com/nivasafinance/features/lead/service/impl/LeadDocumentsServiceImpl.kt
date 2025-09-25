@@ -4,6 +4,7 @@ import base.model.PaginatedResponse
 import base.model.PaginationInfo
 import base.model.PaginationRequest
 import com.nivasafinance.features.document.dto.DocumentRequest
+import com.nivasafinance.features.document.dto.DocumentResponse
 import com.nivasafinance.features.document.service.DocumentService
 import com.nivasafinance.features.lead.dto.LeadTaskDocumentsResponse
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper
@@ -19,6 +20,33 @@ class LeadDocumentsServiceImpl(
     private val documentService: DocumentService,
     private val leadRepositoryWrapper: LeadRepositoryWrapper
 ) : LeadDocumentsService {
+
+    /**
+     * Converts DocumentResponse to LeadTaskDocumentsResponse
+     */
+    private fun DocumentResponse.toLeadTaskDocumentsResponse(leadId: UUID, taskId: UUID): LeadTaskDocumentsResponse {
+        return LeadTaskDocumentsResponse(
+            leadId = leadId,
+            taskId = taskId,
+            documentId = this.documentId,
+            documentName = this.fileName,
+            documentUrl = this.fileUrl ?: "",
+            documentType = this.documentType,
+            documentVerificationStatus = this.verificationStatus,
+            documentVerificationNotes = this.verificationNotes,
+            documentFileSize = this.fileSize,
+            documentStorageKey = this.storageKey,
+            documentFileUrl = this.fileUrl,
+            documentCategory = this.category,
+            documentDocType = this.docType,
+            documentTags = this.tags,
+            documentExtData = this.extData,
+            documentCreatedAt = this.createdAt,
+            documentCreatedBy = this.createdBy ?: "system",
+            documentUpdatedAt = this.updatedAt,
+            documentUpdatedBy = this.updatedBy ?: "system"
+        )
+    }
 
     override fun addDocumentsToLead(leadId: UUID, taskId: UUID, addDocumentsToLeadRequest: DocumentRequest): LeadTaskDocumentsResponse {
         // Verify lead exists
@@ -51,11 +79,7 @@ class LeadDocumentsServiceImpl(
         lead.taskData = updatedTaskData
         leadRepositoryWrapper.saveWithException(lead)
 
-        return LeadTaskDocumentsResponse(
-            leadId = leadId,
-            taskId = taskId,
-            documents = listOf(documentResponse)
-        )
+        return documentResponse.toLeadTaskDocumentsResponse(leadId, taskId)
     }
 
     override fun getDocumentById(leadId: UUID, taskId: UUID, documentId: UUID): LeadTaskDocumentsResponse {
@@ -79,14 +103,10 @@ class LeadDocumentsServiceImpl(
         }
 
         val document = documentService.getDocumentById(documentId)
-        return LeadTaskDocumentsResponse(
-            leadId = leadId,
-            taskId = taskId,
-            documents = listOf(document)
-        )
+        return document.toLeadTaskDocumentsResponse(leadId, taskId)
     }
 
-    override fun getLeadDocuments(leadId: UUID, paginationRequest: PaginationRequest): PaginatedResponse<LeadTaskDocumentsResponse> {
+    override fun getLeadDocuments(leadId: UUID, paginationRequest: PaginationRequest): PaginatedResponse<List<LeadTaskDocumentsResponse>> {
         // Verify lead exists
         val lead = leadRepositoryWrapper.findByIdWithException(leadId)
 
@@ -97,7 +117,7 @@ class LeadDocumentsServiceImpl(
 
         if (allDocumentIds.isEmpty()) {
             return PaginatedResponse(
-                content = emptyList(),
+                content = listOf(emptyList()),
                 pagination = PaginationInfo(
                     offset = paginationRequest.offset,
                     limit = paginationRequest.limit,
@@ -120,16 +140,13 @@ class LeadDocumentsServiceImpl(
         val leadDocumentsResponses = filteredDocuments.map { document ->
             // We need to find which task this document belongs to
             val taskData = lead.taskData?.find { it.documentIds.contains(document.documentId) }
-            LeadTaskDocumentsResponse(
-                leadId = leadId,
-                taskId = taskData?.taskId ?: UUID.randomUUID(), // fallback if not found
-                documents = listOf(document)
-            )
+            val taskId = taskData?.taskId ?: UUID.randomUUID() // fallback if not found
+            document.toLeadTaskDocumentsResponse(leadId, taskId)
         }
 
         // Create a new paginated response with filtered documents
         return PaginatedResponse(
-            content = leadDocumentsResponses,
+            content = listOf(leadDocumentsResponses),
             pagination = PaginationInfo(
                 offset = paginationRequest.offset,
                 limit = paginationRequest.limit,
@@ -142,7 +159,7 @@ class LeadDocumentsServiceImpl(
         )
     }
 
-    override fun getTaskDocuments(leadId: UUID, taskId: UUID, paginationRequest: PaginationRequest): PaginatedResponse<LeadTaskDocumentsResponse> {
+    override fun getTaskDocuments(leadId: UUID, taskId: UUID, paginationRequest: PaginationRequest): PaginatedResponse<List<LeadTaskDocumentsResponse>> {
         // Verify lead exists
         val lead = leadRepositoryWrapper.findByIdWithException(leadId)
 
@@ -159,17 +176,13 @@ class LeadDocumentsServiceImpl(
         // Convert to LeadTaskDocumentsResponse
         val leadDocumentsResponses = documentIds.map { documentId ->
             val document = documentService.getDocumentById(documentId)
-            LeadTaskDocumentsResponse(
-                leadId = leadId,
-                taskId = taskId,
-                documents = listOf(document)
-            )
+            document.toLeadTaskDocumentsResponse(leadId, taskId)
         }
 
         // For now, return all documents without pagination
         // In a real implementation, you might want to implement proper pagination
         return PaginatedResponse(
-            content = leadDocumentsResponses,
+            content = listOf(leadDocumentsResponses),
             pagination = PaginationInfo(
                 offset = paginationRequest.offset,
                 limit = paginationRequest.limit,
@@ -182,7 +195,7 @@ class LeadDocumentsServiceImpl(
         )
     }
 
-    override fun getAllLeadsDocuments(paginationRequest: PaginationRequest): PaginatedResponse<LeadTaskDocumentsResponse> {
+    override fun getAllLeadsDocuments(paginationRequest: PaginationRequest): PaginatedResponse<List<LeadTaskDocumentsResponse>> {
         // Get all leads that have documents
         val pageable = org.springframework.data.domain.PageRequest.of(
             paginationRequest.offset / paginationRequest.limit,
@@ -199,11 +212,7 @@ class LeadDocumentsServiceImpl(
                     try {
                         val document = documentService.getDocumentById(documentId)
                         allLeadTaskDocumentsResponses.add(
-                            LeadTaskDocumentsResponse(
-                                leadId = lead.id!!,
-                                taskId = taskData.taskId,
-                                documents = listOf(document)
-                            )
+                            document.toLeadTaskDocumentsResponse(lead.id!!, taskData.taskId)
                         )
                     } catch (e: Exception) {
                         // Skip documents that no longer exist
@@ -216,7 +225,7 @@ class LeadDocumentsServiceImpl(
         val currentPage = paginationRequest.offset / paginationRequest.limit
 
         return PaginatedResponse(
-            content = allLeadTaskDocumentsResponses,
+            content = listOf(allLeadTaskDocumentsResponses),
             pagination = PaginationInfo(
                 offset = paginationRequest.offset,
                 limit = paginationRequest.limit,
@@ -251,15 +260,11 @@ class LeadDocumentsServiceImpl(
 
         // Remove document from lead's task data
         val updatedTaskData = lead.taskData?.map { taskData ->
-            if (taskData.taskId == taskId) {
-                val updatedDocumentIds = taskData.documentIds.filter { it != documentId }
-                taskData.copy(documentIds = updatedDocumentIds)
-            } else {
-                taskData
-            }
+            val updatedDocumentIds = taskData.documentIds.filter { it != documentId }
+            taskData.copy(documentIds = updatedDocumentIds)
         } ?: emptyList()
 
-        // Update the lead entity directly
+        // Update the lead entity directly instead of using copy() to preserve version
         lead.taskData = updatedTaskData
         leadRepositoryWrapper.saveWithException(lead)
 

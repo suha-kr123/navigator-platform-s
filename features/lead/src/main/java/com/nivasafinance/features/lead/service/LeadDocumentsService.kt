@@ -12,16 +12,16 @@ interface LeadDocumentsService {
         taskId: UUID,
         addDocumentsToLeadRequest: DocumentRequest
     ): LeadTaskDocumentsResponse
-    fun getDocumentById(leadId: UUID, taskId: UUID, documentId: UUID): LeadTaskDocumentsResponse
+    fun getDocumentById(leadId: UUID, taskId: UUID, documentId: UUID): LeadTaskDocumentsResponse  
     fun getLeadDocuments(
         leadId: UUID,
         paginationRequest: PaginationRequest
-    ): PaginatedResponse<LeadTaskDocumentsResponse>
+    ): PaginatedResponse<List<LeadTaskDocumentsResponse>>
     fun getTaskDocuments(
         leadId: UUID,
         taskId: UUID,
         paginationRequest: PaginationRequest
-    ): PaginatedResponse<LeadTaskDocumentsResponse>
-    fun getAllLeadsDocuments(paginationRequest: PaginationRequest): PaginatedResponse<LeadTaskDocumentsResponse>
+    ): PaginatedResponse<List<LeadTaskDocumentsResponse>>
+    fun getAllLeadsDocuments(paginationRequest: PaginationRequest): PaginatedResponse<List<LeadTaskDocumentsResponse>>
     fun deleteDocumentById(leadId: UUID, taskId: UUID, documentId: UUID)
 }
