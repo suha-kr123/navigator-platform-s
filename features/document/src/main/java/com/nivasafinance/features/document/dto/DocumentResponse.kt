@@ -6,7 +6,7 @@ import java.util.*
 data class DocumentResponse(
     val documentId: UUID,
     val documentType: String,
-    val isVerified: Boolean,
+    val verificationStatus: String,
     val verificationNotes: String?,
     val fileName: String,
     val fileType: String?,

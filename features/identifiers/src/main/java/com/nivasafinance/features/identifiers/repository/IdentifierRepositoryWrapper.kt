@@ -28,7 +28,6 @@ class IdentifierRepositoryWrapper(
         }
     }
 
-
     fun findByIdWithException(identifierId: UUID): Identifier {
         return try {
             identifierRepository.findById(identifierId).orElseThrow {

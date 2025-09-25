@@ -4,7 +4,6 @@ import com.nivasafinance.features.identifiers.dto.IdentifierRequest
 import com.nivasafinance.features.identifiers.dto.IdentifierResponse
 import com.nivasafinance.features.identifiers.dto.IdentifierUpdateRequest
 import com.nivasafinance.features.identifiers.entity.Identifier
-import com.nivasafinance.features.identifiers.exception.IdentifierExceptionFactory
 import com.nivasafinance.features.identifiers.repository.IdentifierRepositoryWrapper
 import org.springframework.context.MessageSource
 import org.springframework.stereotype.Service
@@ -30,7 +29,7 @@ class IdentifierServiceImpl(
 
     override fun updateIdentifier(identifierId: UUID, identifierUpdateRequest: IdentifierUpdateRequest): IdentifierResponse {
         val existingIdentifier = identifierRepositoryWrapper.findByIdWithException(identifierId)
-        
+
         identifierUpdateRequest.identifier?.let {
             existingIdentifier.identifier = it
         }
@@ -38,7 +37,7 @@ class IdentifierServiceImpl(
         identifierUpdateRequest.verificationStatus?.let { existingIdentifier.verificationStatus = it }
         identifierUpdateRequest.verificationNotes?.let { existingIdentifier.verificationNotes = it }
         identifierUpdateRequest.extData?.let { existingIdentifier.extData = it }
-        
+
         val savedIdentifier = identifierRepositoryWrapper.saveWithException(existingIdentifier)
         return toIdentifierResponse(savedIdentifier)
     }
@@ -73,4 +72,3 @@ class IdentifierServiceImpl(
         )
     }
 }
-

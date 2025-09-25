@@ -1,9 +1,8 @@
-package com.nivasafinance.features.lead.service
+ package com.nivasafinance.features.lead.service
 
 import base.model.PaginatedResponse
 import base.model.PaginationRequest
 import com.nivasafinance.features.document.dto.DocumentRequest
-import com.nivasafinance.features.document.dto.DocumentVerificationRequest
 import com.nivasafinance.features.lead.dto.LeadTaskDocumentsResponse
 import java.util.UUID
 
@@ -24,11 +23,5 @@ interface LeadDocumentsService {
         paginationRequest: PaginationRequest
     ): PaginatedResponse<LeadTaskDocumentsResponse>
     fun getAllLeadsDocuments(paginationRequest: PaginationRequest): PaginatedResponse<LeadTaskDocumentsResponse>
-    fun verifyDocument(
-        leadId: UUID,
-        taskId: UUID,
-        documentId: UUID,
-        verifyDocumentRequest: DocumentVerificationRequest
-    ): LeadTaskDocumentsResponse
     fun deleteDocumentById(leadId: UUID, taskId: UUID, documentId: UUID)
 }

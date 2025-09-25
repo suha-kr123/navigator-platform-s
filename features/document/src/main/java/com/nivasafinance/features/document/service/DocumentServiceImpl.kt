@@ -3,15 +3,12 @@ package com.nivasafinance.features.document.service
 import com.nivasafinance.features.document.config.DocumentStorageProperties
 import com.nivasafinance.features.document.dto.DocumentRequest
 import com.nivasafinance.features.document.dto.DocumentResponse
-import com.nivasafinance.features.document.dto.DocumentVerificationRequest
 import com.nivasafinance.features.document.entity.Document
 import com.nivasafinance.features.document.exception.DocumentExceptionFactory
 import com.nivasafinance.features.document.repository.DocumentRepositoryWrapper
 import com.nivasafinance.features.document.storage.ContentRepositoryFactory
 import org.slf4j.LoggerFactory
 import org.springframework.context.MessageSource
-import org.springframework.core.io.InputStreamResource
-import org.springframework.core.io.Resource
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.io.FileNotFoundException
@@ -68,36 +65,17 @@ class DocumentServiceImpl(
         }
         documentRepositoryWrapper.deleteByIdWithException(id)
     }
-
-    override fun downloadDocument(id: UUID): Resource {
-        val document = documentRepositoryWrapper.findByIdWithException(id)
-        val contentRepository = contentRepositoryFactory.getRepository(document.provider)
-        val inputStream = contentRepository.fetchFile(document.storageKey)
-        return InputStreamResource(inputStream)
-    }
-
     override fun getDocumentDownloadUrl(id: UUID, expiresIn: Long): String {
         val document = documentRepositoryWrapper.findByIdWithException(id)
         val contentRepository = contentRepositoryFactory.getRepository(document.provider)
         return contentRepository.getSignedDownloadUrl(document.storageKey, expiresIn)
             ?: "/api/documents/$id/download" // Return direct download URL for local storage
     }
-
-    override fun verifyDocument(id: UUID, verificationRequest: DocumentVerificationRequest): DocumentResponse {
-        val document = documentRepositoryWrapper.findByIdWithException(id)
-
-        document.isVerified = verificationRequest.isVerified
-        document.verificationNotes = verificationRequest.verificationNotes
-
-        val updatedDocument = documentRepositoryWrapper.saveWithException(document)
-        return toDocumentResponse(updatedDocument)
-    }
-
     private fun toDocument(documentRequest: DocumentRequest, storageKey: String): Document {
         return Document(
             documentType = documentRequest.documentType,
-            isVerified = false, // Default to false, will be set via verification API
-            verificationNotes = null, // Will be set via verification API
+            verificationStatus = "PENDING",
+            verificationNotes = null,
             fileName = documentRequest.fileName,
             fileType = documentRequest.fileType,
             fileSize = documentRequest.fileSize,
@@ -120,7 +98,7 @@ class DocumentServiceImpl(
         return DocumentResponse(
             documentId = document.documentId ?: UUID.randomUUID(),
             documentType = document.documentType.orEmpty(),
-            isVerified = document.isVerified,
+            verificationStatus = document.verificationStatus,
             verificationNotes = document.verificationNotes,
             fileName = document.fileName,
             fileType = document.fileType,

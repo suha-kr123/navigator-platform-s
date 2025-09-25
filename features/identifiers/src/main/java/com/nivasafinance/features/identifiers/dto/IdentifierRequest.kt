@@ -1,6 +1,5 @@
 package com.nivasafinance.features.identifiers.dto
 
-
 data class IdentifierRequest(
     val identifier: String,
     val type: String,

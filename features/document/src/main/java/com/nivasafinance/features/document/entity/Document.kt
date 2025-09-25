@@ -29,8 +29,8 @@ class Document(
     @Column(name = "document_type", nullable = false)
     var documentType: String? = null,
 
-    @Column(name = "is_verified", nullable = false)
-    var isVerified: Boolean = false,
+    @Column(name = "verification_status", nullable = false)
+    var verificationStatus: String = "PENDING",
 
     @Column(name = "verification_notes", length = 500)
     var verificationNotes: String? = null,
