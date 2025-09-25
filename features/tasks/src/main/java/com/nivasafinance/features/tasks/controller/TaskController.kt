@@ -2,7 +2,6 @@ package com.nivasafinance.features.tasks.controller
 
 import base.model.PaginatedResponse
 import base.model.PaginationRequest
-import base.model.SortDirection
 import com.nivasafinance.features.tasks.dto.TaskRequest
 import com.nivasafinance.features.tasks.dto.TaskResponse
 import com.nivasafinance.features.tasks.dto.UpdateTaskRequest
@@ -18,9 +17,14 @@ class TaskController(
     private val taskService: TaskService
 ) {
 
-    @GetMapping("/{entityType}")
-    fun getAllTasksByEntityType(
-        @PathVariable entityType: String,
+    @GetMapping("/{taskId}")
+    fun getTaskById(@PathVariable taskId: UUID): ResponseEntity<TaskResponse> {
+        val task = taskService.getTaskById(taskId)
+        return ResponseEntity.ok(task)
+    }
+
+    @GetMapping
+    fun getAllTasks(
         @RequestParam(defaultValue = "0") offset: Int,
         @RequestParam(defaultValue = "20") limit: Int,
         @RequestParam(defaultValue = "createdAt") sortBy: String,
@@ -30,38 +34,19 @@ class TaskController(
             offset = offset,
             limit = limit,
             sortBy = sortBy,
-            sortDirection = SortDirection.valueOf(sortDirection.uppercase())
+            sortDirection = sortDirection
         )
-        val tasks = taskService.getAllTasksByEntityType(entityType, paginationRequest)
+        val tasks = taskService.getAllTasks(paginationRequest)
         return ResponseEntity.ok(tasks)
     }
 
-    @GetMapping("/task/{taskId}")
-    fun getTaskById(@PathVariable taskId: UUID): ResponseEntity<TaskResponse> {
-        val task = taskService.getTaskById(taskId)
-        return ResponseEntity.ok(task)
-    }
-
-    @GetMapping("/{entityType}/{entityId}")
-    fun getTasksByEntity(
-        @PathVariable entityType: String,
-        @PathVariable entityId: UUID
-    ): ResponseEntity<List<TaskResponse>> {
-        val tasks = taskService.getTasksByEntity(entityType, entityId)
-        return ResponseEntity.ok(tasks)
-    }
-
-    @PostMapping("/{entityType}/{entityId}")
-    fun createTaskByEntity(
-        @PathVariable entityType: String,
-        @PathVariable entityId: UUID,
-        @RequestBody taskRequest: TaskRequest
-    ): ResponseEntity<TaskResponse> {
-        val createdTask = taskService.createTaskByEntity(entityType, entityId, taskRequest)
+    @PostMapping
+    fun createTask(@RequestBody taskRequest: TaskRequest): ResponseEntity<TaskResponse> {
+        val createdTask = taskService.createTask(taskRequest)
         return ResponseEntity.status(HttpStatus.CREATED).body(createdTask)
     }
 
-    @PutMapping("/task/{taskId}")
+    @PutMapping("/{taskId}")
     fun updateTaskById(
         @PathVariable taskId: UUID,
         @RequestBody taskRequest: UpdateTaskRequest
@@ -70,7 +55,7 @@ class TaskController(
         return ResponseEntity.ok(updatedTask)
     }
 
-    @PatchMapping("/task/{taskId}")
+    @PatchMapping("/{taskId}")
     fun patchTaskById(
         @PathVariable taskId: UUID,
         @RequestBody taskRequest: UpdateTaskRequest
@@ -79,33 +64,10 @@ class TaskController(
         return ResponseEntity.ok(updatedTask)
     }
 
-    @PutMapping("/{entityType}/{entityId}/{taskId}")
-    fun updateTaskByEntity(
-        @PathVariable entityType: String,
-        @PathVariable entityId: UUID,
-        @PathVariable taskId: UUID,
-        @RequestBody taskRequest: UpdateTaskRequest
-    ): ResponseEntity<TaskResponse> {
-        val updatedTask = taskService.updateTaskByEntity(entityType, entityId, taskId, taskRequest)
-        return ResponseEntity.ok(updatedTask)
-    }
-
-    @PostMapping("/{entityType}/batch")
-    fun getTasksByEntityTypeAndEntityIds(
-        @PathVariable entityType: String,
-        @RequestBody entityIds: List<UUID>,
-        @RequestParam(defaultValue = "0") offset: Int,
-        @RequestParam(defaultValue = "20") limit: Int,
-        @RequestParam(defaultValue = "createdAt") sortBy: String,
-        @RequestParam(defaultValue = "ASC") sortDirection: String
-    ): ResponseEntity<PaginatedResponse<TaskResponse>> {
-        val paginationRequest = PaginationRequest(
-            offset = offset,
-            limit = limit,
-            sortBy = sortBy,
-            sortDirection = SortDirection.valueOf(sortDirection.uppercase())
-        )
-        val taskResponses = taskService.getTasksByEntityTypeAndEntityIds(entityType, entityIds, paginationRequest)
-        return ResponseEntity.ok(taskResponses)
+    @DeleteMapping("/{taskId}")
+    fun deleteTaskById(@PathVariable taskId: UUID): ResponseEntity<Unit> {
+        taskService.deleteTaskById(taskId)
+        return ResponseEntity.noContent().build()
     }
 }
+

@@ -1,19 +1,12 @@
 package com.nivasafinance.features.address.dto
 
-import com.nivasafinance.features.address.enum.AddressSource
-import com.nivasafinance.features.address.enum.AddressType
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Pattern
-import java.util.UUID
 
 data class AddressCreateRequest(
-    val entityId: UUID? = null,
-
-    val entityType: String? = null,
-
     @field:NotNull(message = "Address type is required")
-    val addressType: AddressType? = null,
+    val addressType: String? = null,
 
     val isPrimary: Boolean = false,
 
@@ -32,5 +25,5 @@ data class AddressCreateRequest(
     val pincode: String,
 
     @field:NotNull(message = "Address source is required")
-    val addressSource: AddressSource? = null
+    val addressSource: String? = null
 )

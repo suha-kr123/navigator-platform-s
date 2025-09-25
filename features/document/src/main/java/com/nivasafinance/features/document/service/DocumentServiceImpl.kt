@@ -8,11 +8,14 @@ import com.nivasafinance.features.document.entity.Document
 import com.nivasafinance.features.document.exception.DocumentExceptionFactory
 import com.nivasafinance.features.document.repository.DocumentRepositoryWrapper
 import com.nivasafinance.features.document.storage.ContentRepositoryFactory
+import org.slf4j.LoggerFactory
 import org.springframework.context.MessageSource
 import org.springframework.core.io.InputStreamResource
 import org.springframework.core.io.Resource
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.io.FileNotFoundException
+import java.io.IOException
 import java.io.InputStream
 import java.time.LocalDateTime
 import java.util.*
@@ -26,6 +29,7 @@ class DocumentServiceImpl(
     private val messageSource: MessageSource
 ) : DocumentService {
 
+    private val logger = LoggerFactory.getLogger(DocumentServiceImpl::class.java)
     private val documentExceptionFactory = DocumentExceptionFactory(messageSource)
 
     override fun createDocument(documentRequest: DocumentRequest, fileInputStream: InputStream): DocumentResponse {
@@ -41,8 +45,8 @@ class DocumentServiceImpl(
         return toDocumentResponse(savedDocument)
     }
 
-    override fun getDocumentsByEntityTypeAndEntityId(entityType: String, entityId: UUID): List<DocumentResponse> {
-        val documents = documentRepositoryWrapper.findByEntityIdAndEntityTypeWithException(entityId, entityType)
+    override fun getAllDocuments(): List<DocumentResponse> {
+        val documents = documentRepositoryWrapper.findAllWithException()
         return documents.map { toDocumentResponse(it) }
     }
 
@@ -57,8 +61,10 @@ class DocumentServiceImpl(
 
         try {
             contentRepository.deleteFile(document.storageKey)
-        } catch (e: Exception) {
-            // Log warning but continue with database deletion
+        } catch (e: FileNotFoundException) {
+            logger.warn("File not found during deletion: ${document.storageKey}", e)
+        } catch (e: IOException) {
+            logger.warn("IO error during file deletion: ${document.storageKey}", e)
         }
         documentRepositoryWrapper.deleteByIdWithException(id)
     }
@@ -74,7 +80,7 @@ class DocumentServiceImpl(
         val document = documentRepositoryWrapper.findByIdWithException(id)
         val contentRepository = contentRepositoryFactory.getRepository(document.provider)
         return contentRepository.getSignedDownloadUrl(document.storageKey, expiresIn)
-            ?: throw documentExceptionFactory.createOperationException("generate download URL")
+            ?: "/api/documents/$id/download" // Return direct download URL for local storage
     }
 
     override fun verifyDocument(id: UUID, verificationRequest: DocumentVerificationRequest): DocumentResponse {
@@ -89,8 +95,6 @@ class DocumentServiceImpl(
 
     private fun toDocument(documentRequest: DocumentRequest, storageKey: String): Document {
         return Document(
-            entityId = documentRequest.entityId,
-            entityType = documentRequest.entityType,
             documentType = documentRequest.documentType,
             isVerified = false, // Default to false, will be set via verification API
             verificationNotes = null, // Will be set via verification API
@@ -99,7 +103,7 @@ class DocumentServiceImpl(
             fileSize = documentRequest.fileSize,
             provider = documentStorageProperties.provider,
             storageKey = storageKey,
-            fileUrl = documentRequest.fileUrl,
+            fileUrl = documentRequest.fileUrl.orEmpty(),
             category = documentRequest.category,
             docType = documentRequest.docType,
             tags = documentRequest.tags,
@@ -109,15 +113,13 @@ class DocumentServiceImpl(
 
     private fun generateDocumentPath(documentRequest: DocumentRequest): String {
         val timestamp = System.currentTimeMillis()
-        return "${documentRequest.entityType}/${documentRequest.entityId}/${documentRequest.documentType}/${timestamp}_${documentRequest.fileName}"
+        return "documents/${documentRequest.documentType}/${timestamp}_${documentRequest.fileName}"
     }
 
     private fun toDocumentResponse(document: Document): DocumentResponse {
         return DocumentResponse(
             documentId = document.documentId ?: UUID.randomUUID(),
-            entityId = document.entityId ?: UUID.randomUUID(),
-            entityType = document.entityType ?: "",
-            documentType = document.documentType ?: "",
+            documentType = document.documentType.orEmpty(),
             isVerified = document.isVerified,
             verificationNotes = document.verificationNotes,
             fileName = document.fileName,

@@ -9,19 +9,15 @@ import java.util.UUID
 
 interface TaskService {
 
-    fun createTaskByEntity(entityType: String, entityId: UUID, taskRequest: TaskRequest): TaskResponse
-
-    fun updateTaskByEntity(entityType: String, entityId: UUID, taskId: UUID, taskRequest: UpdateTaskRequest): TaskResponse
+    fun createTask(taskRequest: TaskRequest): TaskResponse
 
     fun updateTaskById(taskId: UUID, taskRequest: UpdateTaskRequest): TaskResponse
-    
+
     fun patchTaskById(taskId: UUID, taskRequest: UpdateTaskRequest): TaskResponse
 
     fun getTaskById(taskId: UUID): TaskResponse
 
-    fun getTasksByEntity(entityType: String, entityId: UUID): List<TaskResponse>
+    fun getAllTasks(paginationRequest: PaginationRequest): PaginatedResponse<TaskResponse>
 
-    fun getTasksByEntityTypeAndEntityIds(entityType: String, entityIds: List<UUID>, paginationRequest: PaginationRequest): PaginatedResponse<TaskResponse>
-
-    fun getAllTasksByEntityType(entityType: String, paginationRequest: PaginationRequest): PaginatedResponse<TaskResponse>
+    fun deleteTaskById(taskId: UUID)
 }

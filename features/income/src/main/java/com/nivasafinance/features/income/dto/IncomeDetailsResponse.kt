@@ -6,8 +6,6 @@ import java.util.UUID
 
 data class IncomeDetailsResponse(
     val id: UUID,
-    val entityType: String,
-    val entityId: UUID,
     val employmentType: String,
     val employerName: String?,
     val employerType: String?,

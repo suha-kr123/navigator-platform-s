@@ -2,9 +2,6 @@ package com.nivasafinance.features.notes.controller
 
 import base.model.PaginatedResponse
 import base.model.PaginationRequest
-import base.model.SortDirection
-import base.model.SortDirection.ASC
-import base.model.SortDirection.DESC
 import com.nivasafinance.features.notes.dto.NotesRequest
 import com.nivasafinance.features.notes.dto.NotesResponse
 import com.nivasafinance.features.notes.dto.NotesUpdateRequest
@@ -30,9 +27,7 @@ class NotesController(private val notesService: NotesService) {
                         offset = offset,
                         limit = limit,
                         sortBy = sortBy,
-                        sortDirection =
-                                if (sortDirection == "ASC") SortDirection.ASC
-                                else SortDirection.DESC
+                        sortDirection = sortDirection
                 )
         val notes = notesService.getAllNotes(paginationRequest)
         return ResponseEntity.ok(notes)

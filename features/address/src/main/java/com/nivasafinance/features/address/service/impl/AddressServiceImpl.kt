@@ -5,7 +5,6 @@ import com.nivasafinance.features.address.dto.AddressCreateRequest
 import com.nivasafinance.features.address.dto.AddressResponse
 import com.nivasafinance.features.address.dto.AddressUpdateRequest
 import com.nivasafinance.features.address.entity.Address
-import com.nivasafinance.features.address.enum.AddressType
 import com.nivasafinance.features.address.exception.AddressExceptionFactory
 import com.nivasafinance.features.address.repository.AddressRepository
 import com.nivasafinance.features.address.service.AddressService
@@ -22,14 +21,10 @@ class AddressServiceImpl(
 ) : AddressService, BaseNavigatorService() {
 
     @Suppress("TooGenericExceptionCaught", "SwallowedException")
-    override fun getAddressesByEntityTypeAndEntityId(entityType: String, entityId: UUID): List<AddressResponse> {
+    override fun getAllAddresses(): List<AddressResponse> {
         return try {
-            AddressExceptionFactory.validateAddressForRetrieval(entityType, entityId, messageSource)
-            val addresses = addressRepository.findByEntityTypeAndEntityId(entityType, entityId)
+            val addresses = addressRepository.findAll()
             addresses.map { toAddressResponse(it) }
-        } catch (e: com.nivasafinance.features.address.exception.AddressValidationException) {
-            // Re-throw validation exceptions as-is
-            throw e
         } catch (e: Exception) {
             // Return empty list instead of throwing exception for retrieval operations
             emptyList()
@@ -37,18 +32,10 @@ class AddressServiceImpl(
     }
 
     @Suppress("TooGenericExceptionCaught", "SwallowedException")
-    override fun getAddressByEntityTypeAndEntityIdAndAddressType(
-        entityType: String,
-        entityId: UUID,
-        addressType: AddressType
-    ): AddressResponse? {
+    override fun getAddressById(addressId: UUID): AddressResponse? {
         return try {
-            AddressExceptionFactory.validateAddressForRetrieval(entityType, entityId, messageSource)
-            val address = addressRepository.findByEntityTypeAndEntityIdAndAddressType(entityType, entityId, addressType)
+            val address = addressRepository.findById(addressId).orElse(null)
             address?.let { toAddressResponse(it) }
-        } catch (e: com.nivasafinance.features.address.exception.AddressValidationException) {
-            // Re-throw validation exceptions as-is
-            throw e
         } catch (e: Exception) {
             // Return null instead of throwing exception for retrieval operations
             null
@@ -56,38 +43,19 @@ class AddressServiceImpl(
     }
 
     @Suppress("TooGenericExceptionCaught", "SwallowedException")
-    override fun getAddressByEntityTypeAndEntityIdAndId(
-        entityType: String,
-        entityId: UUID,
-        addressId: UUID
-    ): AddressResponse? {
+    override fun getAddressesByAddressType(addressType: String): List<AddressResponse> {
         return try {
-            AddressExceptionFactory.validateAddressForRetrieval(entityType, entityId, messageSource)
-            val address = addressRepository.findByEntityTypeAndEntityIdAndId(entityType, entityId, addressId)
-            address?.let { toAddressResponse(it) }
-        } catch (e: com.nivasafinance.features.address.exception.AddressValidationException) {
-            // Re-throw validation exceptions as-is
-            throw e
+            val addresses = addressRepository.findByAddressType(addressType)
+            addresses.map { toAddressResponse(it) }
         } catch (e: Exception) {
-            // Return null instead of throwing exception for retrieval operations
-            null
+            // Return empty list instead of throwing exception for retrieval operations
+            emptyList()
         }
     }
 
     @Suppress("TooGenericExceptionCaught", "SwallowedException")
-    override fun createAddress(
-        entityType: String,
-        entityId: UUID,
-        addressRequest: AddressCreateRequest
-    ): AddressResponse {
+    override fun createAddress(addressRequest: AddressCreateRequest): AddressResponse {
         return try {
-            AddressExceptionFactory.validateAddressForCreation(
-                entityType,
-                entityId,
-                addressRequest.pincode,
-                messageSource
-            )
-
             // Try to get pincode details from master data (safe method that never throws)
             val pincodeDetails = pincodeService.getPincodeDetailsSafe(addressRequest.pincode)
 
@@ -102,8 +70,6 @@ class AddressServiceImpl(
             }
 
             val address = Address(
-                entityId = entityId,
-                entityType = entityType,
                 addressType = addressRequest.addressType,
                 isPrimary = addressRequest.isPrimary,
                 addressOne = addressRequest.addressOne,
@@ -117,9 +83,6 @@ class AddressServiceImpl(
 
             val savedAddress = addressRepository.save(address)
             toAddressResponse(savedAddress)
-        } catch (e: com.nivasafinance.features.address.exception.AddressValidationException) {
-            // Re-throw validation exceptions as-is
-            throw e
         } catch (e: Exception) {
             // Only catch unexpected exceptions
             throw AddressExceptionFactory.createFailed(messageSource)
@@ -127,17 +90,10 @@ class AddressServiceImpl(
     }
 
     @Suppress("TooGenericExceptionCaught", "SwallowedException")
-    override fun updateAddress(
-        entityType: String,
-        entityId: UUID,
-        addressId: UUID,
-        addressUpdateRequest: AddressUpdateRequest
-    ): AddressResponse {
+    override fun updateAddress(addressId: UUID, addressUpdateRequest: AddressUpdateRequest): AddressResponse {
         return try {
-            AddressExceptionFactory.validateAddressForUpdate(addressId, entityType, entityId, messageSource)
-
-            val address = addressRepository.findByEntityTypeAndEntityIdAndId(entityType, entityId, addressId)
-                ?: throw AddressExceptionFactory.notFound(addressId, messageSource)
+            val address = addressRepository.findById(addressId)
+                .orElseThrow { AddressExceptionFactory.notFound(addressId, messageSource) }
 
             // Handle pincode update if provided
             addressUpdateRequest.pincode?.let { pincode ->
@@ -180,12 +136,10 @@ class AddressServiceImpl(
     }
 
     @Suppress("TooGenericExceptionCaught", "SwallowedException")
-    override fun deleteAddress(entityType: String, entityId: UUID, addressId: UUID) {
+    override fun deleteAddress(addressId: UUID) {
         try {
-            AddressExceptionFactory.validateAddressForUpdate(addressId, entityType, entityId, messageSource)
-
-            val address = addressRepository.findByEntityTypeAndEntityIdAndId(entityType, entityId, addressId)
-                ?: throw AddressExceptionFactory.notFound(addressId, messageSource)
+            val address = addressRepository.findById(addressId)
+                .orElseThrow { AddressExceptionFactory.notFound(addressId, messageSource) }
 
             addressRepository.delete(address)
         } catch (e: Exception) {
@@ -196,8 +150,6 @@ class AddressServiceImpl(
     private fun toAddressResponse(address: Address): AddressResponse {
         return AddressResponse(
             id = address.id,
-            entityId = address.entityId,
-            entityType = address.entityType,
             addressType = address.addressType,
             isPrimary = address.isPrimary,
             addressOne = address.addressOne,

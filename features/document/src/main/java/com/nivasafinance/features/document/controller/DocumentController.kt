@@ -9,7 +9,15 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.multipart.MultipartFile
 import java.util.*
 
@@ -21,8 +29,6 @@ class DocumentController(
 
     @PostMapping(consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
     fun createDocument(
-        @RequestParam("entityId") entityId: UUID,
-        @RequestParam("entityType") entityType: String,
         @RequestParam("documentType") documentType: String,
         @RequestParam("category") category: String? = null,
         @RequestParam("docType") docType: String? = null,
@@ -30,8 +36,6 @@ class DocumentController(
         @RequestParam("file") file: MultipartFile
     ): ResponseEntity<DocumentResponse> {
         val documentRequest = DocumentRequest(
-            entityId = entityId,
-            entityType = entityType,
             documentType = documentType,
             fileName = file.originalFilename ?: "unknown",
             fileType = file.contentType,
@@ -45,12 +49,9 @@ class DocumentController(
         return ResponseEntity.status(HttpStatus.CREATED).body(document)
     }
 
-    @GetMapping("/entity/{entityType}/{entityId}")
-    fun getDocumentsByEntityTypeAndEntityId(
-        @PathVariable entityType: String,
-        @PathVariable entityId: UUID
-    ): ResponseEntity<List<DocumentResponse>> {
-        val documents = documentService.getDocumentsByEntityTypeAndEntityId(entityType, entityId)
+    @GetMapping
+    fun getAllDocuments(): ResponseEntity<List<DocumentResponse>> {
+        val documents = documentService.getAllDocuments()
         return ResponseEntity.ok(documents)
     }
 
@@ -61,7 +62,7 @@ class DocumentController(
     }
 
     @DeleteMapping("/{id}")
-    fun deleteDocumentById(@PathVariable id: UUID): ResponseEntity<Void> {
+    fun deleteDocumentById(@PathVariable id: UUID): ResponseEntity<Unit> {
         documentService.deleteDocumentById(id)
         return ResponseEntity.noContent().build()
     }

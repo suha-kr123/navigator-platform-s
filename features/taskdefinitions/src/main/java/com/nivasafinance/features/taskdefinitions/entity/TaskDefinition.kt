@@ -2,7 +2,6 @@ package com.nivasafinance.features.taskdefinitions.entity
 
 import audit.AuditableEntity
 // import com.nivasafinance.features.taskdefinitions.enum.AssignmentStrategy
-import com.nivasafinance.features.taskdefinitions.enum.TaskType
 import jakarta.persistence.*
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes

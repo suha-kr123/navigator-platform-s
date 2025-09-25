@@ -13,43 +13,36 @@ import java.util.*
 @RequestMapping("/api/income-details")
 class IncomeDetailsController(private val incomeDetailsService: IncomeDetailsService) {
 
-    @GetMapping("/{entityType}/{entityId}")
-    fun getIncomeDetailsByEntity(
-        @PathVariable entityType: String,
-        @PathVariable entityId: UUID,
-    ): ResponseEntity<List<IncomeDetailsResponse>> {
-        val incomeDetails = incomeDetailsService.getIncomeDetailsByEntity(entityType, entityId)
+    @GetMapping
+    fun getAllIncomeDetails(): ResponseEntity<List<IncomeDetailsResponse>> {
+        val incomeDetails = incomeDetailsService.getAllIncomeDetails()
         return ResponseEntity.ok(incomeDetails)
     }
 
-    @PostMapping("/{entityType}/{entityId}")
-    fun createIncomeDetails(
-        @PathVariable entityType: String,
-        @PathVariable entityId: UUID,
-        @RequestBody incomeDetailsRequest: IncomeDetailsRequest
-    ): ResponseEntity<IncomeDetailsResponse> {
-        val createdIncomeDetails = incomeDetailsService.createIncomeDetailsByEntity(entityType, entityId, incomeDetailsRequest)
+    @GetMapping("/{incomeDetailsId}")
+    fun getIncomeDetailsById(@PathVariable incomeDetailsId: UUID): ResponseEntity<IncomeDetailsResponse> {
+        val incomeDetails = incomeDetailsService.getIncomeDetailsById(incomeDetailsId)
+        return ResponseEntity.ok(incomeDetails)
+    }
+
+    @PostMapping
+    fun createIncomeDetails(@RequestBody incomeDetailsRequest: IncomeDetailsRequest): ResponseEntity<IncomeDetailsResponse> {
+        val createdIncomeDetails = incomeDetailsService.createIncomeDetails(incomeDetailsRequest)
         return ResponseEntity.status(HttpStatus.CREATED).body(createdIncomeDetails)
     }
 
-    @PutMapping("/{entityType}/{entityId}/{incomeDetailsId}")
+    @PutMapping("/{incomeDetailsId}")
     fun updateIncomeDetails(
-        @PathVariable entityType: String,
-        @PathVariable entityId: UUID,
         @PathVariable incomeDetailsId: UUID,
         @RequestBody incomeDetailsUpdateRequest: IncomeDetailsUpdateRequest
     ): ResponseEntity<IncomeDetailsResponse> {
-        val updatedIncomeDetails = incomeDetailsService.updateIncomeDetailsByEntity(entityType, entityId, incomeDetailsId, incomeDetailsUpdateRequest)
+        val updatedIncomeDetails = incomeDetailsService.updateIncomeDetails(incomeDetailsId, incomeDetailsUpdateRequest)
         return ResponseEntity.ok(updatedIncomeDetails)
     }
 
-    @DeleteMapping("/{entityType}/{entityId}/{incomeDetailsId}")
-    fun deleteIncomeDetails(
-        @PathVariable entityType: String,
-        @PathVariable entityId: UUID,
-        @PathVariable incomeDetailsId: UUID
-    ): ResponseEntity<Void> {
-        incomeDetailsService.deleteIncomeDetailsByEntity(entityType, entityId, incomeDetailsId)
+    @DeleteMapping("/{incomeDetailsId}")
+    fun deleteIncomeDetails(@PathVariable incomeDetailsId: UUID): ResponseEntity<Void> {
+        incomeDetailsService.deleteIncomeDetails(incomeDetailsId)
         return ResponseEntity.noContent().build()
     }
 }

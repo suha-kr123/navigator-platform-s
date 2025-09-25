@@ -33,5 +33,6 @@ class WebConfig : WebMvcConfigurer {
             .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
             .allowedHeaders("*")
             .allowCredentials(true)
+            .exposedHeaders("Access-Control-Allow-Origin", "Access-Control-Allow-Credentials")
     }
 }

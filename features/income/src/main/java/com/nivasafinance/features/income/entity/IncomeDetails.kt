@@ -2,7 +2,6 @@ package com.nivasafinance.features.income.entity
 
 import annotations.NoArg
 import audit.AuditableEntity
-import com.nivasafinance.features.income.enum.EmployerType
 import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -27,12 +26,6 @@ class IncomeDetails(
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id")
     var id: UUID? = null,
-
-    @Column(name = "entity_type", nullable = false)
-    var entityType: String? = null,
-
-    @Column(name = "entity_id", nullable = false)
-    var entityId: UUID? = null,
 
     @Column(name = "employment_type", nullable = false)
     var employmentType: String? = null,

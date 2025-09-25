@@ -1,14 +1,10 @@
 package com.nivasafinance.features.address.dto
 
-import com.nivasafinance.features.address.enum.AddressSource
-import com.nivasafinance.features.address.enum.AddressType
 import java.util.UUID
 
 data class AddressResponse(
     val id: UUID?,
-    val entityId: UUID?,
-    val entityType: String?,
-    val addressType: AddressType?,
+    val addressType: String?,
     val isPrimary: Boolean,
     val addressOne: String?,
     val addressTwo: String?,
@@ -16,6 +12,6 @@ data class AddressResponse(
     val district: String?,
     val state: String?,
     val pincode: String,
-    val addressSource: AddressSource?,
+    val addressSource: String?,
     val extData: Map<String, Any>?
 )

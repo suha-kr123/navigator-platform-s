@@ -2,7 +2,6 @@ package com.nivasafinance.features.leadpersons.controller
 
 import base.model.PaginatedResponse
 import base.model.PaginationRequest
-import base.model.SortDirection
 import com.nivasafinance.features.leadpersons.dto.LeadPersonRequest
 import com.nivasafinance.features.leadpersons.dto.LeadPersonResponse
 import com.nivasafinance.features.leadpersons.service.LeadPersonsService
@@ -40,7 +39,7 @@ class LeadPersonsController(
             offset = offset,
             limit = limit,
             sortBy = sortBy,
-            sortDirection = SortDirection.valueOf(sortDirection.uppercase())
+            sortDirection = sortDirection
         )
         val leadPersons = leadPersonsService.getAllLeadPersons(paginationRequest)
         return ResponseEntity.ok(leadPersons)

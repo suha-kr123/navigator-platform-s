@@ -2,7 +2,6 @@ package com.nivasafinance.features.document.entity
 
 import annotations.NoArg
 import audit.AuditableEntity
-import com.nivasafinance.features.document.enum.ProviderType
 import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -29,12 +28,6 @@ class Document(
     @Column(name = "document_id")
     var documentId: UUID? = null,
 
-    @Column(name = "entity_id", nullable = false)
-    var entityId: UUID? = null,
-
-    @Column(name = "entity_type", nullable = false)
-    var entityType: String? = null,
-
     @Column(name = "document_type", nullable = false)
     var documentType: String? = null,
 
@@ -56,8 +49,7 @@ class Document(
 
     // Storage information
     @Column(name = "provider", nullable = false)
-    @Enumerated(EnumType.STRING)
-    var provider: ProviderType,
+    var provider: String,
 
     @Column(name = "storage_key", nullable = false)
     var storageKey: String,

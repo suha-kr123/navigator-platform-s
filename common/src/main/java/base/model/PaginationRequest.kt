@@ -12,7 +12,7 @@ data class PaginationRequest(
     val limit: Int = DEFAULT_LIMIT,
 
     val sortBy: String? = null,
-    val sortDirection: SortDirection = SortDirection.ASC
+    val sortDirection: String = "ASC"
 ) {
     companion object {
         const val DEFAULT_LIMIT = 20
@@ -20,6 +20,3 @@ data class PaginationRequest(
     }
 }
 
-enum class SortDirection {
-    ASC, DESC
-}

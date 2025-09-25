@@ -5,11 +5,16 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import java.io.File
 import java.io.FileInputStream
+import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.InputStream
 
 @Component
 class FileSystemRepository : ContentRepository {
+
+    companion object {
+        private const val FILE_PROTOCOL_PREFIX_LENGTH = 7
+    }
 
     @Value("\${local.storage.base-path:/tmp/documents}")
     @Suppress("VarCouldBeVal") // lateinit requires var, not val
@@ -27,15 +32,29 @@ class FileSystemRepository : ContentRepository {
     }
 
     override fun deleteFile(documentPath: String) {
-        val file = File(basePath, documentPath)
+        // Remove file:// prefix if present
+        val cleanPath = if (documentPath.startsWith("file://")) {
+            documentPath.substring(FILE_PROTOCOL_PREFIX_LENGTH) // Remove "file://" prefix
+        } else {
+            documentPath
+        }
+        val file = File(cleanPath)
         if (file.exists()) {
             file.delete()
         }
     }
 
     override fun fetchFile(documentPath: String): InputStream {
-        val file = File(basePath, documentPath)
-        require(file.exists()) { "File not found: $documentPath" }
+        // Remove file:// prefix if present
+        val cleanPath = if (documentPath.startsWith("file://")) {
+            documentPath.substring(FILE_PROTOCOL_PREFIX_LENGTH) // Remove "file://" prefix
+        } else {
+            documentPath
+        }
+        val file = File(cleanPath)
+        if (!file.exists()) {
+            throw FileNotFoundException("File not found: $cleanPath (original path: $documentPath)")
+        }
         return FileInputStream(file)
     }
 

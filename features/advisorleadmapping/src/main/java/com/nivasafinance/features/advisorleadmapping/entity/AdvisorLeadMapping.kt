@@ -31,6 +31,10 @@ class AdvisorLeadMapping(
     val remarks: String? = null,
 
     @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "payment_ids", columnDefinition = "jsonb", nullable = true)
+    var paymentIds: List<UUID>? = null,
+
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "data_ext", columnDefinition = "jsonb")
     val extData: Map<String, Any>? = null
 ) : AuditableEntity()

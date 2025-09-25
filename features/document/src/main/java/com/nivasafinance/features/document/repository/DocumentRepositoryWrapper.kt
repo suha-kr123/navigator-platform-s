@@ -2,8 +2,8 @@ package com.nivasafinance.features.document.repository
 
 import com.nivasafinance.features.document.entity.Document
 import com.nivasafinance.features.document.exception.DocumentExceptionFactory
-import com.nivasafinance.features.document.exception.DocumentNotFoundException
 import org.springframework.context.MessageSource
+import org.springframework.dao.DataAccessException
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Component
@@ -19,7 +19,7 @@ class DocumentRepositoryWrapper(
     fun saveWithException(document: Document): Document {
         return try {
             documentRepository.save(document)
-        } catch (e: Exception) {
+        } catch (e: DataAccessException) {
             throw documentExceptionFactory.createOperationException("create", e)
         }
     }
@@ -32,41 +32,28 @@ class DocumentRepositoryWrapper(
     fun findAllWithException(pageable: Pageable): Page<Document> {
         return try {
             documentRepository.findAll(pageable)
-        } catch (e: Exception) {
+        } catch (e: DataAccessException) {
             throw documentExceptionFactory.createOperationException("retrieve", e)
         }
     }
 
-    fun findByEntityIdAndEntityTypeWithException(entityId: UUID, entityType: String): List<Document> {
+    fun findAllWithException(): List<Document> {
         return try {
-            documentRepository.findByEntityIdAndEntityType(entityId, entityType)
-        } catch (e: Exception) {
-            throw documentExceptionFactory.createOperationException("retrieve.entity", e)
+            documentRepository.findAll()
+        } catch (e: DataAccessException) {
+            throw documentExceptionFactory.createOperationException("retrieve", e)
         }
     }
 
     fun deleteByIdWithException(id: UUID) {
-        try {
-            if (!documentRepository.existsById(id)) {
-                throw documentExceptionFactory.createNotFoundException(id)
-            }
-            documentRepository.deleteById(id)
-        } catch (e: DocumentNotFoundException) {
-            throw e
-        } catch (e: Exception) {
-            throw documentExceptionFactory.createOperationException("delete", e)
+        if (!documentRepository.existsById(id)) {
+            throw documentExceptionFactory.createNotFoundException(id)
         }
-    }
 
-    fun existsByEntityIdAndEntityTypeAndDocumentTypeWithException(
-        entityId: UUID,
-        entityType: String,
-        documentType: String
-    ): Boolean {
-        return try {
-            documentRepository.existsByEntityIdAndEntityTypeAndDocumentType(entityId, entityType, documentType)
-        } catch (e: Exception) {
-            throw documentExceptionFactory.createOperationException("check existence", e)
+        try {
+            documentRepository.deleteById(id)
+        } catch (e: DataAccessException) {
+            throw documentExceptionFactory.createOperationException("delete", e)
         }
     }
 }

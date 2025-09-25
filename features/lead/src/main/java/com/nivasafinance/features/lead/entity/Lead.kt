@@ -2,14 +2,10 @@ package com.nivasafinance.features.lead.entity
 
 import annotations.NoArg
 import audit.AuditableEntity
-import com.nivasafinance.features.lead.dto.LeadContacts
-import com.nivasafinance.features.lead.dto.LeadPreliminaryInformation
-import com.nivasafinance.features.lead.enum.LeadStatus
-import com.nivasafinance.features.lead.enum.SourcingChannel
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonProperty
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
-import jakarta.persistence.EnumType
-import jakarta.persistence.Enumerated
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
@@ -53,6 +49,39 @@ data class Lead(
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "ext_data", columnDefinition = "jsonb")
-    var extData: Map<String, Any>? = null
-    
+    var extData: Map<String, Any>? = null,
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "task_data", columnDefinition = "jsonb", nullable = true)
+    var taskData: List<TaskData>? = null,
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "address_ids", columnDefinition = "jsonb", nullable = true)
+    var addressIds: List<UUID>? = null,
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "identifier_ids", columnDefinition = "jsonb", nullable = true)
+    var identifierIds: List<UUID>? = null,
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "income_detail_ids", columnDefinition = "jsonb", nullable = true)
+    var incomeDetailIds: List<UUID>? = null,
+
+   @JdbcTypeCode(SqlTypes.JSON)
+   @Column(name = "stage_ids", columnDefinition = "jsonb", nullable = true)
+   var stageIds: List<UUID>? = null
+
 ) : AuditableEntity()
+
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class TaskData(
+    @JsonProperty("taskId")
+    val taskId: UUID,
+    @JsonProperty("documentIds")
+    val documentIds: List<UUID> = emptyList(),
+    @JsonProperty("notesIds")
+    val notesIds: List<UUID> = emptyList(),
+    @JsonProperty("callIds")
+    val callIds: List<UUID> = emptyList()
+)

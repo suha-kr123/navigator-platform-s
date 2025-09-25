@@ -1,6 +1,5 @@
 package com.nivasafinance.features.document.config
 
-import com.nivasafinance.features.document.enum.ProviderType
 import com.nivasafinance.features.document.health.LocalStorageHealthIndicator
 import com.nivasafinance.features.document.health.S3HealthIndicator
 import org.slf4j.LoggerFactory
@@ -39,17 +38,16 @@ class DocumentConfigurationValidator {
         logger.info("Validating document storage configuration...")
 
         try {
-            val provider = ProviderType.valueOf(storageProvider)
-
-            when (provider) {
-                ProviderType.AWS_S3 -> validateS3Configuration()
-                ProviderType.LOCAL -> validateLocalConfiguration()
+            when (storageProvider.uppercase()) {
+                "AWS_S3" -> validateS3Configuration()
+                "LOCAL" -> validateLocalConfiguration()
+                else -> error("Invalid storage provider: $storageProvider. Valid options: AWS_S3, LOCAL")
             }
 
             logger.info("Document storage configuration validation completed successfully")
         } catch (e: IllegalArgumentException) {
             logger.error(
-                "Invalid storage provider: $storageProvider. Valid options: ${ProviderType.values().joinToString()}"
+                "Invalid storage provider: $storageProvider. Valid options: AWS_S3, LOCAL"
             )
             error("Invalid document storage configuration: ${e.message}")
         } catch (e: Exception) {

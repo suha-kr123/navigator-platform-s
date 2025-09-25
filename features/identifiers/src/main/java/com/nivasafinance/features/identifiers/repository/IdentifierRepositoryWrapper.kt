@@ -28,9 +28,20 @@ class IdentifierRepositoryWrapper(
         }
     }
 
-    fun findAllByEntityTypeAndEntityId(entityType: String, entityId: UUID): List<Identifier> {
+
+    fun findByIdWithException(identifierId: UUID): Identifier {
         return try {
-            identifierRepository.findAllByEntityTypeAndEntityId(entityType, entityId)
+            identifierRepository.findById(identifierId).orElseThrow {
+                IdentifierExceptionFactory.notFound(identifierId, messageSource)
+            }
+        } catch (e: Exception) {
+            throw IdentifierExceptionFactory.retrieveEntityFailed(messageSource)
+        }
+    }
+
+    fun findAllWithException(): List<Identifier> {
+        return try {
+            identifierRepository.findAll()
         } catch (e: Exception) {
             throw IdentifierExceptionFactory.retrieveEntityFailed(messageSource)
         }

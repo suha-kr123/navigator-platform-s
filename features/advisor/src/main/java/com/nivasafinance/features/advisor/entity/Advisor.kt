@@ -2,7 +2,6 @@ package com.nivasafinance.features.advisor.entity
 
 import annotations.NoArg
 import audit.AuditableEntity
-import com.nivasafinance.features.advisor.enum.AdvisorStatus
 import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -38,8 +37,7 @@ class Advisor(
     val isEmployee: Boolean = false,
 
     @Column(name = "status")
-    @Enumerated(EnumType.STRING)
-    val status: AdvisorStatus,
+    val status: String,
 
     @Column(name = "is_experienced_dsa")
     val isExperiencedDsa: Boolean = false,

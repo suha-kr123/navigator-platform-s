@@ -20,6 +20,14 @@ class StageRepositoryWrapper(
         }
     }
 
+    fun findAllWithException(): List<Stage> {
+        return try {
+            stageRepository.findAll()
+        } catch (e: Exception) {
+            throw StageExceptionFactory.retrieveEntityFailed(messageSource)
+        }
+    }
+
     fun findByIdWithException(id: UUID): Stage {
         return try {
             stageRepository.findById(id).orElseThrow {
@@ -30,9 +38,9 @@ class StageRepositoryWrapper(
         }
     }
 
-    fun findAllByEntityTypeAndEntityIdWithException(entityType: String, entityId: UUID): List<Stage> {
+    fun findAllByStageDefinitionKeyWithException(stageDefinitionKey: String): List<Stage> {
         return try {
-            stageRepository.findAllByEntityTypeAndEntityId(entityType, entityId)
+            stageRepository.findAllByStageDefinitionKey(stageDefinitionKey)
         } catch (e: Exception) {
             throw StageExceptionFactory.retrieveEntityFailed(messageSource)
         }
@@ -46,9 +54,9 @@ class StageRepositoryWrapper(
         }
     }
 
-    fun existsByEntityTypeAndEntityIdAndStageDefinitionKeyWithException(entityType: String, entityId: UUID, stageDefinitionKey: String): Boolean {
+    fun existsByStageDefinitionKeyWithException(stageDefinitionKey: String): Boolean {
         return try {
-            stageRepository.existsByEntityTypeAndEntityIdAndStageDefinitionKey(entityType, entityId, stageDefinitionKey)
+            stageRepository.existsByStageDefinitionKey(stageDefinitionKey)
         } catch (e: Exception) {
             throw StageExceptionFactory.retrieveEntityFailed(messageSource)
         }

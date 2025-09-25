@@ -5,8 +5,6 @@ import java.util.*
 
 data class DocumentResponse(
     val documentId: UUID,
-    val entityId: UUID,
-    val entityType: String,
     val documentType: String,
     val isVerified: Boolean,
     val verificationNotes: String?,

@@ -6,8 +6,9 @@ import com.nivasafinance.features.income.dto.IncomeDetailsUpdateRequest
 import java.util.UUID
 
 interface IncomeDetailsService {
-    fun createIncomeDetailsByEntity(entityType: String, entityId: UUID, incomeDetailsRequest: IncomeDetailsRequest): IncomeDetailsResponse
-    fun updateIncomeDetailsByEntity(entityType: String, entityId: UUID, incomeDetailsId: UUID, incomeDetailsUpdateRequest: IncomeDetailsUpdateRequest): IncomeDetailsResponse
-    fun deleteIncomeDetailsByEntity(entityType: String, entityId: UUID, incomeDetailsId: UUID)
-    fun getIncomeDetailsByEntity(entityType: String, entityId: UUID): List<IncomeDetailsResponse>
+    fun createIncomeDetails(incomeDetailsRequest: IncomeDetailsRequest): IncomeDetailsResponse
+    fun updateIncomeDetails(incomeDetailsId: UUID, incomeDetailsUpdateRequest: IncomeDetailsUpdateRequest): IncomeDetailsResponse
+    fun deleteIncomeDetails(incomeDetailsId: UUID)
+    fun getIncomeDetailsById(incomeDetailsId: UUID): IncomeDetailsResponse
+    fun getAllIncomeDetails(): List<IncomeDetailsResponse>
 }

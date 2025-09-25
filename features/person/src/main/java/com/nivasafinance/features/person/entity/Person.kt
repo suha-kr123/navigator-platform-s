@@ -2,7 +2,6 @@ package com.nivasafinance.features.person.entity
 
 import annotations.NoArg
 import audit.AuditableEntity
-import com.nivasafinance.features.person.enum.Gender
 import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -51,8 +50,7 @@ class Person(
     var dateOfBirth: LocalDate? = null,
 
     @Column(name = "gender", length = 10)
-    @Enumerated(EnumType.STRING)
-    var gender: Gender? = null,
+    var gender: String? = null,
 
     @Type(JsonType::class)
     @JdbcTypeCode(SqlTypes.JSON)

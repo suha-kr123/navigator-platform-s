@@ -3,8 +3,6 @@ package com.nivasafinance.features.document.dto
 import java.util.*
 
 data class DocumentRequest(
-    val entityId: UUID,
-    val entityType: String,
     val documentType: String,
     val fileName: String,
     val fileType: String? = null,

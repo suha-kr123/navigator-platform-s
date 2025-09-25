@@ -65,7 +65,7 @@ class NotesServiceImpl(
 
     override fun getAllNotes(paginationRequest: PaginationRequest): PaginatedResponse<NotesResponse> {
         val sort = if (paginationRequest.sortBy != null) {
-            Sort.by(if (paginationRequest.sortDirection.name == "ASC") Sort.Direction.ASC else Sort.Direction.DESC, paginationRequest.sortBy)
+            Sort.by(if (paginationRequest.sortDirection == "ASC") Sort.Direction.ASC else Sort.Direction.DESC, paginationRequest.sortBy)
         } else {
             Sort.by(Sort.Direction.DESC, "createdAt")
         }

@@ -1,8 +1,5 @@
 package com.nivasafinance.features.stages.controller
 
-import base.model.PaginatedResponse
-import base.model.PaginationRequest
-import base.model.SortDirection
 import com.nivasafinance.features.stages.dto.StageRequest
 import com.nivasafinance.features.stages.dto.StageResponse
 import com.nivasafinance.features.stages.dto.StageUpdateRequest
@@ -18,33 +15,42 @@ class StageController(
     private val stageService: StageService
 ) {
 
-    @PostMapping("/{entityType}/{entityId}")
-    fun createStageByEntity(
-        @PathVariable entityType: String,
-        @PathVariable entityId: UUID,
+    @PostMapping
+    fun createStage(
         @RequestBody stageRequest: StageRequest
     ): ResponseEntity<StageResponse> {
-        val createdStage = stageService.createStageByEntity(entityType, entityId, stageRequest)
+        val createdStage = stageService.createStage(stageRequest)
         return ResponseEntity.status(HttpStatus.CREATED).body(createdStage)
     }
 
-    @GetMapping("/{entityType}/{entityId}")
-    fun getStagesByEntity(
-        @PathVariable entityType: String,
-        @PathVariable entityId: UUID
-    ): ResponseEntity<List<StageResponse>> {
-        val stages = stageService.getStagesByEntity(entityType, entityId)
+    @GetMapping
+    fun getAllStages(): ResponseEntity<List<StageResponse>> {
+        val stages = stageService.getAllStages()
         return ResponseEntity.ok(stages)
     }
 
-    @PutMapping("/{entityType}/{entityId}/{stageId}")
-    fun updateStageByEntity(
-        @PathVariable entityType: String,
-        @PathVariable entityId: UUID,
+    @GetMapping("/{stageId}")
+    fun getStageById(
+        @PathVariable stageId: UUID
+    ): ResponseEntity<StageResponse> {
+        val stage = stageService.getStageById(stageId)
+        return ResponseEntity.ok(stage)
+    }
+
+    @GetMapping("/definition/{stageDefinitionKey}")
+    fun getStagesByDefinitionKey(
+        @PathVariable stageDefinitionKey: String
+    ): ResponseEntity<List<StageResponse>> {
+        val stages = stageService.getStagesByDefinitionKey(stageDefinitionKey)
+        return ResponseEntity.ok(stages)
+    }
+
+    @PutMapping("/{stageId}")
+    fun updateStage(
         @PathVariable stageId: UUID,
         @RequestBody stageUpdateRequest: StageUpdateRequest
     ): ResponseEntity<StageResponse> {
-        val updatedStage = stageService.updateStageByEntity(entityType, entityId, stageId, stageUpdateRequest)
+        val updatedStage = stageService.updateStage(stageId, stageUpdateRequest)
         return ResponseEntity.ok(updatedStage)
     }
 }

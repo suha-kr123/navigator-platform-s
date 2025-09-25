@@ -13,43 +13,36 @@ import java.util.*
 @RequestMapping("/api/identifiers")
 class IdentifierController(private val identifierService: IdentifierService) {
 
-    @GetMapping("/{entityType}/{entityId}")
-    fun getIdentifiersByEntity(
-        @PathVariable entityType: String,
-        @PathVariable entityId: UUID,
-    ): ResponseEntity<List<IdentifierResponse>> {
-        val identifiers = identifierService.getIdentifiersByEntity(entityType, entityId)
+    @GetMapping
+    fun getAllIdentifiers(): ResponseEntity<List<IdentifierResponse>> {
+        val identifiers = identifierService.getAllIdentifiers()
         return ResponseEntity.ok(identifiers)
     }
 
-    @PostMapping("/{entityType}/{entityId}")
-    fun createIdentifier(
-        @PathVariable entityType: String,
-        @PathVariable entityId: UUID,
-        @RequestBody identifierRequest: IdentifierRequest
-    ): ResponseEntity<IdentifierResponse> {
-        val createdIdentifier = identifierService.createIdentifierByEntity(entityType, entityId, identifierRequest)
+    @GetMapping("/{identifierId}")
+    fun getIdentifierById(@PathVariable identifierId: UUID): ResponseEntity<IdentifierResponse> {
+        val identifier = identifierService.getIdentifierById(identifierId)
+        return ResponseEntity.ok(identifier)
+    }
+
+    @PostMapping
+    fun createIdentifier(@RequestBody identifierRequest: IdentifierRequest): ResponseEntity<IdentifierResponse> {
+        val createdIdentifier = identifierService.createIdentifier(identifierRequest)
         return ResponseEntity.status(HttpStatus.CREATED).body(createdIdentifier)
     }
 
-    @PutMapping("/{entityType}/{entityId}/{identifierId}")
+    @PutMapping("/{identifierId}")
     fun updateIdentifier(
-        @PathVariable entityType: String,
-        @PathVariable entityId: UUID,
         @PathVariable identifierId: UUID,
         @RequestBody identifierUpdateRequest: IdentifierUpdateRequest
     ): ResponseEntity<IdentifierResponse> {
-        val updatedIdentifier = identifierService.updateIdentifierByEntity(entityType, entityId, identifierId, identifierUpdateRequest)
+        val updatedIdentifier = identifierService.updateIdentifier(identifierId, identifierUpdateRequest)
         return ResponseEntity.ok(updatedIdentifier)
     }
 
-    @DeleteMapping("/{entityType}/{entityId}/{identifierId}")
-    fun deleteIdentifier(
-        @PathVariable entityType: String,
-        @PathVariable entityId: UUID,
-        @PathVariable identifierId: UUID
-    ): ResponseEntity<Void> {
-        identifierService.deleteIdentifierByEntity(entityType, entityId, identifierId)
+    @DeleteMapping("/{identifierId}")
+    fun deleteIdentifier(@PathVariable identifierId: UUID): ResponseEntity<Void> {
+        identifierService.deleteIdentifier(identifierId)
         return ResponseEntity.noContent().build()
     }
 }

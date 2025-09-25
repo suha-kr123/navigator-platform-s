@@ -20,8 +20,4 @@ object IncomeDetailsExceptionFactory {
     fun retrieveEntityFailed(messageSource: MessageSource): IncomeDetailsOperationException {
         return IncomeDetailsOperationException("error.income.operation.retrieve", messageSource)
     }
-
-    fun unsupportedEntityType(entityType: String, messageSource: MessageSource): IncomeDetailsOperationException {
-        return IncomeDetailsOperationException("error.income.unsupported.entity.type", messageSource)
-    }
 }
