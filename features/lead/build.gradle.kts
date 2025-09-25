@@ -10,6 +10,8 @@ dependencies {
     implementation(project(":features:tasks"))
     implementation(project(":features:stages"))
     implementation(project(":features:stagedefinitions"))
+    implementation(project(":features:notes"))
+    implementation(project(":features:document"))
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
 }
 

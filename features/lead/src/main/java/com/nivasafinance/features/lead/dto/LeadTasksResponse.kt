@@ -1,9 +1,9 @@
 package com.nivasafinance.features.lead.dto
 
 import com.nivasafinance.features.tasks.dto.TaskResponse
-import java.util.UUID
+import java.util.*
 
-data class LeadTaskResponse(
+data class LeadTasksResponse(
     val leadId: UUID,
-    val task: TaskResponse
+    val tasks: List<TaskResponse>
 )

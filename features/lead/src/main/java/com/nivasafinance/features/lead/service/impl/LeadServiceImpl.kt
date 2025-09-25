@@ -1,14 +1,12 @@
-package com.nivasafinance.features.lead.service
+package com.nivasafinance.features.lead.service.impl
 
 import base.model.PaginatedResponse
 import base.model.PaginationInfo
 import base.model.PaginationRequest
-import com.nivasafinance.features.lead.dto.CreateTaskForLeadRequest
 import com.nivasafinance.features.lead.dto.LeadCreateRequest
 import com.nivasafinance.features.lead.dto.LeadResponse
-import com.nivasafinance.features.lead.dto.LeadTaskResponse
+import com.nivasafinance.features.lead.service.LeadService
 import com.nivasafinance.features.lead.entity.Lead
-import com.nivasafinance.features.lead.entity.TaskData
 import com.nivasafinance.features.lead.exception.LeadExceptionFactory
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper
 import com.nivasafinance.features.stagedefinitions.repository.StageDefinitionRepositoryWrapper
@@ -16,7 +14,6 @@ import com.nivasafinance.features.stages.entity.Stage
 import com.nivasafinance.features.stages.repository.StageRepositoryWrapper
 import com.nivasafinance.features.stages.service.StageService
 import com.nivasafinance.features.stages.dto.StageRequest
-import com.nivasafinance.features.tasks.service.TaskService
 import org.springframework.context.MessageSource
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -25,11 +22,10 @@ import java.util.UUID
 @Service
 @Transactional
 class LeadServiceImpl(
-    private val leadRepositoryWrapper: LeadRepositoryWrapper,
+    private val leadRepositoryWrapper: LeadRepositoryWrapper,   
     private val stageRepositoryWrapper: StageRepositoryWrapper,
     private val stageDefinitionRepositoryWrapper: StageDefinitionRepositoryWrapper,
     private val stageService: StageService,
-    private val taskService: TaskService,
     private val messageSource: MessageSource
 ) : LeadService {
 
@@ -55,34 +51,27 @@ class LeadServiceImpl(
         return toLeadResponse(finalLead)
     }
 
-    override fun createTaskForLead(leadId: UUID, createTaskForLeadRequest: CreateTaskForLeadRequest): LeadTaskResponse {
-        // Verify lead exists
-        val lead = leadRepositoryWrapper.findByIdWithException(leadId)
+    override fun updateLead(id: UUID, leadUpdateRequest: com.nivasafinance.features.lead.dto.LeadUpdateRequest): LeadResponse {
+        val existingLead = leadRepositoryWrapper.findByIdWithException(id)
         
-        // Create task using TaskService
-        val taskRequest = com.nivasafinance.features.tasks.dto.TaskRequest(
-            taskDefinitionKey = createTaskForLeadRequest.taskDefinitionKey,
-            description = createTaskForLeadRequest.description,
-            assignedTo = createTaskForLeadRequest.assignedTo,
-            status = createTaskForLeadRequest.status,
-            outcome = createTaskForLeadRequest.outcome
+        // Create a mutable copy to update only provided fields
+        val updatedLead = existingLead.copy(
+            requestedAmount = leadUpdateRequest.requestedAmount ?: existingLead.requestedAmount,
+            purpose = leadUpdateRequest.purpose ?: existingLead.purpose,
+            productCode = leadUpdateRequest.productCode ?: existingLead.productCode,
+            pipelineKey = leadUpdateRequest.pipelineKey ?: existingLead.pipelineKey,
+            currentStage = leadUpdateRequest.currentStage ?: existingLead.currentStage,
+            sourcingChannel = leadUpdateRequest.sourcingChannel ?: existingLead.sourcingChannel,
+            preliminaryInformation = if (leadUpdateRequest.preliminaryInformation != null) {
+                mapOf("data" to leadUpdateRequest.preliminaryInformation)
+            } else {
+                existingLead.preliminaryInformation
+            },
+            extData = leadUpdateRequest.extData ?: existingLead.extData
         )
         
-        val taskResponse = taskService.createTask(taskRequest)
-        
-        // Update lead's task data
-        val currentTaskData = lead.taskData ?: emptyList()
-        val newTaskData = currentTaskData + TaskData(
-            taskId = taskResponse.id
-        )
-        
-        val updatedLead = lead.copy(taskData = newTaskData)
-        leadRepositoryWrapper.saveWithException(updatedLead)
-        
-        return LeadTaskResponse(
-            leadId = leadId,
-            task = taskResponse
-        )
+        val savedLead = leadRepositoryWrapper.saveWithException(updatedLead)
+        return toLeadResponse(savedLead)
     }
 
     override fun getLeadById(id: UUID): LeadResponse {
@@ -182,122 +171,4 @@ class LeadServiceImpl(
         return stages
     }
 
-    override fun getLeadIdByTaskId(taskId: UUID): UUID? {
-        // Get all leads and find the one that contains the taskId
-        val pageable = org.springframework.data.domain.PageRequest.of(0, 10000)
-        val allLeadsPage = leadRepositoryWrapper.findAllWithException(pageable)
-        val allLeads = allLeadsPage.content
-
-        return allLeads.find { lead ->
-            lead.taskData?.any { taskData -> taskData.taskId == taskId } == true
-        }?.id
-    }
-
-    override fun getLeadTasks(leadId: UUID, paginationRequest: PaginationRequest): PaginatedResponse<LeadTaskResponse> {
-        // First get the lead to check if it exists and get its taskData
-        val lead = leadRepositoryWrapper.findByIdWithException(leadId)
-
-        // If lead has no tasks, return empty paginated response
-        if (lead.taskData.isNullOrEmpty()) {
-            return PaginatedResponse(
-                content = emptyList(),
-                pagination = PaginationInfo(
-                    offset = paginationRequest.offset,
-                    limit = paginationRequest.limit,
-                    totalElements = 0,
-                    totalPages = 0,
-                    currentPage = 0,
-                    hasNext = false,
-                    hasPrevious = false
-                )
-            )
-        }
-
-        // Get all tasks and filter by the taskIds from the lead
-        val allTasks = taskService.getAllTasks(paginationRequest)
-        val leadTaskIds = lead.taskData!!.map { taskData -> taskData.taskId }.toSet()
-        val filteredTasks = allTasks.content.filter { task ->
-            leadTaskIds.contains(task.id)
-        }
-
-        // Convert to LeadTaskResponse with lead ID
-        val leadTaskResponses = filteredTasks.map { task ->
-            LeadTaskResponse(
-                leadId = leadId,
-                task = task
-            )
-        }
-
-        // Create a new paginated response with filtered tasks
-        return PaginatedResponse(
-            content = leadTaskResponses,
-            pagination = PaginationInfo(
-                offset = paginationRequest.offset,
-                limit = paginationRequest.limit,
-                totalElements = leadTaskResponses.size.toLong(),
-                totalPages = if (leadTaskResponses.isEmpty()) 0 else 1,
-                currentPage = 0,
-                hasNext = false,
-                hasPrevious = false
-            )
-        )
-    }
-
-    override fun getAllLeadsTasks(paginationRequest: PaginationRequest): PaginatedResponse<LeadTaskResponse> {
-        // Get all leads to collect all taskData - use a large page size to get all leads
-        val pageable = org.springframework.data.domain.PageRequest.of(0, 10000)
-        val allLeadsPage = leadRepositoryWrapper.findAllWithException(pageable)
-        val allLeads = allLeadsPage.content
-
-        // If no leads found, return empty paginated response
-        if (allLeads.isEmpty()) {
-            return PaginatedResponse(
-                content = emptyList(),
-                pagination = PaginationInfo(
-                    offset = paginationRequest.offset,
-                    limit = paginationRequest.limit,
-                    totalElements = 0,
-                    totalPages = 0,
-                    currentPage = 0,
-                    hasNext = false,
-                    hasPrevious = false
-                )
-            )
-        }
-
-        // Get all tasks
-        val allTasks = taskService.getAllTasks(paginationRequest)
-
-        // Create a map of taskId to leadId for quick lookup
-        val taskToLeadMap = mutableMapOf<UUID, UUID>()
-        allLeads.forEach { lead ->
-            lead.taskData?.forEach { taskData ->
-                taskToLeadMap[taskData.taskId] = lead.id!!
-            }
-        }
-
-        // Filter tasks that belong to leads and create LeadTaskResponse
-        val leadTaskResponses = allTasks.content.filter { task ->
-            taskToLeadMap.containsKey(task.id)
-        }.map { task ->
-            LeadTaskResponse(
-                leadId = taskToLeadMap[task.id]!!,
-                task = task
-            )
-        }
-
-        // Create a new paginated response with filtered tasks
-        return PaginatedResponse(
-            content = leadTaskResponses,
-            pagination = PaginationInfo(
-                offset = paginationRequest.offset,
-                limit = paginationRequest.limit,
-                totalElements = leadTaskResponses.size.toLong(),
-                totalPages = if (leadTaskResponses.isEmpty()) 0 else 1,
-                currentPage = 0,
-                hasNext = false,
-                hasPrevious = false
-            )
-        )
-    }
 }

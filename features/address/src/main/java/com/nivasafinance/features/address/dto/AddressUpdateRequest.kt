@@ -1,6 +1,5 @@
 package com.nivasafinance.features.address.dto
 
-
 data class AddressUpdateRequest(
     val addressType: String? = null,
     val isPrimary: Boolean? = null,

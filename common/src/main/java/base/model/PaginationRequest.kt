@@ -19,4 +19,3 @@ data class PaginationRequest(
         const val MAX_LIMIT = 100L
     }
 }
-
