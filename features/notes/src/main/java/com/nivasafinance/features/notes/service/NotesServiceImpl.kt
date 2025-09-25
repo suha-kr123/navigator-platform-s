@@ -31,11 +31,16 @@ class NotesServiceImpl(
 
     override fun updateNotes(notesId: UUID, notesUpdateRequest: NotesUpdateRequest): NotesResponse {
         val existingNotes = notesRepositoryWrapper.findByIdWithException(notesId)
-        val updatedNotes = existingNotes.copy(
-            title = notesUpdateRequest.title ?: existingNotes.title,
-            content = notesUpdateRequest.content ?: existingNotes.content
-        )
-        val savedNotes = notesRepositoryWrapper.saveWithException(updatedNotes)
+        
+        // Update the fields directly like in patchNotes
+        if (notesUpdateRequest.title != null) {
+            existingNotes.title = notesUpdateRequest.title
+        }
+        if (notesUpdateRequest.content != null) {
+            existingNotes.content = notesUpdateRequest.content
+        }
+        
+        val savedNotes = notesRepositoryWrapper.saveWithException(existingNotes)
         return toNotesResponse(savedNotes)
     }
 
