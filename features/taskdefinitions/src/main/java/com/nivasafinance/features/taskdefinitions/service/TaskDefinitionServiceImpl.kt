@@ -1,5 +1,7 @@
 package com.nivasafinance.features.taskdefinitions.service
 
+import com.nivasafinance.features.taskdefinitions.dto.TaskDefinitionListResponse
+import com.nivasafinance.features.taskdefinitions.dto.TaskDefinitionResponse
 import com.nivasafinance.features.taskdefinitions.dto.TaskOutcomesResponse
 import com.nivasafinance.features.taskdefinitions.exception.TaskDefinitionExceptionFactory
 import com.nivasafinance.features.taskdefinitions.repository.TaskDefinitionRepositoryWrapper
@@ -23,5 +25,22 @@ class TaskDefinitionServiceImpl(
             taskDefinitionName = taskDefinition.name,
             outcomes = outcomes
         )
+    }
+
+    override fun getAllTaskDefinitions(): TaskDefinitionListResponse {
+        val taskDefinitions = taskDefinitionRepositoryWrapper.findAllWithException()
+        
+        val taskDefinitionResponses = taskDefinitions.map { taskDefinition ->
+            TaskDefinitionResponse(
+                id = taskDefinition.id!!,
+                name = taskDefinition.name,
+                key = taskDefinition.key,
+                type = taskDefinition.type,
+                description = taskDefinition.description,
+                possibleOutcomes = taskDefinition.possibleOutcomes
+            )
+        }
+        
+        return TaskDefinitionListResponse(taskDefinitions = taskDefinitionResponses)
     }
 }

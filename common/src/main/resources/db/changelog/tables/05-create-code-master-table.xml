@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="create-code-master-table" author="system">
+        <createTable tableName="code_master">
+            <column name="id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="code_name" type="varchar(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="code_value" type="jsonb">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="varchar(255)"/>
+            <column name="created_at" type="timestamp"/>
+            <column name="updated_by" type="varchar(255)"/>
+            <column name="updated_at" type="timestamp"/>
+            <column name="version" type="bigint"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="insert-product-codes" author="system">
+        <insert tableName="code_master">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440100"/>
+            <column name="code_name" value="PRODUCT_CODES"/>
+            <column name="code_value" value='{"HOME_LOAN": {"name": "Home Loan", "description": "Loan for purchasing residential property", "active": true}, "PERSONAL_LOAN": {"name": "Personal Loan", "description": "Unsecured loan for personal expenses", "active": true}, "CAR_LOAN": {"name": "Car Loan", "description": "Loan for purchasing vehicles", "active": true}, "EDUCATION_LOAN": {"name": "Education Loan", "description": "Loan for educational purposes", "active": true}}'/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-09-25 11:18:21.011"/>
+            <column name="updated_by" value=""/>
+            <column name="updated_at" value="2025-09-25 11:18:21.011"/>
+            <column name="version" value="0"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="insert-sourcing-channels" author="system">
+        <insert tableName="code_master">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440101"/>
+            <column name="code_name" value="SOURCING_CHANNELS"/>
+            <column name="code_value" value='{"ONLINE": {"name": "Online", "description": "Lead generated through online channels", "active": true}, "BANK_BRANCH": {"name": "Bank Branch", "description": "Lead generated through bank branches", "active": true}, "AGENT": {"name": "Agent", "description": "Lead generated through agents", "active": true}, "REFERRAL": {"name": "Referral", "description": "Lead generated through customer referrals", "active": true}, "CALL_CENTER": {"name": "Call Center", "description": "Lead generated through call center", "active": true}, "PARTNER": {"name": "Partner", "description": "Lead generated through business partners", "active": true}}'/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-09-25 11:18:21.011"/>
+            <column name="updated_by" value=""/>
+            <column name="updated_at" value="2025-09-25 11:18:21.011"/>
+            <column name="version" value="0"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>
