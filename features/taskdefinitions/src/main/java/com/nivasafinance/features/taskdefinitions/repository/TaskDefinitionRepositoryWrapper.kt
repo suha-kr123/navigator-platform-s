@@ -18,4 +18,12 @@ class TaskDefinitionRepositoryWrapper(
             throw TaskDefinitionExceptionFactory.retrieveFailed(messageSource)
         }
     }
+
+    fun findAllWithException(): List<TaskDefinition> {
+        return try {
+            taskDefinitionRepository.findAll()
+        } catch (e: Exception) {
+            throw TaskDefinitionExceptionFactory.retrieveFailed(messageSource)
+        }
+    }
 }
