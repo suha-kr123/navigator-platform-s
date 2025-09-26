@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="create-advisor-table" author="system">
+        <createTable tableName="advisor">
+            <column name="id" type="uuid" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="person_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="advisor_code" type="varchar(255)"/>
+            <column name="is_employee" type="boolean" defaultValueBoolean="false"/>
+            <column name="status" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_experienced_dsa" type="boolean" defaultValueBoolean="false"/>
+            <column name="remarks" type="varchar(1000)"/>
+            <column name="rejection_reason" type="varchar(1000)"/>
+            <column name="advisor_feedback" type="varchar(2000)"/>
+            <column name="welcome_kit_sent" type="boolean" defaultValueBoolean="false"/>
+            <column name="attended_advisor_meeting" type="boolean" defaultValueBoolean="false"/>
+            <column name="data_ext" type="jsonb"/>
+            <column name="created_by" type="varchar(255)"/>
+            <column name="created_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="updated_by" type="varchar(255)"/>
+            <column name="updated_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="version" type="bigint" defaultValueNumeric="0"/>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>

@@ -56,7 +56,7 @@ class LeadServiceImpl(
         val lead = toLead(leadCreateRequest, personData)
         val savedLead = leadRepositoryWrapper.saveWithException(lead)
 
-        val stages = createStagesForLead(leadCreateRequest.pipelineKey)
+        val stages = createStagesForLead("HOME_LOAN")
 
         // Update the lead with the stage IDs
         val stageIds = stages.map { it.id }
@@ -124,8 +124,8 @@ class LeadServiceImpl(
             requestedAmount = leadCreateRequest.requestedAmount,
             purpose = leadCreateRequest.purpose,
             productCode = leadCreateRequest.productCode,
-            pipelineKey = leadCreateRequest.pipelineKey,
-            currentStage = leadCreateRequest.currentStage,
+            pipelineKey = "HOME_LOAN",
+            currentStage = "APPLICATION_RECEIVED",
             sourcingChannel = leadCreateRequest.sourcingChannel,
             preliminaryInformation = leadCreateRequest.preliminaryInformation?.let {
                 mapOf("data" to it)
