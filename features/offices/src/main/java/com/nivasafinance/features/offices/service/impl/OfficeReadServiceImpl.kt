@@ -7,18 +7,16 @@ import com.nivasafinance.features.offices.dto.OfficeResponse
 import com.nivasafinance.features.offices.entity.Office
 import com.nivasafinance.features.offices.exception.OfficeNotFoundException
 import com.nivasafinance.features.offices.repository.OfficeRepository
-import com.nivasafinance.features.offices.service.OfficeService
-import org.springframework.cache.annotation.Cacheable
+import com.nivasafinance.features.offices.service.OfficeReadService
 import org.springframework.stereotype.Service
 import java.util.UUID
 
 @Service
-class OfficeServiceImpl(
+class OfficeReadServiceImpl(
     private val officeRepository: OfficeRepository,
     private val addressRepository: AddressRepository
-) : OfficeService, BaseNavigatorService() {
+) : OfficeReadService, BaseNavigatorService() {
 
-    @Cacheable(cacheNames = ["offices"], key = "#id")
     override fun getOffice(id: UUID): OfficeResponse {
         val entity = officeRepository.findById(id).orElseThrow {
             OfficeNotFoundException(id, messageSource)
@@ -47,7 +45,8 @@ class OfficeServiceImpl(
             name = entity.name,
             key = entity.key,
             code = entity.code,
-            address = addressResp
+            address = addressResp,
+            parentId = entity.parentId
         )
     }
 }

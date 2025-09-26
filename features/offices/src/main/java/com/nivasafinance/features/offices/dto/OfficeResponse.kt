@@ -8,5 +8,6 @@ data class OfficeResponse(
     val name: String,
     val key: String,
     val code: String,
-    val address: AddressResponse?
+    val address: AddressResponse?,
+    val parentId: UUID?
 )
