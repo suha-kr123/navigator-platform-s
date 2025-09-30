@@ -8,7 +8,6 @@ import java.util.UUID
 interface AddressService {
     fun getAllAddresses(): List<AddressResponse>
     fun getAddressById(addressId: UUID): AddressResponse?
-    fun getAddressesByAddressType(addressType: String): List<AddressResponse>
     fun createAddress(addressRequest: AddressCreateRequest): AddressResponse
     fun updateAddress(addressId: UUID, addressUpdateRequest: AddressUpdateRequest): AddressResponse
     fun deleteAddress(addressId: UUID)

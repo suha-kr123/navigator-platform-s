@@ -1,0 +1,448 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- Insert Mandya district pincodes -->
+    <changeSet id="insert-mandya-pincodes" author="system">
+        <insert tableName="master_pincode">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440930"/>
+            <column name="pincode" value="571401"/>
+            <column name="area" value="Mandya"/>
+            <column name="district" value="Mandya"/>
+            <column name="state" value="Karnataka"/>
+            <column name="country" value="India"/>
+            <column name="is_servicable" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+        <insert tableName="master_pincode">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440931"/>
+            <column name="pincode" value="571402"/>
+            <column name="area" value="Mandya Rural"/>
+            <column name="district" value="Mandya"/>
+            <column name="state" value="Karnataka"/>
+            <column name="country" value="India"/>
+            <column name="is_servicable" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+        <insert tableName="master_pincode">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440932"/>
+            <column name="pincode" value="571403"/>
+            <column name="area" value="Maddur"/>
+            <column name="district" value="Mandya"/>
+            <column name="state" value="Karnataka"/>
+            <column name="country" value="India"/>
+            <column name="is_servicable" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+        <insert tableName="master_pincode">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440933"/>
+            <column name="pincode" value="571404"/>
+            <column name="area" value="Malavalli"/>
+            <column name="district" value="Mandya"/>
+            <column name="state" value="Karnataka"/>
+            <column name="country" value="India"/>
+            <column name="is_servicable" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+        <insert tableName="master_pincode">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440934"/>
+            <column name="pincode" value="571405"/>
+            <column name="area" value="Pandavapura"/>
+            <column name="district" value="Mandya"/>
+            <column name="state" value="Karnataka"/>
+            <column name="country" value="India"/>
+            <column name="is_servicable" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+        <insert tableName="master_pincode">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440935"/>
+            <column name="pincode" value="571406"/>
+            <column name="area" value="Srirangapatna"/>
+            <column name="district" value="Mandya"/>
+            <column name="state" value="Karnataka"/>
+            <column name="country" value="India"/>
+            <column name="is_servicable" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+    </changeSet>
+
+    <!-- Insert Mysore district pincodes -->
+    <changeSet id="insert-mysore-pincodes" author="system">
+        <insert tableName="master_pincode">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440940"/>
+            <column name="pincode" value="570001"/>
+            <column name="area" value="Mysore"/>
+            <column name="district" value="Mysore"/>
+            <column name="state" value="Karnataka"/>
+            <column name="country" value="India"/>
+            <column name="is_servicable" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+        <insert tableName="master_pincode">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440941"/>
+            <column name="pincode" value="570002"/>
+            <column name="area" value="Mysore"/>
+            <column name="district" value="Mysore"/>
+            <column name="state" value="Karnataka"/>
+            <column name="country" value="India"/>
+            <column name="is_servicable" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+        <insert tableName="master_pincode">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440942"/>
+            <column name="pincode" value="570003"/>
+            <column name="area" value="Mysore"/>
+            <column name="district" value="Mysore"/>
+            <column name="state" value="Karnataka"/>
+            <column name="country" value="India"/>
+            <column name="is_servicable" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+        <insert tableName="master_pincode">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440943"/>
+            <column name="pincode" value="570004"/>
+            <column name="area" value="Mysore"/>
+            <column name="district" value="Mysore"/>
+            <column name="state" value="Karnataka"/>
+            <column name="country" value="India"/>
+            <column name="is_servicable" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+        <insert tableName="master_pincode">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440944"/>
+            <column name="pincode" value="570005"/>
+            <column name="area" value="Mysore"/>
+            <column name="district" value="Mysore"/>
+            <column name="state" value="Karnataka"/>
+            <column name="country" value="India"/>
+            <column name="is_servicable" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+        <insert tableName="master_pincode">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440945"/>
+            <column name="pincode" value="570006"/>
+            <column name="area" value="Mysore"/>
+            <column name="district" value="Mysore"/>
+            <column name="state" value="Karnataka"/>
+            <column name="country" value="India"/>
+            <column name="is_servicable" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+        <insert tableName="master_pincode">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440946"/>
+            <column name="pincode" value="570007"/>
+            <column name="area" value="Mysore"/>
+            <column name="district" value="Mysore"/>
+            <column name="state" value="Karnataka"/>
+            <column name="country" value="India"/>
+            <column name="is_servicable" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+        <insert tableName="master_pincode">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440947"/>
+            <column name="pincode" value="570008"/>
+            <column name="area" value="Mysore"/>
+            <column name="district" value="Mysore"/>
+            <column name="state" value="Karnataka"/>
+            <column name="country" value="India"/>
+            <column name="is_servicable" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+        <insert tableName="master_pincode">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440948"/>
+            <column name="pincode" value="570009"/>
+            <column name="area" value="Mysore"/>
+            <column name="district" value="Mysore"/>
+            <column name="state" value="Karnataka"/>
+            <column name="country" value="India"/>
+            <column name="is_servicable" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+        <insert tableName="master_pincode">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440949"/>
+            <column name="pincode" value="570010"/>
+            <column name="area" value="Mysore"/>
+            <column name="district" value="Mysore"/>
+            <column name="state" value="Karnataka"/>
+            <column name="country" value="India"/>
+            <column name="is_servicable" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+        <insert tableName="master_pincode">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440950"/>
+            <column name="pincode" value="570011"/>
+            <column name="area" value="Mysore"/>
+            <column name="district" value="Mysore"/>
+            <column name="state" value="Karnataka"/>
+            <column name="country" value="India"/>
+            <column name="is_servicable" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+        <insert tableName="master_pincode">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440951"/>
+            <column name="pincode" value="570012"/>
+            <column name="area" value="Mysore"/>
+            <column name="district" value="Mysore"/>
+            <column name="state" value="Karnataka"/>
+            <column name="country" value="India"/>
+            <column name="is_servicable" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+        <insert tableName="master_pincode">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440952"/>
+            <column name="pincode" value="570013"/>
+            <column name="area" value="Mysore"/>
+            <column name="district" value="Mysore"/>
+            <column name="state" value="Karnataka"/>
+            <column name="country" value="India"/>
+            <column name="is_servicable" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+        <insert tableName="master_pincode">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440953"/>
+            <column name="pincode" value="570014"/>
+            <column name="area" value="Mysore"/>
+            <column name="district" value="Mysore"/>
+            <column name="state" value="Karnataka"/>
+            <column name="country" value="India"/>
+            <column name="is_servicable" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+        <insert tableName="master_pincode">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440954"/>
+            <column name="pincode" value="570015"/>
+            <column name="area" value="Mysore"/>
+            <column name="district" value="Mysore"/>
+            <column name="state" value="Karnataka"/>
+            <column name="country" value="India"/>
+            <column name="is_servicable" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+        <insert tableName="master_pincode">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440955"/>
+            <column name="pincode" value="570016"/>
+            <column name="area" value="Mysore"/>
+            <column name="district" value="Mysore"/>
+            <column name="state" value="Karnataka"/>
+            <column name="country" value="India"/>
+            <column name="is_servicable" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+        <insert tableName="master_pincode">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440956"/>
+            <column name="pincode" value="570017"/>
+            <column name="area" value="Mysore"/>
+            <column name="district" value="Mysore"/>
+            <column name="state" value="Karnataka"/>
+            <column name="country" value="India"/>
+            <column name="is_servicable" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+        <insert tableName="master_pincode">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440957"/>
+            <column name="pincode" value="570018"/>
+            <column name="area" value="Mysore"/>
+            <column name="district" value="Mysore"/>
+            <column name="state" value="Karnataka"/>
+            <column name="country" value="India"/>
+            <column name="is_servicable" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+        <insert tableName="master_pincode">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440958"/>
+            <column name="pincode" value="570019"/>
+            <column name="area" value="Mysore"/>
+            <column name="district" value="Mysore"/>
+            <column name="state" value="Karnataka"/>
+            <column name="country" value="India"/>
+            <column name="is_servicable" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+        <insert tableName="master_pincode">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440959"/>
+            <column name="pincode" value="570020"/>
+            <column name="area" value="Mysore"/>
+            <column name="district" value="Mysore"/>
+            <column name="state" value="Karnataka"/>
+            <column name="country" value="India"/>
+            <column name="is_servicable" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+        <insert tableName="master_pincode">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440960"/>
+            <column name="pincode" value="570021"/>
+            <column name="area" value="Mysore"/>
+            <column name="district" value="Mysore"/>
+            <column name="state" value="Karnataka"/>
+            <column name="country" value="India"/>
+            <column name="is_servicable" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+        <insert tableName="master_pincode">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440961"/>
+            <column name="pincode" value="570022"/>
+            <column name="area" value="Mysore"/>
+            <column name="district" value="Mysore"/>
+            <column name="state" value="Karnataka"/>
+            <column name="country" value="India"/>
+            <column name="is_servicable" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+        <insert tableName="master_pincode">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440962"/>
+            <column name="pincode" value="570023"/>
+            <column name="area" value="Mysore"/>
+            <column name="district" value="Mysore"/>
+            <column name="state" value="Karnataka"/>
+            <column name="country" value="India"/>
+            <column name="is_servicable" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+        <insert tableName="master_pincode">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440963"/>
+            <column name="pincode" value="570024"/>
+            <column name="area" value="Mysore"/>
+            <column name="district" value="Mysore"/>
+            <column name="state" value="Karnataka"/>
+            <column name="country" value="India"/>
+            <column name="is_servicable" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+        <insert tableName="master_pincode">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440964"/>
+            <column name="pincode" value="570025"/>
+            <column name="area" value="Mysore"/>
+            <column name="district" value="Mysore"/>
+            <column name="state" value="Karnataka"/>
+            <column name="country" value="India"/>
+            <column name="is_servicable" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+        <insert tableName="master_pincode">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440965"/>
+            <column name="pincode" value="570026"/>
+            <column name="area" value="Mysore"/>
+            <column name="district" value="Mysore"/>
+            <column name="state" value="Karnataka"/>
+            <column name="country" value="India"/>
+            <column name="is_servicable" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+        <insert tableName="master_pincode">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440966"/>
+            <column name="pincode" value="570027"/>
+            <column name="area" value="Mysore"/>
+            <column name="district" value="Mysore"/>
+            <column name="state" value="Karnataka"/>
+            <column name="country" value="India"/>
+            <column name="is_servicable" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+        <insert tableName="master_pincode">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440967"/>
+            <column name="pincode" value="570028"/>
+            <column name="area" value="Mysore"/>
+            <column name="district" value="Mysore"/>
+            <column name="state" value="Karnataka"/>
+            <column name="country" value="India"/>
+            <column name="is_servicable" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+        <insert tableName="master_pincode">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440968"/>
+            <column name="pincode" value="570029"/>
+            <column name="area" value="Mysore"/>
+            <column name="district" value="Mysore"/>
+            <column name="state" value="Karnataka"/>
+            <column name="country" value="India"/>
+            <column name="is_servicable" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+        <insert tableName="master_pincode">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440969"/>
+            <column name="pincode" value="570030"/>
+            <column name="area" value="Mysore"/>
+            <column name="district" value="Mysore"/>
+            <column name="state" value="Karnataka"/>
+            <column name="country" value="India"/>
+            <column name="is_servicable" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>

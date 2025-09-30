@@ -37,5 +37,9 @@
     <include file="db/changelog/tables/29-add-assigned-to-master-code.xml"/>
     <include file="db/changelog/tables/30-add-task-status-master-code.xml"/>
     <include file="db/changelog/tables/31-make-task-outcome-nullable.xml"/>
+    <include file="db/changelog/tables/32-address-refactor-changes.xml"/>
+    <include file="db/changelog/tables/33-add-address-master-codes.xml"/>
+    <include file="db/changelog/tables/34-insert-mandya-mysore-pincodes.xml"/>
+    <include file="db/changelog/tables/35-convert-address-id-json-to-uuid.xml"/>
 
 </databaseChangeLog>

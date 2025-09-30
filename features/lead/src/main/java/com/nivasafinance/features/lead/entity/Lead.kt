@@ -56,9 +56,8 @@ data class Lead(
     @Column(name = "task_data", columnDefinition = "jsonb", nullable = true)
     var taskData: List<TaskData>? = null,
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "address_ids", columnDefinition = "jsonb", nullable = true)
-    var addressIds: List<UUID>? = null,
+    @Column(name = "address_id", nullable = true)
+    var addressId: UUID? = null,
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "identifier_ids", columnDefinition = "jsonb", nullable = true)

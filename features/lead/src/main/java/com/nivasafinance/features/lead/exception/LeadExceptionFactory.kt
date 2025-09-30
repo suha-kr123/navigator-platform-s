@@ -190,6 +190,10 @@ object LeadExceptionFactory {
         return LeadTaskOperationException("error.lead.task.update.failed", arrayOf(taskId.toString(), leadId.toString()), messageSource)
     }
 
+    fun addressNotFoundForLead(leadId: UUID, messageSource: MessageSource): LeadValidationException {
+        return LeadValidationException("error.lead.address.not.found.for.lead", arrayOf(leadId.toString()), messageSource)
+    }
+
     fun taskDeletionFailed(taskId: UUID, leadId: UUID, messageSource: MessageSource): LeadTaskOperationException {
         return LeadTaskOperationException("error.lead.task.deletion.failed", arrayOf(taskId.toString(), leadId.toString()), messageSource)
     }
