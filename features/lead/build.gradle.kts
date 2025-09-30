@@ -14,6 +14,7 @@ dependencies {
     implementation(project(":features:document"))
     implementation(project(":features:person"))
     implementation(project(":features:identifiers"))
+    implementation(project(":features:address"))
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
 }
 

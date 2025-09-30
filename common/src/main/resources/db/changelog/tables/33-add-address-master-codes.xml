@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- Add ADDRESS_TYPE master code -->
+    <changeSet id="insert-address-type-master-code" author="system">
+        <insert tableName="master_code">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440010"/>
+            <column name="key" value="ADDRESS_TYPE"/>
+            <column name="name" value='{"default": "Address Type"}'/>
+            <column name="description" value='{"default": "Type of address (Home, Office, etc.)"}'/>
+            <column name="is_system_defined" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+    </changeSet>
+
+    <!-- Add ADDRESS_TYPE values -->
+    <changeSet id="insert-address-type-values" author="system">
+        <insert tableName="master_code_value">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440910"/>
+            <column name="key" value="HOME"/>
+            <column name="code_key" value="ADDRESS_TYPE"/>
+            <column name="value" value='{"default": "Home Address"}'/>
+            <column name="description" value='{"default": "Residential home address"}'/>
+            <column name="is_active" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+        <insert tableName="master_code_value">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440911"/>
+            <column name="key" value="OFFICE"/>
+            <column name="code_key" value="ADDRESS_TYPE"/>
+            <column name="value" value='{"default": "Office Address"}'/>
+            <column name="description" value='{"default": "Business office address"}'/>
+            <column name="is_active" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+        <insert tableName="master_code_value">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440912"/>
+            <column name="key" value="CORRESPONDENCE"/>
+            <column name="code_key" value="ADDRESS_TYPE"/>
+            <column name="value" value='{"default": "Correspondence Address"}'/>
+            <column name="description" value='{"default": "Address for official correspondence"}'/>
+            <column name="is_active" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+        <insert tableName="master_code_value">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440913"/>
+            <column name="key" value="PERMANENT"/>
+            <column name="code_key" value="ADDRESS_TYPE"/>
+            <column name="value" value='{"default": "Permanent Address"}'/>
+            <column name="description" value='{"default": "Permanent residential address"}'/>
+            <column name="is_active" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+    </changeSet>
+
+    <!-- Add ADDRESS_SOURCE master code -->
+    <changeSet id="insert-address-source-master-code" author="system">
+        <insert tableName="master_code">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440011"/>
+            <column name="key" value="ADDRESS_SOURCE"/>
+            <column name="name" value='{"default": "Address Source"}'/>
+            <column name="description" value='{"default": "Source of address information"}'/>
+            <column name="is_system_defined" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+    </changeSet>
+
+    <!-- Add ADDRESS_SOURCE values -->
+    <changeSet id="insert-address-source-values" author="system">
+        <insert tableName="master_code_value">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440920"/>
+            <column name="key" value="APPLICANT"/>
+            <column name="code_key" value="ADDRESS_SOURCE"/>
+            <column name="value" value='{"default": "Applicant Provided"}'/>
+            <column name="description" value='{"default": "Address provided by the applicant"}'/>
+            <column name="is_active" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+        <insert tableName="master_code_value">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440921"/>
+            <column name="key" value="VERIFICATION"/>
+            <column name="code_key" value="ADDRESS_SOURCE"/>
+            <column name="value" value='{"default": "Field Verification"}'/>
+            <column name="description" value='{"default": "Address verified through field visit"}'/>
+            <column name="is_active" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+        <insert tableName="master_code_value">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440922"/>
+            <column name="key" value="DOCUMENT"/>
+            <column name="code_key" value="ADDRESS_SOURCE"/>
+            <column name="value" value='{"default": "Document Verification"}'/>
+            <column name="description" value='{"default": "Address extracted from submitted documents"}'/>
+            <column name="is_active" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+        <insert tableName="master_code_value">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440923"/>
+            <column name="key" value="THIRD_PARTY"/>
+            <column name="code_key" value="ADDRESS_SOURCE"/>
+            <column name="value" value='{"default": "Third Party"}'/>
+            <column name="description" value='{"default": "Address obtained from third party sources"}'/>
+            <column name="is_active" value="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-01-27 10:00:00"/>
+            <column name="version" value="0"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>

@@ -12,7 +12,7 @@ data class LeadTasksResponse(
     val taskDescription: String?,
     val taskAssignedTo: String?,
     val taskStatus: String,
-    val taskOutcome: String,
+    val taskOutcome: String?,
     val taskDueAt: LocalDateTime?,
     val taskCompletedAt: LocalDateTime?,
     val taskRescheduledAt: LocalDateTime?,
