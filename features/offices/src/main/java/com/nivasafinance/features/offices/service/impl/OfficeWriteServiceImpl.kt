@@ -3,7 +3,7 @@ package com.nivasafinance.features.offices.service.impl
 import base.BaseNavigatorService
 import com.nivasafinance.features.address.dto.AddressResponse
 import com.nivasafinance.features.address.repository.AddressRepository
-import com.nivasafinance.features.address.service.AddressWriteService
+import com.nivasafinance.features.address.service.AddressService
 import com.nivasafinance.features.offices.dto.OfficeCreateRequest
 import com.nivasafinance.features.offices.dto.OfficeResponse
 import com.nivasafinance.features.offices.entity.Office
@@ -17,14 +17,14 @@ import org.springframework.transaction.annotation.Transactional
 class OfficeWriteServiceImpl(
     private val officeRepository: OfficeRepository,
     private val addressRepository: AddressRepository,
-    private val addressWriteService: AddressWriteService,
+    private val addressService: AddressService,
     private val officeCodeFactory: OfficeCodeFactory
 ) : OfficeWriteService, BaseNavigatorService() {
 
     @Transactional
     override fun createOffice(request: OfficeCreateRequest): OfficeResponse {
         // First create the address
-        val addressResponse = addressWriteService.createAddress(request.addressCreateRequest)
+        val addressResponse = addressService.createAddress(request.addressCreateRequest)
 
         // Generate hierarchical code using factory
         val generatedCode = officeCodeFactory.generateOfficeCode(request.parentId)
@@ -49,13 +49,15 @@ class OfficeWriteServiceImpl(
         val addressResp = address?.let {
             AddressResponse(
                 id = it.id,
+                addressType = it.addressType,
                 addressOne = it.addressOne,
                 addressTwo = it.addressTwo,
                 landmark = it.landmark,
                 district = it.district,
                 state = it.state,
                 pincode = it.pincode,
-                addressSource = it.addressSource
+                addressSource = it.addressSource,
+                extData = it.extData
             )
         }
         return OfficeResponse(

@@ -31,13 +31,15 @@ class OfficeReadServiceImpl(
         val addressResp = address?.let {
             AddressResponse(
                 id = it.id,
+                addressType = it.addressType,
                 addressOne = it.addressOne,
                 addressTwo = it.addressTwo,
                 landmark = it.landmark,
                 district = it.district,
                 state = it.state,
                 pincode = it.pincode,
-                addressSource = it.addressSource
+                addressSource = it.addressSource,
+                extData = it.extData
             )
         }
         return OfficeResponse(

@@ -1,6 +1,6 @@
 package com.nivasafinance.features.lender.lenderoffice.service.impl
 
-import com.nivasafinance.features.address.service.AddressWriteService
+import com.nivasafinance.features.address.service.AddressService
 import com.nivasafinance.features.lender.lenderoffice.dto.LenderOfficeReponseData
 import com.nivasafinance.features.lender.lenderoffice.dto.LenderOfficeRequestData
 import com.nivasafinance.features.lender.lenderoffice.entity.LenderOffice
@@ -13,12 +13,12 @@ import java.util.UUID
 @Service
 @Transactional
 class LenderOfficeWriteServiceImpl(
-    private val addressWriteService: AddressWriteService,
+    private val addressService: AddressService,
     private val lenderOfficeRepositoryWrapper: LenderOfficeRepositoryWrapper
 ) : LenderOfficeWriteService {
 
     override fun create(lenderOfficeData: LenderOfficeRequestData): LenderOfficeReponseData {
-        val addressResponse = addressWriteService.createAddress(lenderOfficeData.addressCreateRequest)
+        val addressResponse = addressService.createAddress(lenderOfficeData.addressCreateRequest)
         val addressId = checkNotNull(addressResponse.id) { "Address ID cannot be null" }
 
         val lenderOffice = LenderOffice(
@@ -36,7 +36,7 @@ class LenderOfficeWriteServiceImpl(
         val existingLenderOffice = lenderOfficeRepositoryWrapper.findByIdWithException(id)
 
         // Create new address for update
-        val addressResponse = addressWriteService.createAddress(lenderOfficeData.addressCreateRequest)
+        val addressResponse = addressService.createAddress(lenderOfficeData.addressCreateRequest)
         val addressId = checkNotNull(addressResponse.id) { "Address ID cannot be null" }
 
         val updatedLenderOffice = existingLenderOffice.copy(
