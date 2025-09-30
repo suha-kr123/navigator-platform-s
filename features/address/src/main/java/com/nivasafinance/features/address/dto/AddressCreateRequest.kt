@@ -8,8 +8,6 @@ data class AddressCreateRequest(
     @field:NotNull(message = "Address type is required")
     val addressType: String? = null,
 
-    val isPrimary: Boolean = false,
-
     val addressOne: String? = null,
 
     val addressTwo: String? = null,

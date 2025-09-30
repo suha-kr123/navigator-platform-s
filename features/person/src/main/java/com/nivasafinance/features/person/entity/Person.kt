@@ -43,9 +43,6 @@ class Person(
     @Column(name = "mobile_numbers", columnDefinition = "jsonb")
     var mobileNumbers: List<MobileNumberDetails>? = null,
 
-    @Column(name = "email", length = 100)
-    var email: String? = null,
-
     @Column(name = "date_of_birth")
     var dateOfBirth: LocalDate? = null,
 
@@ -64,4 +61,5 @@ class Person(
 data class MobileNumberDetails(
     var number: String? = null,
     var isPrimary: Boolean? = null,
+    var isWhatsappAvailable: Boolean? = null
 )

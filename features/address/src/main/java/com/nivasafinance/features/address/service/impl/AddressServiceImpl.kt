@@ -71,7 +71,6 @@ class AddressServiceImpl(
 
             val address = Address(
                 addressType = addressRequest.addressType,
-                isPrimary = addressRequest.isPrimary,
                 addressOne = addressRequest.addressOne,
                 addressTwo = addressRequest.addressTwo,
                 landmark = addressRequest.landmark,
@@ -123,7 +122,6 @@ class AddressServiceImpl(
             }
 
             addressUpdateRequest.addressType?.let { address.addressType = it }
-            addressUpdateRequest.isPrimary?.let { address.isPrimary = it }
             addressUpdateRequest.addressOne?.let { address.addressOne = it }
             addressUpdateRequest.addressTwo?.let { address.addressTwo = it }
             addressUpdateRequest.landmark?.let { address.landmark = it }
@@ -151,7 +149,6 @@ class AddressServiceImpl(
         return AddressResponse(
             id = address.id,
             addressType = address.addressType,
-            isPrimary = address.isPrimary,
             addressOne = address.addressOne,
             addressTwo = address.addressTwo,
             landmark = address.landmark,

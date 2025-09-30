@@ -77,3 +77,61 @@ class LeadInvalidStatusTransitionException(
     arrayOf(currentStatus, newStatus),
     messageSource
 )
+
+class PersonNotFoundException(
+    personId: UUID,
+    messageSource: MessageSource
+) : LeadValidationException(
+    "error.person.not.found",
+    arrayOf(personId.toString()),
+    messageSource
+)
+
+class TaskNotBelongsToLeadException(
+    taskId: UUID,
+    leadId: UUID,
+    messageSource: MessageSource
+) : LeadValidationException(
+    "error.task.not.belongs.to.lead",
+    arrayOf(taskId.toString(), leadId.toString()),
+    messageSource
+)
+
+class NotesNotBelongsToTaskException(
+    notesId: UUID,
+    taskId: UUID?,
+    leadId: UUID,
+    messageSource: MessageSource
+) : LeadValidationException(
+    "error.notes.not.belongs.to.task",
+    arrayOf(notesId.toString(), taskId?.toString() ?: "null", leadId.toString()),
+    messageSource
+)
+
+class PersonValidationException(
+    messageKey: String,
+    args: Array<Any>? = null,
+    messageSource: MessageSource
+) : LeadValidationException(messageKey, args, messageSource)
+
+class TasksNotBelongToLeadException(
+    invalidTaskIds: List<UUID>,
+    leadId: UUID,
+    messageSource: MessageSource
+) : LeadValidationException(
+    "error.tasks.not.belong.to.lead",
+    arrayOf(invalidTaskIds.joinToString(", "), leadId.toString()),
+    messageSource
+)
+
+class LeadTaskOperationException(
+    messageKey: String,
+    args: Array<Any>? = null,
+    messageSource: MessageSource
+) : LeadValidationException(messageKey, args, messageSource)
+
+class LeadIdentifierOperationException(
+    messageKey: String,
+    args: Array<Any>? = null,
+    messageSource: MessageSource
+) : LeadValidationException(messageKey, args, messageSource)

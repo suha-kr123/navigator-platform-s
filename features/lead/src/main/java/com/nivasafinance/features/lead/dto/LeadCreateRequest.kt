@@ -5,7 +5,7 @@ import java.math.BigDecimal
 
 data class LeadCreateRequest(
 
-    val requestedAmount: BigDecimal?,
+    val requestedAmountRange: Map<String, BigDecimal>?,
     val purpose: String?,
     val productCode: String?,
     val sourcingChannel: String?,
@@ -19,13 +19,9 @@ data class PersonRequest(
     val middleName: String?,
     val lastName: String?,
     val mobileNumbers: List<MobileNumberDetails>?,
-    val email: String?,
     val dateOfBirth: String?,
     val gender: String?,
     val extData: Map<String, Any>?,
-    val applicantType: String?, 
-    val relationshipToPrimary: String?,
-    val tags: List<String>?,
-    val verificationStatus: String?,
-    val verificationNotes: String?
+    val applicantType: String?,
+    val relationshipToPrimary: String?
 )

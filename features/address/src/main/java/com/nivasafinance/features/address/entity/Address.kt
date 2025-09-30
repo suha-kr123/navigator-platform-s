@@ -25,9 +25,6 @@ data class Address(
     @Column(name = "address_type", nullable = false)
     var addressType: String? = null,
 
-    @Column(name = "is_primary", nullable = false)
-    var isPrimary: Boolean = false,
-
     @Column(name = "address_one")
     var addressOne: String? = null,
 

@@ -65,7 +65,6 @@ class PersonServiceImpl(
             middleName = personRequest.middleName,
             lastName = personRequest.lastName,
             mobileNumbers = personRequest.mobileNumbers,
-            email = personRequest.email,
             dateOfBirth = parseDate(personRequest.dateOfBirth),
             gender = personRequest.gender,
             extData = personRequest.extData
@@ -88,7 +87,6 @@ class PersonServiceImpl(
         personUpdateRequest.middleName?.let { existingPerson.middleName = it }
         personUpdateRequest.lastName?.let { existingPerson.lastName = it }
         personUpdateRequest.mobileNumbers?.let { existingPerson.mobileNumbers = it }
-        personUpdateRequest.email?.let { existingPerson.email = it }
         personUpdateRequest.dateOfBirth?.let { existingPerson.dateOfBirth = parseDate(it) }
         personUpdateRequest.gender?.let { existingPerson.gender = it }
         personUpdateRequest.extData?.let { existingPerson.extData = it }
@@ -136,7 +134,6 @@ class PersonServiceImpl(
             middleName = person.middleName,
             lastName = person.lastName,
             mobileNumbers = person.mobileNumbers,
-            email = person.email,
             dateOfBirth = formatDate(person.dateOfBirth),
             gender = person.gender,
             extData = person.extData,

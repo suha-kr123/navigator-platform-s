@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <!-- remove is_primary from address table -->
+    <changeSet id="26-remove-is_primary-from-address-table" author="nivasafinance">
+        <dropColumn tableName="address" columnName="is_primary" />
+    </changeSet>
+
+    <!-- remove verification_status and verification_notes from identifier table -->
+    <changeSet id="27-remove-verification_status-and-verification_notes-from-identifier-table" author="nivasafinance">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="identifier" columnName="verification_status"/>
+        </preConditions>
+        <dropColumn tableName="identifier" columnName="verification_status" />
+        <dropColumn tableName="identifier" columnName="verification_notes" />
+    </changeSet>
+
+    <!-- remove the whole income_details table -->
+    <changeSet id="28-remove-income_details-table" author="nivasafinance">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="income_details"/>
+        </preConditions>
+        <dropTable tableName="income_details" />
+    </changeSet>
+
+    <!-- remove income_detail_ids from lead table -->
+    <changeSet id="29-remove-income_detail_ids-from-lead-table" author="nivasafinance">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="lead" columnName="income_detail_ids"/>
+        </preConditions>
+        <dropColumn tableName="lead" columnName="income_detail_ids" />
+    </changeSet>
+
+    <!-- delete lead_persons table -->
+    <changeSet id="30-delete-lead_persons-table" author="nivasafinance">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="lead_persons"/>
+        </preConditions>
+        <dropTable tableName="lead_persons" />
+    </changeSet>
+
+    <!-- remove email from person table -->
+    <changeSet id="31-remove-email-from-person-table" author="nivasafinance">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="person" columnName="email"/>
+        </preConditions>
+        <dropColumn tableName="person" columnName="email" />
+    </changeSet>
+
+     <changeSet id="insert-identifier-type-codes" author="system">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">SELECT COUNT(*) FROM code_master WHERE code_name = 'IDENTIFIER_TYPE'</sqlCheck>
+        </preConditions>
+        <!-- Identifier Type Codes -->
+        <insert tableName="code_master">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440001"/>
+            <column name="code_name" value="IDENTIFIER_TYPE"/>
+            <column name="code_value" value='{"id": 1, "key": "AADHAR", "value": {"name": "Aadhar", "description": "Aadhar", "active": "true"}}'/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-09-26 04:55:00.000"/>
+            <column name="updated_by" value=""/>
+            <column name="updated_at" value="2025-09-26 04:55:00.000"/>
+            <column name="version" value="0"/>
+        </insert>
+        
+        <insert tableName="code_master">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440002"/>
+            <column name="code_name" value="IDENTIFIER_TYPE"/>
+            <column name="code_value" value='{"id": 2, "key": "PAN", "value": {"name": "Pan", "description": "Pan", "active": "true"}}'/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-09-26 04:55:00.000"/>
+            <column name="updated_by" value=""/>
+            <column name="updated_at" value="2025-09-26 04:55:00.000"/>
+            <column name="version" value="0"/>
+        </insert>
+        
+        <insert tableName="code_master">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440003"/>
+            <column name="code_name" value="IDENTIFIER_TYPE"/>
+            <column name="code_value" value='{"id": 3, "key": "VOTER_ID", "value": {"name": "Voter Id", "description": "Voter Id", "active": "true"}}'/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-09-26 04:55:00.000"/>
+            <column name="updated_by" value=""/>
+            <column name="updated_at" value="2025-09-26 04:55:00.000"/>
+            <column name="version" value="0"/>
+        </insert>
+
+        <insert tableName="code_master">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440004"/>
+            <column name="code_name" value="IDENTIFIER_TYPE"/>
+            <column name="code_value" value='{"id": 4, "key": "DRIVING_LICENSE", "value": {"name": "Driving License", "description": "Driving License", "active": "true"}}'/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-09-26 04:55:00.000"/>
+            <column name="updated_by" value=""/>
+            <column name="updated_at" value="2025-09-26 04:55:00.000"/>
+            <column name="version" value="0"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="insert-loan-purpose-codes" author="system">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">SELECT COUNT(*) FROM code_master WHERE code_name = 'LOAN_PURPOSE'</sqlCheck>
+        </preConditions>
+        <!-- Loan Purpose Codes -->
+        <insert tableName="code_master">
+            <column name="id" value="660e8400-e29b-41d4-a716-446655440001"/>
+            <column name="code_name" value="LOAN_PURPOSE"/>
+            <column name="code_value" value='{"id": 1, "key": "HOME_PURCHASE", "value": {"name": "Home Purchase", "description": "Purchase of a new home", "active": "true"}}'/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-09-26 04:55:00.000"/>
+            <column name="updated_by" value=""/>
+            <column name="updated_at" value="2025-09-26 04:55:00.000"/>
+            <column name="version" value="0"/>
+        </insert>
+        
+        <insert tableName="code_master">
+            <column name="id" value="660e8400-e29b-41d4-a716-446655440002"/>
+            <column name="code_name" value="LOAN_PURPOSE"/>
+            <column name="code_value" value='{"id": 2, "key": "HOME_CONSTRUCTION", "value": {"name": "Home Construction", "description": "Construction of a new home", "active": "true"}}'/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-09-26 04:55:00.000"/>
+            <column name="updated_by" value=""/>
+            <column name="updated_at" value="2025-09-26 04:55:00.000"/>
+            <column name="version" value="0"/>
+        </insert>
+        
+        <insert tableName="code_master">
+            <column name="id" value="660e8400-e29b-41d4-a716-446655440003"/>
+            <column name="code_name" value="LOAN_PURPOSE"/>
+            <column name="code_value" value='{"id": 3, "key": "HOME_RENOVATION", "value": {"name": "Home Renovation", "description": "Renovation of existing home", "active": "true"}}'/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-09-26 04:55:00.000"/>
+            <column name="updated_by" value=""/>
+            <column name="updated_at" value="2025-09-26 04:55:00.000"/>
+            <column name="version" value="0"/>
+        </insert>
+
+        <insert tableName="code_master">
+            <column name="id" value="660e8400-e29b-41d4-a716-446655440004"/>
+            <column name="code_name" value="LOAN_PURPOSE"/>
+            <column name="code_value" value='{"id": 4, "key": "PLOT_PURCHASE", "value": {"name": "Plot Purchase", "description": "Purchase of a plot for construction", "active": "true"}}'/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-09-26 04:55:00.000"/>
+            <column name="updated_by" value=""/>
+            <column name="updated_at" value="2025-09-26 04:55:00.000"/>
+            <column name="version" value="0"/>
+        </insert>
+
+        <insert tableName="code_master">
+            <column name="id" value="660e8400-e29b-41d4-a716-446655440005"/>
+            <column name="code_name" value="LOAN_PURPOSE"/>
+            <column name="code_value" value='{"id": 5, "key": "BALANCE_TRANSFER", "value": {"name": "Balance Transfer", "description": "Transfer of existing home loan", "active": "true"}}'/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-09-26 04:55:00.000"/>
+            <column name="updated_by" value=""/>
+            <column name="updated_at" value="2025-09-26 04:55:00.000"/>
+            <column name="version" value="0"/>
+        </insert>
+    </changeSet>
+    
+</databaseChangeLog>

@@ -60,33 +60,58 @@ object LeadExceptionFactory {
     }
 
     fun validateLeadForCreation(
-        requestedAmount: BigDecimal?,
+        requestedAmountRange: Map<String, BigDecimal>?,
         purpose: String?,
         productCode: String?,
-        status: String?,
-        sourcingChannel: String?,
         messageSource: MessageSource
     ) {
-        ExceptionUtils.requireNotNull(requestedAmount, "requestedAmount", "error.invalid", messageSource)
+        ExceptionUtils.requireNotNull(requestedAmountRange, "requestedAmountRange", "error.invalid", messageSource)
         ExceptionUtils.requireNotBlank(purpose, "purpose", "error.invalid", messageSource)
         ExceptionUtils.requireNotBlank(productCode, "productCode", "error.invalid", messageSource)
 
-        validateAmount(requestedAmount, messageSource)
+        validateAmountRange(requestedAmountRange, messageSource)
         validatePurpose(purpose, messageSource)
         validateProductCode(productCode, messageSource)
     }
 
     fun validateLeadForUpdate(
         leadId: UUID?,
-        requestedAmount: BigDecimal?,
+        requestedAmountRange: Map<String, BigDecimal>?,
         purpose: String?,
         productCode: String?,
-        status: String?,
-        sourcingChannel: String?,
         messageSource: MessageSource
     ) {
         ExceptionUtils.requireNotNull(leadId, "id", "error.invalid", messageSource)
-        validateLeadForCreation(requestedAmount, purpose, productCode, status, sourcingChannel, messageSource)
+        if (requestedAmountRange != null) {
+            validateAmountRange(requestedAmountRange, messageSource)
+        }
+        if (purpose != null) {
+            validatePurpose(purpose, messageSource)
+        }
+        if (productCode != null) {
+            validateProductCode(productCode, messageSource)
+        }
+    }
+
+    private fun validateAmountRange(amountRange: Map<String, BigDecimal>?, messageSource: MessageSource) {
+        if (amountRange == null || amountRange.isEmpty()) {
+            throw amountInvalid(null, messageSource)
+        }
+        
+        val minAmount = amountRange["min"]
+        val maxAmount = amountRange["max"]
+        
+        if (minAmount == null || minAmount <= BigDecimal.ZERO) {
+            throw amountInvalid(minAmount, messageSource)
+        }
+        
+        if (maxAmount == null || maxAmount <= BigDecimal.ZERO) {
+            throw amountInvalid(maxAmount, messageSource)
+        }
+        
+        if (minAmount > maxAmount) {
+            throw amountInvalid(minAmount, messageSource)
+        }
     }
 
     private fun validateAmount(amount: BigDecimal?, messageSource: MessageSource) {
@@ -105,5 +130,83 @@ object LeadExceptionFactory {
         if (productCode.isNullOrBlank()) {
             throw productCodeInvalid(productCode, messageSource)
         }
+    }
+
+    fun validatePersonForCreation(
+        mobileNumbers: List<com.nivasafinance.features.person.entity.MobileNumberDetails>?,
+        messageSource: MessageSource
+    ) {
+        mobileNumbers?.let { numbers ->
+            val hasPrimaryPhone = numbers.any { it.isPrimary == true }
+            ExceptionUtils.requireTrue(
+                hasPrimaryPhone,
+                "error.person.primary.phone.required",
+                null,
+                messageSource
+            )
+        }
+    }
+
+    fun validatePhoneNumberUniqueness(
+        phoneNumber: String?,
+        existingPhones: MutableSet<String>,
+        messageSource: MessageSource
+    ) {
+        val phone = phoneNumber ?: throw PersonValidationException("error.person.phone.number.required", arrayOf("phoneNumber"), messageSource)
+        if (!existingPhones.add(phone)) {
+            throw PersonValidationException("error.person.primary.phone.duplicate", arrayOf(phone), messageSource)
+        }
+    }
+
+    fun personNotFound(personId: UUID, messageSource: MessageSource): PersonNotFoundException {
+        return PersonNotFoundException(personId, messageSource)
+    }
+
+    fun taskNotBelongsToLead(taskId: UUID, leadId: UUID, messageSource: MessageSource): TaskNotBelongsToLeadException {
+        return TaskNotBelongsToLeadException(taskId, leadId, messageSource)
+    }
+
+    fun notesNotBelongsToTask(notesId: UUID, taskId: UUID?, leadId: UUID, messageSource: MessageSource): NotesNotBelongsToTaskException {
+        return NotesNotBelongsToTaskException(notesId, taskId, leadId, messageSource)
+    }
+
+    fun tasksNotBelongToLead(invalidTaskIds: List<UUID>, leadId: UUID, messageSource: MessageSource): TasksNotBelongToLeadException {
+        return TasksNotBelongToLeadException(invalidTaskIds, leadId, messageSource)
+    }
+
+    fun taskRetrievalFailed(messageSource: MessageSource): LeadTaskOperationException {
+        return LeadTaskOperationException("error.lead.task.retrieval.failed", null, messageSource)
+    }
+
+    fun taskRetrievalFailedForLead(leadId: UUID, messageSource: MessageSource): LeadTaskOperationException {
+        return LeadTaskOperationException("error.lead.task.retrieval.failed.for.lead", arrayOf(leadId.toString()), messageSource)
+    }
+
+    fun taskCreationFailedForLead(leadId: UUID, messageSource: MessageSource): LeadTaskOperationException {
+        return LeadTaskOperationException("error.lead.task.creation.failed.for.lead", arrayOf(leadId.toString()), messageSource)
+    }
+
+    fun taskUpdateFailed(taskId: UUID, leadId: UUID, messageSource: MessageSource): LeadTaskOperationException {
+        return LeadTaskOperationException("error.lead.task.update.failed", arrayOf(taskId.toString(), leadId.toString()), messageSource)
+    }
+
+    fun taskDeletionFailed(taskId: UUID, leadId: UUID, messageSource: MessageSource): LeadTaskOperationException {
+        return LeadTaskOperationException("error.lead.task.deletion.failed", arrayOf(taskId.toString(), leadId.toString()), messageSource)
+    }
+
+    fun taskRetrievalFailedForTask(taskId: UUID, leadId: UUID, messageSource: MessageSource): LeadTaskOperationException {
+        return LeadTaskOperationException("error.lead.task.retrieval.failed.for.task", arrayOf(taskId.toString(), leadId.toString()), messageSource)
+    }
+
+    fun identifierRetrievalFailed(identifierId: UUID, leadId: UUID, messageSource: MessageSource): LeadIdentifierOperationException {
+        return LeadIdentifierOperationException("error.lead.identifier.retrieval.failed", arrayOf(identifierId.toString(), leadId.toString()), messageSource)
+    }
+
+    fun identifierCreationFailed(leadId: UUID, messageSource: MessageSource): LeadIdentifierOperationException {
+        return LeadIdentifierOperationException("error.lead.identifier.creation.failed", arrayOf(leadId.toString()), messageSource)
+    }
+
+    fun identifierUpdateFailed(identifierId: UUID, leadId: UUID, messageSource: MessageSource): LeadIdentifierOperationException {
+        return LeadIdentifierOperationException("error.lead.identifier.update.failed", arrayOf(identifierId.toString(), leadId.toString()), messageSource)
     }
 }

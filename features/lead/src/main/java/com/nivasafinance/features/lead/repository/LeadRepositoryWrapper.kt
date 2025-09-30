@@ -67,4 +67,12 @@ class LeadRepositoryWrapper(
             throw LeadExceptionFactory.deleteFailed(messageSource)
         }
     }
+
+    fun findByPersonNameOrPhoneNumberWithException(search: String?, pageable: Pageable): Page<Lead> {
+        return try {
+            leadRepository.findByPersonNameOrPhoneNumber(search, pageable)
+        } catch (e: Exception) {
+            throw LeadExceptionFactory.retrieveEntityFailed(messageSource)
+        }
+    }
 }
