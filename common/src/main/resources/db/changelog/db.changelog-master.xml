@@ -33,5 +33,7 @@
     <include file="db/changelog/tables/25-insert-document-code-masters.xml"/>
     <include file="db/changelog/tables/27-update-lead-amount-range.xml"/>
     <include file="db/changelog/tables/26-lead-refactor-changes.xml"/>
+    <include file="db/changelog/tables/28-create-new-master-code-structure.xml"/>
+    <include file="db/changelog/tables/29-add-assigned-to-master-code.xml"/>
 
 </databaseChangeLog>
