@@ -7,7 +7,7 @@
 
     <changeSet id="create-payments-table" author="system">
         <createTable tableName="payments">
-            <column name="id" type="uuid" defaultValueComputed="uuid_generate_v4()">
+            <column name="id" type="uuid" defaultValueComputed="gen_random_uuid()">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
             <column name="payment_type" type="varchar(255)">

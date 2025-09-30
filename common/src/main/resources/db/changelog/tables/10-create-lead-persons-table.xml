@@ -7,7 +7,7 @@
 
     <changeSet id="create-lead-persons-table" author="system">
         <createTable tableName="lead_persons">
-            <column name="id" type="uuid" defaultValueComputed="uuid_generate_v4()">
+            <column name="id" type="uuid" defaultValueComputed="gen_random_uuid()">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
             <column name="lead_id" type="uuid">
