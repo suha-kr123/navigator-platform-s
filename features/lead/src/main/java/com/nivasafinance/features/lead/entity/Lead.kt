@@ -1,15 +1,11 @@
 package com.nivasafinance.features.lead.entity
 
+import annotations.NoArg
 import audit.AuditableEntity
-import com.nivasafinance.features.lead.dto.LeadContacts
-import com.nivasafinance.features.lead.dto.LeadPreliminaryInformation
-import com.nivasafinance.features.lead.enum.LeadStage
-import com.nivasafinance.features.lead.enum.LeadStatus
-import com.nivasafinance.features.lead.enum.SourcingChannel
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonProperty
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
-import jakarta.persistence.EnumType
-import jakarta.persistence.Enumerated
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
@@ -21,41 +17,88 @@ import java.util.UUID
 
 @Entity
 @Table(name = "leads")
+@NoArg
+@Suppress("LongParameterList")
 data class Lead(
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     val id: UUID? = null,
 
-    @Column(nullable = false)
-    var requestedAmount: BigDecimal?,
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "requested_amount", columnDefinition = "jsonb", nullable = false)
+    var requestedAmountRange: Map<String, BigDecimal>?,
 
-    @Column(length = 40, nullable = false)
+    @Column(name = "purpose", length = 40, nullable = false)
     var purpose: String?,
 
     @Column(name = "product_code", nullable = false)
     var productCode: String?,
 
-    @Column(length = 20, nullable = false)
-    @Enumerated(EnumType.STRING)
-    var status: LeadStatus?,
+    @Column(name = "pipeline_key", nullable = false)
+    var pipelineKey: String?,
 
-    @Column(length = 30, nullable = false)
-    @Enumerated(EnumType.STRING)
-    var stage: LeadStage?,
+    @Column(name = "current_stage", nullable = false)
+    var currentStage: String?,
+
+    @Column(name = "sourcing_channel")
+    var sourcingChannel: String?,
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "preliminary_information", columnDefinition = "jsonb")
-    var preliminaryInformation: LeadPreliminaryInformation?,
+    var preliminaryInformation: Map<String, Any>? = null,
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "lead_contacts", columnDefinition = "jsonb")
-    var leadContacts: LeadContacts?,
-
-    @Column(name = "sourcing_channel", length = 50)
-    var sourcingChannel: SourcingChannel?,
+    @Column(name = "ext_data", columnDefinition = "jsonb")
+    var extData: Map<String, Any>? = null,
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "data_ext", columnDefinition = "jsonb")
-    var extData: Map<String, Any>? = null
+    @Column(name = "task_data", columnDefinition = "jsonb", nullable = true)
+    var taskData: List<TaskData>? = null,
+
+    @Column(name = "address_id", nullable = true)
+    var addressId: UUID? = null,
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "identifier_ids", columnDefinition = "jsonb", nullable = true)
+    var identifierIds: List<UUID>? = null,
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "stage_ids", columnDefinition = "jsonb", nullable = true)
+    var stageIds: List<UUID>? = null,
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "document_ids", columnDefinition = "jsonb", nullable = true)
+    var documentIds: List<UUID>? = null,
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "person_data", columnDefinition = "jsonb", nullable = true)
+    var personData: List<PersonData>? = null,
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "note_ids", columnDefinition = "jsonb", nullable = true)
+    var noteIds: List<UUID>? = null
+
 ) : AuditableEntity()
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class TaskData(
+    @JsonProperty("taskId")
+    val taskId: UUID,
+    @JsonProperty("documentIds")
+    val documentIds: List<UUID> = emptyList(),
+    @JsonProperty("notesIds")
+    val notesIds: List<UUID> = emptyList(),
+    @JsonProperty("callIds")
+    val callIds: List<UUID> = emptyList()
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class PersonData(
+    @JsonProperty("personId")
+    val personId: UUID,
+    @JsonProperty("applicantType")
+    val applicantType: String,
+    @JsonProperty("relationshipToPrimary")
+    val relationshipToPrimary: String
+)

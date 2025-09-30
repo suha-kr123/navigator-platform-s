@@ -42,11 +42,11 @@ class UserContextInterceptor : HandlerInterceptor {
                 ?: throw IllegalArgumentException("Invalid token: username is missing")
             val email = decodedJWT.getClaim("email")?.asString() ?: "unknown"
             val phoneNumber = decodedJWT.getClaim("phone_number")?.asString() ?: "unknown"
-            val roles = decodedJWT.getClaim("cognito:groups")
-                ?.asList(String::class.java)
-                .orEmpty()
+            // val roles = decodedJWT.getClaim("cognito:groups")
+            //     ?.asList(String::class.java)
+            //     .orEmpty()
 
-            val userInfo = UserInfo(username, email, phoneNumber, roles)
+            val userInfo = UserInfo(username, email, phoneNumber)
             UserContext.setUserInfo(userInfo)
             logger.info("UserContext set with: $userInfo")
 

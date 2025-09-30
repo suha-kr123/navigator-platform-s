@@ -1,20 +1,47 @@
 package com.nivasafinance.features.lead.dto
 
-import com.nivasafinance.features.lead.enum.LeadStage
-import com.nivasafinance.features.lead.enum.LeadStatus
-import com.nivasafinance.features.lead.enum.SourcingChannel
+import com.nivasafinance.features.identifiers.dto.IdentifierResponse
+import com.nivasafinance.features.person.entity.MobileNumberDetails
 import java.math.BigDecimal
-import java.util.UUID
+import java.time.LocalDateTime
+import java.util.*
 
 data class LeadResponse(
     val id: UUID,
-    val requestedAmount: BigDecimal?,
+    val requestedAmountRange: Map<String, BigDecimal>?,
     val purpose: String?,
     val productCode: String?,
-    val status: LeadStatus?,
-    val stage: LeadStage?,
+    val currentStage: String?,
+    val sourcingChannel: String?,
     val preliminaryInformation: LeadPreliminaryInformation?,
-    val leadContacts: LeadContacts?,
-    val sourcingChannel: SourcingChannel?,
+    val extData: Map<String, Any>?,
+    val taskData: Map<UUID, Map<String, List<UUID>>>?,
+    val createdAt: LocalDateTime,
+    val createdBy: String?,
+    val updatedAt: LocalDateTime,
+    val updatedBy: String?,
+    val leadPersons: List<LeadPersonsResponse>?,
+    val identifiers: List<IdentifierResponse>?
+)
+
+data class LeadPersonsResponse(
+    val leadId: UUID,
+    val personId: UUID? = null,
+
+    // Personal Information
+    val firstName: String?,
+    val middleName: String?,
+    val lastName: String?,
+    val dateOfBirth: String?,
+    val gender: String?,
+
+    // Phone Numbers
+    val mobileNumbers: List<MobileNumberDetails>?,
+
+    // Lead Relationship Data
+    val applicantType: String?,
+    val relationshipToPrimary: String?,
+    
+    // Additional data
     val extData: Map<String, Any>?
 )

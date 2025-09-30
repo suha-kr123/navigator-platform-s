@@ -1,7 +1,6 @@
 package com.nivasafinance.features.address.entity
 
 import audit.AuditableEntity
-import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue
@@ -9,7 +8,6 @@ import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import org.hibernate.annotations.JdbcTypeCode
-import org.hibernate.annotations.Type
 import org.hibernate.type.SqlTypes
 import java.util.UUID
 
@@ -19,8 +17,10 @@ data class Address(
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(columnDefinition = "UUID")
     val id: UUID? = null,
+
+    @Column(name = "address_type", nullable = false)
+    var addressType: String? = null,
 
     @Column(name = "address_one")
     var addressOne: String? = null,
@@ -37,14 +37,13 @@ data class Address(
     @Column(name = "state")
     var state: String? = null,
 
-    @Column(name = "pincode")
+    @Column(name = "pincode", nullable = false)
     var pincode: String,
 
     @Column(name = "address_source")
-    var addressSource: String? = null, // CB_REPORT, IDENTITY, CUSTOMER, ADVISOR
+    var addressSource: String? = null,
 
-    @Type(JsonType::class)
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "data_ext", columnDefinition = "jsonb")
-    val dataExt: String? = null,
+    val extData: Map<String, Any>? = null,
 ) : AuditableEntity()

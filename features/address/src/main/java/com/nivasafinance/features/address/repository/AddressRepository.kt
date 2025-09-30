@@ -8,4 +8,7 @@ import java.util.UUID
 
 @Repository
 @JaversSpringDataAuditable
-interface AddressRepository : JpaRepository<Address, UUID>
+@Suppress("Indentation")
+interface AddressRepository : JpaRepository<Address, UUID> {
+    fun findByAddressType(addressType: String): List<Address>
+}

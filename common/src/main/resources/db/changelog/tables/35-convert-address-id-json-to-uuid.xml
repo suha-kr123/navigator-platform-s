@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- Convert address_id from JSON to UUID format in leads table -->
+    <changeSet id="35-convert-address-id-json-to-uuid" author="system">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <columnExists tableName="leads" columnName="address_id"/>
+                <sqlCheck expectedResult="0">
+                    SELECT COUNT(*) FROM information_schema.columns 
+                    WHERE table_name = 'leads' 
+                    AND column_name = 'address_id' 
+                    AND data_type = 'uuid'
+                </sqlCheck>
+            </and>
+        </preConditions>
+        
+        <!-- Step 1: Add a temporary column to store the converted UUID values -->
+        <addColumn tableName="leads">
+            <column name="address_id_temp" type="uuid"/>
+        </addColumn>
+        
+        <!-- Step 2: Convert JSON data to UUID format -->
+        <sql>
+            UPDATE leads 
+            SET address_id_temp = CASE 
+                WHEN address_id IS NULL THEN NULL
+                WHEN jsonb_typeof(address_id) = 'string' THEN 
+                    CASE 
+                        WHEN address_id::text ~ '^"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"$' 
+                        THEN (address_id::text)::uuid
+                        ELSE NULL
+                    END
+                WHEN jsonb_typeof(address_id) = 'array' AND jsonb_array_length(address_id) > 0 THEN
+                    CASE 
+                        WHEN jsonb_array_length(address_id) = 1 AND jsonb_typeof(address_id->0) = 'string' THEN
+                            CASE 
+                                WHEN (address_id->0)::text ~ '^"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"$'
+                                THEN ((address_id->0)::text)::uuid
+                                ELSE NULL
+                            END
+                        ELSE NULL
+                    END
+                ELSE NULL
+            END
+            WHERE address_id IS NOT NULL;
+        </sql>
+        
+        <!-- Step 3: Drop the original address_id column -->
+        <dropColumn tableName="leads" columnName="address_id"/>
+        
+        <!-- Step 4: Rename the temporary column to address_id -->
+        <renameColumn tableName="leads" 
+                      oldColumnName="address_id_temp" 
+                      newColumnName="address_id" 
+                      columnDataType="uuid"/>
+    </changeSet>
+
+    <!-- Alternative approach: If the above fails, use a simpler approach -->
+    <changeSet id="35-convert-address-id-json-to-uuid-simple" author="system">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <columnExists tableName="leads" columnName="address_id"/>
+                <sqlCheck expectedResult="0">
+                    SELECT COUNT(*) FROM information_schema.columns 
+                    WHERE table_name = 'leads' 
+                    AND column_name = 'address_id' 
+                    AND data_type = 'uuid'
+                </sqlCheck>
+                <not>
+                    <changeSetExecuted id="35-convert-address-id-json-to-uuid" author="system"/>
+                </not>
+            </and>
+        </preConditions>
+        
+        <!-- Simple approach: Drop and recreate the column -->
+        <dropColumn tableName="leads" columnName="address_id"/>
+        
+        <addColumn tableName="leads">
+            <column name="address_id" type="uuid"/>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

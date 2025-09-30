@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="create-pipelines-table" author="system">
+        <createTable tableName="pipelines">
+            <column name="id" type="uuid" defaultValueComputed="gen_random_uuid()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="key" type="varchar(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="description" type="text"/>
+            <column name="created_by" type="varchar(255)"/>
+            <column name="created_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="updated_by" type="varchar(255)"/>
+            <column name="updated_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="version" type="bigint" defaultValueNumeric="0"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="insert-home-loan-pipeline" author="system">
+        <insert tableName="pipelines">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440002"/>
+            <column name="name" value="Home Loan Pipeline"/>
+            <column name="key" value="HOME_LOAN"/>
+            <column name="description" value="Complete workflow for home loan applications"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" value="2025-09-25 11:18:21.011"/>
+            <column name="updated_by" value=""/>
+            <column name="updated_at" value="2025-09-25 11:18:21.011"/>
+            <column name="version" value="0"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>

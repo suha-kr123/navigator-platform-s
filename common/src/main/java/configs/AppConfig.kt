@@ -4,8 +4,6 @@ import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer
-import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer
-import com.fasterxml.jackson.datatype.jsr310.deser.LocalTimeDeserializer
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalTimeSerializer
@@ -43,6 +41,8 @@ class AppConfig {
         val dateFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy")
         val timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss")
         val dateTimeFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss")
+        val isoDateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")
+        val isoDateTimeFormatterWithoutSeconds = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm")
 
         val javaTimeModule = JavaTimeModule().apply {
             addSerializer(LocalDate::class.java, LocalDateSerializer(dateFormatter))
@@ -50,7 +50,40 @@ class AppConfig {
             addSerializer(java.time.LocalTime::class.java, LocalTimeSerializer(timeFormatter))
             addDeserializer(java.time.LocalTime::class.java, LocalTimeDeserializer(timeFormatter))
             addSerializer(java.time.LocalDateTime::class.java, LocalDateTimeSerializer(dateTimeFormatter))
-            addDeserializer(java.time.LocalDateTime::class.java, LocalDateTimeDeserializer(dateTimeFormatter))
+            addDeserializer(
+                java.time.LocalDateTime::class.java,
+                object : com.fasterxml.jackson.databind.JsonDeserializer<java.time.LocalDateTime>() {
+                    override fun deserialize(
+                        parser: com.fasterxml.jackson.core.JsonParser,
+                        context: com.fasterxml.jackson.databind.DeserializationContext
+                    ): java.time.LocalDateTime? {
+                        val string = parser.text
+
+                        // Handle empty or null strings
+                        if (string.isNullOrEmpty() || string.trim().isEmpty()) {
+                            return null
+                        }
+
+                        return try {
+                            // Try with seconds first
+                            java.time.LocalDateTime.parse(string, isoDateTimeFormatter)
+                        } catch (e: java.time.format.DateTimeParseException) {
+                            try {
+                                // Try without seconds
+                                java.time.LocalDateTime.parse(string, isoDateTimeFormatterWithoutSeconds)
+                            } catch (e2: java.time.format.DateTimeParseException) {
+                                try {
+                                    // Try ISO format as fallback
+                                    java.time.LocalDateTime.parse(string)
+                                } catch (e3: java.time.format.DateTimeParseException) {
+                                    // If all parsing fails, return null instead of throwing exception
+                                    null
+                                }
+                            }
+                        }
+                    }
+                }
+            )
         }
         setSerializationInclusion(JsonInclude.Include.NON_NULL)
         registerModule(javaTimeModule)

@@ -6,12 +6,9 @@ import com.nivasafinance.features.address.dto.AddressUpdateRequest
 import java.util.UUID
 
 interface AddressService {
-
-    fun getAddress(id: UUID): AddressResponse
-
-    fun createAddress(request: AddressCreateRequest): AddressResponse
-
-    fun updateAddress(id: UUID, request: AddressUpdateRequest): AddressResponse
-
-    fun deleteAddress(id: UUID)
+    fun getAllAddresses(): List<AddressResponse>
+    fun getAddressById(addressId: UUID): AddressResponse?
+    fun createAddress(addressRequest: AddressCreateRequest): AddressResponse
+    fun updateAddress(addressId: UUID, addressUpdateRequest: AddressUpdateRequest): AddressResponse
+    fun deleteAddress(addressId: UUID)
 }

@@ -5,11 +5,16 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import java.io.File
 import java.io.FileInputStream
+import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.InputStream
 
 @Component
 class FileSystemRepository : ContentRepository {
+
+    companion object {
+        private const val FILE_PROTOCOL_PREFIX_LENGTH = 7
+    }
 
     @Value("\${local.storage.base-path:/tmp/documents}")
     @Suppress("VarCouldBeVal") // lateinit requires var, not val
@@ -26,20 +31,34 @@ class FileSystemRepository : ContentRepository {
         return "file://$basePath/$documentPath"
     }
 
-    override fun deleteFile(documentPath: String) {
-        val file = File(basePath, documentPath)
+    override fun deleteFile(storageKey: String) {
+        // Remove file:// prefix if present
+        val cleanPath = if (storageKey.startsWith("file://")) {
+            storageKey.substring(FILE_PROTOCOL_PREFIX_LENGTH) // Remove "file://" prefix
+        } else {
+            storageKey
+        }
+        val file = File(cleanPath)
         if (file.exists()) {
             file.delete()
         }
     }
 
-    override fun fetchFile(documentPath: String): InputStream {
-        val file = File(basePath, documentPath)
-        require(file.exists()) { "File not found: $documentPath" }
+    override fun fetchFile(storageKey: String): InputStream {
+        // Remove file:// prefix if present
+        val cleanPath = if (storageKey.startsWith("file://")) {
+            storageKey.substring(FILE_PROTOCOL_PREFIX_LENGTH) // Remove "file://" prefix
+        } else {
+            storageKey
+        }
+        val file = File(cleanPath)
+        if (!file.exists()) {
+            throw FileNotFoundException("File not found: $cleanPath (original path: $storageKey)")
+        }
         return FileInputStream(file)
     }
 
-    override fun getSignedDownloadUrl(documentPath: String, expiresIn: Long): String? {
+    override fun getSignedDownloadUrl(storageKey: String, expiresIn: Long): String? {
         // For local file system, we don't support signed URLs
         // Return null to indicate this provider doesn't support signed URLs
         return null

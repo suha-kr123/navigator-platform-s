@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- Make outcome column nullable in tasks table -->
+    <changeSet id="make-task-outcome-nullable" author="system">
+        <dropColumn tableName="tasks" columnName="outcome"/>
+        <addColumn tableName="tasks">
+            <column name="outcome" type="varchar(255)"/>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

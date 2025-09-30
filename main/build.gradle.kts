@@ -11,9 +11,20 @@ dependencies {
     implementation(project(":features:creditbureau"))
     implementation(project(":features:person"))
     implementation(project(":features:advisor"))
+    implementation(project(":features:advisorleadmapping"))
     implementation(project(":features:master"))
     implementation(project(":features:address"))
     implementation(project(":features:lead"))
     implementation(project(":features:document"))
     implementation(project(":features:offices"))
+    implementation(project(":features:identifiers"))
+    implementation(project(":features:notes"))
+    implementation(project(":features:stages"))
+    implementation(project(":features:stagedefinitions"))
+    implementation(project(":features:tasks"))
+    implementation(project(":features:taskdefinitions"))
+}
+
+springBoot {
+    mainClass.set("com.nivasafinance.NavigatorApplicationKt")
 }

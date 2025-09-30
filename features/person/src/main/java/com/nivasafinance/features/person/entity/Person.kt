@@ -2,7 +2,6 @@ package com.nivasafinance.features.person.entity
 
 import annotations.NoArg
 import audit.AuditableEntity
-import data.enums.Gender
 import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -44,32 +43,23 @@ class Person(
     @Column(name = "mobile_numbers", columnDefinition = "jsonb")
     var mobileNumbers: List<MobileNumberDetails>? = null,
 
-    @Column(name = "email", length = 100)
-    var email: String? = null,
-
     @Column(name = "date_of_birth")
     var dateOfBirth: LocalDate? = null,
 
     @Column(name = "gender", length = 10)
-    @Enumerated(EnumType.STRING)
-    var gender: Gender? = null,
+    var gender: String? = null,
 
     @Type(JsonType::class)
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "data_ext", columnDefinition = "jsonb")
-    var dataExt: Details? = null
+    var extData: Map<String, Any>? = null
 
 ) : AuditableEntity()
-
-@Value
-@NoArg
-data class Details(
-    val description: String? = null,
-)
 
 @Value
 @NoArg
 data class MobileNumberDetails(
     var number: String? = null,
     var isPrimary: Boolean? = null,
+    var isWhatsappAvailable: Boolean? = null
 )

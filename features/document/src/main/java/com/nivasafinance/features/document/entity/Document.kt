@@ -2,12 +2,9 @@ package com.nivasafinance.features.document.entity
 
 import annotations.NoArg
 import audit.AuditableEntity
-import com.nivasafinance.features.document.enum.ProviderType
 import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
-import jakarta.persistence.EnumType
-import jakarta.persistence.Enumerated
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
@@ -29,6 +26,15 @@ class Document(
     @Column(name = "document_id")
     var documentId: UUID? = null,
 
+    @Column(name = "document_type", nullable = false)
+    var documentType: String? = null,
+
+    @Column(name = "verification_status", nullable = false)
+    var verificationStatus: String = "PENDING",
+
+    @Column(name = "verification_notes", length = 500)
+    var verificationNotes: String? = null,
+
     // Core file metadata
     @Column(name = "file_name", nullable = false)
     var fileName: String,
@@ -41,8 +47,7 @@ class Document(
 
     // Storage information
     @Column(name = "provider", nullable = false)
-    @Enumerated(EnumType.STRING)
-    var provider: ProviderType,
+    var provider: String,
 
     @Column(name = "storage_key", nullable = false)
     var storageKey: String,
@@ -65,10 +70,6 @@ class Document(
     // Extra flexible metadata
     @Type(JsonType::class)
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "ext_data", columnDefinition = "jsonb")
+    @Column(name = "data_ext", columnDefinition = "jsonb")
     var extData: Map<String, Any>? = null,
-
-    // Note: Audit fields (createdBy, createdAt, updatedBy, updatedAt, version)
-    // are inherited from AuditableEntity
-
 ) : AuditableEntity()

@@ -1,55 +1,15 @@
 package com.nivasafinance.features.person.service
 
-import com.nivasafinance.features.person.dto.EmploymentDetailsCreateRequest
-import com.nivasafinance.features.person.dto.EmploymentDetailsResponse
-import com.nivasafinance.features.person.dto.EmploymentDetailsUpdateRequest
-import com.nivasafinance.features.person.dto.PersonAddressMappingRequest
-import com.nivasafinance.features.person.dto.PersonAddressMappingResponse
-import com.nivasafinance.features.person.dto.PersonAddressMappingUpdateRequest
+import base.model.PaginatedResponse
+import base.model.PaginationRequest
 import com.nivasafinance.features.person.dto.PersonCreateRequest
-import com.nivasafinance.features.person.dto.PersonIdentifierCreateRequest
-import com.nivasafinance.features.person.dto.PersonIdentifierResponse
-import com.nivasafinance.features.person.dto.PersonIdentifierUpdateRequest
 import com.nivasafinance.features.person.dto.PersonResponse
 import com.nivasafinance.features.person.dto.PersonUpdateRequest
 import java.util.UUID
 
 interface PersonService {
-    // Basic person operations
+    fun createPerson(personRequest: PersonCreateRequest): PersonResponse
+    fun updatePerson(personId: UUID, personUpdateRequest: PersonUpdateRequest): PersonResponse
     fun getPerson(personId: UUID): PersonResponse
-    fun createPerson(request: PersonCreateRequest): PersonResponse
-    fun updatePerson(personId: UUID, request: PersonUpdateRequest): PersonResponse
-    fun deletePerson(personId: UUID)
-
-    // Address mapping operations
-    fun getPersonAddresses(personId: UUID): List<PersonAddressMappingResponse>
-    fun addAddressToPerson(personId: UUID, request: PersonAddressMappingRequest): PersonAddressMappingResponse
-    fun updatePersonAddressMapping(
-        personId: UUID,
-        addressId: UUID,
-        request: PersonAddressMappingUpdateRequest
-    ): PersonAddressMappingResponse
-    fun removeAddressFromPerson(personId: UUID, addressId: UUID)
-
-    // Identifier operations
-    fun getPersonIdentifiers(personId: UUID): List<PersonIdentifierResponse>
-    fun createPersonIdentifier(personId: UUID, request: PersonIdentifierCreateRequest): PersonIdentifierResponse
-    fun updatePersonIdentifier(
-        personId: UUID,
-        identifierId: UUID,
-        request: PersonIdentifierUpdateRequest
-    ): PersonIdentifierResponse
-    fun deletePersonIdentifier(personId: UUID, identifierId: UUID)
-
-    // Employment details operations
-    fun getPersonEmploymentDetails(personId: UUID): EmploymentDetailsResponse?
-    fun createPersonEmploymentDetails(
-        personId: UUID,
-        request: EmploymentDetailsCreateRequest
-    ): EmploymentDetailsResponse
-    fun updatePersonEmploymentDetails(
-        personId: UUID,
-        request: EmploymentDetailsUpdateRequest
-    ): EmploymentDetailsResponse
-    fun deletePersonEmploymentDetails(personId: UUID)
+    fun getAllPersons(paginationRequest: PaginationRequest): PaginatedResponse<PersonResponse>
 }
