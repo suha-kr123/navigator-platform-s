@@ -35,5 +35,7 @@
     <include file="db/changelog/tables/26-lead-refactor-changes.xml"/>
     <include file="db/changelog/tables/28-create-new-master-code-structure.xml"/>
     <include file="db/changelog/tables/29-add-assigned-to-master-code.xml"/>
+    <include file="db/changelog/tables/30-add-task-status-master-code.xml"/>
+    <include file="db/changelog/tables/31-make-task-outcome-nullable.xml"/>
 
 </databaseChangeLog>

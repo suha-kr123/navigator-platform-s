@@ -28,8 +28,8 @@ class TaskServiceImpl(
             taskDefinitionKey = taskRequest.taskDefinitionKey,
             description = taskRequest.description,
             assignedTo = taskRequest.assignedTo,
-            status = "PENDING", // Default status for new tasks
-            outcome = "IN_PROGRESS", // Default outcome for new tasks
+            status = taskRequest.status,
+            outcome = null,
             dueAt = taskRequest.dueAt,
             completedAt = null,
             rescheduledAt = null
@@ -93,18 +93,23 @@ class TaskServiceImpl(
         taskRepositoryWrapper.deleteByIdWithException(taskId)
     }
 
+
     private fun toTaskResponse(task: Task): TaskResponse {
         val taskDefinition = try {
             taskDefinitionRepositoryWrapper.findByKeyWithException(task.taskDefinitionKey)
         } catch (e: Exception) {
+            // Log the error for debugging
+            println("WARNING: TaskDefinition not found for key: ${task.taskDefinitionKey}. Error: ${e.message}")
             null
         }
+        
         val taskType = taskDefinition?.type ?: "UNKNOWN"
+        val taskName = taskDefinition?.name ?: "Unknown Task"
 
         return TaskResponse(
             id = task.id!!,
             taskDefinitionKey = task.taskDefinitionKey,
-            name = taskDefinition?.name ?: "",
+            name = taskName,
             taskType = taskType,
             description = task.description,
             assignedTo = task.assignedTo,

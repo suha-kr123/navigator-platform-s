@@ -7,5 +7,6 @@ data class TaskRequest(
     val taskDefinitionKey: String,
     val description: String?,
     val assignedTo: String?,
-    val dueAt: LocalDateTime?
+    val dueAt: LocalDateTime?,
+    val status: String
 )

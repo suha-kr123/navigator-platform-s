@@ -20,8 +20,8 @@ data class Task(
     @Column(name = "description")
     var description: String? = null,
 
-    @Column(name = "outcome", nullable = false)
-    var outcome: String,
+    @Column(name = "outcome")
+    var outcome: String? = null,
 
     @Column(name = "status", nullable = false)
     var status: String,
