@@ -9,7 +9,6 @@ dependencies {
     implementation(project(":common"))
     implementation(project(":features:person"))
     implementation(project(":features:address"))
-    implementation(project(":features:lender"))
 }
 
 springBoot {
