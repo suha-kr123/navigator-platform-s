@@ -7,8 +7,6 @@ data class IdentifierResponse(
     val id: UUID,
     val identifier: String,
     val type: String,
-    val verificationStatus: String?,
-    val verificationNotes: String?,
     val extData: Map<String, Any>?,
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime,

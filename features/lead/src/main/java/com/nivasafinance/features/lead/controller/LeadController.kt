@@ -2,12 +2,12 @@ package com.nivasafinance.features.lead.controller
 
 import base.model.PaginatedResponse
 import base.model.PaginationRequest
+import com.nivasafinance.features.lead.dto.AddLeadPersonRequest
 import com.nivasafinance.features.lead.dto.LeadCreateRequest
+import com.nivasafinance.features.lead.dto.LeadPersonsResponse
 import com.nivasafinance.features.lead.dto.LeadResponse
 import com.nivasafinance.features.lead.dto.LeadUpdateRequest
-import com.nivasafinance.features.lead.dto.AddLeadPersonRequest
 import com.nivasafinance.features.lead.dto.UpdateLeadPersonRequest
-import com.nivasafinance.features.lead.dto.LeadPersonsResponse
 import com.nivasafinance.features.lead.service.LeadService
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -25,7 +25,8 @@ class LeadController(
         @RequestParam(defaultValue = "0") offset: Int,
         @RequestParam(defaultValue = "20") limit: Int,
         @RequestParam(defaultValue = "createdAt") sortBy: String,
-        @RequestParam(defaultValue = "ASC") sortDirection: String
+        @RequestParam(defaultValue = "ASC") sortDirection: String,
+        @RequestParam(required = false) search: String?
     ): ResponseEntity<List<LeadPersonsResponse>> {
         val paginationRequest = PaginationRequest(
             offset = offset,
@@ -33,7 +34,7 @@ class LeadController(
             sortBy = sortBy,
             sortDirection = sortDirection
         )
-        val leadPersons = leadService.getAllLeadPersons(paginationRequest)
+        val leadPersons = leadService.getAllLeadPersons(paginationRequest, search)
         return ResponseEntity.ok(leadPersons)
     }
 
@@ -63,7 +64,8 @@ class LeadController(
         @RequestParam(defaultValue = "0") offset: Int,
         @RequestParam(defaultValue = "20") limit: Int,
         @RequestParam(defaultValue = "createdAt") sortBy: String,
-        @RequestParam(defaultValue = "ASC") sortDirection: String
+        @RequestParam(defaultValue = "ASC") sortDirection: String,
+        @RequestParam(required = false) search: String?
     ): ResponseEntity<PaginatedResponse<LeadResponse>> {
         val paginationRequest = PaginationRequest(
             offset = offset,
@@ -71,7 +73,7 @@ class LeadController(
             sortBy = sortBy,
             sortDirection = sortDirection
         )
-        val leads = leadService.getAllLeads(paginationRequest)
+        val leads = leadService.getAllLeads(paginationRequest, search)
         return ResponseEntity.ok(leads)
     }
 

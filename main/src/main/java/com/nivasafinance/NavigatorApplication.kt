@@ -7,7 +7,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories
 
 @SpringBootApplication(
     scanBasePackages = [
-        "com.nivasafinance.features.income",
         "com.nivasafinance.features.notes",
         "com.nivasafinance.features.document",
         "com.nivasafinance.features.identifiers",
@@ -27,7 +26,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories
     ]
 )
 @EnableJpaRepositories(
-    "com.nivasafinance.features.income",
     "com.nivasafinance.features.notes",
     "com.nivasafinance.features.document",
     "com.nivasafinance.features.identifiers",
@@ -41,7 +39,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories
     "repository"
 )
 @EntityScan(
-    "com.nivasafinance.features.income",
     "com.nivasafinance.features.notes",
     "com.nivasafinance.features.document",
     "com.nivasafinance.features.identifiers",

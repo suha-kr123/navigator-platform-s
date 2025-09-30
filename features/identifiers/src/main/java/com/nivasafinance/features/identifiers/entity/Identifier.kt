@@ -29,12 +29,6 @@ class Identifier(
     @Column(name = "type", nullable = false, length = 100)
     var type: String? = null,
 
-    @Column(name = "verification_status")
-    var verificationStatus: String? = null,
-
-    @Column(name = "verification_notes")
-    var verificationNotes: String? = null,
-
     @Type(JsonType::class)
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "data_ext", columnDefinition = "jsonb")

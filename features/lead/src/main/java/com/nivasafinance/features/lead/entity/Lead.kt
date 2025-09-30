@@ -25,8 +25,9 @@ data class Lead(
     @GeneratedValue(strategy = GenerationType.UUID)
     val id: UUID? = null,
 
-    @Column(name = "requested_amount", nullable = false)
-    var requestedAmount: BigDecimal?,
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "requested_amount", columnDefinition = "jsonb", nullable = false)
+    var requestedAmountRange: Map<String, BigDecimal>?,
 
     @Column(name = "purpose", length = 40, nullable = false)
     var purpose: String?,
@@ -62,10 +63,6 @@ data class Lead(
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "identifier_ids", columnDefinition = "jsonb", nullable = true)
     var identifierIds: List<UUID>? = null,
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "income_detail_ids", columnDefinition = "jsonb", nullable = true)
-    var incomeDetailIds: List<UUID>? = null,
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "stage_ids", columnDefinition = "jsonb", nullable = true)
@@ -104,11 +101,5 @@ data class PersonData(
     @JsonProperty("applicantType")
     val applicantType: String,
     @JsonProperty("relationshipToPrimary")
-    val relationshipToPrimary: String,
-    @JsonProperty("tags")
-    val tags: List<String>,
-    @JsonProperty("verificationStatus")
-    val verificationStatus: String,
-    @JsonProperty("verificationNotes")
-    val verificationNotes: String
+    val relationshipToPrimary: String
 )

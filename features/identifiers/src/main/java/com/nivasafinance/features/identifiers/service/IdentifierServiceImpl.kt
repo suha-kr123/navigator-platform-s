@@ -19,8 +19,6 @@ class IdentifierServiceImpl(
         val identifier = Identifier(
             identifier = identifierRequest.identifier,
             type = identifierRequest.type,
-            verificationStatus = identifierRequest.verificationStatus,
-            verificationNotes = identifierRequest.verificationNotes,
             extData = identifierRequest.extData
         )
         val savedIdentifier = identifierRepositoryWrapper.saveWithException(identifier)
@@ -34,8 +32,6 @@ class IdentifierServiceImpl(
             existingIdentifier.identifier = it
         }
         identifierUpdateRequest.type?.let { existingIdentifier.type = it }
-        identifierUpdateRequest.verificationStatus?.let { existingIdentifier.verificationStatus = it }
-        identifierUpdateRequest.verificationNotes?.let { existingIdentifier.verificationNotes = it }
         identifierUpdateRequest.extData?.let { existingIdentifier.extData = it }
 
         val savedIdentifier = identifierRepositoryWrapper.saveWithException(existingIdentifier)
@@ -62,8 +58,6 @@ class IdentifierServiceImpl(
             id = identifier.id!!,
             identifier = identifier.identifier!!,
             type = identifier.type!!,
-            verificationStatus = identifier.verificationStatus,
-            verificationNotes = identifier.verificationNotes,
             extData = identifier.extData,
             createdAt = identifier.createdAt!!,
             updatedAt = identifier.updatedAt!!,

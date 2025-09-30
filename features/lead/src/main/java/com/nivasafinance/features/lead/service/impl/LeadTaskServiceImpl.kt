@@ -5,6 +5,7 @@ import base.model.PaginationInfo
 import base.model.PaginationRequest
 import com.nivasafinance.features.lead.dto.LeadTasksResponse
 import com.nivasafinance.features.lead.entity.TaskData
+import com.nivasafinance.features.lead.exception.LeadExceptionFactory
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper
 import com.nivasafinance.features.lead.service.LeadTaskService
 import com.nivasafinance.features.tasks.dto.TaskRequest
@@ -12,6 +13,7 @@ import com.nivasafinance.features.tasks.dto.TaskResponse
 import com.nivasafinance.features.tasks.dto.UpdateTaskRequest
 import com.nivasafinance.features.tasks.service.TaskService
 import org.slf4j.LoggerFactory
+import org.springframework.context.MessageSource
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.*
@@ -19,14 +21,12 @@ import java.util.*
 @Service
 class LeadTaskServiceImpl(
     private val leadRepositoryWrapper: LeadRepositoryWrapper,
-    private val taskService: TaskService
+    private val taskService: TaskService,
+    private val messageSource: MessageSource
 ) : LeadTaskService {
 
     private val logger = LoggerFactory.getLogger(LeadTaskServiceImpl::class.java)
 
-    /**
-     * Converts TaskResponse to LeadTasksResponse
-     */
     private fun TaskResponse.toLeadTasksResponse(leadId: UUID): LeadTasksResponse {
         return LeadTasksResponse(
             leadId = leadId,
@@ -50,16 +50,12 @@ class LeadTaskServiceImpl(
 
     override fun getAllTasks(paginationRequest: PaginationRequest): PaginatedResponse<List<LeadTasksResponse>> {
         return try {
-            // Get all tasks from TaskService
             val allTasks = taskService.getAllTasks(paginationRequest)
 
-            // Get all leads to find which lead each task belongs to
-            // We need to get all leads, so we'll use a large page size
             val pageable = org.springframework.data.domain.PageRequest.of(0, 10_000)
             val allLeadsPage = leadRepositoryWrapper.findAllWithException(pageable)
             val allLeads = allLeadsPage.content
 
-            // Create a map of taskId -> leadId for quick lookup
             val taskToLeadMap = mutableMapOf<UUID, UUID>()
             allLeads.forEach { lead ->
                 lead.taskData?.forEach { taskData ->
@@ -67,8 +63,6 @@ class LeadTaskServiceImpl(
                 }
             }
 
-            // Convert to LeadTasksResponse with actual lead IDs
-            // Filter out tasks that are not associated with any lead to handle data integrity gracefully
             val tasksWithoutLead = allTasks.content.filter { task ->
                 !taskToLeadMap.containsKey(task.id)
             }
@@ -85,7 +79,6 @@ class LeadTaskServiceImpl(
                     task.toLeadTasksResponse(leadId)
                 }
 
-            // Update pagination to reflect the filtered results
             val filteredPagination = PaginationInfo(
                 offset = paginationRequest.offset,
                 limit = paginationRequest.limit,
@@ -106,37 +99,29 @@ class LeadTaskServiceImpl(
                 pagination = filteredPagination
             )
         } catch (e: Exception) {
-            throw IllegalStateException("Failed to retrieve all tasks: ${e.message}", e)
+            throw LeadExceptionFactory.taskRetrievalFailed(messageSource)
         }
     }
 
     override fun getLeadTasks(leadId: UUID, paginationRequest: PaginationRequest): PaginatedResponse<List<LeadTasksResponse>> {
         return try {
-            // Verify lead exists
             val lead = leadRepositoryWrapper.findByIdWithException(leadId)
 
-            // Get task data from lead
             val taskData = lead.taskData ?: emptyList()
 
-            // Convert to LeadTasksResponse with proper error handling
             val leadTasksResponses = taskData.map { taskDataItem ->
                 val task = try {
                     taskService.getTaskById(taskDataItem.taskId)
                 } catch (e: Exception) {
-                    throw IllegalStateException(
-                        "Failed to retrieve task ${taskDataItem.taskId} for lead $leadId: ${e.message}",
-                        e
-                    )
+                    throw LeadExceptionFactory.taskRetrievalFailedForTask(taskDataItem.taskId, leadId, messageSource)
                 }
                 task.toLeadTasksResponse(leadId)
             }
 
-            // Implement proper pagination for lead tasks
             val totalElements = leadTasksResponses.size.toLong()
             val totalPages = if (totalElements == 0L) 0 else ((totalElements - 1) / paginationRequest.limit + 1).toInt()
             val currentPage = paginationRequest.offset / paginationRequest.limit
 
-            // Apply pagination to the results
             val paginatedContent = leadTasksResponses
                 .drop(paginationRequest.offset)
                 .take(paginationRequest.limit)
@@ -154,24 +139,21 @@ class LeadTaskServiceImpl(
                 )
             )
         } catch (e: Exception) {
-            throw IllegalStateException("Failed to retrieve tasks for lead $leadId: ${e.message}", e)
+            throw LeadExceptionFactory.taskRetrievalFailedForLead(leadId, messageSource)
         }
     }
 
     @Transactional(rollbackFor = [Exception::class])
     override fun createTaskForLead(leadId: UUID, createTaskRequest: TaskRequest): LeadTasksResponse {
         return try {
-            // Verify lead exists
             val lead = leadRepositoryWrapper.findByIdWithException(leadId)
 
-            // Create task using TaskService with proper error handling
             val taskResponse = try {
                 taskService.createTask(createTaskRequest)
             } catch (e: Exception) {
-                throw IllegalStateException("Failed to create task for lead $leadId: ${e.message}", e)
+                throw LeadExceptionFactory.taskCreationFailedForLead(leadId, messageSource)
             }
 
-            // Add task to lead's task data
             val currentTaskData = lead.taskData.orEmpty()
             val newTaskData = TaskData(
                 taskId = taskResponse.id,
@@ -180,26 +162,23 @@ class LeadTaskServiceImpl(
                 callIds = emptyList()
             )
 
-            // Update the lead entity directly
             lead.taskData = currentTaskData + newTaskData
             leadRepositoryWrapper.saveWithException(lead)
 
             taskResponse.toLeadTasksResponse(leadId)
         } catch (e: Exception) {
-            throw IllegalStateException("Failed to create task for lead $leadId: ${e.message}", e)
+            throw LeadExceptionFactory.taskCreationFailedForLead(leadId, messageSource)
         }
     }
 
     @Transactional(rollbackFor = [Exception::class])
     override fun patchTaskForLead(leadId: UUID, taskId: UUID, updateTaskRequest: UpdateTaskRequest): LeadTasksResponse {
-        // Validate task-lead relationship
         validateTaskLeadRelationship(leadId, taskId)
 
-        // Update task with proper error handling
         val updatedTask = try {
             taskService.patchTaskById(taskId, updateTaskRequest)
         } catch (e: Exception) {
-            throw IllegalStateException("Failed to update task $taskId for lead $leadId: ${e.message}", e)
+            throw LeadExceptionFactory.taskUpdateFailed(taskId, leadId, messageSource)
         }
 
         return updatedTask.toLeadTasksResponse(leadId)
@@ -208,76 +187,66 @@ class LeadTaskServiceImpl(
     @Transactional(rollbackFor = [Exception::class])
     override fun deleteTaskForLead(leadId: UUID, taskId: UUID) {
         return try {
-            // Validate task-lead relationship
             validateTaskLeadRelationship(leadId, taskId)
 
-            // Get lead for updating task data
             val lead = leadRepositoryWrapper.findByIdWithException(leadId)
 
-            // Remove task from lead's task data
             val currentTaskData = lead.taskData.orEmpty()
             val updatedTaskData = currentTaskData.filter { it.taskId != taskId }
 
-            // Update the lead entity directly
             lead.taskData = updatedTaskData
             leadRepositoryWrapper.saveWithException(lead)
 
-            // Delete the task with proper error handling
             try {
                 taskService.deleteTaskById(taskId)
             } catch (e: Exception) {
-                throw IllegalStateException("Failed to delete task $taskId for lead $leadId: ${e.message}", e)
+                throw LeadExceptionFactory.taskDeletionFailed(taskId, leadId, messageSource)
             }
         } catch (e: Exception) {
-            throw IllegalStateException("Failed to delete task $taskId for lead $leadId: ${e.message}", e)
+            throw LeadExceptionFactory.taskDeletionFailed(taskId, leadId, messageSource)
         }
     }
 
     override fun getTaskForLead(leadId: UUID, taskId: UUID): LeadTasksResponse {
         return try {
-            // Validate task-lead relationship
             validateTaskLeadRelationship(leadId, taskId)
 
-            // Get the task with proper error handling
             val task = try {
                 taskService.getTaskById(taskId)
             } catch (e: Exception) {
-                throw IllegalStateException(
-                    "Failed to retrieve task $taskId for lead $leadId: ${e.message}",
-                    e
-                )
+                throw LeadExceptionFactory.taskRetrievalFailedForTask(taskId, leadId, messageSource)
             }
 
             task.toLeadTasksResponse(leadId)
         } catch (e: Exception) {
-            throw IllegalStateException("Failed to retrieve task $taskId for lead $leadId: ${e.message}", e)
+            throw LeadExceptionFactory.taskRetrievalFailedForTask(taskId, leadId, messageSource)
         }
     }
 
     /**
-     * Validates that a task belongs to a specific lead
      * @param leadId The lead ID to check
      * @param taskId The task ID to validate
-     * @throws IllegalArgumentException if the task doesn't belong to the lead
+     * @throws TaskNotBelongsToLeadException if the task doesn't belong to the lead
      */
     private fun validateTaskLeadRelationship(leadId: UUID, taskId: UUID) {
         val lead = leadRepositoryWrapper.findByIdWithException(leadId)
         val taskExists = lead.taskData?.any { it.taskId == taskId } ?: false
-        require(taskExists) { "Task with ID $taskId does not belong to lead $leadId" }
+        if (!taskExists) {
+            throw LeadExceptionFactory.taskNotBelongsToLead(taskId, leadId, messageSource)
+        }
     }
 
     /**
-     * Validates that all tasks in a list belong to a specific lead
      * @param leadId The lead ID to check
      * @param taskIds The list of task IDs to validate
-     * @throws IllegalArgumentException if any task doesn't belong to the lead
+     * @throws TasksNotBelongToLeadException if any task doesn't belong to the lead
      */
     private fun validateTaskLeadRelationships(leadId: UUID, taskIds: List<UUID>) {
         val lead = leadRepositoryWrapper.findByIdWithException(leadId)
         val leadTaskIds = lead.taskData?.map { it.taskId }.orEmpty()
         val invalidTaskIds = taskIds.filter { it !in leadTaskIds }
-        require(invalidTaskIds.isEmpty()) {
-            "Tasks with IDs $invalidTaskIds do not belong to lead $leadId"
+        if (invalidTaskIds.isNotEmpty()) {
+            throw LeadExceptionFactory.tasksNotBelongToLead(invalidTaskIds, leadId, messageSource)
         }
     }
 }

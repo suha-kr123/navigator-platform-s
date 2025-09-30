@@ -10,7 +10,6 @@ data class PersonResponse(
     val middleName: String?,
     val lastName: String?,
     val mobileNumbers: List<MobileNumberDetails>?,
-    val email: String?,
     val dateOfBirth: String?,
     val gender: String?,
     val extData: Map<String, Any>?,
