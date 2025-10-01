@@ -1,4 +1,4 @@
-package com.nivasafinance.features.advisorleadmapping.entity
+package com.nivasafinance.features.advisorlead.entity
 
 import annotations.NoArg
 import audit.AuditableEntity

@@ -1,4 +1,4 @@
-package com.nivasafinance.features.advisorleadmapping.exception
+package com.nivasafinance.features.advisorlead.exception
 
 import org.springframework.context.MessageSource
 import java.util.UUID

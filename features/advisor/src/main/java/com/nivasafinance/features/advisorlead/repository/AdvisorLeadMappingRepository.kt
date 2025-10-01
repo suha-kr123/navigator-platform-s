@@ -1,6 +1,6 @@
-package com.nivasafinance.features.advisorleadmapping.repository
+package com.nivasafinance.features.advisorlead.repository
 
-import com.nivasafinance.features.advisorleadmapping.entity.AdvisorLeadMapping
+import com.nivasafinance.features.advisorlead.entity.AdvisorLeadMapping
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository

@@ -1,8 +1,9 @@
-package com.nivasafinance.features.advisorleadmapping.repository
+package com.nivasafinance.features.advisorlead.repository
 
-import com.nivasafinance.features.advisorleadmapping.entity.AdvisorLeadMapping
-import com.nivasafinance.features.advisorleadmapping.exception.AdvisorLeadMappingExceptionFactory
+import com.nivasafinance.features.advisorlead.entity.AdvisorLeadMapping
+import com.nivasafinance.features.advisorlead.exception.AdvisorLeadMappingExceptionFactory
 import org.springframework.context.MessageSource
+import org.springframework.dao.DataAccessException
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
@@ -17,7 +18,7 @@ class AdvisorLeadMappingRepositoryWrapper(
     fun saveWithException(advisorLeadMapping: AdvisorLeadMapping): AdvisorLeadMapping {
         return try {
             advisorLeadMappingRepository.save(advisorLeadMapping)
-        } catch (e: org.springframework.dao.DataAccessException) {
+        } catch (e: DataAccessException) {
             val exception = AdvisorLeadMappingExceptionFactory.createFailed(messageSource)
             exception.initCause(e)
             throw exception
@@ -29,7 +30,7 @@ class AdvisorLeadMappingRepositoryWrapper(
             advisorLeadMappingRepository.findById(id).orElseThrow {
                 AdvisorLeadMappingExceptionFactory.notFound(id, messageSource)
             }
-        } catch (e: org.springframework.dao.DataAccessException) {
+        } catch (e: DataAccessException) {
             val exception = AdvisorLeadMappingExceptionFactory.retrieveEntityFailed(messageSource)
             exception.initCause(e)
             throw exception
@@ -39,7 +40,7 @@ class AdvisorLeadMappingRepositoryWrapper(
     fun findAllByAdvisorIdWithException(advisorId: UUID, pageable: Pageable): Page<AdvisorLeadMapping> {
         return try {
             advisorLeadMappingRepository.findAllByAdvisorId(advisorId, pageable)
-        } catch (e: org.springframework.dao.DataAccessException) {
+        } catch (e: DataAccessException) {
             val exception = AdvisorLeadMappingExceptionFactory.retrieveEntityFailed(messageSource)
             exception.initCause(e)
             throw exception
@@ -49,7 +50,7 @@ class AdvisorLeadMappingRepositoryWrapper(
     fun deleteByIdWithException(id: UUID) {
         try {
             advisorLeadMappingRepository.deleteById(id)
-        } catch (e: org.springframework.dao.DataAccessException) {
+        } catch (e: DataAccessException) {
             val exception = AdvisorLeadMappingExceptionFactory.deleteFailed(messageSource)
             exception.initCause(e)
             throw exception
