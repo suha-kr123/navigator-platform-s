@@ -20,7 +20,7 @@ data class Address(
     val id: UUID? = null,
 
     @Column(name = "address_type", nullable = false)
-    var addressType: String? = null,
+    var addressType: String? = null, //todo
 
     @Column(name = "address_one")
     var addressOne: String? = null,

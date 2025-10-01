@@ -1,0 +1,25 @@
+CREATE TABLE leads
+(
+    id                      uuid PRIMARY KEY,
+    requested_amount        numeric      NOT NULL,
+    purpose                 varchar(40)  NOT NULL,
+    product_code            varchar(255) NOT NULL,
+    pipeline_key            varchar(255) NOT NULL,
+    current_stage           varchar(255) NOT NULL,
+    sourcing_channel        varchar(255),
+    preliminary_information jsonb,
+    ext_data                jsonb,
+    task_data               jsonb,
+    address_ids             jsonb,
+    identifier_ids          jsonb,
+    document_ids            jsonb,
+    income_detail_ids       jsonb,
+    note_ids                jsonb,
+    stage_ids               jsonb,
+    person_data             jsonb,
+    created_by              varchar(255),
+    created_at              timestamp,
+    updated_by              varchar(255),
+    updated_at              timestamp,
+    version                 bigint
+);
