@@ -1,7 +1,6 @@
 ALTER TABLE IF EXISTS address DROP COLUMN IF EXISTS is_primary;
 ALTER TABLE IF EXISTS identifier DROP COLUMN IF EXISTS verification_status;
 ALTER TABLE IF EXISTS identifier DROP COLUMN IF EXISTS verification_notes;
-DROP TABLE IF EXISTS income_details;
 ALTER TABLE IF EXISTS lead DROP COLUMN IF EXISTS income_detail_ids;
 DROP TABLE IF EXISTS lead_persons;
 ALTER TABLE IF EXISTS person DROP COLUMN IF EXISTS email;
