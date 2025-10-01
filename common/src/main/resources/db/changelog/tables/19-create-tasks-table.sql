@@ -3,7 +3,7 @@ CREATE TABLE tasks
     id                  uuid PRIMARY KEY,
     task_definition_key varchar(255) NOT NULL,
     description         varchar(255),
-    outcome             varchar(255) NOT NULL,
+    outcome varchar(255),
     status              varchar(255) NOT NULL,
     assigned_to         varchar(255),
     due_at              timestamp,

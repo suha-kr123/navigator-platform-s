@@ -1,6 +1,6 @@
 CREATE TABLE api_audit_log
 (
-    id              uuid PRIMARY KEY,
+    id uuid PRIMARY KEY default gen_random_uuid(),
     duration_ms     bigint,
     error_message   varchar(255),
     ip_address      varchar(255),

@@ -1,6 +1,6 @@
 CREATE TABLE master_pincode
 (
-    id            uuid PRIMARY KEY,
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     pincode       varchar(10)  NOT NULL,
     area          varchar(255) NOT NULL,
     district      varchar(255),

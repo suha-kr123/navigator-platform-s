@@ -6,40 +6,6 @@
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
     <!-- Include all table creation changesets -->
-    <include file="db/changelog/tables/01-create-address-table.xml"/>
-    <include file="db/changelog/tables/02-create-advisor-table.xml"/>
-    <include file="db/changelog/tables/03-create-advisor-lead-mapping-table.xml"/>
-    <include file="db/changelog/tables/04-create-api-audit-log-table.xml"/>
-    <include file="db/changelog/tables/05-create-code-master-table.xml"/>
-    <include file="db/changelog/tables/06-create-documents-table.xml"/>
-    <include file="db/changelog/tables/07-create-identifiers-table.xml"/>
-    <include file="db/changelog/tables/08-create-income-details-table.xml"/>
-    <include file="db/changelog/tables/09-create-leads-table.xml"/>
-    <include file="db/changelog/tables/10-create-lead-persons-table.xml"/>
-    <include file="db/changelog/tables/11-create-master-pincode-table.xml"/>
-    <include file="db/changelog/tables/12-create-notes-table.xml"/>
-    <include file="db/changelog/tables/13-create-payments-table.xml"/>
-    <include file="db/changelog/tables/14-create-person-table.xml"/>
-    <include file="db/changelog/tables/15-create-pipelines-table.xml"/>
-    <include file="db/changelog/tables/16-create-stage-definitions-table.xml"/>
-    <include file="db/changelog/tables/17-create-stages-table.xml"/>
-    <include file="db/changelog/tables/18-create-task-definitions-table.xml"/>
-    <include file="db/changelog/tables/19-create-tasks-table.xml"/>
-    <include file="db/changelog/tables/20-create-transition-definitions-table.xml"/>
-    <include file="db/changelog/tables/21-insert-missing-code-master-values.xml"/>
-    <include file="db/changelog/tables/22-fix-code-master-structure.xml"/>
-    <include file="db/changelog/tables/23-insert-additional-master-codes.xml"/>
-    <include file="db/changelog/tables/24-insert-assigned-to-codes.xml"/>
-    <include file="db/changelog/tables/25-insert-document-code-masters.xml"/>
-    <include file="db/changelog/tables/27-update-lead-amount-range.xml"/>
-    <include file="db/changelog/tables/26-lead-refactor-changes.xml"/>
-    <include file="db/changelog/tables/28-create-new-master-code-structure.xml"/>
-    <include file="db/changelog/tables/29-add-assigned-to-master-code.xml"/>
-    <include file="db/changelog/tables/30-add-task-status-master-code.xml"/>
-    <include file="db/changelog/tables/31-make-task-outcome-nullable.xml"/>
-    <include file="db/changelog/tables/32-address-refactor-changes.xml"/>
-    <include file="db/changelog/tables/33-add-address-master-codes.xml"/>
-    <include file="db/changelog/tables/34-insert-mandya-mysore-pincodes.xml"/>
-    <include file="db/changelog/tables/35-convert-address-id-json-to-uuid.xml"/>
+    <includeAll path="db/changelog/tables"/>
 
 </databaseChangeLog>

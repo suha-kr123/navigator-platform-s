@@ -1,6 +1,6 @@
 CREATE TABLE person
 (
-    id             uuid PRIMARY KEY,
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     first_name     varchar(100),
     middle_name    varchar(100),
     last_name      varchar(100),

@@ -1,6 +1,6 @@
 CREATE TABLE master_code
 (
-    id                uuid PRIMARY KEY,
+    id uuid PRIMARY KEY default gen_random_uuid(),
     parent_id         uuid,
     key               varchar(100) NOT NULL,
     name              jsonb,
@@ -15,7 +15,7 @@ CREATE TABLE master_code
 
 CREATE TABLE master_code_value
 (
-    id          uuid PRIMARY KEY,
+    id uuid PRIMARY KEY default gen_random_uuid(),
     key         varchar(100) NOT NULL,
     code_key    varchar(100) NOT NULL,
     value       jsonb,

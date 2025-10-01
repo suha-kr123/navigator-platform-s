@@ -1,6 +1,6 @@
 CREATE TABLE notes
 (
-    id         uuid PRIMARY KEY,
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     title      varchar(255) NOT NULL,
     content    text         NOT NULL,
     created_by varchar(255),

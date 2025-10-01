@@ -1,7 +1,7 @@
 CREATE TABLE leads
 (
-    id                      uuid PRIMARY KEY,
-    requested_amount        numeric      NOT NULL,
+    id               uuid PRIMARY KEY default gen_random_uuid(),
+    requested_amount jsonb NOT NULL,
     purpose                 varchar(40)  NOT NULL,
     product_code            varchar(255) NOT NULL,
     pipeline_key            varchar(255) NOT NULL,
@@ -10,10 +10,8 @@ CREATE TABLE leads
     preliminary_information jsonb,
     ext_data                jsonb,
     task_data               jsonb,
-    address_ids             jsonb,
-    identifier_ids          jsonb,
+    address_id       uuid,
     document_ids            jsonb,
-    income_detail_ids       jsonb,
     note_ids                jsonb,
     stage_ids               jsonb,
     person_data             jsonb,
