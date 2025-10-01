@@ -31,7 +31,6 @@ class OfficeReadServiceImpl(
         val addressResp = address?.let {
             AddressResponse(
                 id = it.id,
-                addressType = it.addressType,
                 addressOne = it.addressOne,
                 addressTwo = it.addressTwo,
                 landmark = it.landmark,

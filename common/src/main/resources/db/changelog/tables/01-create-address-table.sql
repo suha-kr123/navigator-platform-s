@@ -1,7 +1,6 @@
 CREATE TABLE address
 (
     id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    address_type   varchar(50) NOT NULL,
     address_one    text,
     address_two    text,
     landmark       text,

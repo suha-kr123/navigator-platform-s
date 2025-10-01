@@ -4,7 +4,6 @@ import java.util.UUID
 
 data class AddressResponse(
     val id: UUID?,
-    val addressType: String?,
     val addressOne: String?,
     val addressTwo: String?,
     val landmark: String?,

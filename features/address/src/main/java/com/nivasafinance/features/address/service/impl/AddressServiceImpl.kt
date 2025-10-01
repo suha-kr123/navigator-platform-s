@@ -1,8 +1,8 @@
 package com.nivasafinance.features.address.service.impl
 
-import com.nivasafinance.features.address.dto.AddressCreateRequest
 import com.nivasafinance.features.address.dto.AddressResponse
-import com.nivasafinance.features.address.dto.AddressUpdateRequest
+import com.nivasafinance.features.address.dto.CreateAddressRequest
+import com.nivasafinance.features.address.dto.UpdateAddressRequest
 import com.nivasafinance.features.address.entity.Address
 import com.nivasafinance.features.address.exception.AddressExceptionFactory
 import com.nivasafinance.features.address.repository.AddressRepositoryWrapper
@@ -35,7 +35,7 @@ class AddressServiceImpl(
         }
     }
 
-    override fun createAddress(addressRequest: AddressCreateRequest): AddressResponse {
+    override fun createAddress(addressRequest: CreateAddressRequest): AddressResponse {
         AddressExceptionFactory.validateAddressForCreation(addressRequest.pincode, messageSource)
 
         val pincodeDetails = pincodeService.getPincodeDetailsSafe(addressRequest.pincode)
@@ -48,7 +48,6 @@ class AddressServiceImpl(
         }
 
         val address = Address(
-            addressType = addressRequest.addressType,
             addressOne = addressRequest.addressOne,
             addressTwo = addressRequest.addressTwo,
             landmark = addressRequest.landmark,
@@ -62,12 +61,12 @@ class AddressServiceImpl(
         return toAddressResponse(savedAddress)
     }
 
-    override fun updateAddress(addressId: UUID, addressUpdateRequest: AddressUpdateRequest): AddressResponse {
+    override fun updateAddress(addressId: UUID, updateAddressRequest: UpdateAddressRequest): AddressResponse {
         AddressExceptionFactory.validateAddressForUpdate(addressId, messageSource)
 
         val address = addressRepositoryWrapper.findByIdWithException(addressId)
 
-        addressUpdateRequest.pincode?.let { pincode ->
+        updateAddressRequest.pincode?.let { pincode ->
             AddressExceptionFactory.validateAddressForCreation(pincode, messageSource)
 
             val pincodeDetails = pincodeService.getPincodeDetailsSafe(pincode)
@@ -79,20 +78,19 @@ class AddressServiceImpl(
                 masterData.district?.let { address.district = it }
                 masterData.state?.let { address.state = it }
             } else {
-                addressUpdateRequest.district?.let { address.district = it }
-                addressUpdateRequest.state?.let { address.state = it }
+                updateAddressRequest.district?.let { address.district = it }
+                updateAddressRequest.state?.let { address.state = it }
             }
         }
 
-        if (addressUpdateRequest.pincode == null) {
-            addressUpdateRequest.district?.let { address.district = it }
-            addressUpdateRequest.state?.let { address.state = it }
+        if (updateAddressRequest.pincode == null) {
+            updateAddressRequest.district?.let { address.district = it }
+            updateAddressRequest.state?.let { address.state = it }
         }
 
-        addressUpdateRequest.addressType?.let { address.addressType = it }
-        addressUpdateRequest.addressOne?.let { address.addressOne = it }
-        addressUpdateRequest.addressTwo?.let { address.addressTwo = it }
-        addressUpdateRequest.landmark?.let { address.landmark = it }
+        updateAddressRequest.addressOne?.let { address.addressOne = it }
+        updateAddressRequest.addressTwo?.let { address.addressTwo = it }
+        updateAddressRequest.landmark?.let { address.landmark = it }
 
         val updatedAddress = addressRepositoryWrapper.saveWithException(address)
         return toAddressResponse(updatedAddress)
@@ -105,7 +103,6 @@ class AddressServiceImpl(
     private fun toAddressResponse(address: Address): AddressResponse {
         return AddressResponse(
             id = address.id,
-            addressType = address.addressType,
             addressOne = address.addressOne,
             addressTwo = address.addressTwo,
             landmark = address.landmark,

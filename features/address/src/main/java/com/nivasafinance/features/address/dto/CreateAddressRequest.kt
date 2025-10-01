@@ -3,8 +3,7 @@ package com.nivasafinance.features.address.dto
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Pattern
 
-data class AddressCreateRequest(
-    val addressType: String? = null,
+data class CreateAddressRequest(
     val addressOne: String? = null,
     val addressTwo: String? = null,
     val landmark: String? = null,

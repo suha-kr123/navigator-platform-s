@@ -18,7 +18,7 @@ class LenderOfficeWriteServiceImpl(
 ) : LenderOfficeWriteService {
 
     override fun create(lenderOfficeData: LenderOfficeRequestData): LenderOfficeReponseData {
-        val addressResponse = addressService.createAddress(lenderOfficeData.addressCreateRequest)
+        val addressResponse = addressService.createAddress(lenderOfficeData.createAddressRequest)
         val addressId = checkNotNull(addressResponse.id) { "Address ID cannot be null" }
 
         val lenderOffice = LenderOffice(
@@ -36,7 +36,7 @@ class LenderOfficeWriteServiceImpl(
         val existingLenderOffice = lenderOfficeRepositoryWrapper.findByIdWithException(id)
 
         // Create new address for update
-        val addressResponse = addressService.createAddress(lenderOfficeData.addressCreateRequest)
+        val addressResponse = addressService.createAddress(lenderOfficeData.createAddressRequest)
         val addressId = checkNotNull(addressResponse.id) { "Address ID cannot be null" }
 
         val updatedLenderOffice = existingLenderOffice.copy(

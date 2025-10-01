@@ -24,7 +24,7 @@ class OfficeWriteServiceImpl(
     @Transactional
     override fun createOffice(request: OfficeCreateRequest): OfficeResponse {
         // First create the address
-        val addressResponse = addressService.createAddress(request.addressCreateRequest)
+        val addressResponse = addressService.createAddress(request.createAddressRequest)
 
         // Generate hierarchical code using factory
         val generatedCode = officeCodeFactory.generateOfficeCode(request.parentId)
@@ -49,7 +49,6 @@ class OfficeWriteServiceImpl(
         val addressResp = address?.let {
             AddressResponse(
                 id = it.id,
-                addressType = it.addressType,
                 addressOne = it.addressOne,
                 addressTwo = it.addressTwo,
                 landmark = it.landmark,

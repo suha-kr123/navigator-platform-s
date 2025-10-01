@@ -1,8 +1,8 @@
 package com.nivasafinance.features.lead.service.impl
 
-import com.nivasafinance.features.address.dto.AddressCreateRequest
 import com.nivasafinance.features.address.dto.AddressResponse
-import com.nivasafinance.features.address.dto.AddressUpdateRequest
+import com.nivasafinance.features.address.dto.CreateAddressRequest
+import com.nivasafinance.features.address.dto.UpdateAddressRequest
 import com.nivasafinance.features.address.service.AddressService
 import com.nivasafinance.features.lead.exception.LeadExceptionFactory
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper
@@ -29,7 +29,7 @@ class LeadAddressServiceImpl(
 
     override fun createLeadAddress(
         leadId: UUID,
-        addressRequest: AddressCreateRequest
+        addressRequest: CreateAddressRequest
     ): AddressResponse {
         val lead = leadRepositoryWrapper.findByIdWithException(leadId)
         
@@ -44,7 +44,7 @@ class LeadAddressServiceImpl(
 
     override fun updateLeadAddress(
         leadId: UUID,
-        addressRequest: AddressUpdateRequest
+        addressRequest: UpdateAddressRequest
     ): AddressResponse {
         val lead = leadRepositoryWrapper.findByIdWithException(leadId)
         
