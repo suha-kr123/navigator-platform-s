@@ -18,7 +18,7 @@ fun generateDocumentPathForLead(
     fileName: String
 ): String {
     val sanitisedFileName = sanitizeFileName(fileName)
-    return "leads/${leadId}/${sanitisedFileName}_${System.currentTimeMillis()}"
+    return "leads/${leadId}/${System.currentTimeMillis()}_${sanitisedFileName}"
 }
 
 fun generateDocumentPathForLeadTask(
@@ -27,7 +27,7 @@ fun generateDocumentPathForLeadTask(
     fileName: String
 ): String {
     val sanitisedFileName = sanitizeFileName(fileName)
-    return "leads/${leadId}/tasks/${taskId}/${sanitisedFileName}_${System.currentTimeMillis()}"
+    return "leads/${leadId}/tasks/${taskId}/${System.currentTimeMillis()}_${sanitisedFileName}"
 }
 
 fun resolveLeadDocumentPath(

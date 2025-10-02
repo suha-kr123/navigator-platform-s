@@ -5,6 +5,7 @@ CREATE TABLE documents
     type       varchar(255) NOT NULL,
     size       bigint       NOT NULL,
     path       text         NOT NULL,
+    provider varchar(255) NOT NULL,
     tags       jsonb,
     data_ext   jsonb,
     created_by varchar(255),

@@ -30,7 +30,7 @@ class ApiAuditFilter(
         // Skip audit filter for download endpoints and document streaming to avoid Content-Type conflicts
         if ((
                 request.requestURI.contains("/download") ||
-                    request.requestURI.contains("/api/documents/")
+                        request.requestURI.contains("/documents/")
                 ) &&
             request.method == "GET"
         ) {
