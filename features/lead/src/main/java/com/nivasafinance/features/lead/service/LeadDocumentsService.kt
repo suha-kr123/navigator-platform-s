@@ -3,6 +3,7 @@ package com.nivasafinance.features.lead.service
 import base.model.PaginatedResponse
 import base.model.PaginationRequest
 import com.nivasafinance.features.lead.dto.LeadDocumentCreateRequest
+import com.nivasafinance.features.lead.dto.LeadDocumentCreateResponse
 import com.nivasafinance.features.lead.dto.LeadDocumentResponse
 import org.springframework.web.multipart.MultipartFile
 import java.util.UUID
@@ -15,7 +16,7 @@ interface LeadDocumentsService {
         leadId: UUID,
         file: MultipartFile,
         createRequest: LeadDocumentCreateRequest
-    ): LeadDocumentResponse
+    ): LeadDocumentCreateResponse
 
     /**
      * Gets all documents for a specific lead

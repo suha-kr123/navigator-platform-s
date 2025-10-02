@@ -1,6 +1,6 @@
 package com.nivasafinance.features.master.codemaster.controller
 
-import com.nivasafinance.features.master.codemaster.dto.CodeMasterListResponse
+import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse
 import com.nivasafinance.features.master.codemaster.dto.MasterCodeWithValuesResponse
 import com.nivasafinance.features.master.codemaster.service.CodeMasterService
 import org.springframework.http.ResponseEntity
@@ -20,7 +20,7 @@ class CodeMasterController(
     fun getAllCodeValuesByCodeKey(
         @PathVariable codeKey: String,
         @RequestParam(defaultValue = "true") onlyActive: Boolean
-    ): ResponseEntity<CodeMasterListResponse> {
+    ): ResponseEntity<List<CodeValueResponse>> {
         val response = codeMasterService.getAllCodeValuesByCodeKey(codeKey, onlyActive)
         return ResponseEntity.ok(response)
     }

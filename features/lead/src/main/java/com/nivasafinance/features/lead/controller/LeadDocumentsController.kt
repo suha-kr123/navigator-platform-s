@@ -3,6 +3,7 @@ package com.nivasafinance.features.lead.controller
 import base.model.PaginatedResponse
 import base.model.PaginationRequest
 import com.nivasafinance.features.lead.dto.LeadDocumentCreateRequest
+import com.nivasafinance.features.lead.dto.LeadDocumentCreateResponse
 import com.nivasafinance.features.lead.dto.LeadDocumentResponse
 import com.nivasafinance.features.lead.service.LeadDocumentsService
 import org.springframework.http.HttpStatus
@@ -29,7 +30,7 @@ class LeadDocumentsController(
         @PathVariable leadId: UUID,
         @RequestParam("file") file: MultipartFile,
         @RequestBody createRequest: LeadDocumentCreateRequest
-    ): ResponseEntity<LeadDocumentResponse> {
+    ): ResponseEntity<LeadDocumentCreateResponse> {
         val leadDocument = leadDocumentsService.createDocumentForLead(leadId, file, createRequest)
         return ResponseEntity.status(HttpStatus.CREATED).body(leadDocument)
     }

@@ -1,6 +1,5 @@
 package com.nivasafinance.features.master.codemaster.service.impl
 
-import com.nivasafinance.features.master.codemaster.dto.CodeMasterListResponse
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse
 import com.nivasafinance.features.master.codemaster.dto.MasterCodeWithValuesResponse
 import com.nivasafinance.features.master.codemaster.entity.MasterCodeValue
@@ -15,7 +14,7 @@ class CodeMasterServiceImpl(
     private val masterCodeValueRepositoryWrapper: MasterCodeValueRepositoryWrapper
 ) : CodeMasterService {
 
-    override fun getAllCodeValuesByCodeKey(codeKey: String, onlyActive: Boolean): CodeMasterListResponse {
+    override fun getAllCodeValuesByCodeKey(codeKey: String, onlyActive: Boolean): List<CodeValueResponse> {
         // Verify that the master code exists
         masterCodeRepositoryWrapper.findByKeyWithException(codeKey)
 
@@ -26,7 +25,7 @@ class CodeMasterServiceImpl(
         }
         val values = codeValues.map { mapToCodeValueResponse(it) }
 
-        return CodeMasterListResponse(codeName = codeKey, values = values)
+        return values
     }
 
     override fun getMasterCodeChildrenWithValues(

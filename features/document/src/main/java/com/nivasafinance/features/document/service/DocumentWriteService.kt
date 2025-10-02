@@ -1,7 +1,7 @@
 package com.nivasafinance.features.document.service
 
 import com.nivasafinance.features.document.dto.DocumentCreateRequest
-import com.nivasafinance.features.document.dto.DocumentResponse
+import com.nivasafinance.features.document.dto.DocumentCreateResponse
 import java.util.UUID
 
 /**
@@ -17,7 +17,7 @@ interface DocumentWriteService {
      * @throws DocumentValidationException if validation fails
      * @throws DocumentConflictException if document already exists
      */
-    fun createDocument(createRequest: DocumentCreateRequest): DocumentResponse
+    fun createDocument(createRequest: DocumentCreateRequest): DocumentCreateResponse
 
     /**
      * Deletes a document by its ID.

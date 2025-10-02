@@ -2,8 +2,7 @@ package com.nivasafinance.features.document.service.impl
 
 import com.nivasafinance.features.document.config.DocumentStorageProperties
 import com.nivasafinance.features.document.dto.DocumentCreateRequest
-import com.nivasafinance.features.document.dto.DocumentResponse
-import com.nivasafinance.features.document.dto.toDocumentResponse
+import com.nivasafinance.features.document.dto.DocumentCreateResponse
 import com.nivasafinance.features.document.entity.Document
 import com.nivasafinance.features.document.enum.DocumentStorageProvider
 import com.nivasafinance.features.document.exception.DocumentExceptionFactory
@@ -34,7 +33,7 @@ class DocumentWriteServiceImpl(
     private val documentExceptionFactory = DocumentExceptionFactory(messageSource)
 
     @Transactional
-    override fun createDocument(createRequest: DocumentCreateRequest): DocumentResponse {
+    override fun createDocument(createRequest: DocumentCreateRequest): DocumentCreateResponse {
         // Validate the creation request
         documentExceptionFactory.validateDocumentForCreation(createRequest)
         createRequest.tags?.let { tags ->
@@ -56,7 +55,7 @@ class DocumentWriteServiceImpl(
         )
 
         val savedDocument = documentRepositoryWrapper.saveWithException(document)
-        return savedDocument.toDocumentResponse()
+        return DocumentCreateResponse(savedDocument.id!!, createdAt = savedDocument.createdAt!!)
     }
 
     @Transactional

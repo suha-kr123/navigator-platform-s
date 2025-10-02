@@ -27,8 +27,9 @@ class DocumentReadServiceImpl(
 
     override fun getDocumentFile(id: UUID): DocumentFileResponse {
         val document = documentRepositoryWrapper.findByIdWithException(id)
+        val codeValues = codeMasterService.getMasterCodeChildrenWithValues(parentCodeKey = DOCUMENT_MASTER)
         val contentRepository = contentRepositoryFactory.getRepository(document.provider.name)
         val file = contentRepository.fetchFile(document.path)
-        return DocumentFileResponse(file = file, data = document.toDocumentResponse())
+        return DocumentFileResponse(file = file, data = document.toDocumentResponse(codeValues))
     }
 }

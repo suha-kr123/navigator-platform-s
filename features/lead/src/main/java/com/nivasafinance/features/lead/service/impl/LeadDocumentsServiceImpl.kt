@@ -7,6 +7,7 @@ import com.nivasafinance.features.document.dto.DocumentCreateRequest
 import com.nivasafinance.features.document.service.DocumentReadService
 import com.nivasafinance.features.document.service.DocumentWriteService
 import com.nivasafinance.features.lead.dto.LeadDocumentCreateRequest
+import com.nivasafinance.features.lead.dto.LeadDocumentCreateResponse
 import com.nivasafinance.features.lead.dto.LeadDocumentResponse
 import com.nivasafinance.features.lead.entity.Lead
 import com.nivasafinance.features.lead.entity.LeadDocumentData
@@ -32,7 +33,7 @@ class LeadDocumentsServiceImpl(
         leadId: UUID,
         file: MultipartFile,
         createRequest: LeadDocumentCreateRequest
-    ): LeadDocumentResponse {
+    ): LeadDocumentCreateResponse {
         val lead = leadRepositoryWrapper.findByIdWithException(leadId)
 
         createRequest.taskId?.let { validateTaskBelongsToLead(it, lead) }
@@ -60,7 +61,7 @@ class LeadDocumentsServiceImpl(
 
         leadRepositoryWrapper.saveWithException(lead)
 
-        return LeadDocumentResponse(taskId = createRequest.taskId, document = documentResponse)
+        return LeadDocumentCreateResponse(documentId = documentResponse.id)
     }
 
     override fun getDocumentsForLead(
