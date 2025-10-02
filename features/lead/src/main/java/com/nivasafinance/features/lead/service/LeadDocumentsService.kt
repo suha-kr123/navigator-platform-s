@@ -2,21 +2,37 @@ package com.nivasafinance.features.lead.service
 
 import base.model.PaginatedResponse
 import base.model.PaginationRequest
-import com.nivasafinance.features.document.dto.DocumentRequest
-import com.nivasafinance.features.lead.dto.LeadDocumentsResponse
+import com.nivasafinance.features.lead.dto.LeadDocumentCreateRequest
+import com.nivasafinance.features.lead.dto.LeadDocumentResponse
+import org.springframework.web.multipart.MultipartFile
 import java.util.UUID
 
 interface LeadDocumentsService {
-    fun addDocumentsToLead(
+    /**
+     * Creates a document for a specific lead using composition with DocumentService
+     */
+    fun createDocumentForLead(
         leadId: UUID,
-        taskId: UUID?,
-        addDocumentsToLeadRequest: DocumentRequest
-    ): LeadDocumentsResponse
-    fun getTaskDocuments(
+        file: MultipartFile,
+        createRequest: LeadDocumentCreateRequest
+    ): LeadDocumentResponse
+
+    /**
+     * Gets all documents for a specific lead
+     */
+    fun getDocumentsForLead(
         leadId: UUID,
-        taskId: UUID?,
         paginationRequest: PaginationRequest
-    ): PaginatedResponse<List<LeadDocumentsResponse>>
-    fun deleteDocumentById(leadId: UUID, taskId: UUID?, documentId: UUID)
-    fun getAllDocuments(paginationRequest: PaginationRequest): PaginatedResponse<List<LeadDocumentsResponse>>
+    ): PaginatedResponse<LeadDocumentResponse>
+
+    fun getDocumentsForLeadTasks(
+        leadId: UUID,
+        taskId: UUID,
+        paginationRequest: PaginationRequest
+    ): PaginatedResponse<LeadDocumentResponse>
+
+    /**
+     * Deletes a document from a lead
+     */
+    fun deleteDocumentFromLead(leadId: UUID, documentId: UUID)
 }

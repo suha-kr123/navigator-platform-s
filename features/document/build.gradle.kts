@@ -14,6 +14,7 @@ configurations.all {
 
 dependencies {
     implementation(project(":common"))
+    implementation(project(":features:master"))
 
     // Cloud storage dependencies - using centralized version management
     implementation(libs.aws.s3)

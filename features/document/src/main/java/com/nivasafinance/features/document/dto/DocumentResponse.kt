@@ -1,24 +1,38 @@
 package com.nivasafinance.features.document.dto
 
+import com.nivasafinance.features.document.entity.Document
+import com.nivasafinance.features.master.codemaster.dto.CodeMasterListResponse
+import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 
 data class DocumentResponse(
-    val documentId: UUID,
-    val documentType: String,
-    val verificationStatus: String,
-    val verificationNotes: String?,
-    val fileName: String,
-    val fileType: String?,
-    val fileSize: Long?,
-    val storageKey: String,
-    val fileUrl: String?,
-    val category: String?,
-    val docType: String?,
-    val tags: List<String>?,
-    val extData: Map<String, Any>?,
+    val id: UUID,
+    val name: String,
+    val type: String?,
+    val size: Long?,
+    val tags: List<CodeValueResponse>?,
     val createdAt: LocalDateTime,
     val createdBy: String?,
     val updatedAt: LocalDateTime,
     val updatedBy: String?
 )
+
+fun Document.toDocumentResponse(codeValues: List<CodeMasterListResponse>): DocumentResponse {
+    val documentId = id ?: error("Document ID cannot be null")
+    val createdAt = createdAt ?: error("Document createdAt cannot be null")
+    val updatedAt = updatedAt ?: error("Document updatedAt cannot be null")
+    val tags: List<CodeValueResponse>? =
+        codeValues.map { it.values }.flatten().filter { tags?.contains(it.key) == true }
+    return DocumentResponse(
+        id = documentId,
+        name = name,
+        type = type,
+        size = size,
+        tags = tags,
+        createdAt = createdAt,
+        createdBy = createdBy,
+        updatedAt = updatedAt,
+        updatedBy = updatedBy
+    )
+}

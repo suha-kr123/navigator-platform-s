@@ -13,6 +13,7 @@ import jakarta.persistence.Table
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import java.math.BigDecimal
+import java.time.LocalDateTime
 import java.util.UUID
 
 @Entity
@@ -69,7 +70,7 @@ data class Lead(
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "document_ids", columnDefinition = "jsonb", nullable = true)
-    var documentIds: List<UUID>? = null,
+    var documentIds: List<LeadDocumentData>? = null,
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "person_data", columnDefinition = "jsonb", nullable = true)
@@ -85,12 +86,16 @@ data class Lead(
 data class TaskData(
     @JsonProperty("taskId")
     val taskId: UUID,
-    @JsonProperty("documentIds")
-    val documentIds: List<UUID> = emptyList(),
     @JsonProperty("notesIds")
     val notesIds: List<UUID> = emptyList(),
     @JsonProperty("callIds")
     val callIds: List<UUID> = emptyList()
+)
+
+data class LeadDocumentData(
+    val documentId: UUID,
+    val taskId: UUID? = null,
+    val createdDate: LocalDateTime
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)

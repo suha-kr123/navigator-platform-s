@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.context.MessageSource
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.util.*
+import java.util.UUID
 
 @Service
 class LeadTaskServiceImpl(
@@ -157,7 +157,6 @@ class LeadTaskServiceImpl(
             val currentTaskData = lead.taskData.orEmpty()
             val newTaskData = TaskData(
                 taskId = taskResponse.id,
-                documentIds = emptyList(),
                 notesIds = emptyList(),
                 callIds = emptyList()
             )

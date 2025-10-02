@@ -1,46 +1,38 @@
 package com.nivasafinance.features.document.controller
 
-import com.nivasafinance.features.document.service.DocumentService
-import org.slf4j.LoggerFactory
+import com.nivasafinance.features.document.service.DocumentReadService
 import org.springframework.core.io.InputStreamResource
 import org.springframework.http.HttpHeaders
-import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
-import java.util.*
+import java.util.UUID
 
 @RestController
-@RequestMapping("/api/documents")
+@RequestMapping("/api/v1/documents")
 class DocumentController(
-    private val documentService: DocumentService
+    private val documentReadService: DocumentReadService
 ) {
-
-    private val logger = LoggerFactory.getLogger(DocumentController::class.java)
 
     @GetMapping("/{documentId}")
     fun getDocument(@PathVariable documentId: UUID): ResponseEntity<InputStreamResource> {
-        try {
-            val document = documentService.getDocumentById(documentId)
-            val inputStream = documentService.getDocumentStream(documentId)
+        val documentFileResponse = documentReadService.getDocumentFile(documentId)
 
-            val headers = HttpHeaders()
-            val contentType = document.fileType ?: "application/octet-stream"
-            headers.add(HttpHeaders.CONTENT_TYPE, contentType)
+        val headers = HttpHeaders()
+        headers.add(HttpHeaders.CONTENT_TYPE, documentFileResponse.data.type)
+        headers.add(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"${documentFileResponse.data.name}\"")
 
-            val resource = InputStreamResource(inputStream)
-            return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(contentType))
-                .body(resource)
-        } catch (e: IllegalStateException) {
-            logger.error("Error fetching document $documentId", e)
-            // Return a proper error response instead of throwing
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(InputStreamResource("{\"error\":\"Failed to fetch document\"}".byteInputStream()))
-        }
+        val resource = InputStreamResource(documentFileResponse.file)
+        return ResponseEntity.ok()
+            .headers(headers)
+            .contentType(
+                MediaType.parseMediaType(
+                    documentFileResponse.data.type ?: MediaType.APPLICATION_OCTET_STREAM_VALUE
+                )
+            )
+            .body(resource)
     }
 }
