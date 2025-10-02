@@ -14,20 +14,20 @@ import com.nivasafinance.features.lead.entity.Lead
 import com.nivasafinance.features.lead.entity.PersonData
 import com.nivasafinance.features.lead.exception.LeadExceptionFactory
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper
-import com.nivasafinance.features.lead.service.LeadService
 import com.nivasafinance.features.lead.service.LeadIdentifierService
+import com.nivasafinance.features.lead.service.LeadService
 import com.nivasafinance.features.person.entity.Person
 import com.nivasafinance.features.person.repository.PersonRepository
 import com.nivasafinance.features.stagedefinitions.repository.StageDefinitionRepositoryWrapper
 import com.nivasafinance.features.stages.dto.StageRequest
 import com.nivasafinance.features.stages.repository.StageRepositoryWrapper
 import com.nivasafinance.features.stages.service.StageService
-import java.time.LocalDate
-import java.util.UUID
 import org.springframework.context.MessageSource
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDate
+import java.util.UUID
 
 @Service
 @Transactional
@@ -166,7 +166,6 @@ class LeadServiceImpl(
                             taskDataList.associate { taskData ->
                                 taskData.taskId to
                                         mapOf(
-                                                "documentIds" to taskData.documentIds,
                                                 "notesIds" to taskData.notesIds,
                                                 "callIds" to taskData.callIds
                                         )

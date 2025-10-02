@@ -4,7 +4,7 @@ import com.nivasafinance.features.address.entity.Address
 import com.nivasafinance.features.address.exception.AddressExceptionFactory
 import org.springframework.context.MessageSource
 import org.springframework.stereotype.Service
-import java.util.*
+import java.util.UUID
 
 @Service
 class AddressRepositoryWrapper(
@@ -33,14 +33,6 @@ class AddressRepositoryWrapper(
     fun findAllWithException(): List<Address> {
         return try {
             addressRepository.findAll()
-        } catch (e: Exception) {
-            throw AddressExceptionFactory.retrieveEntityFailed(messageSource)
-        }
-    }
-
-    fun findByAddressTypeWithException(addressType: String): List<Address> {
-        return try {
-            addressRepository.findByAddressType(addressType)
         } catch (e: Exception) {
             throw AddressExceptionFactory.retrieveEntityFailed(messageSource)
         }
