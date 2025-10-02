@@ -3,9 +3,7 @@ package com.nivasafinance.features.master.codemaster.service.impl
 import com.nivasafinance.features.master.codemaster.dto.CodeMasterListResponse
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse
 import com.nivasafinance.features.master.codemaster.dto.MasterCodeWithValuesResponse
-import com.nivasafinance.features.master.codemaster.entity.MasterCode
 import com.nivasafinance.features.master.codemaster.entity.MasterCodeValue
-import com.nivasafinance.features.master.codemaster.exception.CodeMasterNotFoundException
 import com.nivasafinance.features.master.codemaster.repository.MasterCodeRepositoryWrapper
 import com.nivasafinance.features.master.codemaster.repository.MasterCodeValueRepositoryWrapper
 import com.nivasafinance.features.master.codemaster.service.CodeMasterService
@@ -29,24 +27,6 @@ class CodeMasterServiceImpl(
         val values = codeValues.map { mapToCodeValueResponse(it) }
 
         return CodeMasterListResponse(codeName = codeKey, values = values)
-    }
-
-    @Suppress("SwallowedException")
-    override fun getCodeValueByKeyAndCodeKey(key: String, codeKey: String): Map<String, Any>? {
-        return try {
-            val masterCodeValue = masterCodeValueRepositoryWrapper.findByKeyAndCodeKeyWithException(key, codeKey)
-            masterCodeValue.value?.let { jsonData ->
-                mapOf("default" to jsonData.default)
-            }
-        } catch (e: CodeMasterNotFoundException) {
-            // Return null when code value is not found - this is intentional behavior
-            // The exception is caught and handled by returning null instead of propagating
-            null
-        }
-    }
-
-    override fun getAllMasterCodes(onlyActive: Boolean): List<MasterCode> {
-        return masterCodeRepositoryWrapper.findAllWithException()
     }
 
     override fun getMasterCodeChildrenWithValues(
