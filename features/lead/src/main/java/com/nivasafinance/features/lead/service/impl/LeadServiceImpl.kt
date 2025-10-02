@@ -14,7 +14,6 @@ import com.nivasafinance.features.lead.entity.Lead
 import com.nivasafinance.features.lead.entity.PersonData
 import com.nivasafinance.features.lead.exception.LeadExceptionFactory
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper
-import com.nivasafinance.features.lead.service.LeadIdentifierService
 import com.nivasafinance.features.lead.service.LeadService
 import com.nivasafinance.features.person.entity.Person
 import com.nivasafinance.features.person.repository.PersonRepository
@@ -37,7 +36,6 @@ class LeadServiceImpl(
         private val stageDefinitionRepositoryWrapper: StageDefinitionRepositoryWrapper,
         private val stageService: StageService,
         private val personRepository: PersonRepository,
-        private val leadIdentifierService: LeadIdentifierService,
         private val messageSource: MessageSource
 ) : LeadService {
 
@@ -179,12 +177,8 @@ class LeadServiceImpl(
                         lead.personData?.map { personData ->
                             fetchPersonDetails(personData, lead.id!!)
                         },
-                identifiers = try {
-                    leadIdentifierService.getAllLeadIdentifiers(lead.id!!)
-                } catch (e: Exception) {
-                    emptyList()
-                }
-        )
+
+            )
     }
 
     private fun createStagesForLead(

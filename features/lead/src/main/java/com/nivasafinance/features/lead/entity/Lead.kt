@@ -61,10 +61,6 @@ data class Lead(
     var addressId: UUID? = null,
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "identifier_ids", columnDefinition = "jsonb", nullable = true)
-    var identifierIds: List<UUID>? = null,
-
-    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "stage_ids", columnDefinition = "jsonb", nullable = true)
     var stageIds: List<UUID>? = null,
 

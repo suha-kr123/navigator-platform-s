@@ -1,10 +1,9 @@
 package com.nivasafinance.features.lead.dto
 
-import com.nivasafinance.features.identifiers.dto.IdentifierResponse
 import com.nivasafinance.features.person.entity.MobileNumberDetails
 import java.math.BigDecimal
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 
 data class LeadResponse(
     val id: UUID,
@@ -20,8 +19,7 @@ data class LeadResponse(
     val createdBy: String?,
     val updatedAt: LocalDateTime,
     val updatedBy: String?,
-    val leadPersons: List<LeadPersonsResponse>?,
-    val identifiers: List<IdentifierResponse>?
+    val leadPersons: List<LeadPersonsResponse>?
 )
 
 data class LeadPersonsResponse(
