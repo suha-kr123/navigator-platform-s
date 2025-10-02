@@ -14,3 +14,23 @@ data class PaginationInfo(
     val hasNext: Boolean,
     val hasPrevious: Boolean
 )
+
+fun <T> List<T>.toBasicPaginatedResponse(): PaginatedResponse<T> {
+    val totalElements = size.toLong()
+    val hasContent = totalElements > 0
+
+    val paginationInfo = PaginationInfo(
+        offset = 0,
+        limit = size,
+        totalElements = totalElements,
+        totalPages = if (hasContent) 1 else 0,
+        currentPage = if (hasContent) 1 else 0,
+        hasNext = false,
+        hasPrevious = false
+    )
+
+    return PaginatedResponse(
+        content = this,
+        pagination = paginationInfo
+    )
+}

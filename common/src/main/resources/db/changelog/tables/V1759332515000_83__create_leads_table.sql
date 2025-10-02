@@ -1,11 +1,11 @@
 CREATE TABLE leads
 (
     id               uuid PRIMARY KEY default gen_random_uuid(),
-    requested_amount jsonb NOT NULL,
-    purpose                 varchar(40)  NOT NULL,
-    product_code            varchar(255) NOT NULL,
-    pipeline_key            varchar(255) NOT NULL,
-    current_stage           varchar(255) NOT NULL,
+    requested_amount jsonb,
+    purpose          varchar(40),
+    product_code     varchar(255),
+    pipeline_key     varchar(255),
+    current_stage    varchar(255),
     sourcing_channel        varchar(255),
     preliminary_information jsonb,
     ext_data                jsonb,

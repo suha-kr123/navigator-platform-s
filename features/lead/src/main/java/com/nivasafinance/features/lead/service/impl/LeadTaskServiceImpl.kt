@@ -157,8 +157,6 @@ class LeadTaskServiceImpl(
             val currentTaskData = lead.taskData.orEmpty()
             val newTaskData = TaskData(
                 taskId = taskResponse.id,
-                notesIds = emptyList(),
-                callIds = emptyList()
             )
 
             lead.taskData = currentTaskData + newTaskData

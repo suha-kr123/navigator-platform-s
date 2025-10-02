@@ -27,19 +27,19 @@ data class Lead(
     val id: UUID? = null,
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "requested_amount", columnDefinition = "jsonb", nullable = false)
+    @Column(name = "requested_amount", columnDefinition = "jsonb", nullable = true)
     var requestedAmountRange: Map<String, BigDecimal>?,
 
-    @Column(name = "purpose", length = 40, nullable = false)
+    @Column(name = "purpose", length = 40, nullable = true)
     var purpose: String?,
 
-    @Column(name = "product_code", nullable = false)
+    @Column(name = "product_code", nullable = true)
     var productCode: String?,
 
-    @Column(name = "pipeline_key", nullable = false)
+    @Column(name = "pipeline_key", nullable = true)
     var pipelineKey: String?,
 
-    @Column(name = "current_stage", nullable = false)
+    @Column(name = "current_stage", nullable = true)
     var currentStage: String?,
 
     @Column(name = "sourcing_channel")
@@ -74,7 +74,7 @@ data class Lead(
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "note_ids", columnDefinition = "jsonb", nullable = true)
-    var noteIds: List<UUID>? = null
+    var notes: List<LeadNotesData>? = null
 
 ) : AuditableEntity()
 
@@ -82,14 +82,16 @@ data class Lead(
 data class TaskData(
     @JsonProperty("taskId")
     val taskId: UUID,
-    @JsonProperty("notesIds")
-    val notesIds: List<UUID> = emptyList(),
-    @JsonProperty("callIds")
-    val callIds: List<UUID> = emptyList()
 )
 
 data class LeadDocumentData(
     val documentId: UUID,
+    val taskId: UUID? = null,
+    val createdDate: LocalDateTime
+)
+
+data class LeadNotesData(
+    val noteId: UUID,
     val taskId: UUID? = null,
     val createdDate: LocalDateTime
 )

@@ -163,10 +163,7 @@ class LeadServiceImpl(
                         lead.taskData?.let { taskDataList ->
                             taskDataList.associate { taskData ->
                                 taskData.taskId to
-                                        mapOf(
-                                                "notesIds" to taskData.notesIds,
-                                                "callIds" to taskData.callIds
-                                        )
+                                        mapOf()
                             }
                         },
                 createdAt = lead.createdAt ?: java.time.LocalDateTime.now(),

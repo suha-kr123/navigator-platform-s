@@ -9,24 +9,20 @@ import java.util.UUID
 
 interface LeadNotesService {
     fun addNotesToLead(leadId: UUID, taskId: UUID?, addNotesToLeadRequest: NotesRequest): LeadNotesResponse
+
+    fun getLeadNotes(leadId: UUID, paginationRequest: PaginationRequest): PaginatedResponse<LeadNotesResponse>
+
     fun getTaskNotes(
         leadId: UUID,
-        taskId: UUID?,
+        taskId: UUID,
         paginationRequest: PaginationRequest
-    ): PaginatedResponse<List<LeadNotesResponse>>
-    fun getNotesById(leadId: UUID, taskId: UUID?, notesId: UUID): LeadNotesResponse
-    fun updateNotesById(
-        leadId: UUID,
-        taskId: UUID?,
-        notesId: UUID,
-        updateNotesRequest: NotesUpdateRequest
-    ): LeadNotesResponse
+    ): PaginatedResponse<LeadNotesResponse>
+
     fun patchNotesById(
         leadId: UUID,
-        taskId: UUID?,
         notesId: UUID,
         updateNotesRequest: NotesUpdateRequest
-    ): LeadNotesResponse
-    fun deleteNotesById(leadId: UUID, taskId: UUID?, notesId: UUID)
-    fun getAllNotes(paginationRequest: PaginationRequest): PaginatedResponse<List<LeadNotesResponse>>
+    )
+
+    fun deleteNotesById(leadId: UUID, notesId: UUID)
 }

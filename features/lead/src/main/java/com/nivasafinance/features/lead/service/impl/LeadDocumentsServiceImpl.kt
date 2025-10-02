@@ -3,6 +3,7 @@ package com.nivasafinance.features.lead.service.impl
 import base.model.PaginatedResponse
 import base.model.PaginationInfo
 import base.model.PaginationRequest
+import base.model.toBasicPaginatedResponse
 import com.nivasafinance.features.document.dto.DocumentCreateRequest
 import com.nivasafinance.features.document.service.DocumentReadService
 import com.nivasafinance.features.document.service.DocumentWriteService
@@ -70,13 +71,11 @@ class LeadDocumentsServiceImpl(
     ): PaginatedResponse<LeadDocumentResponse> {
         val lead = leadRepositoryWrapper.findByIdWithException(leadId)
 
-        val sortedDocuments = lead.documentIds
+        return lead.documentIds
             .orEmpty()
             .sortedByDescending { it.createdDate }
-
-        val responses = sortedDocuments.map { it.toLeadDocumentResponse(documentReadService) }
-
-        return buildPaginatedResponse(responses)
+            .map { it.toLeadDocumentResponse(documentReadService) }
+            .toBasicPaginatedResponse()
     }
 
     override fun getDocumentsForLeadTasks(
@@ -86,14 +85,12 @@ class LeadDocumentsServiceImpl(
     ): PaginatedResponse<LeadDocumentResponse> {
         val lead = leadRepositoryWrapper.findByIdWithException(leadId)
 
-        val filteredDocuments = lead.documentIds
+        return lead.documentIds
             .orEmpty()
             .filter { it.taskId == taskId }
             .sortedByDescending { it.createdDate }
-
-        val responses = filteredDocuments.map { it.toLeadDocumentResponse(documentReadService) }
-
-        return buildPaginatedResponse(responses)
+            .map { it.toLeadDocumentResponse(documentReadService) }
+            .toBasicPaginatedResponse()
     }
 
     @Transactional
