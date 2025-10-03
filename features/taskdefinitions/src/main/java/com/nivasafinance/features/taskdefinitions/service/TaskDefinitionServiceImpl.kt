@@ -3,7 +3,6 @@ package com.nivasafinance.features.taskdefinitions.service
 import com.nivasafinance.features.taskdefinitions.dto.TaskDefinitionListResponse
 import com.nivasafinance.features.taskdefinitions.dto.TaskDefinitionResponse
 import com.nivasafinance.features.taskdefinitions.dto.TaskOutcomesResponse
-import com.nivasafinance.features.taskdefinitions.exception.TaskDefinitionExceptionFactory
 import com.nivasafinance.features.taskdefinitions.repository.TaskDefinitionRepositoryWrapper
 import org.springframework.context.MessageSource
 import org.springframework.stereotype.Service
@@ -16,7 +15,6 @@ class TaskDefinitionServiceImpl(
 
     override fun getTaskOutcomesByKey(key: String): TaskOutcomesResponse {
         val taskDefinition = taskDefinitionRepositoryWrapper.findByKeyWithException(key)
-            ?: throw TaskDefinitionExceptionFactory.notFound(key, messageSource)
         
         val outcomes = taskDefinition.possibleOutcomes ?: emptyList()
         
@@ -35,7 +33,7 @@ class TaskDefinitionServiceImpl(
                 id = taskDefinition.id!!,
                 name = taskDefinition.name,
                 key = taskDefinition.key,
-                type = taskDefinition.type,
+                type = taskDefinition.type.value,
                 description = taskDefinition.description,
                 possibleOutcomes = taskDefinition.possibleOutcomes
             )

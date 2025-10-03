@@ -1,11 +1,17 @@
 package com.nivasafinance.features.taskdefinitions.entity
 
-import audit.AuditableEntity
 // import com.nivasafinance.features.taskdefinitions.enum.AssignmentStrategy
-import jakarta.persistence.*
+import audit.AuditableEntity
+import com.nivasafinance.features.taskdefinitions.enum.TaskType
+import jakarta.persistence.Column
+import jakarta.persistence.Entity
+import jakarta.persistence.GeneratedValue
+import jakarta.persistence.GenerationType
+import jakarta.persistence.Id
+import jakarta.persistence.Table
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
-import java.util.*
+import java.util.UUID
 
 @Entity
 @Table(name = "task_definitions")
@@ -21,7 +27,7 @@ data class TaskDefinition(
     val key: String,
 
     @Column(name = "type", nullable = false)
-    val type: String,
+    val type: TaskType,
 
     @Column(name = "description", columnDefinition = "TEXT")
     val description: String? = null,

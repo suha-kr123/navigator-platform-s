@@ -13,7 +13,7 @@ import org.springframework.context.MessageSource
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.util.*
+import java.util.UUID
 
 @Service
 @Transactional
@@ -95,22 +95,16 @@ class TaskServiceImpl(
 
 
     private fun toTaskResponse(task: Task): TaskResponse {
-        val taskDefinition = try {
-            taskDefinitionRepositoryWrapper.findByKeyWithException(task.taskDefinitionKey)
-        } catch (e: Exception) {
-            // Log the error for debugging
-            println("WARNING: TaskDefinition not found for key: ${task.taskDefinitionKey}. Error: ${e.message}")
-            null
-        }
-        
-        val taskType = taskDefinition?.type ?: "UNKNOWN"
-        val taskName = taskDefinition?.name ?: "Unknown Task"
+        val taskDefinition = taskDefinitionRepositoryWrapper.findByKeyWithException(task.taskDefinitionKey)
+
+        val taskType = taskDefinition.type
+        val taskName = taskDefinition.name
 
         return TaskResponse(
             id = task.id!!,
             taskDefinitionKey = task.taskDefinitionKey,
             name = taskName,
-            taskType = taskType,
+            taskType = taskType.value,
             description = task.description,
             assignedTo = task.assignedTo,
             status = task.status,

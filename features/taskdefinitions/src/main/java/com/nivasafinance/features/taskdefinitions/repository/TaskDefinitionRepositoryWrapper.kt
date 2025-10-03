@@ -11,12 +11,10 @@ class TaskDefinitionRepositoryWrapper(
     private val messageSource: MessageSource
 ) {
 
-    fun findByKeyWithException(key: String): TaskDefinition? {
-        return try {
-            taskDefinitionRepository.findByKey(key)
-        } catch (e: Exception) {
-            throw TaskDefinitionExceptionFactory.retrieveFailed(messageSource)
-        }
+    fun findByKeyWithException(key: String): TaskDefinition {
+        return taskDefinitionRepository.findByKey(key) ?: throw TaskDefinitionExceptionFactory.retrieveFailed(
+            messageSource
+        )
     }
 
     fun findAllWithException(): List<TaskDefinition> {
