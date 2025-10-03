@@ -8,8 +8,7 @@ plugins {
 dependencies {
     implementation(project(":common"))
     implementation(project(":features:tasks"))
-    implementation(project(":features:stages"))
-    implementation(project(":features:stagedefinitions"))
+    implementation(project(":features:pipelines"))
     implementation(project(":features:notes"))
     implementation(project(":features:document"))
     implementation(project(":features:person"))
