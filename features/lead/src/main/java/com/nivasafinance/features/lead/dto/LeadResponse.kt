@@ -37,7 +37,7 @@ data class LeadPersonsResponse(
     val mobileNumbers: List<MobileNumberDetails>?,
 
     // Lead Relationship Data
-    val applicantType: String?,
+    val leadPersonType: String?,
     val relationshipToPrimary: String?,
     
     // Additional data

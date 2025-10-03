@@ -1,5 +1,6 @@
 package com.nivasafinance.features.lead.dto
 
+import com.nivasafinance.features.lead.enum.LeadPersonType
 import com.nivasafinance.features.person.entity.MobileNumberDetails
 import com.nivasafinance.features.person.enum.Gender
 
@@ -11,6 +12,6 @@ data class AddLeadPersonRequest(
     val gender: Gender?,
     val mobileNumbers: List<MobileNumberDetails>?,
     val extData: Map<String, Any>?,
-    val applicantType: String?,
+    val leadPersonType: LeadPersonType?,
     val relationshipToPrimary: String?
 )

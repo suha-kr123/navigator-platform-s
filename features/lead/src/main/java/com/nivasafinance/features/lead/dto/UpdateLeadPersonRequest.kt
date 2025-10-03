@@ -1,5 +1,6 @@
 package com.nivasafinance.features.lead.dto
 
+import com.nivasafinance.features.lead.enum.LeadPersonType
 import com.nivasafinance.features.person.entity.MobileNumberDetails
 import com.nivasafinance.features.person.enum.Gender
 import java.util.UUID
@@ -13,6 +14,6 @@ data class UpdateLeadPersonRequest(
     val gender: Gender?,
     val mobileNumbers: List<MobileNumberDetails>?,
     val extData: Map<String, Any>?,
-    val applicantType: String?,
+    val leadPersonType: LeadPersonType?,
     val relationshipToPrimary: String?
 )

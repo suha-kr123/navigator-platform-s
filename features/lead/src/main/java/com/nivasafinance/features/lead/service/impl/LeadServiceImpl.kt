@@ -5,14 +5,15 @@ import base.model.PaginationInfo
 import base.model.PaginationRequest
 import com.nivasafinance.features.lead.dto.AddLeadPersonRequest
 import com.nivasafinance.features.lead.dto.LeadCreateRequest
+import com.nivasafinance.features.lead.dto.LeadPersonRequest
 import com.nivasafinance.features.lead.dto.LeadPersonsResponse
 import com.nivasafinance.features.lead.dto.LeadPreliminaryInformation
 import com.nivasafinance.features.lead.dto.LeadResponse
 import com.nivasafinance.features.lead.dto.LeadUpdateRequest
-import com.nivasafinance.features.lead.dto.PersonRequest
 import com.nivasafinance.features.lead.dto.UpdateLeadPersonRequest
 import com.nivasafinance.features.lead.entity.Lead
 import com.nivasafinance.features.lead.entity.PersonData
+import com.nivasafinance.features.lead.enum.LeadPersonType
 import com.nivasafinance.features.lead.exception.LeadExceptionFactory
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper
 import com.nivasafinance.features.lead.service.LeadService
@@ -105,13 +106,13 @@ class LeadServiceImpl(
                         paginationRequest.offset / paginationRequest.limit,
                         paginationRequest.limit
                 )
-        
+
         val leadPage = if (search.isNullOrBlank()) {
             leadRepositoryWrapper.findAllWithException(pageable)
         } else {
             leadRepositoryWrapper.findByPersonNameOrPhoneNumberWithException(search, pageable)
         }
-        
+
         val leadResponses = leadPage.content.map { toLeadResponse(it) }
 
         val totalPages =
@@ -205,10 +206,10 @@ class LeadServiceImpl(
         return stages
     }
 
-    private fun validateAndCreatePersons(personRequests: List<PersonRequest>): List<PersonData> {
+    private fun validateAndCreatePersons(leadPersonRequests: List<LeadPersonRequest>): List<PersonData> {
         val primaryPhones = mutableSetOf<String>()
 
-        personRequests.forEach { personRequest ->
+        leadPersonRequests.forEach { personRequest ->
             personRequest.mobileNumbers?.let { mobileNumbers ->
                 LeadExceptionFactory.validatePersonForCreation(mobileNumbers, messageSource)
 
@@ -222,26 +223,26 @@ class LeadServiceImpl(
             }
         }
 
-        return personRequests.map { personRequest ->
+        return leadPersonRequests.map { personRequest ->
             val person = createNewPerson(personRequest)
             PersonData(
                     personId = person.id!!,
-                    applicantType = personRequest.applicantType ?: "PRIMARY",
+                leadPersonType = personRequest.leadPersonType ?: LeadPersonType.CONTACT,
                     relationshipToPrimary = personRequest.relationshipToPrimary ?: "SELF"
             )
         }
     }
 
-    private fun createNewPerson(personRequest: PersonRequest): Person {
+    private fun createNewPerson(leadPersonRequest: LeadPersonRequest): Person {
         val person =
                 Person(
-                        firstName = personRequest.firstName,
-                        middleName = personRequest.middleName,
-                        lastName = personRequest.lastName,
-                        dateOfBirth = personRequest.dateOfBirth?.let { LocalDate.parse(it) },
-                        gender = personRequest.gender,
-                        mobileNumbers = personRequest.mobileNumbers,
-                        extData = personRequest.extData
+                    firstName = leadPersonRequest.firstName,
+                    middleName = leadPersonRequest.middleName,
+                    lastName = leadPersonRequest.lastName,
+                    dateOfBirth = leadPersonRequest.dateOfBirth,
+                    gender = leadPersonRequest.gender,
+                    mobileNumbers = leadPersonRequest.mobileNumbers,
+                    extData = leadPersonRequest.extData
                 )
 
         return personRepository.save(person)
@@ -260,7 +261,7 @@ class LeadServiceImpl(
                 dateOfBirth = person?.dateOfBirth?.toString(),
             gender = person?.gender?.name,
                 mobileNumbers = person?.mobileNumbers,
-                applicantType = personData.applicantType,
+            leadPersonType = personData.leadPersonType.value,
                 relationshipToPrimary = personData.relationshipToPrimary,
                 extData = person?.extData
         )
@@ -288,7 +289,7 @@ class LeadServiceImpl(
         val newPersonData =
                 PersonData(
                         personId = savedPerson.id!!,
-                        applicantType = addLeadPersonRequest.applicantType ?: "PRIMARY",
+                    leadPersonType = addLeadPersonRequest.leadPersonType ?: LeadPersonType.CONTACT,
                         relationshipToPrimary = addLeadPersonRequest.relationshipToPrimary ?: "SELF"
                 )
 
@@ -333,8 +334,8 @@ class LeadServiceImpl(
                 currentPersonData.map { personData ->
                     if (personData.personId == personId) {
                         personData.copy(
-                                applicantType = updateLeadPersonRequest.applicantType
-                                                ?: personData.applicantType,
+                            leadPersonType = updateLeadPersonRequest.leadPersonType
+                                ?: personData.leadPersonType,
                                 relationshipToPrimary =
                                         updateLeadPersonRequest.relationshipToPrimary
                                                 ?: personData.relationshipToPrimary
@@ -358,7 +359,7 @@ class LeadServiceImpl(
                         paginationRequest.offset / paginationRequest.limit,
                         paginationRequest.limit
                 )
-        
+
         val leadPage = if (search.isNullOrBlank()) {
             leadRepositoryWrapper.findAllWithException(pageable)
         } else {

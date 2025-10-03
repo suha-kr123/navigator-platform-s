@@ -1,8 +1,10 @@
 package com.nivasafinance.features.lead.dto
 
+import com.nivasafinance.features.lead.enum.LeadPersonType
 import com.nivasafinance.features.person.entity.MobileNumberDetails
 import com.nivasafinance.features.person.enum.Gender
 import java.math.BigDecimal
+import java.time.LocalDate
 
 data class LeadCreateRequest(
 
@@ -12,17 +14,17 @@ data class LeadCreateRequest(
     val sourcingChannel: String?,
     val preliminaryInformation: LeadPreliminaryInformation?,
     val extData: Map<String, Any>?,
-    val leadPersons: List<PersonRequest>?
+    val leadPersons: List<LeadPersonRequest>?
 )
 
-data class PersonRequest(
+data class LeadPersonRequest(
     val firstName: String?,
     val middleName: String?,
     val lastName: String?,
     val mobileNumbers: List<MobileNumberDetails>?,
-    val dateOfBirth: String?,
+    val dateOfBirth: LocalDate?,
     val gender: Gender?,
     val extData: Map<String, Any>?,
-    val applicantType: String?,
+    val leadPersonType: LeadPersonType?,
     val relationshipToPrimary: String?
 )
