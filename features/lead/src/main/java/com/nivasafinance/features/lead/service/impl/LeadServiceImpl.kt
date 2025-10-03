@@ -10,6 +10,7 @@ import com.nivasafinance.features.lead.dto.LeadPreliminaryInformation
 import com.nivasafinance.features.lead.dto.LeadResponse
 import com.nivasafinance.features.lead.dto.LeadUpdateRequest
 import com.nivasafinance.features.lead.dto.PersonRequest
+import com.nivasafinance.features.lead.dto.UpdateLeadPersonRequest
 import com.nivasafinance.features.lead.entity.Lead
 import com.nivasafinance.features.lead.entity.PersonData
 import com.nivasafinance.features.lead.exception.LeadExceptionFactory
@@ -257,7 +258,7 @@ class LeadServiceImpl(
                 middleName = person?.middleName,
                 lastName = person?.lastName,
                 dateOfBirth = person?.dateOfBirth?.toString(),
-                gender = person?.gender,
+            gender = person?.gender?.name,
                 mobileNumbers = person?.mobileNumbers,
                 applicantType = personData.applicantType,
                 relationshipToPrimary = personData.relationshipToPrimary,
@@ -303,7 +304,7 @@ class LeadServiceImpl(
     override fun updateLeadPerson(
             leadId: UUID,
             personId: UUID,
-            updateLeadPersonRequest: com.nivasafinance.features.lead.dto.UpdateLeadPersonRequest
+            updateLeadPersonRequest: UpdateLeadPersonRequest
     ): LeadResponse {
         validatePhoneNumbers(listOf(updateLeadPersonRequest))
 

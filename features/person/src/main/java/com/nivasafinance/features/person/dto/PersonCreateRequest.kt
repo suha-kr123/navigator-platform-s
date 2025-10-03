@@ -1,6 +1,7 @@
 package com.nivasafinance.features.person.dto
 
 import com.nivasafinance.features.person.entity.MobileNumberDetails
+import com.nivasafinance.features.person.enum.Gender
 
 data class PersonCreateRequest(
     val firstName: String?,
@@ -8,6 +9,6 @@ data class PersonCreateRequest(
     val lastName: String?,
     val mobileNumbers: List<MobileNumberDetails>?,
     val dateOfBirth: String?,
-    val gender: String?,
+    val gender: Gender?,
     val extData: Map<String, Any>?
 )

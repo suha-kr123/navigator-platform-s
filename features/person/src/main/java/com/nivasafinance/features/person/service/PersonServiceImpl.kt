@@ -13,10 +13,10 @@ import com.nivasafinance.features.person.repository.PersonRepositoryWrapper
 import org.springframework.context.MessageSource
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import java.util.UUID
 
 @Service
@@ -135,7 +135,7 @@ class PersonServiceImpl(
             lastName = person.lastName,
             mobileNumbers = person.mobileNumbers,
             dateOfBirth = formatDate(person.dateOfBirth),
-            gender = person.gender,
+            gender = person.gender?.name,
             extData = person.extData,
             createdAt = person.createdAt ?: java.time.LocalDateTime.now(),
             createdBy = person.createdBy,
