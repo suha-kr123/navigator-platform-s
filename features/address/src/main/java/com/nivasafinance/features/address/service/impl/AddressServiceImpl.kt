@@ -109,7 +109,7 @@ class AddressServiceImpl(
             district = address.district,
             state = address.state,
             pincode = address.pincode,
-            addressSource = address.addressSource,
+            addressSource = address.addressSource.name,
             extData = address.extData
         )
     }

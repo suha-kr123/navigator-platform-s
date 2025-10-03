@@ -1,6 +1,7 @@
 package com.nivasafinance.features.address.entity
 
 import audit.AuditableEntity
+import com.nivasafinance.features.address.enum.AddressSource
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue
@@ -38,7 +39,7 @@ data class Address(
     var pincode: String,
 
     @Column(name = "address_source")
-    var addressSource: String? = null,
+    var addressSource: AddressSource,
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "data_ext", columnDefinition = "jsonb")

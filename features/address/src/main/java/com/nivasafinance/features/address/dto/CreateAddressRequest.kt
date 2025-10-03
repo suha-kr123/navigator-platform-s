@@ -1,5 +1,6 @@
 package com.nivasafinance.features.address.dto
 
+import com.nivasafinance.features.address.enum.AddressSource
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Pattern
 
@@ -14,5 +15,5 @@ data class CreateAddressRequest(
     @field:Pattern(regexp = "^[0-9]{6}$", message = "Pincode must be exactly 6 digits")
     val pincode: String,
 
-    val addressSource: String? = null
+    val addressSource: AddressSource
 )
