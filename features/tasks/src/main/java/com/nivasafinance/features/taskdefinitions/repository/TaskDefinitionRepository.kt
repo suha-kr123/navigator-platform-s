@@ -3,7 +3,7 @@ package com.nivasafinance.features.taskdefinitions.repository
 import com.nivasafinance.features.taskdefinitions.entity.TaskDefinition
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
-import java.util.*
+import java.util.UUID
 
 @Repository
 interface TaskDefinitionRepository : JpaRepository<TaskDefinition, UUID> {

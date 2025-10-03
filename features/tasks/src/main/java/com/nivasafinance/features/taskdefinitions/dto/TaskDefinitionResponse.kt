@@ -1,6 +1,6 @@
 package com.nivasafinance.features.taskdefinitions.dto
 
-import java.util.*
+import java.util.UUID
 
 data class TaskDefinitionResponse(
     val id: UUID,
