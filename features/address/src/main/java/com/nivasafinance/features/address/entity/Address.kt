@@ -1,6 +1,6 @@
 package com.nivasafinance.features.address.entity
 
-import audit.AuditableEntity
+import com.nivasafinance.common.audit.AuditableEntity
 import com.nivasafinance.features.address.enum.AddressSource
 import jakarta.persistence.Column
 import jakarta.persistence.Entity

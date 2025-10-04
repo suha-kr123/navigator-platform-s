@@ -1,7 +1,7 @@
 package com.nivasafinance.features.tasks.exception
 
-import exception.ConflictException
-import exception.ExceptionUtils
+import com.nivasafinance.common.exception.ConflictException
+import com.nivasafinance.common.exception.ExceptionUtils
 import org.springframework.context.MessageSource
 
 open class TaskConflictException(

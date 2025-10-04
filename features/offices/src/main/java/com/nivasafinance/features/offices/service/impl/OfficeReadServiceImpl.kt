@@ -1,6 +1,6 @@
 package com.nivasafinance.features.offices.service.impl
 
-import base.BaseNavigatorService
+import com.nivasafinance.common.base.BaseNavigatorService
 import com.nivasafinance.features.address.dto.AddressResponse
 import com.nivasafinance.features.address.repository.AddressRepository
 import com.nivasafinance.features.offices.dto.OfficeResponse

@@ -1,8 +1,8 @@
 package com.nivasafinance.features.lead.service.impl
 
-import base.model.PaginatedResponse
-import base.model.PaginationInfo
-import base.model.PaginationRequest
+import com.nivasafinance.common.base.model.PaginatedResponse
+import com.nivasafinance.common.base.model.PaginationInfo
+import com.nivasafinance.common.base.model.PaginationRequest
 import com.nivasafinance.features.lead.dto.LeadTasksResponse
 import com.nivasafinance.features.lead.entity.TaskData
 import com.nivasafinance.features.lead.exception.LeadExceptionFactory

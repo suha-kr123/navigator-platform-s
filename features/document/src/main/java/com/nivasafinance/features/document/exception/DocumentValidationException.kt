@@ -1,6 +1,6 @@
 package com.nivasafinance.features.document.exception
 
-import exception.ValidationException
+import com.nivasafinance.common.exception.ValidationException
 import org.springframework.context.MessageSource
 import org.springframework.context.i18n.LocaleContextHolder
 import java.util.Locale

@@ -1,6 +1,6 @@
 package com.nivasafinance.features.leadlender.entity
 
-import audit.AuditableEntity
+import com.nivasafinance.common.audit.AuditableEntity
 import com.nivasafinance.features.leadlender.dto.RmDetails
 import com.nivasafinance.features.leadlender.enum.LeadLenderStatus
 import com.nivasafinance.features.leadlender.enum.RejectReason

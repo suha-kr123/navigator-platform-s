@@ -7,52 +7,14 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories
 
 @SpringBootApplication(
     scanBasePackages = [
-        "com.nivasafinance.features.notes",
-        "com.nivasafinance.features.document",
-        "com.nivasafinance.features.identifiers",
-        "com.nivasafinance.features.stages",
-        "com.nivasafinance.features.stagedefinitions",
-        "com.nivasafinance.features.tasks",
-        "com.nivasafinance.features.taskdefinitions",
-        "com.nivasafinance.features.lead",
-        "com.nivasafinance.features.person",
-        "com.nivasafinance.features.master",
-        "com.nivasafinance.features.address",
-        "configs",
-        "exception",
-        "audit",
-        "repository",
-        "service",
-        "filter"
+        "com.nivasafinance.*"
     ]
 )
 @EnableJpaRepositories(
-    "com.nivasafinance.features.notes",
-    "com.nivasafinance.features.document",
-    "com.nivasafinance.features.identifiers",
-    "com.nivasafinance.features.stages",
-    "com.nivasafinance.features.stagedefinitions",
-    "com.nivasafinance.features.tasks",
-    "com.nivasafinance.features.taskdefinitions",
-    "com.nivasafinance.features.lead",
-    "com.nivasafinance.features.person",
-    "com.nivasafinance.features.master",
-    "com.nivasafinance.features.address",
-    "repository"
+    "com.nivasafinance.*"
 )
 @EntityScan(
-    "com.nivasafinance.features.notes",
-    "com.nivasafinance.features.document",
-    "com.nivasafinance.features.identifiers",
-    "com.nivasafinance.features.stages",
-    "com.nivasafinance.features.stagedefinitions",
-    "com.nivasafinance.features.tasks",
-    "com.nivasafinance.features.taskdefinitions",
-    "com.nivasafinance.features.lead",
-    "com.nivasafinance.features.person",
-    "com.nivasafinance.features.master",
-    "com.nivasafinance.features.address",
-    "audit"
+    "com.nivasafinance.*"
 )
 class NavigatorApplication
 

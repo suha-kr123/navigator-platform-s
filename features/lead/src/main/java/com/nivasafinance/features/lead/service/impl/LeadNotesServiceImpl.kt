@@ -1,8 +1,8 @@
 package com.nivasafinance.features.lead.service.impl
 
-import base.model.PaginatedResponse
-import base.model.PaginationRequest
-import base.model.toBasicPaginatedResponse
+import com.nivasafinance.common.base.model.PaginatedResponse
+import com.nivasafinance.common.base.model.PaginationRequest
+import com.nivasafinance.common.base.model.toBasicPaginatedResponse
 import com.nivasafinance.features.lead.dto.LeadNotesResponse
 import com.nivasafinance.features.lead.dto.toLeadNotesResponse
 import com.nivasafinance.features.lead.entity.LeadNotesData

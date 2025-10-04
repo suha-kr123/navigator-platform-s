@@ -1,6 +1,6 @@
 package com.nivasafinance.features.person.exception
 
-import exception.ExceptionUtils
+import com.nivasafinance.common.exception.ExceptionUtils
 import org.springframework.context.MessageSource
 
 class PersonOperationException(

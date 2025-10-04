@@ -1,6 +1,6 @@
 package com.nivasafinance.features.taskdefinitions.exception
 
-import exception.ExceptionUtils
+import com.nivasafinance.common.exception.ExceptionUtils
 import org.springframework.context.MessageSource
 
 class TaskDefinitionOperationException(

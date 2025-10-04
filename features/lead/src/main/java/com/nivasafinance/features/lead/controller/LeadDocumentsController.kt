@@ -1,7 +1,7 @@
 package com.nivasafinance.features.lead.controller
 
-import base.model.PaginatedResponse
-import base.model.PaginationRequest
+import com.nivasafinance.common.base.model.PaginatedResponse
+import com.nivasafinance.common.base.model.PaginationRequest
 import com.nivasafinance.features.lead.dto.LeadDocumentCreateRequest
 import com.nivasafinance.features.lead.dto.LeadDocumentCreateResponse
 import com.nivasafinance.features.lead.dto.LeadDocumentResponse

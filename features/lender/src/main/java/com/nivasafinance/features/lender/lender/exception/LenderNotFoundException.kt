@@ -1,7 +1,7 @@
 package com.nivasafinance.features.lender.lender.exception
 
-import exception.ExceptionUtils
-import exception.ResourceNotFoundException
+import com.nivasafinance.common.exception.ExceptionUtils
+import com.nivasafinance.common.exception.ResourceNotFoundException
 import org.springframework.context.MessageSource
 import java.util.UUID
 

@@ -1,7 +1,7 @@
 package com.nivasafinance.features.stagedefinitions.entity
 
 // import com.nivasafinance.features.stagedefinitions.enum.AssignmentStrategy
-import audit.AuditableEntity
+import com.nivasafinance.common.audit.AuditableEntity
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue

@@ -1,7 +1,7 @@
 package com.nivasafinance.features.notes.service
 
-import base.model.PaginatedResponse
-import base.model.PaginationRequest
+import com.nivasafinance.common.base.model.PaginatedResponse
+import com.nivasafinance.common.base.model.PaginationRequest
 import com.nivasafinance.features.notes.dto.NotesRequest
 import com.nivasafinance.features.notes.dto.NotesResponse
 import com.nivasafinance.features.notes.dto.NotesUpdateRequest

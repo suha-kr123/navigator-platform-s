@@ -1,7 +1,7 @@
 package com.nivasafinance.features.tasks.service
 
-import base.model.PaginatedResponse
-import base.model.PaginationRequest
+import com.nivasafinance.common.base.model.PaginatedResponse
+import com.nivasafinance.common.base.model.PaginationRequest
 import com.nivasafinance.features.tasks.dto.TaskRequest
 import com.nivasafinance.features.tasks.dto.TaskResponse
 import com.nivasafinance.features.tasks.dto.UpdateTaskRequest

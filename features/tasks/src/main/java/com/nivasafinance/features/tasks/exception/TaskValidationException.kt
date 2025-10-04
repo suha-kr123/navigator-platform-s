@@ -1,9 +1,9 @@
 package com.nivasafinance.features.tasks.exception
 
-import exception.ExceptionUtils
-import exception.ValidationException
+import com.nivasafinance.common.exception.ExceptionUtils
+import com.nivasafinance.common.exception.ValidationException
 import org.springframework.context.MessageSource
-import java.util.*
+import java.util.UUID
 
 open class TaskValidationException(
     messageKey: String,

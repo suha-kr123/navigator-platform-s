@@ -1,7 +1,7 @@
 package com.nivasafinance.features.pipelines.entity
 
-import annotations.NoArg
-import audit.AuditableEntity
+import com.nivasafinance.common.annotations.NoArg
+import com.nivasafinance.common.audit.AuditableEntity
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue

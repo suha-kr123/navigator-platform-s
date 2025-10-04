@@ -1,7 +1,7 @@
 package com.nivasafinance.features.identifiers.entity
 
-import annotations.NoArg
-import audit.AuditableEntity
+import com.nivasafinance.common.annotations.NoArg
+import com.nivasafinance.common.audit.AuditableEntity
 import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity

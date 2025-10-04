@@ -1,7 +1,7 @@
 package com.nivasafinance.features.person.service
 
-import base.model.PaginatedResponse
-import base.model.PaginationRequest
+import com.nivasafinance.common.base.model.PaginatedResponse
+import com.nivasafinance.common.base.model.PaginationRequest
 import com.nivasafinance.features.person.dto.PersonCreateRequest
 import com.nivasafinance.features.person.dto.PersonResponse
 import com.nivasafinance.features.person.dto.PersonUpdateRequest

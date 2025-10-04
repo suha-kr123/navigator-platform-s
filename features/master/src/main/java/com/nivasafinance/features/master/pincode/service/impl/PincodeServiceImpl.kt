@@ -1,6 +1,6 @@
 package com.nivasafinance.features.master.pincode.service.impl
 
-import base.BaseNavigatorService
+import com.nivasafinance.common.base.BaseNavigatorService
 import com.nivasafinance.features.master.pincode.dto.PincodeResponse
 import com.nivasafinance.features.master.pincode.entity.Pincode
 import com.nivasafinance.features.master.pincode.exception.PincodeExceptionFactory

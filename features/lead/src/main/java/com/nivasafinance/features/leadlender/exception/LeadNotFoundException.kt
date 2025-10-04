@@ -1,5 +1,5 @@
 package com.nivasafinance.features.leadlender.exception
 
-import exception.ResourceNotFoundException
+import com.nivasafinance.common.exception.ResourceNotFoundException
 
 class LeadNotFoundException(message: String) : ResourceNotFoundException(message)

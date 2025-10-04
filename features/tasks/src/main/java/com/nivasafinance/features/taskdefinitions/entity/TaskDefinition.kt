@@ -1,7 +1,7 @@
 package com.nivasafinance.features.taskdefinitions.entity
 
 // import com.nivasafinance.features.taskdefinitions.enum.AssignmentStrategy
-import audit.AuditableEntity
+import com.nivasafinance.common.audit.AuditableEntity
 import com.nivasafinance.features.taskdefinitions.enum.TaskType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity

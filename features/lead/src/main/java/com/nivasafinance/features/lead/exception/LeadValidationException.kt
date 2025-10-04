@@ -1,10 +1,10 @@
 package com.nivasafinance.features.lead.exception
 
-import exception.ExceptionUtils
-import exception.ValidationException
+import com.nivasafinance.common.exception.ExceptionUtils
+import com.nivasafinance.common.exception.ValidationException
 import org.springframework.context.MessageSource
 import java.math.BigDecimal
-import java.util.*
+import java.util.UUID
 
 open class LeadValidationException(
     messageKey: String,

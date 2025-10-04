@@ -1,7 +1,7 @@
 package com.nivasafinance.features.master.codemaster.entity
 
-import audit.AuditableEntity
-import base.model.MasterLanguageData
+import com.nivasafinance.common.audit.AuditableEntity
+import com.nivasafinance.common.base.model.MasterLanguageData
 import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity

@@ -1,6 +1,6 @@
 package com.nivasafinance.features.offices.service.impl
 
-import base.BaseNavigatorService
+import com.nivasafinance.common.base.BaseNavigatorService
 import com.nivasafinance.features.offices.exception.OfficeNotFoundException
 import com.nivasafinance.features.offices.repository.OfficeRepository
 import com.nivasafinance.features.offices.service.OfficeCodeFactory

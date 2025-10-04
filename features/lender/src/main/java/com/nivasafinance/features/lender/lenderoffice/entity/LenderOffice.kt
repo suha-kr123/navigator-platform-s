@@ -1,6 +1,6 @@
 package com.nivasafinance.features.lender.lenderoffice.entity
 
-import audit.AuditableEntity
+import com.nivasafinance.common.audit.AuditableEntity
 import com.nivasafinance.features.lender.lenderoffice.enum.LenderOfficeStatus
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
