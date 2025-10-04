@@ -3,6 +3,7 @@ package com.nivasafinance.features.leadlender.service.impl
 import com.nivasafinance.features.leadlender.dto.CreateLeadLenderRequest
 import com.nivasafinance.features.leadlender.dto.CreateLeadLenderResponse
 import com.nivasafinance.features.leadlender.dto.RejectLeadLenderRequest
+import com.nivasafinance.features.leadlender.dto.RmDetails
 import com.nivasafinance.features.leadlender.dto.UpdateLeadLenderRequest
 import com.nivasafinance.features.leadlender.entity.LeadLender
 import com.nivasafinance.features.leadlender.enum.LeadLenderStatus
@@ -71,7 +72,14 @@ class LeadLenderWriteServiceImpl(
             existingEntity.loginId = it
             existingEntity.status = LeadLenderStatus.LOGGED_IN
         }
-        request.rmDetails?.let { existingEntity.rmDetails = it }
+        request.rmName?.let {
+            val rmDetails = existingEntity.rmDetails ?: RmDetails()
+            existingEntity.rmDetails = rmDetails.copy(name = it)
+        }
+        request.rmMobileNumber?.let {
+            val rmDetails = existingEntity.rmDetails ?: RmDetails()
+            existingEntity.rmDetails = rmDetails.copy(mobileNumber = it)
+        }
 
         leadLenderRepositoryWrapper.saveWithException(existingEntity)
     }

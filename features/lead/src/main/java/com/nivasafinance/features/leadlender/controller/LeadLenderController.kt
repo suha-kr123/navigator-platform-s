@@ -39,7 +39,7 @@ class LeadLenderController(
     fun updateLeadLender(
         @PathVariable leadId: UUID,
         @PathVariable leadLenderId: UUID,
-        @RequestBody request: UpdateLeadLenderRequest
+        @Valid @RequestBody request: UpdateLeadLenderRequest
     ) {
         leadLenderWriteService.updateLeadLender(leadLenderId, request)
     }

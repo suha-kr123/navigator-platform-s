@@ -90,9 +90,9 @@ class GlobalExceptionHandler {
         ex: MethodArgumentNotValidException,
         request: WebRequest
     ): ResponseEntity<ApiError> {
-        val errors = ex.bindingResult.fieldErrors.associate { it.field to it.defaultMessage }
+        val errors = ex.bindingResult.fieldErrors.associate { it.field to (it.defaultMessage ?: "Validation failed.") }
         val apiError = ApiError(
-            error = "Validation failed: $errors",
+            fieldErrors = errors,
             statusCode = HttpStatus.BAD_REQUEST,
             errorCode = "VALIDATION_ERROR",
             requestId = generateRequestId(),
