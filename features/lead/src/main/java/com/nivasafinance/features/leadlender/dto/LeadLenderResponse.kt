@@ -10,7 +10,7 @@ data class LeadLenderResponse(
     val leadId: UUID,
     val status: LeadLenderStatus,
     val loginId: String? = null,
-    val lender: LenderResponseData? = null,
+    val lender: LenderResponseData,
     val lenderOffice: LenderOfficeReponseData? = null,
     val relationshipManager: RmDetails? = null
 )
