@@ -10,13 +10,13 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("/api/v1/lender")
 class LenderController(
     private val lenderReadService: LenderReadService,
     private val lenderOfficeReadService: LenderOfficeReadService
 ) {
 
-    @GetMapping("/lenders")
+    @GetMapping
     fun getAllLendersWithOffices(): List<LenderWithOfficesResponse> {
         val lenders = lenderReadService.getAllByStatus(LenderStatus.ACTIVE)
 
