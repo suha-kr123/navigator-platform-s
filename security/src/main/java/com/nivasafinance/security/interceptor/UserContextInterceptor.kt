@@ -1,6 +1,5 @@
 package com.nivasafinance.security.interceptor
 
-
 import com.auth0.jwt.JWT
 import com.auth0.jwt.exceptions.JWTDecodeException
 import com.nivasafinance.common.base.context.UserContext
@@ -79,21 +78,21 @@ class UserContextInterceptor : HandlerInterceptor {
         return try {
             // Get user_metadata claim
             val userMetadataClaim = decodedJWT.getClaim("user_metadata")
-            
+
             if (userMetadataClaim.isNull) {
                 logger.warn("user_metadata claim is null")
                 return "unknown"
             }
-            
+
             // Try to get username from user_metadata
             val userMetadata = userMetadataClaim.asMap()
             val username = userMetadata?.get("username")?.toString()
-            
+
             if (username.isNullOrBlank()) {
                 logger.warn("username not found in user_metadata")
                 return "unknown"
             }
-            
+
             username
         } catch (ex: Exception) {
             logger.warn("Error extracting username from metadata: ${ex.message}")
