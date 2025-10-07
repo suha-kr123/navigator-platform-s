@@ -3,11 +3,11 @@ plugins {
     id("testing-conventions")
     id("dokka-conventions")
     id("spring-conventions")
+    id("common-feature-conventions")
 }
 
 
 dependencies {
-    implementation(project(":common"))
     implementation(project(":features:creditbureau"))
     implementation(project(":features:person"))
     implementation(project(":features:advisor"))

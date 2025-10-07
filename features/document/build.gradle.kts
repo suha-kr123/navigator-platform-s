@@ -3,6 +3,7 @@ plugins {
     id("testing-conventions")
     id("dokka-conventions")
     id("spring-conventions")
+    id("common-feature-conventions")
 }
 
 // Force protobuf version to fix CVE-2024-7254
@@ -13,7 +14,6 @@ configurations.all {
 }
 
 dependencies {
-    implementation(project(":common"))
     implementation(project(":features:master"))
 
     // Cloud storage dependencies - using centralized version management

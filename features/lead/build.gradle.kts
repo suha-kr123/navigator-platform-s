@@ -3,10 +3,10 @@ plugins {
     id("testing-conventions")
     id("dokka-conventions")
     id("spring-conventions")
+    id("common-feature-conventions")
 }
 
 dependencies {
-    implementation(project(":common"))
     implementation(project(":features:tasks"))
     implementation(project(":features:pipelines"))
     implementation(project(":features:notes"))
