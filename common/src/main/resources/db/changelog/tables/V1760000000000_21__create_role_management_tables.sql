@@ -89,4 +89,15 @@ CREATE TABLE role_permission_mapping
 CREATE INDEX idx_role_permission_mapping_role_id ON role_permission_mapping(role_id);
 CREATE INDEX idx_role_permission_mapping_permission_id ON role_permission_mapping(permission_id);
 
-
+CREATE TABLE user_role_mapping
+(
+    id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    username   varchar(255) NOT NULL,
+    role       varchar(255) NOT NULL,
+    created_by varchar(255),
+    created_at timestamp        DEFAULT CURRENT_TIMESTAMP,
+    updated_by varchar(255),
+    updated_at timestamp        DEFAULT CURRENT_TIMESTAMP,
+    version    bigint           DEFAULT 0,
+    CONSTRAINT uq_user_role_mapping_username UNIQUE (username)
+);
