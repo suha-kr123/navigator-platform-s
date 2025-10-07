@@ -32,6 +32,8 @@ protobuf-java = "4.28.2"
 [libraries]
 # project dependencies
 javers-spring-boot-starter-sql = { module = "org.javers:javers-spring-boot-starter-sql", version.ref = "javers" }
+spring-boot-starter-security = { module = "org.springframework.boot:spring-boot-starter-security", version.ref = "springBoot" }
+spring-boot-starter-oauth2-resource-server = { module = "org.springframework.boot:spring-boot-starter-oauth2-resource-server", version.ref = "springBoot" }
 
 # test dependencies
 

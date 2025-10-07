@@ -1,4 +1,5 @@
-package com.nivasafinance.common.base.interceptor
+package com.nivasafinance.security.interceptor
+
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.exceptions.JWTDecodeException
@@ -39,15 +40,19 @@ class UserContextInterceptor : HandlerInterceptor {
 
         return try {
             val decodedJWT = JWT.decode(token)
-            val username = decodedJWT.getClaim("username")?.asString()
-                ?: throw IllegalArgumentException("Invalid token: username is missing")
-            val email = decodedJWT.getClaim("email")?.asString() ?: "unknown"
-            val phoneNumber = decodedJWT.getClaim("phone_number")?.asString() ?: "unknown"
+            val userId = decodedJWT.getClaim("sub")?.asString()
+                ?: throw IllegalArgumentException("Invalid token: userId is missing")
+            val username = extractUsernameFromMetadata(decodedJWT)
+            if (username == "unknown") {
+                throw IllegalArgumentException("Invalid token: username is missing")
+            }
+            val email = decodedJWT.getClaim("email")?.asString()
+            val phoneNumber = decodedJWT.getClaim("phone_number")?.asString()
             // val roles = decodedJWT.getClaim("cognito:groups")
             //     ?.asList(String::class.java)
             //     .orEmpty()
 
-            val userInfo = UserInfo(username, email, phoneNumber)
+            val userInfo = UserInfo(userId, username, email, phoneNumber)
             UserContext.setUserInfo(userInfo)
             logger.info("UserContext set with: $userInfo")
 
@@ -57,6 +62,42 @@ class UserContextInterceptor : HandlerInterceptor {
             response.status = HttpServletResponse.SC_UNAUTHORIZED
             response.writer.write("Unauthorized: Invalid token")
             false
+        } catch (e: IllegalArgumentException) {
+            logger.warn("Invalid token claims: ${e.message}", e)
+            response.status = HttpServletResponse.SC_UNAUTHORIZED
+            response.writer.write("Unauthorized: Invalid token claims")
+            false
+        } catch (e: Exception) {
+            logger.error("Unexpected error during token validation", e)
+            response.status = HttpServletResponse.SC_INTERNAL_SERVER_ERROR
+            response.writer.write("Internal server error")
+            false
+        }
+    }
+
+    private fun extractUsernameFromMetadata(decodedJWT: com.auth0.jwt.interfaces.DecodedJWT): String {
+        return try {
+            // Get user_metadata claim
+            val userMetadataClaim = decodedJWT.getClaim("user_metadata")
+            
+            if (userMetadataClaim.isNull) {
+                logger.warn("user_metadata claim is null")
+                return "unknown"
+            }
+            
+            // Try to get username from user_metadata
+            val userMetadata = userMetadataClaim.asMap()
+            val username = userMetadata?.get("username")?.toString()
+            
+            if (username.isNullOrBlank()) {
+                logger.warn("username not found in user_metadata")
+                return "unknown"
+            }
+            
+            username
+        } catch (ex: Exception) {
+            logger.warn("Error extracting username from metadata: ${ex.message}")
+            "unknown"
         }
     }
 

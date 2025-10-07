@@ -1,6 +1,5 @@
 package com.nivasafinance.common.configs
 
-import com.nivasafinance.common.base.interceptor.UserContextInterceptor
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -10,9 +9,10 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 import org.springframework.web.servlet.i18n.LocaleChangeInterceptor
 
 @Configuration
-class WebConfig(
-    @Value("\${cors.origins}") private val corsOrigins: String
-) : WebMvcConfigurer {
+class WebConfig : WebMvcConfigurer {
+
+    @Value("\${cors.origins}")
+    private lateinit var corsOrigins: String
 
     @Bean
     fun localeChangeInterceptor(): LocaleChangeInterceptor =
@@ -20,20 +20,13 @@ class WebConfig(
             paramName = "lang"
         }
 
-    @Bean
-    fun userContextInterceptor(): UserContextInterceptor =
-        UserContextInterceptor()
-
     override fun addInterceptors(registry: InterceptorRegistry) {
         registry.addInterceptor(localeChangeInterceptor())
-        // Temporarily disabled for testing
-        // registry.addInterceptor(userContextInterceptor())
     }
 
     override fun addCorsMappings(registry: CorsRegistry) {
-        val allowedOrigins = corsOrigins.split(",").map { it.trim() }.toTypedArray()
         registry.addMapping("/api/**")
-            .allowedOriginPatterns(*allowedOrigins)
+            .allowedOrigins(*corsOrigins.split(",").toTypedArray())
             .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
             .allowedHeaders("*")
             .allowCredentials(true)
