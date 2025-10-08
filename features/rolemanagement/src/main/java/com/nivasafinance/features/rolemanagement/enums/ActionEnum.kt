@@ -1,4 +1,4 @@
-package data.enums
+package com.nivasafinance.features.rolemanagement.enums
 
 enum class ActionEnum {
     CREATE,
@@ -6,5 +6,3 @@ enum class ActionEnum {
     UPDATE,
     DELETE
 }
-
-

@@ -14,5 +14,3 @@ object RoleManagementExceptionFactory {
 }
 
 class RoleManagementNotFoundException(message: String) : RuntimeException(message)
-
-

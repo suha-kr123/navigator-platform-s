@@ -85,6 +85,18 @@ class GlobalExceptionHandler {
         return ResponseEntity(apiError, HttpStatus.UNAUTHORIZED)
     }
 
+    @ExceptionHandler(ForbiddenException::class)
+    fun handleForbiddenException(ex: ForbiddenException, request: WebRequest): ResponseEntity<ApiError> {
+        val apiError = ApiError(
+            error = ex.localizedMessage,
+            statusCode = HttpStatus.FORBIDDEN,
+            errorCode = "FORBIDDEN",
+            requestId = generateRequestId(),
+            path = request.getDescription(false)
+        )
+        return ResponseEntity(apiError, HttpStatus.FORBIDDEN)
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun handleMethodArgumentNotValidException(
         ex: MethodArgumentNotValidException,

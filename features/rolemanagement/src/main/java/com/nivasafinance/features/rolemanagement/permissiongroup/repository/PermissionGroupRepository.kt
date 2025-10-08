@@ -7,4 +7,3 @@ import java.util.UUID
 
 @Repository
 interface PermissionGroupRepository : JpaRepository<PermissionGroup, UUID>
-

@@ -8,5 +8,5 @@ import java.util.UUID
 
 @Repository
 interface UserRoleMappingRepository : JpaRepository<UserRoleMapping, UUID> {
-    fun findByUsername(username : String): Optional<UserRoleMapping>
+    fun findByUsername(username: String): Optional<UserRoleMapping>
 }

@@ -6,6 +6,3 @@ data class PermissionGroupResponse(
     val id: UUID,
     val name: String
 )
-
-
-

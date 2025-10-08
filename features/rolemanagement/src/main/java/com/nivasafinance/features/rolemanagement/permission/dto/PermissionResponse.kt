@@ -1,9 +1,9 @@
 package com.nivasafinance.features.rolemanagement.permission.dto
 
+import com.nivasafinance.features.rolemanagement.enums.ActionEnum
+import com.nivasafinance.features.rolemanagement.enums.ModuleEnum
+import com.nivasafinance.features.rolemanagement.enums.OperationsEnum
 import com.nivasafinance.features.rolemanagement.permission.entity.Permission
-import data.enums.ActionEnum
-import data.enums.ModuleEnum
-import data.enums.OperationsEnum
 import java.util.UUID
 
 data class PermissionResponse(
@@ -11,7 +11,7 @@ data class PermissionResponse(
     val name: String,
     val action: ActionEnum?,
     val operation: OperationsEnum?,
-    val module: ModuleEnum? 
+    val module: ModuleEnum?
 )
 
 fun Permission.toPermissionResponse(): PermissionResponse? {
@@ -24,4 +24,3 @@ fun Permission.toPermissionResponse(): PermissionResponse? {
         module = module
     )
 }
-

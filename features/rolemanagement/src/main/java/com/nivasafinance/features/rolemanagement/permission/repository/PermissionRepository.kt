@@ -6,7 +6,6 @@ import org.springframework.stereotype.Repository
 import java.util.UUID
 
 @Repository
-interface PermissionRepository : JpaRepository<Permission, UUID>{
+interface PermissionRepository : JpaRepository<Permission, UUID> {
     fun findByIdIn(ids: List<UUID>): List<Permission>
 }
-

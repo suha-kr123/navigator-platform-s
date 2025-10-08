@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service
 
 @Service
 class PermissionReadServiceImpl(
-    private val permissionReadRepositoryWrapper: PermissionReadRepositoryWrapper
+    private val permissionReadRepositoryWrapper: PermissionReadRepositoryWrapper,
 ) : PermissionReadService {
 
     override fun getPermissionsByRoles(roleName: List<String>): List<PermissionResponse> {
@@ -16,5 +16,3 @@ class PermissionReadServiceImpl(
         return permissions.mapNotNull { it.toPermissionResponse() }
     }
 }
-
-

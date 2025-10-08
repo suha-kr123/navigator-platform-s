@@ -1,7 +1,7 @@
 package com.nivasafinance.features.rolemanagement.mapping.repository
 
-import com.nivasafinance.features.rolemanagement.mapping.entity.RolePermissionMapping
 import com.nivasafinance.features.rolemanagement.exception.RoleManagementExceptionFactory
+import com.nivasafinance.features.rolemanagement.mapping.entity.RolePermissionMapping
 import org.springframework.context.MessageSource
 import org.springframework.stereotype.Service
 import java.util.UUID
@@ -24,5 +24,3 @@ class RolePermissionMappingRepositoryWrapper(
         return findById(id) ?: throw RoleManagementExceptionFactory.notFound("role.permission.mapping", id, messageSource)
     }
 }
-
-

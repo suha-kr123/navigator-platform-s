@@ -32,9 +32,13 @@ class PermissionReadRepositoryWrapper(
             .findByRoleIdIn(roleIds)
             .map { it.permissionGroupId }
 
-        val groupPermissionIds = if (groupIds.isEmpty()) emptyList() else permissionGroupMappingRepository
-            .findByPermissionGroupIdIn(groupIds)
-            .map { it.permissionId }
+        val groupPermissionIds = if (groupIds.isEmpty()) {
+            emptyList()
+        } else {
+            permissionGroupMappingRepository
+                .findByPermissionGroupIdIn(groupIds)
+                .map { it.permissionId }
+        }
 
         val allPermissionIds = (directPermissionIds + groupPermissionIds)
             .toSet()
@@ -45,5 +49,3 @@ class PermissionReadRepositoryWrapper(
         return permissionRepository.findByIdIn(allPermissionIds)
     }
 }
-
-

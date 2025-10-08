@@ -1,4 +1,4 @@
-package com.nivasafinance.features.rolemanagement.mapping.service
+package com.nivasafinance.features.rolemanagement.role.service
 
 import com.nivasafinance.features.rolemanagement.mapping.repository.UserRoleMappingRepository
 import org.springframework.stereotype.Service

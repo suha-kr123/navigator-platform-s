@@ -26,8 +26,7 @@ class WebConfig(
 
     override fun addInterceptors(registry: InterceptorRegistry) {
         registry.addInterceptor(localeChangeInterceptor())
-        // Temporarily disabled for testing
-        // registry.addInterceptor(userContextInterceptor()) this
+        registry.addInterceptor(userContextInterceptor())
     }
 
     override fun addCorsMappings(registry: CorsRegistry) {

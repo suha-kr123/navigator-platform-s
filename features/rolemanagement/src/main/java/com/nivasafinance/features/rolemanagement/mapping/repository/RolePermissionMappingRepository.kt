@@ -6,7 +6,6 @@ import org.springframework.stereotype.Repository
 import java.util.UUID
 
 @Repository
-interface RolePermissionMappingRepository : JpaRepository<RolePermissionMapping, UUID>
-{
+interface RolePermissionMappingRepository : JpaRepository<RolePermissionMapping, UUID> {
     fun findByRoleIdIn(roleIds: List<UUID>): List<RolePermissionMapping>
 }
