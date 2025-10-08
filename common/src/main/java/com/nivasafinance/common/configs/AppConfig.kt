@@ -1,12 +1,10 @@
 package com.nivasafinance.common.configs
 
 import com.fasterxml.jackson.annotation.JsonInclude
-import com.fasterxml.jackson.core.JsonParser
-import com.fasterxml.jackson.databind.DeserializationContext
-import com.fasterxml.jackson.databind.JsonDeserializer
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalTimeDeserializer
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer
@@ -25,7 +23,6 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
-import java.time.format.DateTimeParseException
 import java.util.Locale
 
 @Configuration
@@ -50,8 +47,6 @@ class AppConfig {
         val dateFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy")
         val timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss")
         val dateTimeFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss")
-        val isoDateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")
-        val isoDateTimeFormatterWithoutSeconds = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm")
 
         val javaTimeModule = JavaTimeModule().apply {
             addSerializer(LocalDate::class.java, LocalDateSerializer(dateFormatter))
@@ -59,40 +54,7 @@ class AppConfig {
             addSerializer(LocalTime::class.java, LocalTimeSerializer(timeFormatter))
             addDeserializer(LocalTime::class.java, LocalTimeDeserializer(timeFormatter))
             addSerializer(LocalDateTime::class.java, LocalDateTimeSerializer(dateTimeFormatter))
-            addDeserializer(
-                LocalDateTime::class.java,
-                object : JsonDeserializer<LocalDateTime>() {
-                    override fun deserialize(
-                        parser: JsonParser,
-                        context: DeserializationContext
-                    ): LocalDateTime? {
-                        val string = parser.text
-
-                        // Handle empty or null strings
-                        if (string.isNullOrEmpty() || string.trim().isEmpty()) {
-                            return null
-                        }
-
-                        return try {
-                            // Try with seconds first
-                            LocalDateTime.parse(string, isoDateTimeFormatter)
-                        } catch (e: DateTimeParseException) {
-                            try {
-                                // Try without seconds
-                                LocalDateTime.parse(string, isoDateTimeFormatterWithoutSeconds)
-                            } catch (e2: DateTimeParseException) {
-                                try {
-                                    // Try ISO format as fallback
-                                    LocalDateTime.parse(string)
-                                } catch (e3: DateTimeParseException) {
-                                    // If all parsing fails, return null instead of throwing exception
-                                    null
-                                }
-                            }
-                        }
-                    }
-                }
-            )
+            addDeserializer(LocalDateTime::class.java, LocalDateTimeDeserializer(dateTimeFormatter))
         }
         setSerializationInclusion(JsonInclude.Include.NON_NULL)
         registerModule(javaTimeModule)
