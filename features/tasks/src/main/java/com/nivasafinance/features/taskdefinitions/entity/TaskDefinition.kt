@@ -5,6 +5,8 @@ import com.nivasafinance.common.audit.AuditableEntity
 import com.nivasafinance.features.taskdefinitions.enum.TaskType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
+import jakarta.persistence.EnumType
+import jakarta.persistence.Enumerated
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
@@ -26,6 +28,7 @@ data class TaskDefinition(
     @Column(name = "key", unique = true, nullable = false)
     val key: String,
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false)
     val type: TaskType,
 
