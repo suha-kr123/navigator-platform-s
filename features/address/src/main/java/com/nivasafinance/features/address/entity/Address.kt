@@ -4,6 +4,8 @@ import com.nivasafinance.common.audit.AuditableEntity
 import com.nivasafinance.features.address.enum.AddressSource
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
+import jakarta.persistence.EnumType
+import jakarta.persistence.Enumerated
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
@@ -39,6 +41,7 @@ data class Address(
     var pincode: String,
 
     @Column(name = "address_source")
+    @Enumerated(EnumType.STRING)
     var addressSource: AddressSource,
 
     @JdbcTypeCode(SqlTypes.JSON)

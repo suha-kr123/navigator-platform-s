@@ -55,7 +55,7 @@ class OfficeWriteServiceImpl(
                 district = it.district,
                 state = it.state,
                 pincode = it.pincode,
-                addressSource = it.addressSource.name,
+                addressSource = it.addressSource,
                 extData = it.extData
             )
         }
