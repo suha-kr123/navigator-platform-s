@@ -5,6 +5,8 @@ import com.auth0.jwt.exceptions.JWTDecodeException
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.nivasafinance.common.audit.ApiAuditLog
+import com.nivasafinance.common.audit.AuditAspect
+import com.nivasafinance.common.audit.AuditConfig
 import com.nivasafinance.common.service.ApiAuditService
 import jakarta.servlet.FilterChain
 import jakarta.servlet.ServletException
@@ -27,13 +29,9 @@ class ApiAuditFilter(
         response: HttpServletResponse,
         filterChain: FilterChain
     ) {
-        // Skip audit filter for download endpoints and document streaming to avoid Content-Type conflicts
-        if ((
-                request.requestURI.contains("/download") ||
-                        request.requestURI.contains("/documents/")
-                ) &&
-            request.method == "GET"
-        ) {
+        // Check if this request should be completely skipped from audit
+        val auditConfig = getAuditConfigForRequest(request)
+        if (auditConfig?.skipAudit == true) {
             filterChain.doFilter(request, response)
             return
         }
@@ -54,7 +52,7 @@ class ApiAuditFilter(
             logger.error("ServletException in API filter: ${ex.message}", ex)
             throw ex
         } finally {
-            logAudit(wrappedRequest, wrappedResponse, startTime, errorMessage)
+            logAudit(wrappedRequest, wrappedResponse, startTime, errorMessage, auditConfig)
             wrappedResponse.copyBodyToResponse()
         }
     }
@@ -63,12 +61,15 @@ class ApiAuditFilter(
         request: ContentCachingRequestWrapper,
         response: ContentCachingResponseWrapper,
         startTime: Long,
-        errorMessage: String?
+        errorMessage: String?,
+        auditConfig: AuditConfig? = null
     ) {
         val duration = System.currentTimeMillis() - startTime
         val requestBody = String(request.contentAsByteArray)
         val responseBody = String(response.contentAsByteArray)
         val username = extractUsernameFromJwt(request) ?: "system"
+
+        val shouldIgnoreResponse = auditConfig?.ignoreResponse == true
 
         val auditLog = ApiAuditLog(
             username = username,
@@ -78,7 +79,7 @@ class ApiAuditFilter(
             userAgent = request.getHeader("User-Agent"),
 
             requestBody = requestBody,
-            responseBody = responseBody,
+            responseBody = if (shouldIgnoreResponse) null else responseBody,
             responseStatus = response.status,
             errorMessage = errorMessage ?: extractErrorMessageFromResponse(responseBody),
             durationMs = duration,
@@ -86,6 +87,11 @@ class ApiAuditFilter(
         )
 
         apiAuditService.saveAuditLog(auditLog)
+    }
+
+    private fun getAuditConfigForRequest(request: HttpServletRequest): AuditConfig? {
+        // First try to get by URI pattern
+        return AuditAspect.getAuditConfigByUri(request.requestURI)
     }
 
     fun extractUsernameFromJwt(request: HttpServletRequest): String? {

@@ -1,5 +1,6 @@
 package com.nivasafinance.features.document.controller
 
+import com.nivasafinance.common.audit.NonAuditable
 import com.nivasafinance.features.document.service.DocumentReadService
 import org.springframework.core.io.InputStreamResource
 import org.springframework.http.HttpHeaders
@@ -17,6 +18,7 @@ class DocumentController(
     private val documentReadService: DocumentReadService
 ) {
 
+    @NonAuditable(onlyResponse = true)
     @GetMapping("/{documentId}")
     fun getDocument(@PathVariable documentId: UUID): ResponseEntity<InputStreamResource> {
         val documentFileResponse = documentReadService.getDocumentFile(documentId)
