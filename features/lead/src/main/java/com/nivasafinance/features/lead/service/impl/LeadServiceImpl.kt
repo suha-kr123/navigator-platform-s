@@ -258,7 +258,7 @@ class LeadServiceImpl(
                 firstName = person?.firstName,
                 middleName = person?.middleName,
                 lastName = person?.lastName,
-                dateOfBirth = person?.dateOfBirth?.toString(),
+            dateOfBirth = person?.dateOfBirth,
             gender = person?.gender?.name,
                 mobileNumbers = person?.mobileNumbers,
             leadPersonType = personData.leadPersonType.value,

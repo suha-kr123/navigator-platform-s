@@ -15,8 +15,6 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import java.util.UUID
 
 @Service
@@ -25,16 +23,6 @@ class PersonServiceImpl(
     private val personRepositoryWrapper: PersonRepositoryWrapper,
     private val messageSource: MessageSource
 ) : PersonService {
-
-    private val dateFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy")
-
-    private fun parseDate(dateString: String?): LocalDate? {
-        return if (dateString.isNullOrBlank()) null else LocalDate.parse(dateString, dateFormatter)
-    }
-
-    private fun formatDate(date: LocalDate?): String? {
-        return date?.format(dateFormatter)
-    }
 
     private fun validatePrimaryMobileNumber(mobileNumbers: List<MobileNumberDetails>?, excludePersonId: UUID? = null) {
         mobileNumbers?.forEach { mobileNumber ->
@@ -65,7 +53,7 @@ class PersonServiceImpl(
             middleName = personRequest.middleName,
             lastName = personRequest.lastName,
             mobileNumbers = personRequest.mobileNumbers,
-            dateOfBirth = parseDate(personRequest.dateOfBirth),
+            dateOfBirth = personRequest.dateOfBirth,
             gender = personRequest.gender,
             extData = personRequest.extData
         )
@@ -87,7 +75,7 @@ class PersonServiceImpl(
         personUpdateRequest.middleName?.let { existingPerson.middleName = it }
         personUpdateRequest.lastName?.let { existingPerson.lastName = it }
         personUpdateRequest.mobileNumbers?.let { existingPerson.mobileNumbers = it }
-        personUpdateRequest.dateOfBirth?.let { existingPerson.dateOfBirth = parseDate(it) }
+        personUpdateRequest.dateOfBirth?.let { existingPerson.dateOfBirth = it }
         personUpdateRequest.gender?.let { existingPerson.gender = it }
         personUpdateRequest.extData?.let { existingPerson.extData = it }
 
@@ -134,7 +122,7 @@ class PersonServiceImpl(
             middleName = person.middleName,
             lastName = person.lastName,
             mobileNumbers = person.mobileNumbers,
-            dateOfBirth = formatDate(person.dateOfBirth),
+            dateOfBirth = person.dateOfBirth,
             gender = person.gender?.name,
             extData = person.extData,
             createdAt = person.createdAt ?: java.time.LocalDateTime.now(),

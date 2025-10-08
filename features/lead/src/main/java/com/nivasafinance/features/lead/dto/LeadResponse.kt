@@ -2,6 +2,7 @@ package com.nivasafinance.features.lead.dto
 
 import com.nivasafinance.features.person.entity.MobileNumberDetails
 import java.math.BigDecimal
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -30,7 +31,7 @@ data class LeadPersonsResponse(
     val firstName: String?,
     val middleName: String?,
     val lastName: String?,
-    val dateOfBirth: String?,
+    val dateOfBirth: LocalDate?,
     val gender: String?,
 
     // Phone Numbers

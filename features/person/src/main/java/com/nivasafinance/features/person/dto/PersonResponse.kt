@@ -1,6 +1,7 @@
 package com.nivasafinance.features.person.dto
 
 import com.nivasafinance.features.person.entity.MobileNumberDetails
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -10,7 +11,7 @@ data class PersonResponse(
     val middleName: String?,
     val lastName: String?,
     val mobileNumbers: List<MobileNumberDetails>?,
-    val dateOfBirth: String?,
+    val dateOfBirth: LocalDate?,
     val gender: String?,
     val extData: Map<String, Any>?,
     val createdAt: LocalDateTime,
