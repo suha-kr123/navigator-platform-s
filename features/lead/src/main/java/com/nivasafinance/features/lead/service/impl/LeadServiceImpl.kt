@@ -350,28 +350,6 @@ class LeadServiceImpl(
         return toLeadResponse(savedLead)
     }
 
-    override fun getAllLeadPersons(
-            paginationRequest: PaginationRequest,
-            search: String?
-    ): List<LeadPersonsResponse> {
-        val pageable =
-                PageRequest.of(
-                        paginationRequest.offset / paginationRequest.limit,
-                        paginationRequest.limit
-                )
-
-        val leadPage = if (search.isNullOrBlank()) {
-            leadRepositoryWrapper.findAllWithException(pageable)
-        } else {
-            leadRepositoryWrapper.findByPersonNameOrPhoneNumberWithException(search, pageable)
-        }
-
-        return leadPage.content.flatMap { lead ->
-            lead.personData?.map { personData -> fetchPersonDetails(personData, lead.id!!) }
-                    ?: emptyList()
-        }
-    }
-
     private fun validatePhoneNumbers(personRequests: List<Any>) {
         val primaryPhones = mutableSetOf<String>()
 

@@ -4,7 +4,6 @@ import com.nivasafinance.common.base.model.PaginatedResponse
 import com.nivasafinance.common.base.model.PaginationRequest
 import com.nivasafinance.features.lead.dto.AddLeadPersonRequest
 import com.nivasafinance.features.lead.dto.LeadCreateRequest
-import com.nivasafinance.features.lead.dto.LeadPersonsResponse
 import com.nivasafinance.features.lead.dto.LeadResponse
 import com.nivasafinance.features.lead.dto.LeadUpdateRequest
 import com.nivasafinance.features.lead.dto.UpdateLeadPersonRequest
@@ -26,24 +25,6 @@ import java.util.UUID
 class LeadController(
     private val leadService: LeadService
 ) {
-
-    @GetMapping("/persons/all")
-    fun getAllLeadPersons(
-        @RequestParam(defaultValue = "0") offset: Int,
-        @RequestParam(defaultValue = "20") limit: Int,
-        @RequestParam(defaultValue = "createdAt") sortBy: String,
-        @RequestParam(defaultValue = "ASC") sortDirection: String,
-        @RequestParam(required = false) search: String?
-    ): ResponseEntity<List<LeadPersonsResponse>> {
-        val paginationRequest = PaginationRequest(
-            offset = offset,
-            limit = limit,
-            sortBy = sortBy,
-            sortDirection = sortDirection
-        )
-        val leadPersons = leadService.getAllLeadPersons(paginationRequest, search)
-        return ResponseEntity.ok(leadPersons)
-    }
 
     @PostMapping
     fun createLead(@RequestBody leadCreateRequest: LeadCreateRequest): ResponseEntity<LeadResponse> {

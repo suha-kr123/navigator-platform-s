@@ -4,7 +4,6 @@ import com.nivasafinance.common.base.model.PaginatedResponse
 import com.nivasafinance.common.base.model.PaginationRequest
 import com.nivasafinance.features.lead.dto.AddLeadPersonRequest
 import com.nivasafinance.features.lead.dto.LeadCreateRequest
-import com.nivasafinance.features.lead.dto.LeadPersonsResponse
 import com.nivasafinance.features.lead.dto.LeadResponse
 import com.nivasafinance.features.lead.dto.LeadUpdateRequest
 import com.nivasafinance.features.lead.dto.UpdateLeadPersonRequest
@@ -19,5 +18,4 @@ interface LeadService {
     // Person management methods
     fun addLeadPerson(leadId: UUID, addLeadPersonRequest: AddLeadPersonRequest): LeadResponse
     fun updateLeadPerson(leadId: UUID, personId: UUID, updateLeadPersonRequest: UpdateLeadPersonRequest): LeadResponse
-    fun getAllLeadPersons(paginationRequest: PaginationRequest, search: String? = null): List<LeadPersonsResponse>
 }
