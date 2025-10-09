@@ -33,27 +33,27 @@ import java.util.UUID
 @Service
 @Transactional
 class LeadServiceImpl(
-        private val leadRepositoryWrapper: LeadRepositoryWrapper,
-        private val stageRepositoryWrapper: StageRepositoryWrapper,
-        private val stageDefinitionRepositoryWrapper: StageDefinitionRepositoryWrapper,
-        private val stageService: StageService,
-        private val personRepository: PersonRepository,
-        private val messageSource: MessageSource
+    private val leadRepositoryWrapper: LeadRepositoryWrapper,
+    private val stageRepositoryWrapper: StageRepositoryWrapper,
+    private val stageDefinitionRepositoryWrapper: StageDefinitionRepositoryWrapper,
+    private val stageService: StageService,
+    private val personRepository: PersonRepository,
+    private val messageSource: MessageSource
 ) : LeadService {
 
     override fun createLead(leadCreateRequest: LeadCreateRequest): LeadResponse {
         LeadExceptionFactory.validateLeadForCreation(
-                leadCreateRequest.requestedAmountRange,
-                leadCreateRequest.purpose,
-                leadCreateRequest.productCode,
-                messageSource
+            leadCreateRequest.requestedAmountRange,
+            leadCreateRequest.purpose,
+            leadCreateRequest.productCode,
+            messageSource
         )
 
         val personData =
-                leadCreateRequest.leadPersons?.let { leadPersons ->
-                    validateAndCreatePersons(leadPersons)
-                }
-                        ?: emptyList()
+            leadCreateRequest.leadPersons?.let { leadPersons ->
+                validateAndCreatePersons(leadPersons)
+            }
+                ?: emptyList()
 
         val lead = toLead(leadCreateRequest, personData)
         val savedLead = leadRepositoryWrapper.saveWithException(lead)
@@ -71,22 +71,22 @@ class LeadServiceImpl(
         val existingLead = leadRepositoryWrapper.findByIdWithException(id)
 
         val updatedLead =
-                existingLead.copy(
-                        requestedAmountRange = leadUpdateRequest.requestedAmountRange
-                                        ?: existingLead.requestedAmountRange,
-                        purpose = leadUpdateRequest.purpose ?: existingLead.purpose,
-                        productCode = leadUpdateRequest.productCode ?: existingLead.productCode,
-                        pipelineKey = leadUpdateRequest.pipelineKey ?: existingLead.pipelineKey,
-                        sourcingChannel = leadUpdateRequest.sourcingChannel
-                                        ?: existingLead.sourcingChannel,
-                        preliminaryInformation =
-                                if (leadUpdateRequest.preliminaryInformation != null) {
-                                    leadUpdateRequest.preliminaryInformation
-                                } else {
-                                    existingLead.preliminaryInformation
-                                },
-                        extData = leadUpdateRequest.extData ?: existingLead.extData
-                )
+            existingLead.copy(
+                requestedAmountRange = leadUpdateRequest.requestedAmountRange
+                    ?: existingLead.requestedAmountRange,
+                purpose = leadUpdateRequest.purpose ?: existingLead.purpose,
+                productCode = leadUpdateRequest.productCode ?: existingLead.productCode,
+                pipelineKey = leadUpdateRequest.pipelineKey ?: existingLead.pipelineKey,
+                sourcingChannel = leadUpdateRequest.sourcingChannel
+                    ?: existingLead.sourcingChannel,
+                preliminaryInformation =
+                if (leadUpdateRequest.preliminaryInformation != null) {
+                    leadUpdateRequest.preliminaryInformation
+                } else {
+                    existingLead.preliminaryInformation
+                },
+                extData = leadUpdateRequest.extData ?: existingLead.extData
+            )
 
         val savedLead = leadRepositoryWrapper.saveWithException(updatedLead)
         return toLeadResponse(savedLead)
@@ -98,14 +98,14 @@ class LeadServiceImpl(
     }
 
     override fun getAllLeads(
-            paginationRequest: PaginationRequest,
-            search: String?
+        paginationRequest: PaginationRequest,
+        search: String?
     ): PaginatedResponse<LeadResponse> {
         val pageable =
-                PageRequest.of(
-                        paginationRequest.offset / paginationRequest.limit,
-                        paginationRequest.limit
-                )
+            PageRequest.of(
+                paginationRequest.offset / paginationRequest.limit,
+                paginationRequest.limit
+            )
 
         val leadPage = if (search.isNullOrBlank()) {
             leadRepositoryWrapper.findAllWithException(pageable)
@@ -116,89 +116,92 @@ class LeadServiceImpl(
         val leadResponses = leadPage.content.map { toLeadResponse(it) }
 
         val totalPages =
-                if (leadPage.totalElements == 0L) 0
-                else ((leadPage.totalElements - 1) / paginationRequest.limit + 1).toInt()
+            if (leadPage.totalElements == 0L) {
+                0
+            } else {
+                ((leadPage.totalElements - 1) / paginationRequest.limit + 1).toInt()
+            }
         val currentPage = paginationRequest.offset / paginationRequest.limit
 
         return PaginatedResponse(
-                content = leadResponses,
-                pagination =
-                        PaginationInfo(
-                                offset = paginationRequest.offset,
-                                limit = paginationRequest.limit,
-                                totalElements = leadPage.totalElements,
-                                totalPages = totalPages,
-                                currentPage = currentPage,
-                                hasNext = currentPage < totalPages - 1,
-                                hasPrevious = currentPage > 0
-                        )
+            content = leadResponses,
+            pagination =
+            PaginationInfo(
+                offset = paginationRequest.offset,
+                limit = paginationRequest.limit,
+                totalElements = leadPage.totalElements,
+                totalPages = totalPages,
+                currentPage = currentPage,
+                hasNext = currentPage < totalPages - 1,
+                hasPrevious = currentPage > 0
+            )
         )
     }
 
     private fun toLead(leadCreateRequest: LeadCreateRequest, personData: List<PersonData>): Lead {
         return Lead(
-                requestedAmountRange = leadCreateRequest.requestedAmountRange,
-                purpose = leadCreateRequest.purpose,
-                productCode = leadCreateRequest.productCode,
-                pipelineKey = "HOME_LOAN",
-                currentStage = "APPLICATION_RECEIVED",
-                sourcingChannel = leadCreateRequest.sourcingChannel,
-                preliminaryInformation =
-                        leadCreateRequest.preliminaryInformation?.let { mapOf("data" to it) },
-                extData = leadCreateRequest.extData,
-                personData = personData
+            requestedAmountRange = leadCreateRequest.requestedAmountRange,
+            purpose = leadCreateRequest.purpose,
+            productCode = leadCreateRequest.productCode,
+            pipelineKey = "HOME_LOAN",
+            currentStage = "APPLICATION_RECEIVED",
+            sourcingChannel = leadCreateRequest.sourcingChannel,
+            preliminaryInformation =
+            leadCreateRequest.preliminaryInformation?.let { mapOf("data" to it) },
+            extData = leadCreateRequest.extData,
+            personData = personData
         )
     }
 
     private fun toLeadResponse(lead: Lead): LeadResponse {
         return LeadResponse(
-                id = lead.id ?: UUID.randomUUID(),
-                requestedAmountRange = lead.requestedAmountRange,
-                purpose = lead.purpose,
-                productCode = lead.productCode,
-                currentStage = lead.currentStage,
-                preliminaryInformation =
-                        lead.preliminaryInformation?.get("data") as? LeadPreliminaryInformation,
-                sourcingChannel = lead.sourcingChannel,
-                extData = lead.extData,
-                taskData =
-                        lead.taskData?.let { taskDataList ->
-                            taskDataList.associate { taskData ->
-                                taskData.taskId to
-                                        mapOf()
-                            }
-                        },
-                createdAt = lead.createdAt ?: java.time.LocalDateTime.now(),
-                createdBy = lead.createdBy,
-                updatedAt = lead.updatedAt ?: java.time.LocalDateTime.now(),
-                updatedBy = lead.updatedBy,
-                leadPersons =
-                        lead.personData?.map { personData ->
-                            fetchPersonDetails(personData, lead.id!!)
-                        },
+            id = lead.id ?: UUID.randomUUID(),
+            requestedAmountRange = lead.requestedAmountRange,
+            purpose = lead.purpose,
+            productCode = lead.productCode,
+            currentStage = lead.currentStage,
+            preliminaryInformation =
+            lead.preliminaryInformation?.get("data") as? LeadPreliminaryInformation,
+            sourcingChannel = lead.sourcingChannel,
+            extData = lead.extData,
+            taskData =
+            lead.taskData?.let { taskDataList ->
+                taskDataList.associate { taskData ->
+                    taskData.taskId to
+                        mapOf()
+                }
+            },
+            createdAt = lead.createdAt ?: java.time.LocalDateTime.now(),
+            createdBy = lead.createdBy,
+            updatedAt = lead.updatedAt ?: java.time.LocalDateTime.now(),
+            updatedBy = lead.updatedBy,
+            leadPersons =
+            lead.personData?.map { personData ->
+                fetchPersonDetails(personData, lead.id!!)
+            },
 
-            )
+        )
     }
 
     private fun createStagesForLead(
-            pipelineKey: String?
+        pipelineKey: String?
     ): List<com.nivasafinance.features.stages.dto.StageResponse> {
         if (pipelineKey.isNullOrBlank()) {
             return emptyList()
         }
 
         val stageDefinitions =
-                stageDefinitionRepositoryWrapper.findByPipelineKeyWithException(pipelineKey)
+            stageDefinitionRepositoryWrapper.findByPipelineKeyWithException(pipelineKey)
         val stages = mutableListOf<com.nivasafinance.features.stages.dto.StageResponse>()
 
         stageDefinitions.forEach { stageDefinition ->
             val validOutcome = stageDefinition.possibleOutcomes?.firstOrNull() ?: "PENDING"
             val stageRequest =
-                    StageRequest(
-                            stageDefinitionKey = stageDefinition.key,
-                            outcome = validOutcome,
-                            assignedTo = null
-                    )
+                StageRequest(
+                    stageDefinitionKey = stageDefinition.key,
+                    outcome = validOutcome,
+                    assignedTo = null
+                )
             val savedStage = stageService.createStage(stageRequest)
             stages.add(savedStage)
         }
@@ -215,9 +218,9 @@ class LeadServiceImpl(
 
                 mobileNumbers.filter { mobile -> mobile.isPrimary == true }.forEach { phone ->
                     LeadExceptionFactory.validatePhoneNumberUniqueness(
-                            phone.number,
-                            primaryPhones,
-                            messageSource
+                        phone.number,
+                        primaryPhones,
+                        messageSource
                     )
                 }
             }
@@ -226,24 +229,24 @@ class LeadServiceImpl(
         return leadPersonRequests.map { personRequest ->
             val person = createNewPerson(personRequest)
             PersonData(
-                    personId = person.id!!,
+                personId = person.id!!,
                 leadPersonType = personRequest.leadPersonType ?: LeadPersonType.CONTACT,
-                    relationshipToPrimary = personRequest.relationshipToPrimary ?: "SELF"
+                relationshipToPrimary = personRequest.relationshipToPrimary ?: "SELF"
             )
         }
     }
 
     private fun createNewPerson(leadPersonRequest: LeadPersonRequest): Person {
         val person =
-                Person(
-                    firstName = leadPersonRequest.firstName,
-                    middleName = leadPersonRequest.middleName,
-                    lastName = leadPersonRequest.lastName,
-                    dateOfBirth = leadPersonRequest.dateOfBirth,
-                    gender = leadPersonRequest.gender,
-                    mobileNumbers = leadPersonRequest.mobileNumbers,
-                    extData = leadPersonRequest.extData
-                )
+            Person(
+                firstName = leadPersonRequest.firstName,
+                middleName = leadPersonRequest.middleName,
+                lastName = leadPersonRequest.lastName,
+                dateOfBirth = leadPersonRequest.dateOfBirth,
+                gender = leadPersonRequest.gender,
+                mobileNumbers = leadPersonRequest.mobileNumbers,
+                extData = leadPersonRequest.extData
+            )
 
         return personRepository.save(person)
     }
@@ -253,45 +256,45 @@ class LeadServiceImpl(
         val person = personRepository.findById(personData.personId).orElse(null)
 
         return LeadPersonsResponse(
-                leadId = leadId,
-                personId = personData.personId,
-                firstName = person?.firstName,
-                middleName = person?.middleName,
-                lastName = person?.lastName,
+            leadId = leadId,
+            personId = personData.personId,
+            firstName = person?.firstName,
+            middleName = person?.middleName,
+            lastName = person?.lastName,
             dateOfBirth = person?.dateOfBirth,
             gender = person?.gender?.name,
-                mobileNumbers = person?.mobileNumbers,
+            mobileNumbers = person?.mobileNumbers,
             leadPersonType = personData.leadPersonType.value,
-                relationshipToPrimary = personData.relationshipToPrimary,
-                extData = person?.extData
+            relationshipToPrimary = personData.relationshipToPrimary,
+            extData = person?.extData
         )
     }
 
     override fun addLeadPerson(
-            leadId: UUID,
-            addLeadPersonRequest: AddLeadPersonRequest
+        leadId: UUID,
+        addLeadPersonRequest: AddLeadPersonRequest
     ): LeadResponse {
         validatePhoneNumbers(listOf(addLeadPersonRequest))
 
         val person =
-                Person(
-                        firstName = addLeadPersonRequest.firstName,
-                        middleName = addLeadPersonRequest.middleName,
-                        lastName = addLeadPersonRequest.lastName,
-                        dateOfBirth = addLeadPersonRequest.dateOfBirth?.let { LocalDate.parse(it) },
-                        gender = addLeadPersonRequest.gender,
-                        mobileNumbers = addLeadPersonRequest.mobileNumbers,
-                        extData = addLeadPersonRequest.extData
-                )
+            Person(
+                firstName = addLeadPersonRequest.firstName,
+                middleName = addLeadPersonRequest.middleName,
+                lastName = addLeadPersonRequest.lastName,
+                dateOfBirth = addLeadPersonRequest.dateOfBirth?.let { LocalDate.parse(it) },
+                gender = addLeadPersonRequest.gender,
+                mobileNumbers = addLeadPersonRequest.mobileNumbers,
+                extData = addLeadPersonRequest.extData
+            )
 
         val savedPerson = personRepository.save(person)
 
         val newPersonData =
-                PersonData(
-                        personId = savedPerson.id!!,
-                    leadPersonType = addLeadPersonRequest.leadPersonType ?: LeadPersonType.CONTACT,
-                        relationshipToPrimary = addLeadPersonRequest.relationshipToPrimary ?: "SELF"
-                )
+            PersonData(
+                personId = savedPerson.id!!,
+                leadPersonType = addLeadPersonRequest.leadPersonType ?: LeadPersonType.CONTACT,
+                relationshipToPrimary = addLeadPersonRequest.relationshipToPrimary ?: "SELF"
+            )
 
         val existingLead = leadRepositoryWrapper.findByIdWithException(leadId)
 
@@ -303,26 +306,26 @@ class LeadServiceImpl(
     }
 
     override fun updateLeadPerson(
-            leadId: UUID,
-            personId: UUID,
-            updateLeadPersonRequest: UpdateLeadPersonRequest
+        leadId: UUID,
+        personId: UUID,
+        updateLeadPersonRequest: UpdateLeadPersonRequest
     ): LeadResponse {
         validatePhoneNumbers(listOf(updateLeadPersonRequest))
 
         val existingPerson =
-                personRepository.findById(personId).orElseThrow {
-                    LeadExceptionFactory.personNotFound(personId, messageSource)
-                }
+            personRepository.findById(personId).orElseThrow {
+                LeadExceptionFactory.personNotFound(personId, messageSource)
+            }
 
         existingPerson.firstName = updateLeadPersonRequest.firstName ?: existingPerson.firstName
         existingPerson.middleName = updateLeadPersonRequest.middleName ?: existingPerson.middleName
         existingPerson.lastName = updateLeadPersonRequest.lastName ?: existingPerson.lastName
         existingPerson.dateOfBirth =
-                updateLeadPersonRequest.dateOfBirth?.let { LocalDate.parse(it) }
-                        ?: existingPerson.dateOfBirth
+            updateLeadPersonRequest.dateOfBirth?.let { LocalDate.parse(it) }
+                ?: existingPerson.dateOfBirth
         existingPerson.gender = updateLeadPersonRequest.gender ?: existingPerson.gender
         existingPerson.mobileNumbers =
-                updateLeadPersonRequest.mobileNumbers ?: existingPerson.mobileNumbers
+            updateLeadPersonRequest.mobileNumbers ?: existingPerson.mobileNumbers
         existingPerson.extData = updateLeadPersonRequest.extData ?: existingPerson.extData
 
         personRepository.save(existingPerson)
@@ -331,19 +334,19 @@ class LeadServiceImpl(
 
         val currentPersonData = existingLead.personData ?: emptyList()
         val updatedPersonData =
-                currentPersonData.map { personData ->
-                    if (personData.personId == personId) {
-                        personData.copy(
-                            leadPersonType = updateLeadPersonRequest.leadPersonType
-                                ?: personData.leadPersonType,
-                                relationshipToPrimary =
-                                        updateLeadPersonRequest.relationshipToPrimary
-                                                ?: personData.relationshipToPrimary
-                        )
-                    } else {
-                        personData
-                    }
+            currentPersonData.map { personData ->
+                if (personData.personId == personId) {
+                    personData.copy(
+                        leadPersonType = updateLeadPersonRequest.leadPersonType
+                            ?: personData.leadPersonType,
+                        relationshipToPrimary =
+                        updateLeadPersonRequest.relationshipToPrimary
+                            ?: personData.relationshipToPrimary
+                    )
+                } else {
+                    personData
                 }
+            }
 
         existingLead.personData = updatedPersonData
         val savedLead = leadRepositoryWrapper.saveWithException(existingLead)
@@ -355,21 +358,21 @@ class LeadServiceImpl(
 
         personRequests.forEach { personRequest ->
             val mobileNumbers =
-                    when (personRequest) {
-                        is AddLeadPersonRequest -> personRequest.mobileNumbers
-                        is com.nivasafinance.features.lead.dto.UpdateLeadPersonRequest ->
-                                personRequest.mobileNumbers
-                        else -> null
-                    }
+                when (personRequest) {
+                    is AddLeadPersonRequest -> personRequest.mobileNumbers
+                    is com.nivasafinance.features.lead.dto.UpdateLeadPersonRequest ->
+                        personRequest.mobileNumbers
+                    else -> null
+                }
 
             mobileNumbers?.let { numbers ->
                 LeadExceptionFactory.validatePersonForCreation(numbers, messageSource)
 
                 numbers.filter { mobile -> mobile.isPrimary == true }.forEach { phone ->
                     LeadExceptionFactory.validatePhoneNumberUniqueness(
-                            phone.number,
-                            primaryPhones,
-                            messageSource
+                        phone.number,
+                        primaryPhones,
+                        messageSource
                     )
                 }
             }

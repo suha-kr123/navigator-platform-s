@@ -32,13 +32,13 @@ class LeadAddressServiceImpl(
         addressRequest: CreateAddressRequest
     ): AddressResponse {
         val lead = leadRepositoryWrapper.findByIdWithException(leadId)
-        
+
         val addressResponse = addressService.createAddress(addressRequest)
-        
+
         // Update lead with the new address ID
         lead.addressId = addressResponse.id
         leadRepositoryWrapper.saveWithException(lead)
-        
+
         return addressResponse
     }
 
@@ -47,10 +47,10 @@ class LeadAddressServiceImpl(
         addressRequest: UpdateAddressRequest
     ): AddressResponse {
         val lead = leadRepositoryWrapper.findByIdWithException(leadId)
-        
-        val addressId = lead.addressId 
+
+        val addressId = lead.addressId
             ?: throw LeadExceptionFactory.addressNotFoundForLead(leadId, messageSource)
-        
+
         return addressService.updateAddress(addressId, addressRequest)
     }
 }

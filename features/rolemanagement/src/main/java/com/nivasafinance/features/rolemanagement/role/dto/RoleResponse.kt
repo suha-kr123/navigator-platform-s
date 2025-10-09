@@ -6,4 +6,3 @@ data class RoleResponse(
     val id: UUID,
     val name: String
 )
-

@@ -32,7 +32,6 @@ class TaskRepositoryWrapper(
         }
     }
 
-
     fun findAllWithException(pageable: Pageable): Page<Task> {
         return try {
             taskRepository.findAll(pageable)

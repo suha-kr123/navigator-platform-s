@@ -27,5 +27,5 @@ data class Pipeline(
 
     @Column(name = "description", columnDefinition = "TEXT")
     val description: String? = null
-    
+
 ) : AuditableEntity()

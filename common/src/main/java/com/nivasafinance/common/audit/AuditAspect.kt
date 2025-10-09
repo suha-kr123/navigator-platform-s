@@ -146,7 +146,7 @@ class AuditAspect {
             val result = annotation.javaClass.getMethod(methodName).invoke(annotation)
             when (result) {
                 is Array<*> -> result.filterIsInstance<String>().toTypedArray()
-                //is Array<String> -> result
+                // is Array<String> -> result
                 else -> emptyArray()
             }
         } catch (e: Exception) {

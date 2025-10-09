@@ -40,7 +40,7 @@ data class LeadPersonsResponse(
     // Lead Relationship Data
     val leadPersonType: String?,
     val relationshipToPrimary: String?,
-    
+
     // Additional data
     val extData: Map<String, Any>?
 )

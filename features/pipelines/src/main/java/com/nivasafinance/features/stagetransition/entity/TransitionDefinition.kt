@@ -31,4 +31,4 @@ data class TransitionDefinition(
     @Column(name = "condition_on_transition", columnDefinition = "jsonb")
     val conditionOnTransition: Map<String, Any>? = null
 
-): AuditableEntity()
+) : AuditableEntity()

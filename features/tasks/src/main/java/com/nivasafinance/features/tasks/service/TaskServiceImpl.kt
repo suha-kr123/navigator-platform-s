@@ -93,7 +93,6 @@ class TaskServiceImpl(
         taskRepositoryWrapper.deleteByIdWithException(taskId)
     }
 
-
     private fun toTaskResponse(task: Task): TaskResponse {
         val taskDefinition = taskDefinitionRepositoryWrapper.findByKeyWithException(task.taskDefinitionKey)
 
@@ -119,4 +118,3 @@ class TaskServiceImpl(
         )
     }
 }
-

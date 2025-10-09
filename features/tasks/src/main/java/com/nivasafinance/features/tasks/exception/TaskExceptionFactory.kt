@@ -17,10 +17,6 @@ object TaskExceptionFactory {
         return TaskKeyAlreadyExistsException(taskDefinitionKey, messageSource)
     }
 
-
-
-
-
     fun dueDatePast(messageSource: MessageSource): TaskDueDatePastException {
         return TaskDueDatePastException(messageSource)
     }
@@ -52,11 +48,4 @@ object TaskExceptionFactory {
     fun retrieveEntityFailed(messageSource: MessageSource): TaskOperationException {
         return TaskOperationException("error.task.operation.retrieve", messageSource)
     }
-
-
-
-
-
-
-
 }

@@ -97,18 +97,18 @@ object LeadExceptionFactory {
         if (amountRange == null || amountRange.isEmpty()) {
             throw amountInvalid(null, messageSource)
         }
-        
+
         val minAmount = amountRange["min"]
         val maxAmount = amountRange["max"]
-        
+
         if (minAmount == null || minAmount <= BigDecimal.ZERO) {
             throw amountInvalid(minAmount, messageSource)
         }
-        
+
         if (maxAmount == null || maxAmount <= BigDecimal.ZERO) {
             throw amountInvalid(maxAmount, messageSource)
         }
-        
+
         if (minAmount > maxAmount) {
             throw amountInvalid(minAmount, messageSource)
         }
@@ -179,38 +179,74 @@ object LeadExceptionFactory {
     }
 
     fun taskRetrievalFailedForLead(leadId: UUID, messageSource: MessageSource): LeadTaskOperationException {
-        return LeadTaskOperationException("error.lead.task.retrieval.failed.for.lead", arrayOf(leadId.toString()), messageSource)
+        return LeadTaskOperationException(
+            "error.lead.task.retrieval.failed.for.lead",
+            arrayOf(leadId.toString()),
+            messageSource
+        )
     }
 
     fun taskCreationFailedForLead(leadId: UUID, messageSource: MessageSource): LeadTaskOperationException {
-        return LeadTaskOperationException("error.lead.task.creation.failed.for.lead", arrayOf(leadId.toString()), messageSource)
+        return LeadTaskOperationException(
+            "error.lead.task.creation.failed.for.lead",
+            arrayOf(leadId.toString()),
+            messageSource
+        )
     }
 
     fun taskUpdateFailed(taskId: UUID, leadId: UUID, messageSource: MessageSource): LeadTaskOperationException {
-        return LeadTaskOperationException("error.lead.task.update.failed", arrayOf(taskId.toString(), leadId.toString()), messageSource)
+        return LeadTaskOperationException(
+            "error.lead.task.update.failed",
+            arrayOf(taskId.toString(), leadId.toString()),
+            messageSource
+        )
     }
 
     fun addressNotFoundForLead(leadId: UUID, messageSource: MessageSource): LeadValidationException {
-        return LeadValidationException("error.lead.address.not.found.for.lead", arrayOf(leadId.toString()), messageSource)
+        return LeadValidationException(
+            "error.lead.address.not.found.for.lead",
+            arrayOf(leadId.toString()),
+            messageSource
+        )
     }
 
     fun taskDeletionFailed(taskId: UUID, leadId: UUID, messageSource: MessageSource): LeadTaskOperationException {
-        return LeadTaskOperationException("error.lead.task.deletion.failed", arrayOf(taskId.toString(), leadId.toString()), messageSource)
+        return LeadTaskOperationException(
+            "error.lead.task.deletion.failed",
+            arrayOf(taskId.toString(), leadId.toString()),
+            messageSource
+        )
     }
 
     fun taskRetrievalFailedForTask(taskId: UUID, leadId: UUID, messageSource: MessageSource): LeadTaskOperationException {
-        return LeadTaskOperationException("error.lead.task.retrieval.failed.for.task", arrayOf(taskId.toString(), leadId.toString()), messageSource)
+        return LeadTaskOperationException(
+            "error.lead.task.retrieval.failed.for.task",
+            arrayOf(taskId.toString(), leadId.toString()),
+            messageSource
+        )
     }
 
     fun identifierRetrievalFailed(identifierId: UUID, leadId: UUID, messageSource: MessageSource): LeadIdentifierOperationException {
-        return LeadIdentifierOperationException("error.lead.identifier.retrieval.failed", arrayOf(identifierId.toString(), leadId.toString()), messageSource)
+        return LeadIdentifierOperationException(
+            "error.lead.identifier.retrieval.failed",
+            arrayOf(identifierId.toString(), leadId.toString()),
+            messageSource
+        )
     }
 
     fun identifierCreationFailed(leadId: UUID, messageSource: MessageSource): LeadIdentifierOperationException {
-        return LeadIdentifierOperationException("error.lead.identifier.creation.failed", arrayOf(leadId.toString()), messageSource)
+        return LeadIdentifierOperationException(
+            "error.lead.identifier.creation.failed",
+            arrayOf(leadId.toString()),
+            messageSource
+        )
     }
 
     fun identifierUpdateFailed(identifierId: UUID, leadId: UUID, messageSource: MessageSource): LeadIdentifierOperationException {
-        return LeadIdentifierOperationException("error.lead.identifier.update.failed", arrayOf(identifierId.toString(), leadId.toString()), messageSource)
+        return LeadIdentifierOperationException(
+            "error.lead.identifier.update.failed",
+            arrayOf(identifierId.toString(), leadId.toString()),
+            messageSource
+        )
     }
 }

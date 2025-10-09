@@ -14,4 +14,4 @@ interface NotesService {
     fun deleteNotes(notesId: UUID)
     fun getNotesById(notesId: UUID): NotesResponse
     fun getAllNotes(paginationRequest: PaginationRequest): PaginatedResponse<NotesResponse>
-}       
+}

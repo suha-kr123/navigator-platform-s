@@ -31,7 +31,7 @@ class NotesServiceImpl(
 
     override fun updateNotes(notesId: UUID, notesUpdateRequest: NotesUpdateRequest): NotesResponse {
         val existingNotes = notesRepositoryWrapper.findByIdWithException(notesId)
-        
+
         // Update the fields directly like in patchNotes
         if (notesUpdateRequest.title != null) {
             existingNotes.title = notesUpdateRequest.title
@@ -39,7 +39,7 @@ class NotesServiceImpl(
         if (notesUpdateRequest.content != null) {
             existingNotes.content = notesUpdateRequest.content
         }
-        
+
         val savedNotes = notesRepositoryWrapper.saveWithException(existingNotes)
         return toNotesResponse(savedNotes)
     }
@@ -58,7 +58,7 @@ class NotesServiceImpl(
         val savedNotes = notesRepositoryWrapper.saveWithException(existingNotes)
         return toNotesResponse(savedNotes)
     }
-    
+
     override fun deleteNotes(notesId: UUID) {
         notesRepositoryWrapper.deleteByIdWithException(notesId)
     }
@@ -70,14 +70,17 @@ class NotesServiceImpl(
 
     override fun getAllNotes(paginationRequest: PaginationRequest): PaginatedResponse<NotesResponse> {
         val sort = if (paginationRequest.sortBy != null) {
-            Sort.by(if (paginationRequest.sortDirection == "ASC") Sort.Direction.ASC else Sort.Direction.DESC, paginationRequest.sortBy)
+            Sort.by(
+                if (paginationRequest.sortDirection == "ASC") Sort.Direction.ASC else Sort.Direction.DESC,
+                paginationRequest.sortBy
+            )
         } else {
             Sort.by(Sort.Direction.DESC, "createdAt")
         }
-        
+
         val pageable = PageRequest.of(paginationRequest.offset / paginationRequest.limit, paginationRequest.limit, sort)
         val notesPage = notesRepositoryWrapper.findAll(pageable)
-        
+
         return PaginatedResponse(
             content = notesPage.content.map { toNotesResponse(it) },
             pagination = PaginationInfo(
@@ -97,7 +100,7 @@ class NotesServiceImpl(
             id = notes.id!!,
             title = notes.title,
             content = notes.content,
-            createdAt = notes.createdAt!!,    
+            createdAt = notes.createdAt!!,
             updatedAt = notes.updatedAt!!,
             createdBy = notes.createdBy,
             updatedBy = notes.updatedBy

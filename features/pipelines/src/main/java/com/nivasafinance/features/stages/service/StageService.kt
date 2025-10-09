@@ -5,7 +5,6 @@ import com.nivasafinance.features.stages.dto.StageResponse
 import com.nivasafinance.features.stages.dto.StageUpdateRequest
 import java.util.UUID
 
-
 interface StageService {
 
     fun createStage(stageRequest: StageRequest): StageResponse

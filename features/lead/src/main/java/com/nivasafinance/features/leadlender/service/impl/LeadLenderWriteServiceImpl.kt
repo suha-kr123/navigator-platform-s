@@ -109,7 +109,9 @@ class LeadLenderWriteServiceImpl(
 
         // Validate that the lender office belongs to the same lender as the lead-lender relationship
         if (lenderOffice.lenderKey != existingEntity.lenderKey) {
-            throw InvalidLenderOfficeException("Invalid lender office key: $officeKey for lender: ${existingEntity.lenderKey}")
+            throw InvalidLenderOfficeException(
+                "Invalid lender office key: $officeKey for lender: ${existingEntity.lenderKey}"
+            )
         }
     }
 }

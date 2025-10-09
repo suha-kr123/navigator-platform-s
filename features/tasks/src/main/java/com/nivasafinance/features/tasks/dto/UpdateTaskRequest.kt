@@ -1,7 +1,6 @@
 package com.nivasafinance.features.tasks.dto
 
 import java.time.LocalDateTime
-import java.util.UUID
 
 data class UpdateTaskRequest(
     val description: String?,

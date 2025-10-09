@@ -40,5 +40,4 @@ object StageExceptionFactory {
     ) {
         ExceptionUtils.requireNotNull(outcome, "outcome", "error.invalid", messageSource)
     }
-
 }

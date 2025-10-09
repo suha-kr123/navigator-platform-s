@@ -15,9 +15,9 @@ class TaskDefinitionServiceImpl(
 
     override fun getTaskOutcomesByKey(key: String): TaskOutcomesResponse {
         val taskDefinition = taskDefinitionRepositoryWrapper.findByKeyWithException(key)
-        
+
         val outcomes = taskDefinition.possibleOutcomes ?: emptyList()
-        
+
         return TaskOutcomesResponse(
             taskDefinitionKey = taskDefinition.key,
             taskDefinitionName = taskDefinition.name,
@@ -27,7 +27,7 @@ class TaskDefinitionServiceImpl(
 
     override fun getAllTaskDefinitions(): TaskDefinitionListResponse {
         val taskDefinitions = taskDefinitionRepositoryWrapper.findAllWithException()
-        
+
         val taskDefinitionResponses = taskDefinitions.map { taskDefinition ->
             TaskDefinitionResponse(
                 id = taskDefinition.id!!,
@@ -38,7 +38,7 @@ class TaskDefinitionServiceImpl(
                 possibleOutcomes = taskDefinition.possibleOutcomes
             )
         }
-        
+
         return TaskDefinitionListResponse(taskDefinitions = taskDefinitionResponses)
     }
 }

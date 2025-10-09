@@ -112,7 +112,6 @@ class LeadDocumentsServiceImpl(
         }
     }
 
-
     private fun buildPaginatedResponse(content: List<LeadDocumentResponse>): PaginatedResponse<LeadDocumentResponse> {
         val totalElements = content.size.toLong()
         val hasContent = totalElements > 0

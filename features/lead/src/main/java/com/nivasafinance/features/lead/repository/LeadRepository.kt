@@ -13,8 +13,9 @@ import java.util.UUID
 @Repository
 @JaversSpringDataAuditable
 interface LeadRepository : JpaRepository<Lead, UUID> {
-    
-    @Query(value = """
+
+    @Query(
+        value = """
         SELECT DISTINCT l.* FROM leads l 
         CROSS JOIN LATERAL jsonb_array_elements(l.person_data) AS pd
         JOIN person p ON (pd->>'personId')::uuid = p.id 
@@ -23,6 +24,8 @@ interface LeadRepository : JpaRepository<Lead, UUID> {
                LOWER(p.last_name) LIKE LOWER(CONCAT('%', :search, '%')) OR
                LOWER(CONCAT(COALESCE(p.first_name, ''), ' ', COALESCE(p.last_name, ''))) LIKE LOWER(CONCAT('%', :search, '%')) OR
                p.mobile_numbers::text LIKE CONCAT('%', :search, '%'))
-    """, nativeQuery = true)
+    """,
+        nativeQuery = true
+    )
     fun findByPersonNameOrPhoneNumber(@Param("search") search: String?, pageable: Pageable): Page<Lead>
 }

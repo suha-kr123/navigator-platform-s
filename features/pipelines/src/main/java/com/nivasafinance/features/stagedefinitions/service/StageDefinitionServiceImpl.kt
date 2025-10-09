@@ -15,9 +15,9 @@ class StageDefinitionServiceImpl(
     override fun getStageOutcomesByKey(key: String): StageOutcomesResponse {
         val stageDefinition = stageDefinitionRepositoryWrapper.findByKeyWithException(key)
             ?: throw StageDefinitionExceptionFactory.notFound(key, messageSource)
-        
+
         val outcomes = stageDefinition.possibleOutcomes ?: emptyList()
-        
+
         return StageOutcomesResponse(
             stageDefinitionKey = stageDefinition.key,
             stageDefinitionName = stageDefinition.name,

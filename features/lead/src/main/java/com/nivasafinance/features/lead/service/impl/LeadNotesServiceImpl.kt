@@ -82,5 +82,4 @@ class LeadNotesServiceImpl(
         lead.notes = lead.notes?.filter { it.noteId != notesId }
         leadRepositoryWrapper.saveWithException(lead)
     }
-
 }

@@ -6,5 +6,4 @@ enum class TaskType(val value: String) {
     LEAD_CALL("LEAD_CALL"),
     LOGIN_WITH_PARTNER("LOGIN_WITH_PARTNER"),
     ADHOC("ADHOC")
-    ;
 }

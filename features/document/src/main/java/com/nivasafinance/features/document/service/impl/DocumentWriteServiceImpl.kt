@@ -60,7 +60,6 @@ class DocumentWriteServiceImpl(
 
     @Transactional
     override fun deleteDocumentById(id: UUID) {
-
         val document = documentRepositoryWrapper.findByIdWithException(id)
         val contentRepository = contentRepositoryFactory.getRepository(document.provider.name)
         try {

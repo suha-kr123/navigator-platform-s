@@ -45,19 +45,19 @@ class StageServiceImpl(
     override fun createStage(stageRequest: StageRequest): StageResponse {
         val stageDefinition = validateStageDefinitionKey(stageRequest.stageDefinitionKey)
         validateOutcome(stageRequest.outcome, stageDefinition)
-        
+
         val stage = toStage(stageRequest)
         val savedStage = stageRepositoryWrapper.saveWithException(stage)
-        
+
         return toStageResponse(savedStage)
     }
 
     override fun updateStage(stageId: UUID, stageUpdateRequest: StageUpdateRequest): StageResponse {
         val existingStage = stageRepositoryWrapper.findByIdWithException(stageId)
-        
+
         val stageDefinition = validateStageDefinitionKey(existingStage.stageDefinitionKey)
         validateOutcome(stageUpdateRequest.outcome, stageDefinition)
-        
+
         val updatedStage = existingStage.copy(
             outcome = stageUpdateRequest.outcome,
             assignedTo = stageUpdateRequest.assignedTo

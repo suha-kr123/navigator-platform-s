@@ -1,6 +1,5 @@
 package com.nivasafinance.features.tasks.dto
 
-import java.util.UUID
 import java.time.LocalDateTime
 
 data class TaskRequest(

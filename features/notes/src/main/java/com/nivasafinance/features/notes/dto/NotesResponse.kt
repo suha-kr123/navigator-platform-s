@@ -1,7 +1,7 @@
 package com.nivasafinance.features.notes.dto
 
-import java.util.UUID
 import java.time.LocalDateTime
+import java.util.UUID
 
 data class NotesResponse(
     val id: UUID,

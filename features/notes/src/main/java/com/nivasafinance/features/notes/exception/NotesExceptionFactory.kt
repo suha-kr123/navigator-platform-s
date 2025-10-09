@@ -20,5 +20,4 @@ object NotesExceptionFactory {
     fun retrieveEntityFailed(messageSource: MessageSource): NotesOperationException {
         return NotesOperationException("error.notes.operation.retrieve", messageSource)
     }
-
 }
