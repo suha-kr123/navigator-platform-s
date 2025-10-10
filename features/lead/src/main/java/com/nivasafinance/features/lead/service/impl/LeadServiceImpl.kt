@@ -9,10 +9,14 @@ import com.nivasafinance.features.lead.dto.LeadPersonRequest
 import com.nivasafinance.features.lead.dto.LeadPersonsResponse
 import com.nivasafinance.features.lead.dto.LeadPreliminaryInformation
 import com.nivasafinance.features.lead.dto.LeadResponse
+import com.nivasafinance.features.lead.dto.LeadSummaryResponse
+import com.nivasafinance.features.lead.dto.LeadSummaryDTO
+import com.nivasafinance.features.lead.dto.PrimaryPersonSummary
 import com.nivasafinance.features.lead.dto.LeadUpdateRequest
 import com.nivasafinance.features.lead.dto.UpdateLeadPersonRequest
 import com.nivasafinance.features.lead.entity.Lead
 import com.nivasafinance.features.lead.entity.PersonData
+import com.nivasafinance.features.lead.entity.RequestedAmountRange
 import com.nivasafinance.features.lead.enum.LeadPersonType
 import com.nivasafinance.features.lead.exception.LeadExceptionFactory
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper
@@ -27,7 +31,9 @@ import org.springframework.context.MessageSource
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.math.BigDecimal
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.util.UUID
 
 @Service
@@ -97,42 +103,48 @@ class LeadServiceImpl(
         return toLeadResponse(lead)
     }
 
+    /**
+     * Retrieves paginated leads with optimized summary information.
+     * Uses custom query to fetch only essential fields and APPLICANT person's primary contact.
+     * Supports optional total count calculation for performance optimization.
+     */
     override fun getAllLeads(
-        paginationRequest: PaginationRequest,
-        search: String?
-    ): PaginatedResponse<LeadResponse> {
+        paginationRequest: PaginationRequest
+    ): PaginatedResponse<LeadSummaryResponse> {
         val pageable =
             PageRequest.of(
                 paginationRequest.offset / paginationRequest.limit,
                 paginationRequest.limit
             )
 
-        val leadPage = if (search.isNullOrBlank()) {
-            leadRepositoryWrapper.findAllWithException(pageable)
+        val leadSummaryDataPage = leadRepositoryWrapper.findAllSummaryDataWithException(pageable)
+        val leadSummaryResponses = leadSummaryDataPage.content.map { dto -> toLeadSummaryResponseFromDTO(dto) }
+
+        val currentPage = paginationRequest.offset / paginationRequest.limit
+        
+        // Optimize pagination based on includeTotalCount flag
+        val (totalElements, totalPages, hasNext) = if (paginationRequest.includeTotalCount) {
+            // Use optimized count query for better performance
+            val totalElements = leadRepositoryWrapper.countLeadsWithException()
+            val totalPages = if (totalElements == 0L) 0 else ((totalElements - 1) / paginationRequest.limit + 1).toInt()
+            val hasNext = currentPage < totalPages - 1
+            Triple(totalElements, totalPages, hasNext)
         } else {
-            leadRepositoryWrapper.findByPersonNameOrPhoneNumberWithException(search, pageable)
+            // Performance optimization: don't calculate total count
+            // hasNext is determined by whether we got a full page
+            val hasNext = leadSummaryDataPage.content.size == paginationRequest.limit
+            Triple(-1L, -1, hasNext)
         }
 
-        val leadResponses = leadPage.content.map { toLeadResponse(it) }
-
-        val totalPages =
-            if (leadPage.totalElements == 0L) {
-                0
-            } else {
-                ((leadPage.totalElements - 1) / paginationRequest.limit + 1).toInt()
-            }
-        val currentPage = paginationRequest.offset / paginationRequest.limit
-
         return PaginatedResponse(
-            content = leadResponses,
-            pagination =
-            PaginationInfo(
+            content = leadSummaryResponses,
+            pagination = PaginationInfo(
                 offset = paginationRequest.offset,
                 limit = paginationRequest.limit,
-                totalElements = leadPage.totalElements,
+                totalElements = totalElements,
                 totalPages = totalPages,
                 currentPage = currentPage,
-                hasNext = currentPage < totalPages - 1,
+                hasNext = hasNext,
                 hasPrevious = currentPage > 0
             )
         )
@@ -249,6 +261,46 @@ class LeadServiceImpl(
             )
 
         return personRepository.save(person)
+    }
+
+    /**
+     * Maps LeadSummaryDTO to LeadSummaryResponse.
+     */
+    private fun toLeadSummaryResponseFromDTO(dto: LeadSummaryDTO): LeadSummaryResponse {
+        val primaryPerson = if (dto.personId != null) {
+            PrimaryPersonSummary(
+                personId = dto.personId,
+                firstName = dto.firstName,
+                middleName = dto.middleName,
+                lastName = dto.lastName,
+                primaryMobileNumber = dto.primaryMobileNumber,
+                leadPersonType = dto.leadPersonType
+            )
+        } else null
+
+        return LeadSummaryResponse(
+            id = dto.id,
+            requestedAmountRange = createRequestedAmountRange(dto.minAmount, dto.maxAmount),
+            purpose = dto.purpose,
+            productCode = dto.productCode,
+            currentStage = dto.currentStage,
+            sourcingChannel = dto.sourcingChannel,
+            createdAt = dto.createdAt,
+            createdBy = dto.createdBy,
+            updatedAt = dto.updatedAt ?: java.time.LocalDateTime.now(),
+            updatedBy = dto.updatedBy,
+            primaryPerson = primaryPerson
+        )
+    }
+
+    /**
+     * Creates a RequestedAmountRange from separate min and max amount values.
+     * Returns null if both values are null.
+     */
+    private fun createRequestedAmountRange(minAmount: BigDecimal?, maxAmount: BigDecimal?): RequestedAmountRange? {
+        return if (minAmount != null && maxAmount != null) {
+            RequestedAmountRange(min = minAmount, max = maxAmount)
+        } else null
     }
 
     private fun fetchPersonDetails(personData: PersonData, leadId: UUID): LeadPersonsResponse {

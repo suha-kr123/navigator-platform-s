@@ -1,5 +1,6 @@
 package com.nivasafinance.features.lead.repository
 
+import com.nivasafinance.features.lead.dto.LeadSummaryDTO
 import com.nivasafinance.features.lead.entity.Lead
 import com.nivasafinance.features.lead.exception.LeadExceptionFactory
 import com.nivasafinance.features.lead.exception.LeadNotFoundException
@@ -59,6 +60,17 @@ class LeadRepositoryWrapper(
             throw LeadExceptionFactory.retrieveEntityFailed(messageSource)
         }
     }
+    
+    /**
+     * Optimized count method using custom query for better performance.
+     */
+    fun countLeadsWithException(): Long {
+        return try {
+            leadRepository.countLeads()
+        } catch (e: Exception) {
+            throw LeadExceptionFactory.retrieveEntityFailed(messageSource)
+        }
+    }
 
     fun deleteByIdWithException(id: UUID) {
         try {
@@ -68,9 +80,13 @@ class LeadRepositoryWrapper(
         }
     }
 
-    fun findByPersonNameOrPhoneNumberWithException(search: String?, pageable: Pageable): Page<Lead> {
+    /**
+     * Fetches lead summary data using optimized custom query.
+     * More efficient than fetching full Lead entities for listing views.
+     */
+    fun findAllSummaryDataWithException(pageable: Pageable): Page<LeadSummaryDTO> {
         return try {
-            leadRepository.findByPersonNameOrPhoneNumber(search, pageable)
+            leadRepository.findAllSummaryData(pageable)
         } catch (e: Exception) {
             throw LeadExceptionFactory.retrieveEntityFailed(messageSource)
         }

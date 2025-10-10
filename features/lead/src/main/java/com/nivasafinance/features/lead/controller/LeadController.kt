@@ -5,6 +5,7 @@ import com.nivasafinance.common.base.model.PaginationRequest
 import com.nivasafinance.features.lead.dto.AddLeadPersonRequest
 import com.nivasafinance.features.lead.dto.LeadCreateRequest
 import com.nivasafinance.features.lead.dto.LeadResponse
+import com.nivasafinance.features.lead.dto.LeadSummaryResponse
 import com.nivasafinance.features.lead.dto.LeadUpdateRequest
 import com.nivasafinance.features.lead.dto.UpdateLeadPersonRequest
 import com.nivasafinance.features.lead.service.LeadService
@@ -53,15 +54,16 @@ class LeadController(
         @RequestParam(defaultValue = "20") limit: Int,
         @RequestParam(defaultValue = "createdAt") sortBy: String,
         @RequestParam(defaultValue = "ASC") sortDirection: String,
-        @RequestParam(required = false) search: String?
-    ): ResponseEntity<PaginatedResponse<LeadResponse>> {
+        @RequestParam(defaultValue = "true") includeTotalCount: Boolean,
+    ): ResponseEntity<PaginatedResponse<LeadSummaryResponse>> {
         val paginationRequest = PaginationRequest(
             offset = offset,
             limit = limit,
             sortBy = sortBy,
-            sortDirection = sortDirection
+            sortDirection = sortDirection,
+            includeTotalCount = includeTotalCount
         )
-        val leads = leadService.getAllLeads(paginationRequest, search)
+        val leads = leadService.getAllLeads(paginationRequest)
         return ResponseEntity.ok(leads)
     }
 
