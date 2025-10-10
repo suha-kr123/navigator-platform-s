@@ -12,7 +12,14 @@ data class PaginationRequest(
     val limit: Int = DEFAULT_LIMIT,
 
     val sortBy: String? = null,
-    val sortDirection: String = "ASC"
+    val sortDirection: String = "ASC",
+    
+    /**
+     * Whether to include total count in pagination info.
+     * When false, totalElements will be -1 and totalPages will be calculated differently.
+     * This can improve performance for large datasets when total count is not needed.
+     */
+    val includeTotalCount: Boolean = true
 ) {
     companion object {
         const val DEFAULT_LIMIT = 20

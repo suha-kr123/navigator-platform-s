@@ -8,8 +8,8 @@ data class PaginatedResponse<T>(
 data class PaginationInfo(
     val offset: Int,
     val limit: Int,
-    val totalElements: Long,
-    val totalPages: Int,
+    val totalElements: Long, // -1 when total count is not calculated for performance
+    val totalPages: Int, // -1 when total count is not calculated
     val currentPage: Int,
     val hasNext: Boolean,
     val hasPrevious: Boolean
