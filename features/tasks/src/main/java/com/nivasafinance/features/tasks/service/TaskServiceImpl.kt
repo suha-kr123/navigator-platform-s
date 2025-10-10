@@ -42,9 +42,6 @@ class TaskServiceImpl(
 
         val savedTask = taskRepositoryWrapper.saveWithException(task)
 
-        // Record task creation in history
-        taskHistoryService.recordTaskCreated(savedTask.id!!, "system") // TODO: Get from security context
-
         return toTaskResponse(savedTask)
     }
 
@@ -54,28 +51,12 @@ class TaskServiceImpl(
 
         // Track description changes
         taskRequest.description?.let { newDescription ->
-            if (task.description != newDescription) {
-                taskHistoryService.recordDescriptionChange(
-                    taskId = taskId,
-                    fromDescription = task.description,
-                    toDescription = newDescription,
-                    changedBy = changedBy
-                )
-                task.description = newDescription
-            }
+            task.description = newDescription
         }
 
         // Track assignment changes
         taskRequest.assignedTo?.let { newAssignee ->
-            if (task.assignedTo != newAssignee) {
-                taskHistoryService.recordAssignmentChange(
-                    taskId = taskId,
-                    fromAssignee = task.assignedTo,
-                    toAssignee = newAssignee,
-                    changedBy = changedBy
-                )
-                task.assignedTo = newAssignee
-            }
+            task.assignedTo = newAssignee
         }
 
         // Check if due date is changing
@@ -83,45 +64,16 @@ class TaskServiceImpl(
 
         // Track due date changes
         taskRequest.dueAt?.let { newDueAt ->
-            if (task.dueAt != newDueAt) {
-                taskHistoryService.recordDueDateChange(
-                    taskId = taskId,
-                    fromDueAt = task.dueAt,
-                    toDueAt = newDueAt,
-                    changedBy = changedBy
-                )
-                task.dueAt = newDueAt
-            }
+            task.dueAt = newDueAt
         }
 
         // Track status changes
         taskRequest.status?.let { newStatus ->
-            if (task.status != newStatus) {
-                taskHistoryService.recordStatusChange(
-                    taskId = taskId,
-                    fromStatus = task.status,
-                    toStatus = newStatus,
-                    changedBy = changedBy
-                )
-                task.status = newStatus
-                
-                // When status changes to COMPLETED, set completion fields
-                if (newStatus == TaskStatus.COMPLETED) {
-                    task.completedAt = LocalDateTime.now()
-                    task.completedBy = changedBy
-                    taskHistoryService.recordCompletion(taskId, changedBy)
-                }
-            }
+            task.status = newStatus
         }
 
         // When due date changes, always set status to TODO (this overrides any explicit status)
         if (isDueDateChanging && task.status != TaskStatus.TODO) {
-            taskHistoryService.recordStatusChange(
-                taskId = taskId,
-                fromStatus = task.status,
-                toStatus = TaskStatus.TODO,
-                changedBy = changedBy
-            )
             task.status = TaskStatus.TODO
         }
 
@@ -135,21 +87,13 @@ class TaskServiceImpl(
 
         // Track outcome changes
         taskRequest.outcome?.let { newOutcome ->
-            if (task.outcome != newOutcome) {
-                // Validate outcome against current status and task definition
-                taskOutcomeValidationService.validateOutcomeOrThrow(
-                    task.taskDefinitionKey,
-                    task.status,
-                    newOutcome
-                )
-                taskHistoryService.recordOutcomeChange(
-                    taskId = taskId,
-                    fromOutcome = task.outcome,
-                    toOutcome = newOutcome,
-                    changedBy = changedBy
-                )
-                task.outcome = newOutcome
-            }
+            // Validate outcome against current status and task definition
+            taskOutcomeValidationService.validateOutcomeOrThrow(
+                task.taskDefinitionKey,
+                task.status,
+                newOutcome
+            )
+            task.outcome = newOutcome
         }
 
         val updatedTask = taskRepositoryWrapper.saveWithException(task)
@@ -174,7 +118,8 @@ class TaskServiceImpl(
         val taskPage = taskRepositoryWrapper.findAllWithException(pageable)
         val taskResponses = taskPage.content.map { toTaskResponse(it) }
 
-        val totalPages = if (taskPage.totalElements == 0L) 0 else ((taskPage.totalElements - 1) / paginationRequest.limit + 1).toInt()
+        val totalPages =
+            if (taskPage.totalElements == 0L) 0 else ((taskPage.totalElements - 1) / paginationRequest.limit + 1).toInt()
         val currentPage = paginationRequest.offset / paginationRequest.limit
 
         return PaginatedResponse(
