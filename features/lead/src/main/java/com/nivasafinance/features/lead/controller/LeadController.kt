@@ -60,14 +60,12 @@ class LeadController(
         @RequestParam(defaultValue = "20") limit: Int,
         @RequestParam(defaultValue = "createdAt") sortBy: String,
         @RequestParam(defaultValue = "ASC") sortDirection: String,
-        @RequestParam(defaultValue = "true") includeTotalCount: Boolean,
     ): ResponseEntity<PaginatedResponse<LeadSummaryResponse>> {
         val paginationRequest = PaginationRequest(
             offset = offset,
             limit = limit,
             sortBy = sortBy,
-            sortDirection = sortDirection,
-            includeTotalCount = includeTotalCount
+            sortDirection = sortDirection
         )
         val leads = leadService.getAllLeads(paginationRequest)
         return ResponseEntity.ok(leads)

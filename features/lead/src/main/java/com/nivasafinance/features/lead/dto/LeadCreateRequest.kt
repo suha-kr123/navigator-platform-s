@@ -1,5 +1,7 @@
 package com.nivasafinance.features.lead.dto
 
+import com.nivasafinance.features.lead.entity.Lead
+import com.nivasafinance.features.lead.entity.PersonData
 import com.nivasafinance.features.lead.entity.RequestedAmountRange
 import com.nivasafinance.features.lead.enum.LeadPersonType
 import com.nivasafinance.features.person.entity.MobileNumberDetails
@@ -28,3 +30,21 @@ data class LeadPersonRequest(
     val leadPersonType: LeadPersonType?,
     val relationshipToPrimary: String?
 )
+
+/**
+ * Extension function to convert LeadCreateRequest to Lead entity.
+ * This keeps the mapping logic close to the DTO and prevents service classes from becoming huge.
+ */
+fun LeadCreateRequest.toLead(personData: List<PersonData>): Lead {
+    return Lead(
+        requestedAmountRange = requestedAmountRange,
+        purpose = purpose,
+        productCode = productCode,
+        pipelineKey = "HOME_LOAN",
+        currentStage = "APPLICATION_RECEIVED",
+        sourcingChannel = sourcingChannel,
+        preliminaryInformation = preliminaryInformation?.let { mapOf("data" to it) },
+        extData = extData,
+        personData = personData
+    )
+}

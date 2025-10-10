@@ -1,5 +1,6 @@
 package com.nivasafinance.features.lead.dto
 
+import com.nivasafinance.features.lead.entity.RequestedAmountRange
 import java.math.BigDecimal
 import java.time.LocalDateTime
 import java.util.UUID
@@ -30,4 +31,46 @@ data class LeadSummaryDTO(
     val mobileNumber: String?, // Primary mobile number for display
     val leadPersonType: String?,
     val relationshipToPrimary: String?
-)
+) {
+    
+    /**
+     * Maps LeadSummaryDTO to LeadSummaryResponse.
+     * This keeps the mapping logic close to the DTO and prevents service classes from becoming huge.
+     */
+    fun toLeadSummaryResponse(): LeadSummaryResponse {
+        val primaryPerson = if (personId != null) {
+            PrimaryPersonSummary(
+                personId = personId,
+                firstName = firstName,
+                middleName = middleName,
+                lastName = lastName,
+                mobileNumber = mobileNumber,
+                leadPersonType = leadPersonType,
+                relationshipToPrimary = relationshipToPrimary
+            )
+        } else null
+
+        return LeadSummaryResponse(
+            id = id,
+            requestedAmountRange = createRequestedAmountRange(minAmount, maxAmount),
+            purpose = purpose,
+            productCode = productCode,
+            currentStage = currentStage,
+            sourcingChannel = sourcingChannel,
+            createdAt = createdAt,
+            createdBy = createdBy,
+            updatedAt = updatedAt ?: LocalDateTime.now(),
+            updatedBy = updatedBy,
+            primaryPerson = primaryPerson
+        )
+    }
+    
+    /**
+     * Creates RequestedAmountRange from min and max amounts.
+     */
+    private fun createRequestedAmountRange(min: BigDecimal?, max: BigDecimal?): RequestedAmountRange? {
+        return if (min != null && max != null) {
+            RequestedAmountRange(min = min, max = max)
+        } else null
+    }
+}
