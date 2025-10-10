@@ -39,6 +39,12 @@ class LeadController(
         return ResponseEntity.ok(lead)
     }
 
+    @GetMapping("/phone/{phoneNumber}")
+    fun getLeadsByPhoneNumber(@PathVariable phoneNumber: String): ResponseEntity<List<LeadSummaryResponse>> {
+        val leads = leadService.getLeadsByPhoneNumber(phoneNumber)
+        return ResponseEntity.ok(leads)
+    }
+
     @PatchMapping("/{id}")
     fun updateLead(
         @PathVariable id: UUID,

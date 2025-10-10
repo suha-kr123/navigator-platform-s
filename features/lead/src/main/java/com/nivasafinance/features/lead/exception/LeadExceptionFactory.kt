@@ -148,6 +148,22 @@ object LeadExceptionFactory {
         }
     }
 
+    fun validatePhoneNumberFormat(phoneNumber: String?, messageSource: MessageSource) {
+        if (phoneNumber.isNullOrBlank()) {
+            throw PersonValidationException("error.person.phone.number.required", arrayOf("phoneNumber"), messageSource)
+        }
+
+        // Basic phone number validation - should contain only digits and be between 10-15 digits
+        val cleanPhone = phoneNumber.replace(Regex("[^0-9]"), "")
+        if (cleanPhone.length < 10 || cleanPhone.length > 15) {
+            throw PersonValidationException(
+                "error.person.phone.number.invalid.format",
+                arrayOf(phoneNumber),
+                messageSource
+            )
+        }
+    }
+
     fun validatePhoneNumberUniqueness(
         phoneNumber: String?,
         existingPhones: MutableSet<String>,

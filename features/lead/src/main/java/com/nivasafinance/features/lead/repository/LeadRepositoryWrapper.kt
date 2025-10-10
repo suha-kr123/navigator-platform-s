@@ -91,4 +91,12 @@ class LeadRepositoryWrapper(
             throw LeadExceptionFactory.retrieveEntityFailed(messageSource)
         }
     }
+
+    fun findSummaryDataByPhoneNumberWithException(phoneNumber: String): List<LeadSummaryDTO> {
+        return try {
+            leadRepository.findSummaryDataByPhoneNumber(phoneNumber)
+        } catch (e: Exception) {
+            throw LeadExceptionFactory.retrieveEntityFailed(messageSource)
+        }
+    }
 }

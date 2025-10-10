@@ -9,10 +9,10 @@ import com.nivasafinance.features.lead.dto.LeadPersonRequest
 import com.nivasafinance.features.lead.dto.LeadPersonsResponse
 import com.nivasafinance.features.lead.dto.LeadPreliminaryInformation
 import com.nivasafinance.features.lead.dto.LeadResponse
-import com.nivasafinance.features.lead.dto.LeadSummaryResponse
 import com.nivasafinance.features.lead.dto.LeadSummaryDTO
-import com.nivasafinance.features.lead.dto.PrimaryPersonSummary
+import com.nivasafinance.features.lead.dto.LeadSummaryResponse
 import com.nivasafinance.features.lead.dto.LeadUpdateRequest
+import com.nivasafinance.features.lead.dto.PrimaryPersonSummary
 import com.nivasafinance.features.lead.dto.UpdateLeadPersonRequest
 import com.nivasafinance.features.lead.entity.Lead
 import com.nivasafinance.features.lead.entity.PersonData
@@ -104,6 +104,18 @@ class LeadServiceImpl(
     }
 
     /**
+     * Retrieves leads by phone number using optimized summary data.
+     * Searches in all mobile numbers (primary and non-primary) of all persons associated with the lead.
+     * Returns multiple rows per lead if multiple persons have the same phone number.
+     * Validates phone number format before searching.
+     */
+    override fun getLeadsByPhoneNumber(phoneNumber: String): List<LeadSummaryResponse> {
+        LeadExceptionFactory.validatePhoneNumberFormat(phoneNumber, messageSource)
+        val leadSummaryData = leadRepositoryWrapper.findSummaryDataByPhoneNumberWithException(phoneNumber)
+        return leadSummaryData.map { dto -> toLeadSummaryResponseFromDTO(dto) }
+    }
+
+    /**
      * Retrieves paginated leads with optimized summary information.
      * Uses custom query to fetch only essential fields and APPLICANT person's primary contact.
      * Supports optional total count calculation for performance optimization.
@@ -121,7 +133,6 @@ class LeadServiceImpl(
         val leadSummaryResponses = leadSummaryDataPage.content.map { dto -> toLeadSummaryResponseFromDTO(dto) }
 
         val currentPage = paginationRequest.offset / paginationRequest.limit
-        
         // Optimize pagination based on includeTotalCount flag
         val (totalElements, totalPages, hasNext) = if (paginationRequest.includeTotalCount) {
             // Use optimized count query for better performance
@@ -273,10 +284,13 @@ class LeadServiceImpl(
                 firstName = dto.firstName,
                 middleName = dto.middleName,
                 lastName = dto.lastName,
-                primaryMobileNumber = dto.primaryMobileNumber,
-                leadPersonType = dto.leadPersonType
+                mobileNumber = dto.mobileNumber,
+                leadPersonType = dto.leadPersonType,
+                relationshipToPrimary = dto.relationshipToPrimary
             )
-        } else null
+        } else {
+            null
+        }
 
         return LeadSummaryResponse(
             id = dto.id,
@@ -300,7 +314,9 @@ class LeadServiceImpl(
     private fun createRequestedAmountRange(minAmount: BigDecimal?, maxAmount: BigDecimal?): RequestedAmountRange? {
         return if (minAmount != null && maxAmount != null) {
             RequestedAmountRange(min = minAmount, max = maxAmount)
-        } else null
+        } else {
+            null
+        }
     }
 
     private fun fetchPersonDetails(personData: PersonData, leadId: UUID): LeadPersonsResponse {

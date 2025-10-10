@@ -30,6 +30,7 @@ data class PrimaryPersonSummary(
     val firstName: String?,
     val middleName: String?,
     val lastName: String?,
-    val primaryMobileNumber: String?, // Only primary number
-    val leadPersonType: String?
+    val mobileNumber: String?, // Primary mobile number for display
+    val leadPersonType: String?,
+    val relationshipToPrimary: String?
 )

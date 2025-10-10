@@ -13,13 +13,19 @@ import java.util.UUID
 interface LeadService {
     fun createLead(leadCreateRequest: LeadCreateRequest): LeadResponse
     fun getLeadById(id: UUID): LeadResponse
-    
+
+    /**
+     * Retrieves leads by phone number using optimized summary data.
+     * Searches in all mobile numbers (primary and non-primary) of all persons associated with the lead.
+     * Returns multiple rows per lead if multiple persons have the same phone number.
+     */
+    fun getLeadsByPhoneNumber(phoneNumber: String): List<LeadSummaryResponse>
     /**
      * Retrieves paginated leads with summary information optimized for listing views.
      * Uses custom query to fetch only essential fields and APPLICANT person's primary contact.
      */
     fun getAllLeads(paginationRequest: PaginationRequest): PaginatedResponse<LeadSummaryResponse>
-    
+
     fun updateLead(id: UUID, leadUpdateRequest: LeadUpdateRequest): LeadResponse
 
     // Person management methods
