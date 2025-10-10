@@ -1,14 +1,14 @@
 package com.nivasafinance.features.lead.dto
 
+import com.nivasafinance.features.lead.entity.RequestedAmountRange
 import com.nivasafinance.features.person.entity.MobileNumberDetails
-import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
 
 data class LeadResponse(
     val id: UUID,
-    val requestedAmountRange: Map<String, BigDecimal>?,
+    val requestedAmountRange: RequestedAmountRange?,
     val purpose: String?,
     val productCode: String?,
     val currentStage: String?,

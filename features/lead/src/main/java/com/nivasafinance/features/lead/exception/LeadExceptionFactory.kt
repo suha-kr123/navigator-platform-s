@@ -1,6 +1,7 @@
 package com.nivasafinance.features.lead.exception
 
 import com.nivasafinance.common.exception.ExceptionUtils
+import com.nivasafinance.features.lead.entity.RequestedAmountRange
 import org.springframework.context.MessageSource
 import java.math.BigDecimal
 import java.util.UUID
@@ -60,7 +61,7 @@ object LeadExceptionFactory {
     }
 
     fun validateLeadForCreation(
-        requestedAmountRange: Map<String, BigDecimal>?,
+        requestedAmountRange: RequestedAmountRange?,
         purpose: String?,
         productCode: String?,
         messageSource: MessageSource
@@ -76,7 +77,7 @@ object LeadExceptionFactory {
 
     fun validateLeadForUpdate(
         leadId: UUID?,
-        requestedAmountRange: Map<String, BigDecimal>?,
+        requestedAmountRange: RequestedAmountRange?,
         purpose: String?,
         productCode: String?,
         messageSource: MessageSource
@@ -93,19 +94,19 @@ object LeadExceptionFactory {
         }
     }
 
-    private fun validateAmountRange(amountRange: Map<String, BigDecimal>?, messageSource: MessageSource) {
-        if (amountRange == null || amountRange.isEmpty()) {
+    private fun validateAmountRange(amountRange: RequestedAmountRange?, messageSource: MessageSource) {
+        if (amountRange == null) {
             throw amountInvalid(null, messageSource)
         }
 
-        val minAmount = amountRange["min"]
-        val maxAmount = amountRange["max"]
+        val minAmount = amountRange.min
+        val maxAmount = amountRange.max
 
-        if (minAmount == null || minAmount <= BigDecimal.ZERO) {
+        if (minAmount <= BigDecimal.ZERO) {
             throw amountInvalid(minAmount, messageSource)
         }
 
-        if (maxAmount == null || maxAmount <= BigDecimal.ZERO) {
+        if (maxAmount <= BigDecimal.ZERO) {
             throw amountInvalid(maxAmount, messageSource)
         }
 

@@ -1,10 +1,10 @@
 package com.nivasafinance.features.lead.dto
 
-import java.math.BigDecimal
+import com.nivasafinance.features.lead.entity.RequestedAmountRange
 import java.util.*
 
 data class LeadUpdateRequest(
-    val requestedAmountRange: Map<String, BigDecimal>? = null,
+    val requestedAmountRange: RequestedAmountRange? = null,
     val purpose: String? = null,
     val productCode: String? = null,
     val pipelineKey: String? = null,

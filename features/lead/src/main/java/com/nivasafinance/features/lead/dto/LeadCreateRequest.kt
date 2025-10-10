@@ -1,14 +1,14 @@
 package com.nivasafinance.features.lead.dto
 
+import com.nivasafinance.features.lead.entity.RequestedAmountRange
 import com.nivasafinance.features.lead.enum.LeadPersonType
 import com.nivasafinance.features.person.entity.MobileNumberDetails
 import com.nivasafinance.features.person.enum.Gender
-import java.math.BigDecimal
 import java.time.LocalDate
 
 data class LeadCreateRequest(
 
-    val requestedAmountRange: Map<String, BigDecimal>?,
+    val requestedAmountRange: RequestedAmountRange?,
     val purpose: String?,
     val productCode: String?,
     val sourcingChannel: String?,

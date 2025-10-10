@@ -29,7 +29,7 @@ data class Lead(
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "requested_amount", columnDefinition = "jsonb", nullable = true)
-    var requestedAmountRange: Map<String, BigDecimal>?,
+    var requestedAmountRange: RequestedAmountRange?,
 
     @Column(name = "purpose", length = 40, nullable = true)
     var purpose: String?,
@@ -105,4 +105,13 @@ data class PersonData(
     val leadPersonType: LeadPersonType,
     @JsonProperty("relationshipToPrimary")
     val relationshipToPrimary: String
+)
+
+/**
+ * Data class representing the requested amount range for a lead.
+ * Contains minimum and maximum amount values.
+ */
+data class RequestedAmountRange(
+    val min: BigDecimal,
+    val max: BigDecimal
 )
