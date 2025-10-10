@@ -36,7 +36,7 @@ data class TaskDefinition(
     val description: String? = null,
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "possible_outcomes", columnDefinition = "jsonb")
-    val possibleOutcomes: List<String>? = null
+    @Column(name = "outcome_configuration", columnDefinition = "jsonb")
+    val outcomeConfiguration: Map<String, Any>? = null
 
 ) : AuditableEntity()

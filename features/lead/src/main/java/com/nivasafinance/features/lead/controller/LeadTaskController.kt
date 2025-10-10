@@ -6,6 +6,7 @@ import com.nivasafinance.features.lead.dto.LeadTasksResponse
 import com.nivasafinance.features.lead.service.LeadTaskService
 import com.nivasafinance.features.tasks.dto.TaskRequest
 import com.nivasafinance.features.tasks.dto.UpdateTaskRequest
+import com.nivasafinance.features.taskhistory.dto.TaskHistoryResponse
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -97,5 +98,25 @@ class LeadTaskController(
     ): ResponseEntity<Unit> {
         leadTaskService.deleteTaskForLead(leadId, taskId)
         return ResponseEntity.noContent().build()
+    }
+
+    @GetMapping("/{leadId}/tasks/{taskId}/history")
+    fun getTaskHistoryForLead(
+        @PathVariable leadId: UUID,
+        @PathVariable taskId: UUID,
+        @RequestParam(defaultValue = "0") offset: Int,
+        @RequestParam(defaultValue = "20") limit: Int,
+        @RequestParam(defaultValue = "changedAt") sortBy: String,
+        @RequestParam(defaultValue = "ASC") sortDirection: String
+    ): ResponseEntity<PaginatedResponse<TaskHistoryResponse>> {
+        val paginationRequest = PaginationRequest(
+            offset = offset,
+            limit = limit,
+            sortBy = sortBy,
+            sortDirection = sortDirection
+        )
+
+        val taskHistory = leadTaskService.getTaskHistoryForLead(leadId, taskId, paginationRequest)
+        return ResponseEntity.ok(taskHistory)
     }
 }

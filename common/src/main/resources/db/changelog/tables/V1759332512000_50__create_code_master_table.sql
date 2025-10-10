@@ -7,10 +7,10 @@ CREATE TABLE master_code
     description       jsonb,
     is_system_defined boolean      NOT NULL DEFAULT false,
     created_by        varchar(255),
-    created_at        timestamp,
+    created_at        timestamp DEFAULT CURRENT_TIMESTAMP,
     updated_by        varchar(255),
-    updated_at        timestamp,
-    version           bigint
+    updated_at        timestamp DEFAULT CURRENT_TIMESTAMP,
+    version           bigint DEFAULT 0
 );
 
 CREATE TABLE master_code_value
@@ -22,8 +22,8 @@ CREATE TABLE master_code_value
     description jsonb,
     is_active   boolean      NOT NULL DEFAULT true,
     created_by  varchar(255),
-    created_at  timestamp,
+    created_at  timestamp DEFAULT CURRENT_TIMESTAMP,
     updated_by  varchar(255),
-    updated_at  timestamp,
-    version     bigint
+    updated_at  timestamp DEFAULT CURRENT_TIMESTAMP,
+    version     bigint DEFAULT 0
 );

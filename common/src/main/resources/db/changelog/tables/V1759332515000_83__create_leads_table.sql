@@ -16,8 +16,8 @@ CREATE TABLE leads
     stage_ids               jsonb,
     person_data             jsonb,
     created_by              varchar(255),
-    created_at              timestamp,
+    created_at              timestamp DEFAULT CURRENT_TIMESTAMP,
     updated_by              varchar(255),
-    updated_at              timestamp,
-    version                 bigint
+    updated_at              timestamp DEFAULT CURRENT_TIMESTAMP,
+    version                 bigint DEFAULT 0
 );

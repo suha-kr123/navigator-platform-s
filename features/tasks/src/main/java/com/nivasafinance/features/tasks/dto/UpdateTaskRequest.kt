@@ -1,5 +1,6 @@
 package com.nivasafinance.features.tasks.dto
 
+import com.nivasafinance.features.tasks.enum.TaskStatus
 import java.time.LocalDateTime
 
 data class UpdateTaskRequest(
@@ -7,7 +8,6 @@ data class UpdateTaskRequest(
     val assignedTo: String?,
     val dueAt: LocalDateTime?,
     val completedAt: LocalDateTime?,
-    val rescheduledAt: LocalDateTime?,
-    val status: String?,
-    val outcome: String?
+    val status: TaskStatus?,
+    val outcome: String?,
 )

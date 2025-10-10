@@ -8,8 +8,8 @@ CREATE TABLE master_pincode
     country       varchar(255),
     is_servicable boolean      NOT NULL,
     created_by    varchar(255),
-    created_at    timestamp,
+    created_at    timestamp DEFAULT CURRENT_TIMESTAMP,
     updated_by    varchar(255),
-    updated_at    timestamp,
-    version       bigint
+    updated_at    timestamp DEFAULT CURRENT_TIMESTAMP,
+    version       bigint DEFAULT 0
 );

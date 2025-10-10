@@ -1,8 +1,11 @@
 package com.nivasafinance.features.tasks.entity
 
 import com.nivasafinance.common.audit.AuditableEntity
+import com.nivasafinance.features.tasks.enum.TaskStatus
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
+import jakarta.persistence.EnumType
+import jakarta.persistence.Enumerated
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
@@ -12,33 +15,37 @@ import java.util.UUID
 
 @Entity
 @Table(name = "tasks")
-data class Task(
+class Task : AuditableEntity() {
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    val id: UUID? = null,
+    val id: UUID? = null
 
     @Column(name = "task_definition_key", nullable = false)
-    val taskDefinitionKey: String,
+    var taskDefinitionKey: String = ""
 
-    @Column(name = "description")
-    var description: String? = null,
+    @Column(name = "name", nullable = false)
+    var name: String = ""
 
-    @Column(name = "outcome")
-    var outcome: String? = null,
+    @Column(name = "description", nullable = true)
+    var description: String? = null
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    var status: String,
+    var status: TaskStatus = TaskStatus.TODO
 
-    @Column(name = "assigned_to")
-    var assignedTo: String? = null,
+    @Column(name = "outcome", nullable = true)
+    var outcome: String? = null
 
-    @Column(name = "due_at")
-    var dueAt: LocalDateTime? = null,
+    @Column(name = "assigned_to", nullable = true)
+    var assignedTo: String? = null
 
-    @Column(name = "completed_at")
-    var completedAt: LocalDateTime? = null,
+    @Column(name = "due_at", nullable = true)
+    var dueAt: LocalDateTime? = null
 
-    @Column(name = "rescheduled_at")
-    var rescheduledAt: LocalDateTime? = null
+    @Column(name = "completed_at", nullable = true)
+    var completedAt: LocalDateTime? = null
 
-) : AuditableEntity()
+    @Column(name = "completed_by", nullable = true)
+    var completedBy: String? = null
+}

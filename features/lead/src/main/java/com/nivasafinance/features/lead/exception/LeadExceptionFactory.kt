@@ -202,6 +202,14 @@ object LeadExceptionFactory {
         )
     }
 
+    fun taskHistoryRetrievalFailedForLead(leadId: UUID, messageSource: MessageSource): LeadTaskOperationException {
+        return LeadTaskOperationException(
+            "error.lead.task.history.retrieval.failed.for.lead",
+            arrayOf(leadId.toString()),
+            messageSource
+        )
+    }
+
     fun addressNotFoundForLead(leadId: UUID, messageSource: MessageSource): LeadValidationException {
         return LeadValidationException(
             "error.lead.address.not.found.for.lead",

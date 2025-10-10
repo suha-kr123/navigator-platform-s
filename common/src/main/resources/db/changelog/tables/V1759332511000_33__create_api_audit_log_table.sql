@@ -8,7 +8,7 @@ CREATE TABLE api_audit_log
     request_body    text,
     response_body   text,
     response_status integer,
-    timestamp       timestamp,
+    timestamp       timestamp DEFAULT CURRENT_TIMESTAMP,
     uri             varchar(255),
     user_agent      varchar(255),
     username        varchar(255)

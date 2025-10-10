@@ -14,7 +14,7 @@ data class TaskResponse(
     val outcome: String?,
     val dueAt: LocalDateTime?,
     val completedAt: LocalDateTime?,
-    val rescheduledAt: LocalDateTime?,
+    val completedBy: String?,
     val createdAt: LocalDateTime,
     val createdBy: String?,
     val updatedAt: LocalDateTime,

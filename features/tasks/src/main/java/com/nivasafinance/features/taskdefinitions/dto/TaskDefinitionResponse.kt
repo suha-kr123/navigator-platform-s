@@ -7,6 +7,5 @@ data class TaskDefinitionResponse(
     val name: String,
     val key: String,
     val type: String,
-    val description: String?,
-    val possibleOutcomes: List<String>?
+    val description: String?
 )

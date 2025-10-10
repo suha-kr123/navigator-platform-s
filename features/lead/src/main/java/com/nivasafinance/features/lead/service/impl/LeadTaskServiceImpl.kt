@@ -4,10 +4,15 @@ import com.nivasafinance.common.base.model.PaginatedResponse
 import com.nivasafinance.common.base.model.PaginationInfo
 import com.nivasafinance.common.base.model.PaginationRequest
 import com.nivasafinance.features.lead.dto.LeadTasksResponse
+import com.nivasafinance.features.lead.entity.Lead
 import com.nivasafinance.features.lead.entity.TaskData
+import com.nivasafinance.features.lead.enum.LeadPersonType
 import com.nivasafinance.features.lead.exception.LeadExceptionFactory
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper
 import com.nivasafinance.features.lead.service.LeadTaskService
+import com.nivasafinance.features.person.service.PersonService
+import com.nivasafinance.features.taskhistory.dto.TaskHistoryResponse
+import com.nivasafinance.features.taskhistory.service.TaskHistoryService
 import com.nivasafinance.features.tasks.dto.TaskRequest
 import com.nivasafinance.features.tasks.dto.TaskResponse
 import com.nivasafinance.features.tasks.dto.UpdateTaskRequest
@@ -22,30 +27,58 @@ import java.util.UUID
 class LeadTaskServiceImpl(
     private val leadRepositoryWrapper: LeadRepositoryWrapper,
     private val taskService: TaskService,
+    private val taskHistoryService: TaskHistoryService,
+    private val personService: PersonService,
     private val messageSource: MessageSource
 ) : LeadTaskService {
 
     private val logger = LoggerFactory.getLogger(LeadTaskServiceImpl::class.java)
 
-    private fun TaskResponse.toLeadTasksResponse(leadId: UUID): LeadTasksResponse {
+    private fun TaskResponse.toLeadTasksResponse(leadId: UUID, lead: com.nivasafinance.features.lead.entity.Lead): LeadTasksResponse {
+        val primaryContactInfo = getPrimaryContactInfo(lead)
+
         return LeadTasksResponse(
             leadId = leadId,
             taskId = this.id,
+            taskPrimaryContact = primaryContactInfo.first,
+            taskPrimaryContactPhone = primaryContactInfo.second,
             taskDefinitionKey = this.taskDefinitionKey,
             taskName = this.name,
             taskType = this.taskType,
             taskDescription = this.description,
             taskAssignedTo = this.assignedTo,
-            taskStatus = this.status,
+            taskStatus = com.nivasafinance.features.tasks.enum.TaskStatus.valueOf(this.status),
             taskOutcome = this.outcome,
             taskDueAt = this.dueAt,
             taskCompletedAt = this.completedAt,
-            taskRescheduledAt = this.rescheduledAt,
+            taskCompletedBy = this.completedBy,
             taskCreatedAt = this.createdAt,
             taskCreatedBy = this.createdBy,
             taskUpdatedAt = this.updatedAt,
             taskUpdatedBy = this.updatedBy
         )
+    }
+
+    private fun getPrimaryContactInfo(lead: Lead): Pair<String?, String?> {
+        return try {
+            val primaryPersonData = lead.personData?.find { it.leadPersonType == LeadPersonType.APPLICANT }
+            if (primaryPersonData != null) {
+                val person = personService.getPerson(primaryPersonData.personId)
+                val fullName = buildString {
+                    person.firstName?.let { append(it) }
+                    person.middleName?.let { append(" $it") }
+                    person.lastName?.let { append(" $it") }
+                }.trim().takeIf { it.isNotEmpty() }
+
+                val primaryPhone = person.mobileNumbers?.find { it.isPrimary == true }?.number
+                Pair(fullName, primaryPhone)
+            } else {
+                Pair(null, null)
+            }
+        } catch (e: Exception) {
+            logger.warn("Failed to fetch primary contact info for lead ${lead.id}: ${e.message}")
+            Pair(null, null)
+        }
     }
 
     override fun getAllTasks(paginationRequest: PaginationRequest): PaginatedResponse<List<LeadTasksResponse>> {
@@ -76,7 +109,8 @@ class LeadTaskServiceImpl(
                 .filter { task -> taskToLeadMap.containsKey(task.id) }
                 .map { task ->
                     val leadId = taskToLeadMap[task.id]!!
-                    task.toLeadTasksResponse(leadId)
+                    val lead = allLeads.find { it.id == leadId }!!
+                    task.toLeadTasksResponse(leadId, lead)
                 }
 
             val filteredPagination = PaginationInfo(
@@ -109,13 +143,14 @@ class LeadTaskServiceImpl(
 
             val taskData = lead.taskData ?: emptyList()
 
-            val leadTasksResponses = taskData.map { taskDataItem ->
-                val task = try {
-                    taskService.getTaskById(taskDataItem.taskId)
+            val leadTasksResponses = taskData.mapNotNull { taskDataItem ->
+                try {
+                    val task = taskService.getTaskById(taskDataItem.taskId)
+                    task.toLeadTasksResponse(leadId, lead)
                 } catch (e: Exception) {
-                    throw LeadExceptionFactory.taskRetrievalFailedForTask(taskDataItem.taskId, leadId, messageSource)
+                    logger.warn("Task ${taskDataItem.taskId} referenced in lead $leadId but not found in tasks table. Skipping this task.")
+                    null
                 }
-                task.toLeadTasksResponse(leadId)
             }
 
             val totalElements = leadTasksResponses.size.toLong()
@@ -162,7 +197,7 @@ class LeadTaskServiceImpl(
             lead.taskData = currentTaskData + newTaskData
             leadRepositoryWrapper.saveWithException(lead)
 
-            taskResponse.toLeadTasksResponse(leadId)
+            taskResponse.toLeadTasksResponse(leadId, lead)
         } catch (e: Exception) {
             throw LeadExceptionFactory.taskCreationFailedForLead(leadId, messageSource)
         }
@@ -172,18 +207,19 @@ class LeadTaskServiceImpl(
     override fun patchTaskForLead(leadId: UUID, taskId: UUID, updateTaskRequest: UpdateTaskRequest): LeadTasksResponse {
         validateTaskLeadRelationship(leadId, taskId)
 
+        val lead = leadRepositoryWrapper.findByIdWithException(leadId)
         val updatedTask = try {
             taskService.patchTaskById(taskId, updateTaskRequest)
         } catch (e: Exception) {
             throw LeadExceptionFactory.taskUpdateFailed(taskId, leadId, messageSource)
         }
 
-        return updatedTask.toLeadTasksResponse(leadId)
+        return updatedTask.toLeadTasksResponse(leadId, lead)
     }
 
     @Transactional(rollbackFor = [Exception::class])
     override fun deleteTaskForLead(leadId: UUID, taskId: UUID) {
-        return try {
+        try {
             validateTaskLeadRelationship(leadId, taskId)
 
             val lead = leadRepositoryWrapper.findByIdWithException(leadId)
@@ -208,23 +244,31 @@ class LeadTaskServiceImpl(
         return try {
             validateTaskLeadRelationship(leadId, taskId)
 
+            val lead = leadRepositoryWrapper.findByIdWithException(leadId)
             val task = try {
                 taskService.getTaskById(taskId)
             } catch (e: Exception) {
                 throw LeadExceptionFactory.taskRetrievalFailedForTask(taskId, leadId, messageSource)
             }
 
-            task.toLeadTasksResponse(leadId)
+            task.toLeadTasksResponse(leadId, lead)
         } catch (e: Exception) {
             throw LeadExceptionFactory.taskRetrievalFailedForTask(taskId, leadId, messageSource)
         }
     }
 
-    /**
-     * @param leadId The lead ID to check
-     * @param taskId The task ID to validate
-     * @throws TaskNotBelongsToLeadException if the task doesn't belong to the lead
-     */
+    override fun getTaskHistoryForLead(leadId: UUID, taskId: UUID, paginationRequest: PaginationRequest): PaginatedResponse<TaskHistoryResponse> {
+        return try {
+            validateTaskLeadRelationship(leadId, taskId)
+
+            val taskHistory = taskHistoryService.getTaskTimeline(taskId, paginationRequest)
+
+            taskHistory
+        } catch (e: Exception) {
+            throw LeadExceptionFactory.taskHistoryRetrievalFailedForLead(leadId, messageSource)
+        }
+    }
+
     private fun validateTaskLeadRelationship(leadId: UUID, taskId: UUID) {
         val lead = leadRepositoryWrapper.findByIdWithException(leadId)
         val taskExists = lead.taskData?.any { it.taskId == taskId } ?: false

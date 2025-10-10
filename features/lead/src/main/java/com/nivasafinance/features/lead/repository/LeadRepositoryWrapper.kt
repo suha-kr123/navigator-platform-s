@@ -61,7 +61,7 @@ class LeadRepositoryWrapper(
     }
 
     fun deleteByIdWithException(id: UUID) {
-        return try {
+        try {
             leadRepository.deleteById(id)
         } catch (e: Exception) {
             throw LeadExceptionFactory.deleteFailed(messageSource)
