@@ -1,4 +1,4 @@
-package com.nivasafinance.common.base.model
+package com.nivasafinance.security.model
 
 data class UserInfo(
     val userId: String,

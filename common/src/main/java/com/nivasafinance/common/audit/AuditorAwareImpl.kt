@@ -1,6 +1,6 @@
 package com.nivasafinance.common.audit
 
-import com.nivasafinance.common.base.context.UserContext
+import com.nivasafinance.security.context.UserContext
 import org.springframework.data.domain.AuditorAware
 import org.springframework.stereotype.Component
 import java.util.Optional

@@ -1,6 +1,6 @@
-package com.nivasafinance.common.base.context
+package com.nivasafinance.security.context
 
-import com.nivasafinance.common.base.model.UserInfo
+import com.nivasafinance.security.model.UserInfo
 
 object UserContext {
     private val threadLocal = ThreadLocal<UserInfo>()

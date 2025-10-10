@@ -38,8 +38,6 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation(libs.findLibrary("jakarta-validation").get())
     implementation(libs.findLibrary("javers-spring-boot-starter-sql").get())
-    implementation(libs.findLibrary("spring-boot-starter-security").get())
-    implementation(libs.findLibrary("spring-boot-starter-oauth2-resource-server").get())
 }
 
 dependencyManagement {

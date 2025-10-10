@@ -6,7 +6,7 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":common"))
-
     implementation(libs.auth0.jwt)
+    implementation(libs.spring.boot.starter.security)
+    implementation(libs.spring.boot.starter.oauth2.resource.server)
 }

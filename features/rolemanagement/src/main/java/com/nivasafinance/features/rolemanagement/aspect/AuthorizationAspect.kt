@@ -1,10 +1,10 @@
 package com.nivasafinance.features.rolemanagement.aspect
 
-import com.nivasafinance.common.base.context.UserContext
 import com.nivasafinance.common.exception.ForbiddenException
 import com.nivasafinance.common.exception.UnauthorizedException
 import com.nivasafinance.features.rolemanagement.annotation.RequirePermission
 import com.nivasafinance.features.rolemanagement.permissionchecker.PermissionCheckerService
+import com.nivasafinance.security.context.UserContext
 import org.aspectj.lang.ProceedingJoinPoint
 import org.aspectj.lang.annotation.Around
 import org.aspectj.lang.annotation.Aspect
