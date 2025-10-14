@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1760000003000_01" author="system" context="default">
+        <createTable tableName="task_history">
+            <column name="id" type="uuid" defaultValueComputed="gen_random_uuid()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="task_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="event_type" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="old_value" type="text"/>
+            <column name="new_value" type="text"/>
+            <column name="changed_by" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="changed_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="task_history" indexName="idx_task_history_task_id">
+            <column name="task_id"/>
+        </createIndex>
+
+        <createIndex tableName="task_history" indexName="idx_task_history_changed_at">
+            <column name="changed_at"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>
+

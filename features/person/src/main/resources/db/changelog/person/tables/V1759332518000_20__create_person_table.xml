@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1759332518000_20" author="system" context="default">
+        <createTable tableName="person">
+            <column name="id" type="uuid" defaultValueComputed="gen_random_uuid()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="first_name" type="varchar(100)"/>
+            <column name="middle_name" type="varchar(100)"/>
+            <column name="last_name" type="varchar(100)"/>
+            <column name="mobile_numbers" type="jsonb"/>
+            <column name="email" type="varchar(100)"/>
+            <column name="date_of_birth" type="date"/>
+            <column name="gender" type="varchar(10)"/>
+            <column name="data_ext" type="jsonb"/>
+            <column name="created_by" type="varchar(255)"/>
+            <column name="created_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="updated_by" type="varchar(255)"/>
+            <column name="updated_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="version" type="bigint" defaultValueNumeric="0"/>
+        </createTable>
+        
+        <sql>CREATE INDEX IF NOT EXISTS idx_person_mobile_numbers_gin ON person USING GIN (mobile_numbers);</sql>
+        <sql>COMMENT ON INDEX idx_person_mobile_numbers_gin IS 'GIN index on person.mobile_numbers JSONB column for improved performance on JSON-based phone number searches';</sql>
+    </changeSet>
+
+</databaseChangeLog>
+
