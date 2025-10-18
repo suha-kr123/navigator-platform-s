@@ -1,14 +1,14 @@
 plugins {
-    id("kotlin-conventions")
+    id("java-conventions")
     id("testing-conventions")
     id("dokka-conventions")
     id("spring-conventions")
+    id("common-feature-conventions")
 }
 
 dependencies {
-    implementation(libs.auth0.jwt)
-    implementation(libs.spring.boot.starter.security)
-    implementation(libs.spring.boot.starter.oauth2.resource.server)
+    implementation(project(":common"))
+    implementation(project(":security"))
 }
 
 springBoot {

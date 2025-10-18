@@ -38,7 +38,7 @@ class UserContextInterceptor : HandlerInterceptor {
 
         return try {
             val decodedJWT = JWT.decode(token)
-            
+
             // Extract userId - throw exception if not found
             val userId = decodedJWT.getClaim("sub")?.asString()
             if (userId.isNullOrBlank()) {

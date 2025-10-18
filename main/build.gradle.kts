@@ -21,6 +21,7 @@ dependencies {
     implementation(project(":features:identifiers"))
     implementation(project(":features:notes"))
     implementation(project(":features:tasks"))
+    implementation(project(":features:notification-executor"))
 }
 
 springBoot {
