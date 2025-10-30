@@ -7,6 +7,8 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 @Service
 @AllArgsConstructor
 public class LeadRepositoryWrapper {
@@ -31,6 +33,17 @@ public class LeadRepositoryWrapper {
                     .orElseThrow(() -> new RuntimeException("Lead not found with id: " + id));
         } catch (DataAccessException e) {
             RuntimeException exception = new RuntimeException("Failed to retrieve lead", e);
+            exception.initCause(e);
+            throw exception;
+        }
+    }
+
+    public Lead findByLeadIdentifierWithException(UUID leadIdentifier) {
+        try {
+            return leadRepository.findByLeadIdentifier(leadIdentifier)
+                    .orElseThrow(() -> new RuntimeException("Lead not found with identifier: " + leadIdentifier));
+        } catch (DataAccessException e) {
+            RuntimeException exception = new RuntimeException("Failed to retrieve lead by identifier", e);
             exception.initCause(e);
             throw exception;
         }
