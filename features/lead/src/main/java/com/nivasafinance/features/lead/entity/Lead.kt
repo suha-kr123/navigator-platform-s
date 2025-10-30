@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.nivasafinance.common.annotations.NoArg
 import com.nivasafinance.common.audit.AuditableEntity
-import com.nivasafinance.features.lead.enum.LeadPersonType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue
@@ -101,8 +100,6 @@ data class LeadNotesData(
 data class PersonData(
     @JsonProperty("personId")
     val personId: UUID,
-    @JsonProperty("leadPersonType")
-    val leadPersonType: LeadPersonType,
     @JsonProperty("relationshipToPrimary")
     val relationshipToPrimary: String
 )

@@ -1,7 +1,6 @@
 package com.nivasafinance.features.lead.utils
 
 import com.nivasafinance.features.document.service.DocumentReadService
-import com.nivasafinance.features.lead.dto.LeadDocumentResponse
 import com.nivasafinance.features.lead.entity.LeadDocumentData
 import java.util.UUID
 
@@ -40,10 +39,10 @@ fun resolveLeadDocumentPath(
     generateDocumentPathForLeadTask(leadId, taskId, fileName)
 }
 
-fun LeadDocumentData.toLeadDocumentResponse(documentReadService: DocumentReadService): LeadDocumentResponse {
+/*fun LeadDocumentData.toLeadDocumentResponse(documentReadService: DocumentReadService): LeadDocumentResponse {
     val document = documentReadService.getDocumentById(documentId)
     return LeadDocumentResponse(
         taskId = taskId,
         document = document
     )
-}
+}*/
