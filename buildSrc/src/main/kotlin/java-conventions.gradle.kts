@@ -43,4 +43,7 @@ repositories {
 dependencies{
     // add modelmapper
     implementation("org.modelmapper:modelmapper:3.0.0")
+    // add lombok
+    compileOnly(libs.findLibrary("lombok").get())
+    annotationProcessor(libs.findLibrary("lombok").get())
 }
