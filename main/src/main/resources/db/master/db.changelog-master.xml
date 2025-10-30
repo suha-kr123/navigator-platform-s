@@ -18,6 +18,8 @@
     <include file="db/changelog/pipelines/db.changelog-pipelines.xml"/>
     <include file="db/changelog/rolemanagement/db.changelog-rolemanagement.xml"/>
     <include file="db/changelog/tasks/db.changelog-tasks.xml"/>
+    <include file="db/changelog/marketing/db.changelog-marketing.xml"/>
+
     <!-- Common module migrations -->
     <include file="/db/changelog/tables/V1759332511000_33__create_api_audit_log_table.xml"/>
 

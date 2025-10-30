@@ -19,4 +19,5 @@ include("features:pipelines")
 include("features:notes")
 include("features:rolemanagement")
 include("features:notification-executor")
-include("security")
+include("features:marketing")
+
