@@ -7,7 +7,7 @@
 
     <changeSet id="create-n-contact-table" author="system">
         <createTable tableName="n_contact">
-            <column name="id" type="BIGINT">
+            <column name="id" type="BIGINT" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
 
@@ -19,15 +19,14 @@
                 <constraints nullable="false"/>
             </column>
 
-            <column name="type" type="VARCHAR(100)">
-                <constraints nullable="false"/>
-            </column>
+            <column name="type" type="VARCHAR(100)"/>
 
             <column name="created_by" type="varchar(255)"/>
             <column name="updated_by" type="varchar(255)"/>
 
             <column name="created_at" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
             <column name="updated_at" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="version" type="bigint" defaultValueNumeric="0"/>
         </createTable>
 
         <createIndex indexName="idx_n_contact_identifier" tableName="n_contact">

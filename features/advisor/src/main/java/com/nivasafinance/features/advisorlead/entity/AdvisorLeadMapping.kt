@@ -18,7 +18,7 @@ import java.util.UUID
 @Suppress("LongParameterList")
 data class AdvisorLeadMapping(
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long? = null,
 
     @Column(name = "advisor_id")

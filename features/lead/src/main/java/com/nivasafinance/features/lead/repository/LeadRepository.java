@@ -11,10 +11,4 @@ import java.util.UUID;
 @Repository
 @JaversSpringDataAuditable
 public interface LeadRepository extends JpaRepository<Lead, Long> {
-
-    @org.springframework.data.jpa.repository.Query(
-        value = "SELECT * FROM n_lead WHERE preliminary_details->>'phoneNo' = :phoneNo",
-        nativeQuery = true
-    )
-    List<Lead> findByPhoneNo(@org.springframework.data.repository.query.Param("phoneNo") String phoneNo);
 }

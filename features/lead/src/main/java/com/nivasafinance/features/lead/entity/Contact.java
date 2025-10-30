@@ -30,6 +30,6 @@ public class Contact extends AuditableEntity {
     private Long personId;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "type", nullable = false, length = 100)
+    @Column(name = "type", length = 100)
     private ContactPersonType type;
 }

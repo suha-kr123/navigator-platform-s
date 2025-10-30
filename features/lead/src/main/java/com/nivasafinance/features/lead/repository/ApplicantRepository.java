@@ -13,11 +13,4 @@ import java.util.UUID;
 @Repository
 public interface ApplicantRepository extends JpaRepository<Applicant, Long> {
 
-    Optional<Applicant> findByIdentifier(UUID identifier);
-
-    List<Applicant> findByPersonId(Long personId);
-
-    @Query("SELECT a FROM Applicant a JOIN Person p ON a.personId = p.id " +
-           "WHERE EXISTS (SELECT 1 FROM MobileNumberDetails m WHERE m.person.id = p.id AND m.number = :phoneNo)")
-    List<Applicant> findByPhoneNo(@Param("phoneNo") String phoneNo);
 }

@@ -7,13 +7,13 @@
 
     <changeSet id="V1759332510000_07" author="system" context="default">
         <createTable tableName="advisor_lead_mapping">
-            <column name="id" type="uuid" defaultValueComputed="gen_random_uuid()">
+            <column name="id" type="BIGINT" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="advisor_id" type="uuid">
+            <column name="advisor_id" type="BIGINT">
                 <constraints nullable="false"/>
             </column>
-            <column name="lead_id" type="uuid">
+            <column name="lead_id" type="BIGINT">
                 <constraints nullable="false"/>
             </column>
             <column name="data_ext" type="jsonb"/>

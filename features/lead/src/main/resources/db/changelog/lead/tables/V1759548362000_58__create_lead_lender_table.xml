@@ -29,13 +29,6 @@
             <column name="updated_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP"/>
             <column name="version" type="bigint" defaultValueNumeric="0"/>
         </createTable>
-        
-        <addForeignKeyConstraint
-                baseTableName="lead_lender"
-                baseColumnNames="lead_id"
-                constraintName="fk_lead_lender_lead"
-                referencedTableName="leads"
-                referencedColumnNames="id"/>
     </changeSet>
 
 </databaseChangeLog>

@@ -7,7 +7,7 @@
 
     <changeSet id="create-n-lead-table" author="chatgpt">
         <createTable tableName="n_lead">
-            <column name="id" type="BIGINT">
+            <column name="id" type="BIGINT" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
 
@@ -50,6 +50,7 @@
 
             <column name="created_at" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
             <column name="updated_at" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="version" type="bigint" defaultValueNumeric="0"/>
         </createTable>
 
         <createIndex indexName="idx_n_lead_lead_identifier" tableName="n_lead">

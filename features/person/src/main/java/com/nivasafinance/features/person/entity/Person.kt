@@ -25,7 +25,7 @@ import java.util.UUID
 @Suppress("LongParameterList")
 class Person(
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long? = null,
 
     @Column(name = "first_name", length = 100)
