@@ -14,7 +14,6 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@SuperBuilder
 public class Lead extends AuditableEntity {
 
     @Id

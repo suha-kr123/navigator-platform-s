@@ -16,9 +16,11 @@ java {
 tasks.compileJava {
     // See: https://docs.oracle.com/en/java/javase/12/tools/javac.html
     @Suppress("SpellCheckingInspection")
+    // Enable all warnings except processing warnings
+    // Processing warnings occur for runtime annotations (Spring, JPA, Hibernate) that don't need processors
     options.compilerArgs.addAll(
         listOf(
-            "-Xlint:all", // Enables all recommended warnings.
+            "-Xlint:all,-processing", // Enables all recommended warnings except processing warnings
             "-Werror", // Terminates compilation when warnings occur.
         )
     )
