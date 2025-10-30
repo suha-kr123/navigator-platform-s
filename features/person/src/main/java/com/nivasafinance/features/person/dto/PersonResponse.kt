@@ -3,10 +3,9 @@ package com.nivasafinance.features.person.dto
 import com.nivasafinance.features.person.entity.MobileNumberDetails
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.util.UUID
 
 data class PersonResponse(
-    val id: UUID,
+    val id: Long,
     val firstName: String?,
     val middleName: String?,
     val lastName: String?,

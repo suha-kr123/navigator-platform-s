@@ -26,7 +26,7 @@ import java.util.UUID
 class Person(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    var id: UUID? = null,
+    var id: Long? = null,
 
     @Column(name = "first_name", length = 100)
     var firstName: String? = null,
