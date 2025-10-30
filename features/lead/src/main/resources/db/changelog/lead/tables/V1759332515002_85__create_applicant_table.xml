@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="create-n-applicant-table" author="system">
+        <createTable tableName="n_applicant">
+            <column name="id" type="BIGINT">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <column name="identifier" type="UUID">
+                <constraints nullable="false" unique="true"/>
+            </column>
+
+            <column name="person_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="type" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="created_by" type="varchar(255)"/>
+            <column name="updated_by" type="varchar(255)"/>
+
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="updated_at" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+        </createTable>
+
+        <createIndex indexName="idx_n_applicant_identifier" tableName="n_applicant">
+            <column name="identifier"/>
+        </createIndex>
+
+        <createIndex indexName="idx_n_applicant_person_id" tableName="n_applicant">
+            <column name="person_id"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

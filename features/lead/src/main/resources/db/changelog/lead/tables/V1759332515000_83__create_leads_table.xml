@@ -1,42 +1,68 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <databaseChangeLog
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
-                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
-    <changeSet id="V1759332515000_83" author="system" context="default">
-        <createTable tableName="leads">
-            <column name="id" type="uuid" defaultValueComputed="gen_random_uuid()">
+    <changeSet id="create-n-lead-table" author="chatgpt">
+        <createTable tableName="n_lead">
+            <column name="id" type="BIGINT">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="requested_amount" type="jsonb"/>
-            <column name="purpose" type="varchar(40)"/>
-            <column name="product_code" type="varchar(255)"/>
-            <column name="pipeline_key" type="varchar(255)"/>
-            <column name="current_stage" type="varchar(255)"/>
-            <column name="sourcing_channel" type="varchar(255)"/>
-            <column name="preliminary_information" type="jsonb"/>
-            <column name="ext_data" type="jsonb"/>
-            <column name="task_data" type="jsonb"/>
-            <column name="address_id" type="uuid"/>
-            <column name="document_ids" type="jsonb"/>
-            <column name="note_ids" type="jsonb"/>
-            <column name="stage_ids" type="jsonb"/>
-            <column name="person_data" type="jsonb"/>
+
+            <column name="lead_identifier" type="UUID">
+                <constraints nullable="false" unique="true"/>
+            </column>
+
+            <column name="requested_amount" type="NUMERIC(18,2)"/>
+
+            <column name="office_key" type="VARCHAR(255)"/>
+
+            <column name="contact_details" type="JSONB"/>
+            <column name="applicant_details" type="JSONB"/>
+            <column name="co_applicant_details" type="JSONB"/>
+            <column name="workflow_details" type="JSONB"/>
+
+            <column name="purpose" type="VARCHAR(255)"/>
+            <column name="product_code" type="VARCHAR(100)"/>
+
+            <column name="status" type="VARCHAR(100)"/>
+            <column name="substatus" type="VARCHAR(100)"/>
+
+            <column name="owner" type="VARCHAR(255)"/>
+
+            <column name="preliminary_details" type="JSONB"/>
+            <column name="document_details" type="JSONB"/>
+            <column name="notes" type="JSONB"/>
+            <column name="credit_rating_details" type="JSONB"/>
+            <column name="disbursement_details" type="JSONB"/>
+            <column name="reasons" type="JSONB"/>
+
+            <column name="sourcing_channel_id" type="BIGINT"/>
+
+            <column name="proposed_details" type="JSONB"/>
+            <column name="other_details" type="JSONB"/>
+            <column name="checklist" type="JSONB"/>
+
             <column name="created_by" type="varchar(255)"/>
-            <column name="created_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP"/>
             <column name="updated_by" type="varchar(255)"/>
-            <column name="updated_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP"/>
-            <column name="version" type="bigint" defaultValueNumeric="0"/>
+
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="updated_at" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
         </createTable>
-        
-        <createIndex tableName="leads" indexName="idx_leads_created_at">
-            <column name="created_at" descending="true"/>
+
+        <createIndex indexName="idx_n_lead_lead_identifier" tableName="n_lead">
+            <column name="lead_identifier"/>
         </createIndex>
-        
-        <sql>COMMENT ON INDEX idx_leads_created_at IS 'Index on leads.created_at for improved query performance on date-based sorting and filtering';</sql>
+
+        <createIndex indexName="idx_n_lead_status" tableName="n_lead">
+            <column name="status"/>
+        </createIndex>
+
+        <createIndex indexName="idx_n_lead_owner" tableName="n_lead">
+            <column name="owner"/>
+        </createIndex>
     </changeSet>
 
 </databaseChangeLog>
-
