@@ -24,4 +24,8 @@ public enum LeadStatus {
         this.value = value;
     }
 
+    public boolean inProgress() {
+        return this == ENQUIRY || this == SUBMITTED || this == QUALIFIED;
+    }
+
 }

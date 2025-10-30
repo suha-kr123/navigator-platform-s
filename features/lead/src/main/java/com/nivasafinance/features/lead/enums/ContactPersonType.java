@@ -6,8 +6,7 @@ import lombok.Getter;
 public enum ContactPersonType {
 
     DECISION_MAKER(1L, "DECISION_MAKER", "Decision Maker"),
-    PRIMARY(2L, "PRIMARY", "Primary"),
-    PROPERTY_OWNER(3L, "PROPERTY_OWNER", "Property Owner");
+    PROPERTY_OWNER(2L, "PROPERTY_OWNER", "Property Owner");
 
     private final Long id;
     private final String code;
