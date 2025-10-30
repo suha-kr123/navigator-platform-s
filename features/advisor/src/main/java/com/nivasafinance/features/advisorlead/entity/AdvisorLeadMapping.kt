@@ -19,13 +19,13 @@ import java.util.UUID
 data class AdvisorLeadMapping(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    var id: UUID? = null,
+    var id: Long? = null,
 
     @Column(name = "advisor_id")
-    var advisorId: UUID? = null,
+    var advisorId: Long? = null,
 
     @Column(name = "lead_id")
-    var leadId: UUID? = null,
+    var leadId: Long? = null,
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "data_ext", columnDefinition = "jsonb")
