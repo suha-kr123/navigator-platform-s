@@ -7,8 +7,11 @@
 
     <changeSet id="V1759548362000_58" author="system" context="default">
         <createTable tableName="lead_lender">
-            <column name="id" type="uuid" defaultValueComputed="gen_random_uuid()">
+            <column name="id" type="bigserial" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="lender_identifier" type="uuid" defaultValueComputed="gen_random_uuid()">
+                <constraints nullable="false" unique="true"/>
             </column>
             <column name="lead_id" type="uuid">
                 <constraints nullable="false"/>
@@ -20,9 +23,11 @@
                 <constraints nullable="false"/>
             </column>
             <column name="lender_office_key" type="varchar(20)"/>
+            <column name="login_details" type="jsonb"/>
             <column name="rm_details" type="jsonb"/>
-            <column name="login_id" type="varchar(100)"/>
-            <column name="reject_reason" type="varchar(40)"/>
+            <column name="approved_details" type="jsonb"/>
+        <column name="stage" type="varchar(100)"/>
+        <column name="remarks" type="jsonb"/>
             <column name="created_by" type="varchar(255)"/>
             <column name="created_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP"/>
             <column name="updated_by" type="varchar(255)"/>

@@ -1,6 +1,6 @@
-package com.nivasafinance.features.leadlender.enum
+package com.nivasafinance.features.leadlender.enums;
 
-enum class RejectReason {
+public enum RejectReason {
     INSUFFICIENT_DOCUMENTS,
     CREDIT_SCORE_LOW,
     INCOME_INSUFFICIENT,

@@ -19,6 +19,7 @@ jackson = "2.19.0"
 java-jwt = "4.4.0"
 jwks-rsa = "0.21.2"
 junit = "5.10.2"
+lombok = "1.18.34"
 mockk = "1.13.10"
 jacoco = "0.8.11"
 # Cloud storage dependencies
@@ -68,6 +69,8 @@ lombok = { module = "org.projectlombok:lombok", version.ref = "lombok-ver" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
+# Lombok
+lombok = { module = "org.projectlombok:lombok", version.ref = "lombok" }
 
 
 [bundles]
