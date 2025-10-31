@@ -20,7 +20,7 @@ import java.util.UUID
 
 @Entity
 @TypeName("person")
-@Table(name = "person")
+@Table(name = "n_person")
 @NoArg
 @Suppress("LongParameterList")
 class Person(

@@ -13,13 +13,13 @@ import java.util.UUID
 interface PersonRepository : JpaRepository<Person, UUID> {
 
     @Query(
-        value = "SELECT * FROM person WHERE mobile_numbers::text LIKE %:mobileNumber%",
+        value = "SELECT * FROM n_person WHERE mobile_numbers::text LIKE %:mobileNumber%",
         nativeQuery = true
     )
     fun findByMobileNumber(@Param("mobileNumber") mobileNumber: String): List<Person>
 
     @Query(
-        value = "SELECT * FROM person WHERE mobile_numbers::text LIKE %:mobileNumber% AND id != :excludeId",
+        value = "SELECT * FROM n_person WHERE mobile_numbers::text LIKE %:mobileNumber% AND id != :excludeId",
         nativeQuery = true
     )
     fun findByMobileNumberExcludingId(
