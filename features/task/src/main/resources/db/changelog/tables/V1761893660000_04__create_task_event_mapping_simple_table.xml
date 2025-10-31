@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="create_n_task_event_mapping_table" author="system">
+        <createTable tableName="n_task_event_mapping">
+            <!-- id -->
+            <column name="id" type="BIGSERIAL" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <!-- event -->
+            <column name="event" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <!-- details -->
+            <column name="details" type="JSONB"/>
+        </createTable>
+
+        <!-- index for event -->
+        <createIndex indexName="idx_task_event_mapping_event" tableName="n_task_event_mapping">
+            <column name="event"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>
+

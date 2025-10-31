@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="create_n_task_creator_mapping_table" author="system">
+        <createTable tableName="n_task_creator_mapping">
+            <!-- id -->
+            <column name="id" type="BIGSERIAL" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <!-- task_config_key -->
+            <column name="task_config_key" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <!-- role_key -->
+            <column name="role_key" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <!-- created_at -->
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="NOW()"/>
+            <!-- created_by -->
+            <column name="created_by" type="VARCHAR(255)"/>
+            <!-- updated_at -->
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="NOW()"/>
+            <!-- updated_by -->
+            <column name="updated_by" type="VARCHAR(255)"/>
+            <!-- version -->
+            <column name="version" type="BIGINT" defaultValueNumeric="0"/>
+        </createTable>
+
+        <!-- index for task_config_key -->
+        <createIndex indexName="idx_task_creator_mapping_task_config_key" tableName="n_task_creator_mapping">
+            <column name="task_config_key"/>
+        </createIndex>
+
+        <!-- index for role_key -->
+        <createIndex indexName="idx_task_creator_mapping_role_key" tableName="n_task_creator_mapping">
+            <column name="role_key"/>
+        </createIndex>
+
+        <!-- foreign key for task_config_key -->
+        <addForeignKeyConstraint
+                baseTableName="n_task_creator_mapping"
+                baseColumnNames="task_config_key"
+                constraintName="fk_task_creator_mapping_task_config"
+                referencedTableName="n_task_config"
+                referencedColumnNames="task_config_key"
+                onDelete="CASCADE"/>
+
+    </changeSet>
+
+</databaseChangeLog>
+
