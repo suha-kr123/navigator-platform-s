@@ -35,7 +35,7 @@ public class LeadLenderRepositoryWrapper {
             .orElseThrow(() -> LeadLenderExceptionFactory.leadLenderNotFound(lenderIdentifier, messageSource));
     }
 
-    public List<LeadLender> findByLeadId(UUID leadId) {
+    public List<LeadLender> findByLeadId(Long leadId) {
         return leadLenderRepository.findByLeadId(leadId);
     }
 
@@ -47,24 +47,24 @@ public class LeadLenderRepositoryWrapper {
         return leadLenderRepository.findByStatus(status);
     }
 
-    public List<LeadLender> findByLeadIdAndStatus(UUID leadId, LeadLenderStatus status) {
+    public List<LeadLender> findByLeadIdAndStatus(Long leadId, LeadLenderStatus status) {
         return leadLenderRepository.findByLeadIdAndStatus(leadId, status);
     }
 
-    public List<LeadLender> findByLeadIdAndStatusOrderByCreatedAtDesc(UUID leadId, 
+    public List<LeadLender> findByLeadIdAndStatusOrderByCreatedAtDesc(Long leadId, 
                                                                        LeadLenderStatus status) {
         return leadLenderRepository.findByLeadIdAndStatusOrderByCreatedAtDesc(leadId, status);
     }
 
-    public LeadLender findByLeadIdAndLenderKey(UUID leadId, String lenderKey) {
+    public LeadLender findByLeadIdAndLenderKey(Long leadId, String lenderKey) {
         return leadLenderRepository.findByLeadIdAndLenderKey(leadId, lenderKey)
             .orElse(null);
     }
 
-    public LeadLender findByLeadIdAndLenderKeyWithException(UUID leadId, String lenderKey) {
+    public LeadLender findByLeadIdAndLenderKeyWithException(Long leadId, String lenderKey) {
         LeadLender leadLender = findByLeadIdAndLenderKey(leadId, lenderKey);
         if (leadLender == null) {
-            throw LeadLenderExceptionFactory.leadLenderNotFound(leadId, lenderKey, messageSource);
+            throw LeadLenderExceptionFactory.leadLenderNotFound(messageSource);
         }
         return leadLender;
     }

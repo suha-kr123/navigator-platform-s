@@ -3,7 +3,6 @@ package com.nivasafinance.features.leadlender.entity;
 import com.nivasafinance.common.audit.AuditableEntity;
 import com.nivasafinance.features.leadlender.dto.ApprovedDetails;
 import com.nivasafinance.features.leadlender.dto.LoginDetails;
-import com.nivasafinance.features.leadlender.dto.RemarksData;
 import com.nivasafinance.features.leadlender.dto.RmDetails;
 import com.nivasafinance.features.leadlender.enums.LeadLenderStatus;
 import jakarta.persistence.Column;
@@ -39,7 +38,7 @@ public class LeadLender extends AuditableEntity {
     private UUID lenderIdentifier;
 
     @Column(name = "lead_id", nullable = false)
-    private UUID leadId;
+    private Long leadId;
 
     @Column(name = "lender_key", nullable = false, length = 20)
     private String lenderKey;
@@ -66,7 +65,6 @@ public class LeadLender extends AuditableEntity {
     @Column(name = "stage", length = 100)
     private String stage;
 
-    @Column(name = "remarks", columnDefinition = "jsonb")
-    @JdbcTypeCode(SqlTypes.JSON)
-    private RemarksData remarks;
+    @Column(name = "remarks", length = 100)
+    private String remarks;
 }

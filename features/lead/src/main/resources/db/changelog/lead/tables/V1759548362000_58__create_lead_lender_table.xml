@@ -6,16 +6,16 @@
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
     <changeSet id="V1759548362000_58" author="system" context="default">
-        <createTable tableName="lead_lender">
+        <createTable tableName="n_lead_lender">
             <column name="id" type="bigserial" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="lender_identifier" type="uuid" defaultValueComputed="gen_random_uuid()">
-                <constraints nullable="false" unique="true"/>
-            </column>
-            <column name="lead_id" type="uuid">
-                <constraints nullable="false"/>
-            </column>
+        <column name="lender_identifier" type="uuid" defaultValueComputed="gen_random_uuid()">
+            <constraints nullable="false" unique="true"/>
+        </column>
+        <column name="lead_id" type="bigint">
+            <constraints nullable="false"/>
+        </column>
             <column name="lender_key" type="varchar(20)">
                 <constraints nullable="false"/>
             </column>
@@ -27,7 +27,7 @@
             <column name="rm_details" type="jsonb"/>
             <column name="approved_details" type="jsonb"/>
         <column name="stage" type="varchar(100)"/>
-        <column name="remarks" type="jsonb"/>
+        <column name="remarks" type="varchar(100)"/>
             <column name="created_by" type="varchar(255)"/>
             <column name="created_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP"/>
             <column name="updated_by" type="varchar(255)"/>

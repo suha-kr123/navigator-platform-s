@@ -6,7 +6,6 @@ import com.nivasafinance.features.leadlender.dto.CreateLeadLenderRequest;
 import com.nivasafinance.features.leadlender.dto.CreateLeadLenderResponse;
 import com.nivasafinance.features.leadlender.dto.LoginDetails;
 import com.nivasafinance.features.leadlender.dto.RejectLeadLenderRequest;
-import com.nivasafinance.features.leadlender.dto.RemarksData;
 import com.nivasafinance.features.leadlender.dto.RmDetails;
 import com.nivasafinance.features.leadlender.dto.UpdateLeadLenderRequest;
 import com.nivasafinance.features.leadlender.entity.LeadLender;
@@ -36,9 +35,9 @@ public class LeadLenderWriteServiceImpl implements LeadLenderWriteService {
 
     @Override
     @Transactional
-    public CreateLeadLenderResponse createLeadLender(UUID leadId, CreateLeadLenderRequest request) {
-        // Validate that lead exists
-        leadRepositoryWrapper.findByIdWithException(leadId);
+    public CreateLeadLenderResponse createLeadLender(UUID leadIdentifier, CreateLeadLenderRequest request) {
+        // Validate that lead exists and get internal ID
+        var lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
         
         // First validate that the lender exists
         lenderReadService.getByKey(request.getLenderKey());
@@ -46,10 +45,10 @@ public class LeadLenderWriteServiceImpl implements LeadLenderWriteService {
         // Check if lead-lender relationship already exists
         try {
             LeadLender existingLeadLender = leadLenderRepositoryWrapper
-                .findByLeadIdAndLenderKeyWithException(leadId, request.getLenderKey());
+                .findByLeadIdAndLenderKeyWithException(lead.getId(), request.getLenderKey());
             if (existingLeadLender.getStatus().isInProgress()) {
                 throw new LeadLenderAlreadyExistsException(
-                    "Lead lender relationship already exists for lead: " + leadId + 
+                    "Lead lender relationship already exists for lead: " + leadIdentifier + 
                     " with lender: " + request.getLenderKey()
                 );
             }
@@ -58,7 +57,7 @@ public class LeadLenderWriteServiceImpl implements LeadLenderWriteService {
         }
 
         LeadLender entity = new LeadLender();
-        entity.setLeadId(leadId);
+        entity.setLeadId(lead.getId()); // Use internal Long ID
         entity.setLenderKey(request.getLenderKey());
         entity.setStatus(LeadLenderStatus.SELECTED);
         entity.setLenderIdentifier(UUID.randomUUID());
@@ -69,16 +68,16 @@ public class LeadLenderWriteServiceImpl implements LeadLenderWriteService {
 
     @Override
     @Transactional
-    public void updateLeadLender(UUID leadId, UUID lenderIdentifier, UpdateLeadLenderRequest request) {
-        // Validate that lead exists
-        leadRepositoryWrapper.findByIdWithException(leadId);
+    public void updateLeadLender(UUID leadIdentifier, UUID lenderIdentifier, UpdateLeadLenderRequest request) {
+        // Validate that lead exists and get internal ID
+        var lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
         
         LeadLender existingEntity = leadLenderRepositoryWrapper.findByLenderIdentifierWithException(lenderIdentifier);
         
         // Validate that the lender belongs to the specified lead
-        if (!existingEntity.getLeadId().equals(leadId)) {
+        if (!existingEntity.getLeadId().equals(lead.getId())) {
             throw new InvalidLeadLenderStatusException(
-                "Lead lender with identifier " + lenderIdentifier + " does not belong to lead " + leadId
+                "Lead lender with identifier " + lenderIdentifier + " does not belong to lead " + leadIdentifier
             );
         }
 
@@ -219,14 +218,9 @@ public class LeadLenderWriteServiceImpl implements LeadLenderWriteService {
             existingEntity.setStage(request.getStage());
         }
 
-        // Handle remarks - append to the array for current status
+        // Handle remarks - set simple key
         if (request.getRemarks() != null) {
-            RemarksData remarksData = existingEntity.getRemarks();
-            if (remarksData == null) {
-                remarksData = new RemarksData();
-            }
-            remarksData.addRemark(existingEntity.getStatus().name(), request.getRemarks());
-            existingEntity.setRemarks(remarksData);
+            existingEntity.setRemarks(request.getRemarks());
         }
 
         leadLenderRepositoryWrapper.saveWithException(existingEntity);
@@ -234,16 +228,16 @@ public class LeadLenderWriteServiceImpl implements LeadLenderWriteService {
 
     @Override
     @Transactional
-    public void rejectLeadLender(UUID leadId, UUID lenderIdentifier, RejectLeadLenderRequest request) {
-        // Validate that lead exists
-        leadRepositoryWrapper.findByIdWithException(leadId);
+    public void rejectLeadLender(UUID leadIdentifier, UUID lenderIdentifier, RejectLeadLenderRequest request) {
+        // Validate that lead exists and get internal ID
+        var lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
         
         LeadLender existingEntity = leadLenderRepositoryWrapper.findByLenderIdentifierWithException(lenderIdentifier);
         
         // Validate that the lender belongs to the specified lead
-        if (!existingEntity.getLeadId().equals(leadId)) {
+        if (!existingEntity.getLeadId().equals(lead.getId())) {
             throw new InvalidLeadLenderStatusException(
-                "Lead lender with identifier " + lenderIdentifier + " does not belong to lead " + leadId
+                "Lead lender with identifier " + lenderIdentifier + " does not belong to lead " + leadIdentifier
             );
         }
 
@@ -258,13 +252,8 @@ public class LeadLenderWriteServiceImpl implements LeadLenderWriteService {
         // Update the status to REJECTED
         existingEntity.setStatus(LeadLenderStatus.REJECTED);
         
-        // Add the reject remark to the REJECTED array
-        RemarksData remarksData = existingEntity.getRemarks();
-        if (remarksData == null) {
-            remarksData = new RemarksData();
-        }
-        remarksData.addRemark(LeadLenderStatus.REJECTED.name(), request.getRemarks());
-        existingEntity.setRemarks(remarksData);
+        // Set the reject remark key
+        existingEntity.setRemarks(request.getRemarks());
         
         leadLenderRepositoryWrapper.saveWithException(existingEntity);
     }

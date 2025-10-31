@@ -1,5 +1,6 @@
 package com.nivasafinance.features.leadlender.controller;
 
+import com.nivasafinance.common.constants.ApiConstants;
 import com.nivasafinance.features.leadlender.dto.CreateLeadLenderRequest;
 import com.nivasafinance.features.leadlender.dto.CreateLeadLenderResponse;
 import com.nivasafinance.features.leadlender.dto.LeadLenderResponse;
@@ -24,7 +25,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/lead/{leadId}/lender")
+@RequestMapping(ApiConstants.V1 + "/leads/{leadIdentifier}/lenders")
 @RequiredArgsConstructor
 public class LeadLenderController {
 
@@ -33,46 +34,46 @@ public class LeadLenderController {
 
     @PostMapping
     public CreateLeadLenderResponse createLeadLender(
-        @PathVariable UUID leadId,
+        @PathVariable UUID leadIdentifier,
         @Valid @RequestBody CreateLeadLenderRequest request
     ) {
-        return leadLenderWriteService.createLeadLender(leadId, request);
+        return leadLenderWriteService.createLeadLender(leadIdentifier, request);
     }
 
     @PatchMapping("/{lenderIdentifier}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void updateLeadLender(
-        @PathVariable UUID leadId,
+        @PathVariable UUID leadIdentifier,
         @PathVariable UUID lenderIdentifier,
         @Valid @RequestBody UpdateLeadLenderRequest request
     ) {
-        leadLenderWriteService.updateLeadLender(leadId, lenderIdentifier, request);
+        leadLenderWriteService.updateLeadLender(leadIdentifier, lenderIdentifier, request);
     }
 
     @PostMapping("/{lenderIdentifier}/reject")
     @ResponseStatus(HttpStatus.OK)
     public void rejectLeadLender(
-        @PathVariable UUID leadId,
+        @PathVariable UUID leadIdentifier,
         @PathVariable UUID lenderIdentifier,
         @Valid @RequestBody RejectLeadLenderRequest request
     ) {
-        leadLenderWriteService.rejectLeadLender(leadId, lenderIdentifier, request);
+        leadLenderWriteService.rejectLeadLender(leadIdentifier, lenderIdentifier, request);
     }
 
     @GetMapping("/{lenderIdentifier}")
     public LeadLenderResponse getLeadLenderByIdentifier(
-        @PathVariable UUID leadId,
+        @PathVariable UUID leadIdentifier,
         @PathVariable UUID lenderIdentifier
     ) {
-        return leadLenderReadService.getLeadLenderByIdentifier(leadId, lenderIdentifier);
+        return leadLenderReadService.getLeadLenderByIdentifier(leadIdentifier, lenderIdentifier);
     }
 
     @GetMapping("/all")
     public List<LeadLenderResponse> getLeadLenders(
-        @PathVariable UUID leadId,
+        @PathVariable UUID leadIdentifier,
         @RequestParam(required = false) List<String> status
     ) {
-        return leadLenderReadService.getLeadLenders(leadId, status);
+        return leadLenderReadService.getLeadLenders(leadIdentifier, status);
     }
 }
 

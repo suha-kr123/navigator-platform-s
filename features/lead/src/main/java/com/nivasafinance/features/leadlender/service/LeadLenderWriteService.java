@@ -9,10 +9,10 @@ import java.util.UUID;
 
 public interface LeadLenderWriteService {
     
-    CreateLeadLenderResponse createLeadLender(UUID leadId, CreateLeadLenderRequest request);
+    CreateLeadLenderResponse createLeadLender(UUID leadIdentifier, CreateLeadLenderRequest request);
     
-    void updateLeadLender(UUID leadId, UUID lenderIdentifier, UpdateLeadLenderRequest request);
+    void updateLeadLender(UUID leadIdentifier, UUID lenderIdentifier, UpdateLeadLenderRequest request);
     
-    void rejectLeadLender(UUID leadId, UUID lenderIdentifier, RejectLeadLenderRequest request);
+    void rejectLeadLender(UUID leadIdentifier, UUID lenderIdentifier, RejectLeadLenderRequest request);
 }
 

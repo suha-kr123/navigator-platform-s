@@ -15,7 +15,7 @@ import java.util.UUID;
 public class LeadLenderResponse {
     
     private UUID lenderIdentifier;
-    private UUID leadId;
+    private UUID leadIdentifier;
     private LeadLenderStatus status;
     private LenderResponseData lender;
     private LenderOfficeReponseData lenderOffice;

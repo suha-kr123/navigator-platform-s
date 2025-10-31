@@ -69,8 +69,8 @@ lombok = { module = "org.projectlombok:lombok", version.ref = "lombok-ver" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
-# Lombok
-lombok = { module = "org.projectlombok:lombok", version.ref = "lombok" }
+## Lombok
+#lombok = { module = "org.projectlombok:lombok", version.ref = "lombok" }
 
 
 [bundles]

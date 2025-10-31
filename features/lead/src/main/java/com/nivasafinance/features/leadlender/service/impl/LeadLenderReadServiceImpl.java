@@ -34,11 +34,11 @@ public class LeadLenderReadServiceImpl implements LeadLenderReadService {
     private final MasterCodeValueRepositoryWrapper masterCodeValueRepositoryWrapper;
 
     @Override
-    public List<LeadLenderResponse> getLeadLenders(UUID leadId, List<String> statusList) {
-        // Validate that lead exists first
-        leadRepositoryWrapper.findByIdWithException(leadId);
+    public List<LeadLenderResponse> getLeadLenders(UUID leadIdentifier, List<String> statusList) {
+        // Validate that lead exists and get internal ID
+        var lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
         
-        List<LeadLender> leadLenders = leadLenderRepositoryWrapper.findByLeadId(leadId);
+        List<LeadLender> leadLenders = leadLenderRepositoryWrapper.findByLeadId(lead.getId());
         
         // Filter by status if provided
         if (statusList != null && !statusList.isEmpty()) {
@@ -58,16 +58,16 @@ public class LeadLenderReadServiceImpl implements LeadLenderReadService {
     }
 
     @Override
-    public LeadLenderResponse getLeadLenderByIdentifier(UUID leadId, UUID lenderIdentifier) {
-        // Validate that lead exists
-        leadRepositoryWrapper.findByIdWithException(leadId);
+    public LeadLenderResponse getLeadLenderByIdentifier(UUID leadIdentifier, UUID lenderIdentifier) {
+        // Validate that lead exists and get internal ID
+        var lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
         
         LeadLender leadLender = leadLenderRepositoryWrapper.findByLenderIdentifierWithException(lenderIdentifier);
         
         // Validate that the lender belongs to the specified lead
-        if (!leadLender.getLeadId().equals(leadId)) {
+        if (!leadLender.getLeadId().equals(lead.getId())) {
             throw new LeadLenderNotFoundException(
-                "Lead lender with identifier " + lenderIdentifier + " does not belong to lead " + leadId
+                "Lead lender with identifier " + lenderIdentifier + " does not belong to lead " + leadIdentifier
             );
         }
         
@@ -75,6 +75,9 @@ public class LeadLenderReadServiceImpl implements LeadLenderReadService {
     }
 
     private LeadLenderResponse createLeadLenderResponse(LeadLender leadLender) {
+        // Get lead to retrieve external UUID identifier
+        var lead = leadRepositoryWrapper.findByIdWithException(leadLender.getLeadId());
+        
         LenderResponseData lender = lenderReadService.getByKey(leadLender.getLenderKey());
 
         LenderOfficeReponseData lenderOffice = null;
@@ -99,28 +102,23 @@ public class LeadLenderReadServiceImpl implements LeadLenderReadService {
 
         RemarksResponse remarksResponse = null;
         if (leadLender.getRemarks() != null) {
-            // Get the latest remark for the current status
-            String latestRemarkKey = leadLender.getRemarks().getLatestRemark(leadLender.getStatus().name());
-            
-            if (latestRemarkKey != null) {
-                try {
-                    MasterCodeValue remarksValue = masterCodeValueRepositoryWrapper
-                        .findByKeyAndCodeKeyWithException(latestRemarkKey, SystemControlledMasterCodes.REMARKS_MASTER);
-                    String value = remarksValue.getValue() != null && remarksValue.getValue().getDefault() != null
-                        ? remarksValue.getValue().getDefault()
-                        : latestRemarkKey;
-                    
-                    remarksResponse = new RemarksResponse(latestRemarkKey, value);
-                } catch (Exception e) {
-                    // If remarks not found in master, just return the key as value
-                    remarksResponse = new RemarksResponse(latestRemarkKey, latestRemarkKey);
-                }
+            String remarksKey = leadLender.getRemarks();
+            try {
+                MasterCodeValue remarksValue = masterCodeValueRepositoryWrapper
+                    .findByKeyAndCodeKeyWithException(remarksKey, SystemControlledMasterCodes.REMARKS_MASTER);
+                String value = remarksValue.getValue() != null && remarksValue.getValue().getDefault() != null
+                    ? remarksValue.getValue().getDefault()
+                    : remarksKey;
+                remarksResponse = new RemarksResponse(remarksKey, value);
+            } catch (Exception e) {
+                // If remarks not found in master, just return the key as value
+                remarksResponse = new RemarksResponse(remarksKey, remarksKey);
             }
         }
 
         return new LeadLenderResponse(
             leadLender.getLenderIdentifier(),
-            leadLender.getLeadId(),
+            lead.getLeadIdentifier(), // Use external UUID identifier
             leadLender.getStatus(),
             lender,
             lenderOffice,

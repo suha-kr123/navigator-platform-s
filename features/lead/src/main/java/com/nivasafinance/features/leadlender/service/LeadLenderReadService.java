@@ -7,8 +7,8 @@ import java.util.UUID;
 
 public interface LeadLenderReadService {
     
-    List<LeadLenderResponse> getLeadLenders(UUID leadId, List<String> status);
+    List<LeadLenderResponse> getLeadLenders(UUID leadIdentifier, List<String> status);
     
-    LeadLenderResponse getLeadLenderByIdentifier(UUID leadId, UUID lenderIdentifier);
+    LeadLenderResponse getLeadLenderByIdentifier(UUID leadIdentifier, UUID lenderIdentifier);
 }
 
