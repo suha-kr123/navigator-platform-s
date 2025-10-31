@@ -9,13 +9,16 @@ import java.util.UUID
  * Handles all query operations that don't modify document state.
  */
 interface DocumentReadService {
+
+    fun getDocumentById(id: Long): DocumentResponse
+
     /**
-     * Retrieves a document by its ID.
-     * @param id The document ID
+     * Retrieves a document by its Identifier.
+     * @param id The document Identifier
      * @return The document response
      * @throws DocumentNotFoundException if document not found
      */
-    fun getDocumentById(id: UUID): DocumentResponse
+    fun getDocumentByIdentifier(id: UUID): DocumentResponse
 
     /**
      * Retrieves the file stream for a document.

@@ -24,9 +24,9 @@ class DocumentRepositoryWrapper(
         }
     }
 
-    fun findByIdWithException(id: UUID): Document {
+    fun findByIdWithException(id: Long): Document {
         return documentRepository.findById(id)
-            .orElseThrow { documentExceptionFactory.createNotFoundException(id) }
+            .orElseThrow { documentExceptionFactory.createNotFoundException(java.util.UUID.randomUUID()) }
     }
 
     fun findAllWithException(pageable: Pageable): Page<Document> {
@@ -45,9 +45,9 @@ class DocumentRepositoryWrapper(
         }
     }
 
-    fun deleteByIdWithException(id: UUID) {
+    fun deleteByIdWithException(id: Long) {
         if (!documentRepository.existsById(id)) {
-            throw documentExceptionFactory.createNotFoundException(id)
+            throw documentExceptionFactory.createNotFoundException(java.util.UUID.randomUUID())
         }
 
         try {
@@ -55,5 +55,10 @@ class DocumentRepositoryWrapper(
         } catch (e: DataAccessException) {
             throw documentExceptionFactory.createOperationException("delete", e)
         }
+    }
+
+    fun findByIdentifierWithException(identifier: UUID): Document {
+        return documentRepository.findByIdentifier(identifier)
+            .orElseThrow { documentExceptionFactory.createNotFoundException(identifier) }
     }
 }

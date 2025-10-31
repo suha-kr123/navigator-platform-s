@@ -16,20 +16,20 @@ import java.util.UUID
 @Transactional(readOnly = true)
 class DocumentReadServiceImpl(
     private val documentRepositoryWrapper: DocumentRepositoryWrapper,
-    private val contentRepositoryFactory: ContentRepositoryFactory,
-    private val codeMasterService: CodeMasterService
+    private val contentRepositoryFactory: ContentRepositoryFactory
 ) : DocumentReadService {
-    override fun getDocumentById(id: UUID): DocumentResponse {
-        val document = documentRepositoryWrapper.findByIdWithException(id)
-        val codeValues = codeMasterService.getMasterCodeChildrenWithValues(parentCodeKey = DOCUMENT_MASTER)
-        return document.toDocumentResponse(codeValues)
+    override fun getDocumentById(id: Long): DocumentResponse {
+        return documentRepositoryWrapper.findByIdWithException(id).toDocumentResponse()
+    }
+
+    override fun getDocumentByIdentifier(id: UUID): DocumentResponse {
+        return documentRepositoryWrapper.findByIdentifierWithException(id).toDocumentResponse()
     }
 
     override fun getDocumentFile(id: UUID): DocumentFileResponse {
-        val document = documentRepositoryWrapper.findByIdWithException(id)
-        val codeValues = codeMasterService.getMasterCodeChildrenWithValues(parentCodeKey = DOCUMENT_MASTER)
+        val document = documentRepositoryWrapper.findByIdentifierWithException(id)
         val contentRepository = contentRepositoryFactory.getRepository(document.provider.name)
         val file = contentRepository.fetchFile(document.path)
-        return DocumentFileResponse(file = file, data = document.toDocumentResponse(codeValues))
+        return DocumentFileResponse(file = file, data = document.toDocumentResponse())
     }
 }

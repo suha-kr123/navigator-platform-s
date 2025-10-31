@@ -17,7 +17,7 @@ data class DocumentResponse(
     val updatedBy: String?
 )
 
-fun Document.toDocumentResponse(codeValues: List<MasterCodeWithValuesResponse>): DocumentResponse {
+fun Document.toDocumentResponse(): DocumentResponse {
     val documentId = id ?: error("Document ID cannot be null")
     val createdAt = createdAt ?: error("Document createdAt cannot be null")
     val updatedAt = updatedAt ?: error("Document updatedAt cannot be null")

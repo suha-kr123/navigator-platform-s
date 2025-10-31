@@ -20,7 +20,7 @@ import java.util.UUID
 
 @Entity
 @TypeName("document")
-@Table(name = "n_documents")
+@Table(name = "n_document")
 @NoArg
 @Suppress("LongParameterList")
 class Document(
@@ -28,6 +28,9 @@ class Document(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     var id: Long? = null,
+
+    @Column(name = "identifier", nullable = false, unique = true)
+    var identifier: UUID,
 
     @Column(name = "name", nullable = false)
     var name: String,

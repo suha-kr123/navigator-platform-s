@@ -42,6 +42,7 @@ class DocumentWriteServiceImpl(
         val storageKey = contentRepository.saveFile(createRequest.file.inputStream, documentPath)
 
         val document = Document(
+            identifier = UUID.randomUUID(),
             name = createRequest.name,
             type = createRequest.file.contentType,
             size = createRequest.file.size,
@@ -50,12 +51,12 @@ class DocumentWriteServiceImpl(
         )
 
         val savedDocument = documentRepositoryWrapper.saveWithException(document)
-        return DocumentCreateResponse(savedDocument.id!!, createdAt = savedDocument.createdAt!!)
+        return DocumentCreateResponse(savedDocument.id!!, identifier = savedDocument.identifier)
     }
 
     @Transactional
     override fun deleteDocumentById(id: UUID) {
-        val document = documentRepositoryWrapper.findByIdWithException(id)
+        val document = documentRepositoryWrapper.findByIdentifierWithException(id)
         val contentRepository = contentRepositoryFactory.getRepository(document.provider.name)
         try {
             contentRepository.deleteFile(document.path)
@@ -65,7 +66,7 @@ class DocumentWriteServiceImpl(
         } catch (e: IOException) {
             logger.warn("IO error during file deletion: ${document.path}", e)
         }
-        documentRepositoryWrapper.deleteByIdWithException(id)
+        documentRepositoryWrapper.deleteByIdWithException(document.id!!)
     }
 
     private fun generateDocumentPath(fileName: String): String {
