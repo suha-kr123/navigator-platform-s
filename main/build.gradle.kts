@@ -20,7 +20,6 @@ dependencies {
     implementation(project(":features:offices"))
     implementation(project(":features:identifiers"))
     implementation(project(":features:notes"))
-    implementation(project(":features:tasks"))
     implementation(project(":features:notification-executor"))
     implementation(project(":features:marketing"))
 }
