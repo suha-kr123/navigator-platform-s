@@ -20,14 +20,14 @@ import java.util.UUID
 
 @Entity
 @TypeName("document")
-@Table(name = "documents")
+@Table(name = "n_documents")
 @NoArg
 @Suppress("LongParameterList")
 class Document(
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
-    var id: UUID? = null,
+    var id: Long? = null,
 
     @Column(name = "name", nullable = false)
     var name: String,
@@ -47,12 +47,6 @@ class Document(
 
     @Column(name = "path", nullable = false)
     var path: String,
-
-    // code keys
-    @Type(JsonType::class)
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "tags", columnDefinition = "jsonb")
-    var tags: List<String>? = null,
 
     // Extra flexible metadata
     @Type(JsonType::class)

@@ -1,6 +1,7 @@
 package com.nivasafinance.features.document.controller
 
 import com.nivasafinance.common.audit.NonAuditable
+import com.nivasafinance.common.constants.ApiConstants
 import com.nivasafinance.features.document.service.DocumentReadService
 import org.springframework.core.io.InputStreamResource
 import org.springframework.http.HttpHeaders
@@ -13,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
 
 @RestController
-@RequestMapping("/api/v1/documents")
+@RequestMapping(ApiConstants.V1 + "/documents")
 class DocumentController(
     private val documentReadService: DocumentReadService
 ) {

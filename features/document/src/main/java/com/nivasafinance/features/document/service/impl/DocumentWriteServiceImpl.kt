@@ -36,10 +36,6 @@ class DocumentWriteServiceImpl(
     override fun createDocument(createRequest: DocumentCreateRequest): DocumentCreateResponse {
         // Validate the creation request
         documentExceptionFactory.validateDocumentForCreation(createRequest)
-        createRequest.tags?.let { tags ->
-            val codeList = codeMasterService.getMasterCodeChildrenWithValues(parentCodeKey = DOCUMENT_MASTER)
-            validateTagsWithMasters(codeList, tags)
-        }
         val contentRepository = contentRepositoryFactory.getRepository(documentStorageProperties.provider)
         val documentPath = createRequest.customPath ?: generateDocumentPath(createRequest.name)
 
@@ -50,8 +46,7 @@ class DocumentWriteServiceImpl(
             type = createRequest.file.contentType,
             size = createRequest.file.size,
             provider = DocumentStorageProvider.valueOf(documentStorageProperties.provider),
-            path = storageKey,
-            tags = createRequest.tags
+            path = storageKey
         )
 
         val savedDocument = documentRepositoryWrapper.saveWithException(document)
