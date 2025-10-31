@@ -1,5 +1,5 @@
 plugins {
-    id("kotlin-conventions")
+    id("java-conventions")
     id("testing-conventions")
     id("dokka-conventions")
     id("spring-conventions")
@@ -8,7 +8,6 @@ plugins {
 dependencies {
     implementation(libs.postgresql)
     implementation(libs.liquibase)
-    implementation(libs.jackson.kotlinmodule)
     implementation(libs.auth0.jwt)
     implementation(libs.auth0.jwks)
     implementation(libs.javers.spring.boot.starter.sql)
