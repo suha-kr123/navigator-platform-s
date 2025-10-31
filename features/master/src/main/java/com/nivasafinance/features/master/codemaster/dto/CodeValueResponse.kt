@@ -15,8 +15,8 @@ fun MasterCodeValue.mapToCodeValueResponse(): CodeValueResponse {
     return CodeValueResponse(
         id = id,
         key = key,
-        value = value?.default.orEmpty(),
-        description = description?.default.orEmpty(),
+        value = value?.defaultValue.orEmpty(),
+        description = description?.defaultValue.orEmpty(),
         isActive = isActive
     )
 }
