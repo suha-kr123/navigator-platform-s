@@ -102,15 +102,15 @@ class PersonServiceImpl(
         val personsPage = personRepositoryWrapper.findAllWithException(pageable)
 
         return PaginatedResponse(
-            content = personsPage.content.map { toPersonResponse(it) },
-            pagination = PaginationInfo(
-                offset = paginationRequest.offset,
-                limit = paginationRequest.limit,
-                totalElements = personsPage.totalElements,
-                totalPages = personsPage.totalPages,
-                currentPage = personsPage.number,
-                hasNext = personsPage.hasNext(),
-                hasPrevious = personsPage.hasPrevious()
+            personsPage.content.map { toPersonResponse(it) },
+            PaginationInfo(
+                paginationRequest.offset,
+                paginationRequest.limit,
+                personsPage.totalElements,
+                personsPage.totalPages,
+                personsPage.number,
+                personsPage.hasNext(),
+                personsPage.hasPrevious()
             )
         )
     }

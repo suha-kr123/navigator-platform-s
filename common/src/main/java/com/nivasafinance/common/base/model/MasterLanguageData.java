@@ -1,8 +1,10 @@
 package com.nivasafinance.common.base.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Objects;
 
 public class MasterLanguageData {
+    @JsonProperty("default")
     private String defaultValue;
 
     public MasterLanguageData() {
@@ -13,6 +15,17 @@ public class MasterLanguageData {
         this.defaultValue = defaultValue != null ? defaultValue : "";
     }
 
+    // Getter named getDefault() so Kotlin can access it as .default property
+    @JsonProperty("default")
+    public String getDefault() {
+        return defaultValue;
+    }
+
+    public void setDefault(String defaultValue) {
+        this.defaultValue = defaultValue;
+    }
+
+    // Keep these for Java code compatibility
     public String getDefaultValue() {
         return defaultValue;
     }
