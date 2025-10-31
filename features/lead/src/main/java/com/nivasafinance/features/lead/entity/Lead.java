@@ -215,7 +215,9 @@ public class Lead extends AuditableEntity {
     @AllArgsConstructor
     @Builder
     public static class ReasonDetails {
-        private List<String> reject;
+        private String reject;
+        private String withdrawn;
+        private String onhold;
     }
 
     @Data
