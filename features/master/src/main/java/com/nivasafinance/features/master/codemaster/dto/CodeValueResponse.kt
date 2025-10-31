@@ -1,5 +1,6 @@
 package com.nivasafinance.features.master.codemaster.dto
 
+import com.nivasafinance.features.master.codemaster.entity.MasterCodeValue
 import java.util.UUID
 
 data class CodeValueResponse(
@@ -9,3 +10,13 @@ data class CodeValueResponse(
     val description: String?,
     val isActive: Boolean
 )
+
+fun MasterCodeValue.mapToCodeValueResponse(): CodeValueResponse {
+    return CodeValueResponse(
+        id = id,
+        key = key,
+        value = value?.default.orEmpty(),
+        description = description?.default.orEmpty(),
+        isActive = isActive
+    )
+}
