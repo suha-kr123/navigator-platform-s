@@ -8,7 +8,7 @@ public class ProductNotFoundException extends RuntimeException {
     private static final long serialVersionUID = 1L;
     
     public ProductNotFoundException(String messageKey, MessageSource messageSource) {
-        super(ExceptionUtils.INSTANCE.createLocalizedMessage(messageKey, null, messageSource));
+        super(ExceptionUtils.createLocalizedMessage(messageKey, null, messageSource));
     }
 }
 

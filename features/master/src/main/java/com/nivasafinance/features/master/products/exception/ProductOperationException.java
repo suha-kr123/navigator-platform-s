@@ -8,7 +8,7 @@ public class ProductOperationException extends RuntimeException {
     private static final long serialVersionUID = 1L;
     
     public ProductOperationException(String messageKey, MessageSource messageSource) {
-        super(ExceptionUtils.INSTANCE.createLocalizedMessage(messageKey, null, messageSource));
+        super(ExceptionUtils.createLocalizedMessage(messageKey, null, messageSource));
     }
 }
 
