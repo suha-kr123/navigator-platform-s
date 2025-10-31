@@ -52,6 +52,7 @@ class PersonServiceImpl(
             firstName = personRequest.firstName,
             middleName = personRequest.middleName,
             lastName = personRequest.lastName,
+            displayName = "${personRequest.firstName ?: ""} ${personRequest.lastName ?: ""}".takeIf { it.isNotEmpty() },
             mobileNumbers = personRequest.mobileNumbers,
             dateOfBirth = personRequest.dateOfBirth,
             gender = personRequest.gender,
@@ -74,6 +75,7 @@ class PersonServiceImpl(
         personUpdateRequest.firstName?.let { existingPerson.firstName = it }
         personUpdateRequest.middleName?.let { existingPerson.middleName = it }
         personUpdateRequest.lastName?.let { existingPerson.lastName = it }
+        existingPerson.displayName = "${existingPerson.firstName} ${existingPerson.lastName}".takeIf { it.isNotEmpty() }
         personUpdateRequest.mobileNumbers?.let { existingPerson.mobileNumbers = it }
         personUpdateRequest.dateOfBirth?.let { existingPerson.dateOfBirth = it }
         personUpdateRequest.gender?.let { existingPerson.gender = it }

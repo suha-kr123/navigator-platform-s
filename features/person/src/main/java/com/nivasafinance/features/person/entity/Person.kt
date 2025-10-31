@@ -37,6 +37,9 @@ class Person(
     @Column(name = "last_name", length = 100)
     var lastName: String? = null,
 
+    @Column(name = "display_name", length = 300)
+    var displayName: String? = null,
+
     @Type(JsonType::class)
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "mobile_numbers", columnDefinition = "jsonb")
