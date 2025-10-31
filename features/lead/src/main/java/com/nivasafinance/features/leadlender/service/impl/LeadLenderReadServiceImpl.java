@@ -2,8 +2,7 @@ package com.nivasafinance.features.leadlender.service.impl;
 
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.leadlender.dto.LeadLenderResponse;
-import com.nivasafinance.features.leadlender.dto.RemarksResponse;
-import com.nivasafinance.features.leadlender.dto.StageResponse;
+import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import com.nivasafinance.features.leadlender.entity.LeadLender;
 import com.nivasafinance.features.leadlender.enums.LeadLenderStatus;
 import com.nivasafinance.features.leadlender.exception.LeadLenderNotFoundException;
@@ -85,34 +84,40 @@ public class LeadLenderReadServiceImpl implements LeadLenderReadService {
             lenderOffice = lenderOfficeReadService.getByKey(leadLender.getLenderOfficeKey());
         }
 
-        StageResponse stageResponse = null;
+        CodeValueResponse stageResponse = null;
         if (leadLender.getStage() != null) {
             try {
                 MasterCodeValue stageValue = masterCodeValueRepositoryWrapper
-                    .findByKeyAndCodeKeyWithException(leadLender.getStage(), SystemControlledMasterCodes.STAGE_MASTER);
-                String value = stageValue.getValue() != null && stageValue.getValue().getDefault() != null 
-                    ? stageValue.getValue().getDefault() 
+                    .findByKeyAndCodeKeyWithException(leadLender.getStage(), SystemControlledMasterCodes.LENDER_STAGE_MASTER);
+                String value = stageValue.getValue() != null && stageValue.getValue().getDefaultValue() != null
+                    ? stageValue.getValue().getDefaultValue()
                     : leadLender.getStage();
-                stageResponse = new StageResponse(leadLender.getStage(), value);
+                String description = stageValue.getDescription() != null && stageValue.getDescription().getDefaultValue() != null
+                    ? stageValue.getDescription().getDefaultValue()
+                    : null;
+                stageResponse = new CodeValueResponse(stageValue.getId(), leadLender.getStage(), value, description, stageValue.isActive());
             } catch (Exception e) {
-                // If stage not found in master, just return the key as value
-                stageResponse = new StageResponse(leadLender.getStage(), leadLender.getStage());
+                // Fallback with minimal data
+                stageResponse = new CodeValueResponse(null, leadLender.getStage(), leadLender.getStage(), null, true);
             }
         }
 
-        RemarksResponse remarksResponse = null;
+        CodeValueResponse remarksResponse = null;
         if (leadLender.getRemarks() != null) {
             String remarksKey = leadLender.getRemarks();
             try {
                 MasterCodeValue remarksValue = masterCodeValueRepositoryWrapper
-                    .findByKeyAndCodeKeyWithException(remarksKey, SystemControlledMasterCodes.REMARKS_MASTER);
-                String value = remarksValue.getValue() != null && remarksValue.getValue().getDefault() != null
-                    ? remarksValue.getValue().getDefault()
+                    .findByKeyAndCodeKeyWithException(remarksKey, SystemControlledMasterCodes.LENDER_REJECTION_REASON_MASTER);
+                String value = remarksValue.getValue() != null && remarksValue.getValue().getDefaultValue() != null
+                    ? remarksValue.getValue().getDefaultValue()
                     : remarksKey;
-                remarksResponse = new RemarksResponse(remarksKey, value);
+                String description = remarksValue.getDescription() != null && remarksValue.getDescription().getDefaultValue() != null
+                    ? remarksValue.getDescription().getDefaultValue()
+                    : null;
+                remarksResponse = new CodeValueResponse(remarksValue.getId(), remarksKey, value, description, remarksValue.isActive());
             } catch (Exception e) {
-                // If remarks not found in master, just return the key as value
-                remarksResponse = new RemarksResponse(remarksKey, remarksKey);
+                // Fallback with minimal data
+                remarksResponse = new CodeValueResponse(null, remarksKey, remarksKey, null, true);
             }
         }
 

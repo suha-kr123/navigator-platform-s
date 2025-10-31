@@ -17,7 +17,7 @@ public class LeadLenderExceptionFactory {
     }
 
     public static LeadLenderNotFoundException leadLenderNotFound(MessageSource messageSource) {
-        String message = ExceptionUtils.INSTANCE.createLocalizedMessage(
+        String message = ExceptionUtils.createLocalizedMessage(
             "error.lead.lender.not.found",
             null,
             messageSource
@@ -27,7 +27,7 @@ public class LeadLenderExceptionFactory {
 
     public static LeadLenderNotFoundException leadLenderNotFound(UUID lenderIdentifier, 
                                                                   MessageSource messageSource) {
-        String message = ExceptionUtils.INSTANCE.createLocalizedMessage(
+        String message = ExceptionUtils.createLocalizedMessage(
             "error.lead.lender.not.found.by.identifier",
             new Object[]{lenderIdentifier.toString()},
             messageSource
@@ -37,7 +37,7 @@ public class LeadLenderExceptionFactory {
 
     public static LeadLenderNotFoundException leadLenderNotFound(UUID leadId, String lenderKey, 
                                                                   MessageSource messageSource) {
-        String message = ExceptionUtils.INSTANCE.createLocalizedMessage(
+        String message = ExceptionUtils.createLocalizedMessage(
             "error.lead.lender.by.lead.and.key.not.found",
             new Object[]{leadId.toString(), lenderKey},
             messageSource
@@ -51,7 +51,7 @@ public class LeadLenderExceptionFactory {
         private static final long serialVersionUID = 1L;
         
         public LeadLenderOperationException(String messageKey, MessageSource messageSource) {
-            super(ExceptionUtils.INSTANCE.createLocalizedMessage(messageKey, null, messageSource));
+            super(ExceptionUtils.createLocalizedMessage(messageKey, null, messageSource));
         }
     }
 }

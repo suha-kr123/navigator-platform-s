@@ -50,8 +50,8 @@ class CodeMasterServiceImpl(
             MasterCodeWithValuesResponse(
                 id = child.id,
                 key = child.key,
-                name = child.name?.default.orEmpty(),
-                description = child.description?.default.orEmpty(),
+                name = child.name?.defaultValue.orEmpty(),
+                description = child.description?.defaultValue.orEmpty(),
                 isSystemDefined = child.isSystemDefined,
                 parentId = child.parentId,
                 values = childValues.map { mapToCodeValueResponse(it) }
@@ -63,8 +63,8 @@ class CodeMasterServiceImpl(
         return CodeValueResponse(
             id = masterCodeValue.id,
             key = masterCodeValue.key,
-            value = masterCodeValue.value?.default.orEmpty(),
-            description = masterCodeValue.description?.default.orEmpty(),
+            value = masterCodeValue.value?.defaultValue.orEmpty(),
+            description = masterCodeValue.description?.defaultValue.orEmpty(),
             isActive = masterCodeValue.isActive
         )
     }

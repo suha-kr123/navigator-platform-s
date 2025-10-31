@@ -12,6 +12,6 @@ public class LeadValidationException extends ValidationException {
     private static final long serialVersionUID = 2938475619283746502L;
 
     public LeadValidationException(String messageKey, Object[] args, MessageSource messageSource) {
-        super(ExceptionUtils.INSTANCE.createLocalizedMessage(messageKey, args, messageSource));
+        super(ExceptionUtils.createLocalizedMessage(messageKey, args, messageSource));
     }
 }

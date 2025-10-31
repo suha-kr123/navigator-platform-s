@@ -12,6 +12,6 @@ public class LeadConflictException extends ConflictException {
     private static final long serialVersionUID = 8475619238475612938L;
 
     public LeadConflictException(String messageKey, Object[] args, MessageSource messageSource) {
-        super(ExceptionUtils.INSTANCE.createLocalizedMessage(messageKey, args, messageSource));
+        super(ExceptionUtils.createLocalizedMessage(messageKey, args, messageSource));
     }
 }
