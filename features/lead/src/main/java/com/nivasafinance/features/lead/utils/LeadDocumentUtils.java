@@ -16,21 +16,8 @@ public final class LeadDocumentUtils {
         return NON_COMPLIANT_CHARS.matcher(normalisedWhitespace).replaceAll("_");
     }
 
-    public static String generateDocumentPathForLead(UUID leadId, String fileName) {
+    public static String generateDocumentPathForLead(UUID leadIdentifier, String fileName) {
         String sanitisedFileName = sanitizeFileName(fileName);
-        return "leads/" + leadId + "/" + System.currentTimeMillis() + "_" + sanitisedFileName;
-    }
-
-    public static String generateDocumentPathForLeadTask(UUID leadId, UUID taskId, String fileName) {
-        String sanitisedFileName = sanitizeFileName(fileName);
-        return "leads/" + leadId + "/tasks/" + taskId + "/" + System.currentTimeMillis() + "_" + sanitisedFileName;
-    }
-
-    public static String resolveLeadDocumentPath(UUID leadId, UUID taskId, String fileName) {
-        if (taskId == null) {
-            return generateDocumentPathForLead(leadId, fileName);
-        } else {
-            return generateDocumentPathForLeadTask(leadId, taskId, fileName);
-        }
+        return "leads/" + leadIdentifier + "/" + System.currentTimeMillis() + "_" + sanitisedFileName;
     }
 }
