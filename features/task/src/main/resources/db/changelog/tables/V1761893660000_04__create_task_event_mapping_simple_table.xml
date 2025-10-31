@@ -17,6 +17,16 @@
             </column>
             <!-- details -->
             <column name="details" type="JSONB"/>
+            <!-- created_at -->
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="NOW()"/>
+            <!-- created_by -->
+            <column name="created_by" type="VARCHAR(255)"/>
+            <!-- updated_at -->
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="NOW()"/>
+            <!-- updated_by -->
+            <column name="updated_by" type="VARCHAR(255)"/>
+            <!-- version -->
+            <column name="version" type="BIGINT" defaultValueNumeric="0"/>
         </createTable>
 
         <!-- index for event -->
