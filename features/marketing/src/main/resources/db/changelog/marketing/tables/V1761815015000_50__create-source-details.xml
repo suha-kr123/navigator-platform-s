@@ -11,7 +11,7 @@
                 <constraints primaryKey="true" nullable="false"/>
             </column>
 
-            <column name="sourcing_identifier" type="VARCHAR(255)">
+            <column name="sourcing_identifier" type="VARCHAR(255)" defaultValueComputed="gen_random_uuid()">
                 <constraints nullable="false" unique="true"/>
             </column>
 
