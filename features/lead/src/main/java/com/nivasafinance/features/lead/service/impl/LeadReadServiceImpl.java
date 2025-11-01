@@ -1,6 +1,8 @@
 package com.nivasafinance.features.lead.service.impl;
 
 import com.nivasafinance.features.lead.dto.LeadResponse;
+import com.nivasafinance.features.lead.dto.PreliminaryDetailsResponse;
+import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadReadService;
 import org.springframework.stereotype.Service;
@@ -21,5 +23,13 @@ public class LeadReadServiceImpl implements LeadReadService {
     @Override
     public LeadResponse getLeadByIdentifier(UUID leadIdentifier) {
         return leadRepositoryWrapper.findLeadResponseByIdentifierWithException(leadIdentifier);
+    }
+
+    @Override
+    public PreliminaryDetailsResponse getPreliminaryDetails(UUID leadIdentifier) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        return PreliminaryDetailsResponse.builder()
+                .preliminaryDetails(lead.getPreliminaryDetails())
+                .build();
     }
 }

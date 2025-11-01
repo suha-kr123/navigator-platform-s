@@ -4,6 +4,8 @@ import com.nivasafinance.common.constants.ApiConstants;
 import com.nivasafinance.features.lead.dto.CreateLeadRequest;
 import com.nivasafinance.features.lead.dto.CreateLeadResponse;
 import com.nivasafinance.features.lead.dto.LeadResponse;
+import com.nivasafinance.features.lead.dto.PreliminaryDetailsResponse;
+import com.nivasafinance.features.lead.dto.UpdatePreliminaryDetailsRequest;
 import com.nivasafinance.features.lead.service.LeadReadService;
 import com.nivasafinance.features.lead.service.LeadWriteService;
 import jakarta.validation.Valid;
@@ -31,5 +33,19 @@ public class LeadController {
     @GetMapping("/{leadId}")
     public ResponseEntity<LeadResponse> getLeads(@PathVariable UUID leadId) {
         return ResponseEntity.status(HttpStatus.OK).body(leadReadService.getLeadByIdentifier(leadId));
+    }
+
+    @PutMapping("/{leadId}/preliminary-details")
+    public ResponseEntity<Void> updatePreliminaryDetails(
+            @PathVariable UUID leadId,
+            @RequestBody UpdatePreliminaryDetailsRequest request) {
+        leadWriteService.updatePreliminaryDetails(leadId, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{leadId}/preliminary-details")
+    public ResponseEntity<PreliminaryDetailsResponse> getPreliminaryDetails(@PathVariable UUID leadId) {
+        PreliminaryDetailsResponse response = leadReadService.getPreliminaryDetails(leadId);
+        return ResponseEntity.ok(response);
     }
 }

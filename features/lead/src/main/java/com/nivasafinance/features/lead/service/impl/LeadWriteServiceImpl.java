@@ -2,6 +2,7 @@ package com.nivasafinance.features.lead.service.impl;
 
 import com.nivasafinance.features.lead.dto.CreateLeadRequest;
 import com.nivasafinance.features.lead.dto.CreateLeadResponse;
+import com.nivasafinance.features.lead.dto.UpdatePreliminaryDetailsRequest;
 import com.nivasafinance.features.lead.entity.Contact;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.enums.LeadStatus;
@@ -73,6 +74,14 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         Lead savedLead = leadRepositoryWrapper.saveWithException(lead);
 
         return new CreateLeadResponse(savedLead.getLeadIdentifier());
+    }
+
+    @Override
+    @Transactional
+    public void updatePreliminaryDetails(UUID leadIdentifier, UpdatePreliminaryDetailsRequest request) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        lead.setPreliminaryDetails(request.getPreliminaryDetails());
+        leadRepositoryWrapper.saveWithException(lead);
     }
 
     @NotNull
