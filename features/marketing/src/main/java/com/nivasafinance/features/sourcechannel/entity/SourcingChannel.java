@@ -8,11 +8,14 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.Type;
 import org.hibernate.type.SqlTypes;
 
+import java.util.UUID;
+
 @Entity
 @Table(name = "n_sourcing_channel_details")
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
+@Builder
 @EqualsAndHashCode(callSuper = true)
 public class SourcingChannel extends AuditableEntity {
 
@@ -21,7 +24,7 @@ public class SourcingChannel extends AuditableEntity {
     private Long id;
 
     @Column(name = "sourcing_identifier", nullable = false, unique = true, length = 255)
-    private String sourcingIdentifier;
+    private UUID sourcingIdentifier;
 
     @Column(name = "sourcing_channel_name", length = 255)
     private String sourcingChannel;
