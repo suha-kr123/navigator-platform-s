@@ -3,6 +3,7 @@ package com.nivasafinance.features.lead.service.impl;
 import com.nivasafinance.features.lead.dto.CreditDetailsResponse;
 import com.nivasafinance.features.lead.dto.LeadResponse;
 import com.nivasafinance.features.lead.dto.PreliminaryDetailsResponse;
+import com.nivasafinance.features.lead.dto.ProposedDetailsResponse;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadReadService;
@@ -70,6 +71,24 @@ public class LeadReadServiceImpl implements LeadReadService {
                     ? codeValueMasterService.getByKey(creditDetails.getBureauRating()) : null)
                 .customerProfiles(creditDetails.getCustomerProfiles() != null 
                     ? codeValueMasterService.getByKey(creditDetails.getCustomerProfiles()) : null)
+                .build();
+    }
+
+    @Override
+    public ProposedDetailsResponse getProposedDetails(UUID leadIdentifier) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        Lead.ProposedDetails proposedDetails = lead.getProposedDetails();
+        
+        if (proposedDetails == null) {
+            return ProposedDetailsResponse.builder().build();
+        }
+        
+        return ProposedDetailsResponse.builder()
+                .proposedLoanAmount(proposedDetails.getProposedLoanAmount())
+                .roi(proposedDetails.getRoi())
+                .tenureValue(proposedDetails.getTenureValue())
+                .tenureType(proposedDetails.getTenureType())
+                .emi(proposedDetails.getEmi())
                 .build();
     }
 }

@@ -2,6 +2,7 @@ package com.nivasafinance.features.lead.entity;
 
 import com.nivasafinance.common.audit.AuditableEntity;
 import com.nivasafinance.common.dto.GeoData;
+import com.nivasafinance.common.enums.TenureType;
 import com.nivasafinance.features.lead.enums.LeadStatus;
 import com.nivasafinance.features.lead.enums.LeadSubStatus;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
@@ -195,7 +196,7 @@ public class Lead extends AuditableEntity {
         private BigDecimal disbursedAmount;
         private BigDecimal roi;
         private Integer tenureValue;
-        private String tenureType;
+        private TenureType tenureType;
         private LocalDate disbursedDate;
         private BigDecimal processingFees;
         private List<Tranche> tranches;
@@ -228,7 +229,7 @@ public class Lead extends AuditableEntity {
         private BigDecimal proposedLoanAmount;
         private BigDecimal roi;
         private Integer tenureValue;
-        private String tenureType;
+        private TenureType tenureType;
         private BigDecimal emi;
     }
 

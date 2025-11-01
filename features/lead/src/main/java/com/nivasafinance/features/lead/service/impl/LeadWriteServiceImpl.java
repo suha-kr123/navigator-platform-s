@@ -4,6 +4,7 @@ import com.nivasafinance.features.lead.dto.CreateLeadRequest;
 import com.nivasafinance.features.lead.dto.CreateLeadResponse;
 import com.nivasafinance.features.lead.dto.UpdateCreditDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdatePreliminaryDetailsRequest;
+import com.nivasafinance.features.lead.dto.UpdateProposedDetailsRequest;
 import com.nivasafinance.features.lead.entity.Contact;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.enums.LeadStatus;
@@ -136,6 +137,38 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         creditDetails.setUnderwriter(currentUsername);
         
         lead.setCreditRatingDetails(creditDetails);
+        leadRepositoryWrapper.saveWithException(lead);
+    }
+
+    @Override
+    @Transactional
+    public void updateProposedDetails(UUID leadIdentifier, UpdateProposedDetailsRequest request) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        
+        // Get existing proposed details or create new instance
+        Lead.ProposedDetails proposedDetails = lead.getProposedDetails();
+        if (proposedDetails == null) {
+            proposedDetails = new Lead.ProposedDetails();
+        }
+        
+        // Merge/update only non-null fields from request
+        if (request.getProposedLoanAmount() != null) {
+            proposedDetails.setProposedLoanAmount(request.getProposedLoanAmount());
+        }
+        if (request.getRoi() != null) {
+            proposedDetails.setRoi(request.getRoi());
+        }
+        if (request.getTenureValue() != null) {
+            proposedDetails.setTenureValue(request.getTenureValue());
+        }
+        if (request.getTenureType() != null) {
+            proposedDetails.setTenureType(request.getTenureType());
+        }
+        if (request.getEmi() != null) {
+            proposedDetails.setEmi(request.getEmi());
+        }
+        
+        lead.setProposedDetails(proposedDetails);
         leadRepositoryWrapper.saveWithException(lead);
     }
 
