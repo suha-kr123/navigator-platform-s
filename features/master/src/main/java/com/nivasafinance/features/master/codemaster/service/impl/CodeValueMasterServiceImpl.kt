@@ -11,6 +11,10 @@ class CodeValueMasterServiceImpl(
     private val masterCodeValueRepositoryWrapper: MasterCodeValueRepositoryWrapper
 ) : CodeValueMasterService {
 
+    override fun getByKey(key: String): CodeValueResponse {
+        return masterCodeValueRepositoryWrapper.findByKeyWithException(key).mapToCodeValueResponse()
+    }
+
     override fun getCodeValueByKeyAndCodeKey(
         key: String,
         codeKey: String

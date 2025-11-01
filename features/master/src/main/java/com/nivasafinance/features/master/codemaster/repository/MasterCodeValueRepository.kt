@@ -8,6 +8,7 @@ import java.util.UUID
 
 @Repository
 interface MasterCodeValueRepository : JpaRepository<MasterCodeValue, UUID> {
+    fun findByKey(key: String): Optional<MasterCodeValue>
     fun findByCodeKey(codeKey: String): List<MasterCodeValue>
     fun findByKeyAndCodeKey(key: String, codeKey: String): Optional<MasterCodeValue>
     fun findByCodeKeyAndIsActiveTrue(codeKey: String): List<MasterCodeValue>

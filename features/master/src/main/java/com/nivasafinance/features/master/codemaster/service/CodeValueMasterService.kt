@@ -4,6 +4,8 @@ import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse
 
 interface CodeValueMasterService {
 
+    fun getByKey(key: String): CodeValueResponse
+
     fun getCodeValueByKeyAndCodeKey(key: String, codeKey: String): CodeValueResponse
 
     fun getCodeValueByKeysAndCodeKey(key: List<String>, codeKey: String): List<CodeValueResponse>

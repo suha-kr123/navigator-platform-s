@@ -8,6 +8,10 @@ object CodeMasterExceptionFactory {
         return CodeMasterNotFoundException(codeName, messageSource)
     }
 
+    fun codeValueKeyNotFound(key: String, messageSource: MessageSource): CodeValueKeyNotFoundException {
+        return CodeValueKeyNotFoundException(key, messageSource)
+    }
+
     fun notFoundById(id: java.util.UUID, messageSource: MessageSource): CodeMasterNotFoundException {
         return CodeMasterNotFoundException("ID: $id", messageSource)
     }

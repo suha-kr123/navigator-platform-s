@@ -80,4 +80,10 @@ class MasterCodeValueRepositoryWrapper(
             throw CodeMasterExceptionFactory.deleteFailed(messageSource).apply { initCause(e) }
         }
     }
+
+    fun findByKeyWithException(key: String): MasterCodeValue {
+        return masterCodeValueRepository.findByKey(key).orElseThrow {
+            CodeMasterExceptionFactory.codeValueKeyNotFound(key, messageSource)
+        }
+    }
 }
