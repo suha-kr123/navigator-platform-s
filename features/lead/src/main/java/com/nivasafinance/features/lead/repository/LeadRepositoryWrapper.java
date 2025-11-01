@@ -3,6 +3,7 @@ package com.nivasafinance.features.lead.repository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nivasafinance.features.lead.dto.LeadDocumentResponse;
+import com.nivasafinance.features.lead.dto.LeadNoteResponse;
 import com.nivasafinance.features.lead.dto.LeadResponse;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.enums.LeadDocumentStatus;
@@ -272,6 +273,73 @@ public class LeadRepositoryWrapper {
                                        " with document identifier: " + documentIdentifier);
         } catch (DataAccessException e) {
             throw new RuntimeException("Failed to retrieve document for lead: " + leadIdentifier, e);
+        }
+    }
+
+    private final String sqlQueryForLeadNotes = """
+              SELECT
+                  n.id,
+                  n.identifier,
+                  n.title,
+                  n.content,
+                  n.created_at as createdAt,
+                  n.updated_at as updatedAt,
+                  n.created_by as createdBy,
+                  n.updated_by as updatedBy
+              FROM n_lead l
+              CROSS JOIN LATERAL unnest(l.notes) note_id
+              JOIN n_note n ON note_id = n.id
+            """;
+
+    /**
+     * Private static RowMapper for mapping ResultSet to LeadNoteResponse.
+     * Reusable across multiple query methods.
+     */
+    private record LeadNoteRowMapper() implements RowMapper<LeadNoteResponse> {
+
+        @Override
+        public LeadNoteResponse mapRow(ResultSet rs, int rowNum) throws SQLException {
+            LeadNoteResponse response = new LeadNoteResponse();
+            response.setIdentifier(UUID.fromString(rs.getString("identifier")));
+            response.setTitle(rs.getString("title"));
+            response.setContent(rs.getString("content"));
+            response.setCreatedAt(rs.getTimestamp("createdAt").toLocalDateTime());
+            response.setUpdatedAt(rs.getTimestamp("updatedAt").toLocalDateTime());
+            response.setCreatedBy(rs.getString("createdBy"));
+            response.setUpdatedBy(rs.getString("updatedBy"));
+            return response;
+        }
+    }
+
+    /**
+     * Get all notes for a lead by lead identifier.
+     * Joins n_lead and n_note tables using the notes array.
+     */
+    public List<LeadNoteResponse> findAllNotesByLeadIdentifier(UUID leadIdentifier) {
+        String sql = sqlQueryForLeadNotes + " WHERE l.lead_identifier = ?";
+
+        try {
+            return jdbcTemplate.query(sql, new LeadNoteRowMapper(), leadIdentifier);
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Failed to retrieve notes for lead: " + leadIdentifier, e);
+        }
+    }
+
+    /**
+     * Get a specific note for a lead by lead identifier and note identifier.
+     */
+    public LeadNoteResponse findNoteByLeadIdentifierAndNoteIdentifier(
+            UUID leadIdentifier, UUID noteIdentifier) {
+        String sql = sqlQueryForLeadNotes + " WHERE l.lead_identifier = ? AND n.identifier = ?";
+
+        try {
+            return jdbcTemplate.queryForObject(sql, new LeadNoteRowMapper(),
+                    leadIdentifier, noteIdentifier);
+        } catch (EmptyResultDataAccessException e) {
+            throw new RuntimeException("Note not found for lead: " + leadIdentifier +
+                                       " with note identifier: " + noteIdentifier);
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Failed to retrieve note for lead: " + leadIdentifier, e);
         }
     }
 }
