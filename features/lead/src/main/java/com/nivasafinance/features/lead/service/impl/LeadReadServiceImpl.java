@@ -5,10 +5,13 @@ import com.nivasafinance.features.lead.dto.LeadResponse;
 import com.nivasafinance.features.lead.dto.PreliminaryDetailsResponse;
 import com.nivasafinance.features.lead.dto.PropertyDetailsResponse;
 import com.nivasafinance.features.lead.dto.ProposedDetailsResponse;
+import com.nivasafinance.features.lead.dto.SourcingDetailsResponse;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadReadService;
 import com.nivasafinance.features.master.codemaster.service.CodeValueMasterService;
+import com.nivasafinance.features.sourcechannel.dto.SourcingChannelResponse;
+import com.nivasafinance.features.sourcechannel.service.SourcingChannelReadService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,11 +23,14 @@ public class LeadReadServiceImpl implements LeadReadService {
 
     private final LeadRepositoryWrapper leadRepositoryWrapper;
     private final CodeValueMasterService codeValueMasterService;
+    private final SourcingChannelReadService sourcingChannelReadService;
 
     public LeadReadServiceImpl(LeadRepositoryWrapper leadRepositoryWrapper,
-                                CodeValueMasterService codeValueMasterService) {
+                                CodeValueMasterService codeValueMasterService,
+                                SourcingChannelReadService sourcingChannelReadService) {
         this.leadRepositoryWrapper = leadRepositoryWrapper;
         this.codeValueMasterService = codeValueMasterService;
+        this.sourcingChannelReadService = sourcingChannelReadService;
     }
 
     @Override
@@ -108,6 +114,23 @@ public class LeadReadServiceImpl implements LeadReadService {
         return PropertyDetailsResponse.builder()
                 .address(propertyDetails.getAddress())
                 .geoData(propertyDetails.getGeoData())
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public SourcingDetailsResponse getSourcingDetails(UUID leadIdentifier) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        
+        if (lead.getSourcingChannelId() == null) {
+            return SourcingDetailsResponse.builder().build();
+        }
+        
+        SourcingChannelResponse sourcingChannelResponse = 
+            sourcingChannelReadService.getById(lead.getSourcingChannelId());
+        
+        return SourcingDetailsResponse.builder()
+                .sourcingChannelDetails(sourcingChannelResponse)
                 .build();
     }
 }

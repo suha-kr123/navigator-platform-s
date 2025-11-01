@@ -8,6 +8,7 @@ import com.nivasafinance.features.lead.dto.UpdateCreditDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdatePreliminaryDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdatePropertyDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdateProposedDetailsRequest;
+import com.nivasafinance.features.lead.dto.UpdateSourcingDetailsRequest;
 import com.nivasafinance.features.lead.entity.Contact;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.enums.LeadStatus;
@@ -21,6 +22,9 @@ import com.nivasafinance.features.person.dto.PersonCreateRequest;
 import com.nivasafinance.features.person.dto.PersonResponse;
 import com.nivasafinance.features.person.entity.MobileNumberDetails;
 import com.nivasafinance.features.person.service.PersonService;
+import com.nivasafinance.features.sourcechannel.dto.SourcingChannelRequest;
+import com.nivasafinance.features.sourcechannel.dto.SourcingChannelResponse;
+import com.nivasafinance.features.sourcechannel.service.SourcingChannelWriteService;
 import com.nivasafinance.security.context.UserContext;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +49,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     private final PersonService personService;
     private final MessageSource messageSource;
     private final PincodeService pincodeService;
+    private final SourcingChannelWriteService sourcingChannelWriteService;
 
 
     @Override
@@ -282,5 +287,29 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         List<MobileNumberDetails> mobileNumbers = new ArrayList<>();
         mobileNumbers.add(mobileNumber);
         return mobileNumbers;
+    }
+
+    @Override
+    @Transactional
+    public void updateSourcingDetails(UUID leadIdentifier, UpdateSourcingDetailsRequest request) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        
+        SourcingChannelRequest sourcingChannelRequest = new SourcingChannelRequest(
+                request.getSourcingChannel(),
+                request.getMarketingSource(),
+                request.getSourceId()
+        );
+        
+        if (lead.getSourcingChannelId() != null) {
+            // Update existing sourcing channel
+            sourcingChannelWriteService.update(lead.getSourcingChannelId(), sourcingChannelRequest);
+        } else {
+            // Create new sourcing channel
+            SourcingChannelResponse sourcingChannelResponse = 
+                sourcingChannelWriteService.create(sourcingChannelRequest);
+            lead.setSourcingChannelId(sourcingChannelResponse.getId());
+        }
+        
+        leadRepositoryWrapper.saveWithException(lead);
     }
 }

@@ -6,6 +6,7 @@ import com.nivasafinance.features.lead.dto.UpdateCreditDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdatePreliminaryDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdatePropertyDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdateProposedDetailsRequest;
+import com.nivasafinance.features.lead.dto.UpdateSourcingDetailsRequest;
 
 import java.util.UUID;
 
@@ -15,4 +16,5 @@ public interface LeadWriteService {
     void updateCreditDetails(UUID leadIdentifier, UpdateCreditDetailsRequest request);
     void updateProposedDetails(UUID leadIdentifier, UpdateProposedDetailsRequest request);
     void updatePropertyDetails(UUID leadIdentifier, UpdatePropertyDetailsRequest request);
+    void updateSourcingDetails(UUID leadIdentifier, UpdateSourcingDetailsRequest request);
 }
