@@ -3,8 +3,10 @@ package com.nivasafinance.features.lead.controller;
 import com.nivasafinance.common.constants.ApiConstants;
 import com.nivasafinance.features.lead.dto.CreateLeadRequest;
 import com.nivasafinance.features.lead.dto.CreateLeadResponse;
+import com.nivasafinance.features.lead.dto.CreditDetailsResponse;
 import com.nivasafinance.features.lead.dto.LeadResponse;
 import com.nivasafinance.features.lead.dto.PreliminaryDetailsResponse;
+import com.nivasafinance.features.lead.dto.UpdateCreditDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdatePreliminaryDetailsRequest;
 import com.nivasafinance.features.lead.service.LeadReadService;
 import com.nivasafinance.features.lead.service.LeadWriteService;
@@ -46,6 +48,20 @@ public class LeadController {
     @GetMapping("/{leadId}/preliminary-details")
     public ResponseEntity<PreliminaryDetailsResponse> getPreliminaryDetails(@PathVariable UUID leadId) {
         PreliminaryDetailsResponse response = leadReadService.getPreliminaryDetails(leadId);
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{leadId}/credit-details")
+    public ResponseEntity<Void> updateCreditDetails(
+            @PathVariable UUID leadId,
+            @RequestBody UpdateCreditDetailsRequest request) {
+        leadWriteService.updateCreditDetails(leadId, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{leadId}/credit-details")
+    public ResponseEntity<CreditDetailsResponse> getCreditDetails(@PathVariable UUID leadId) {
+        CreditDetailsResponse response = leadReadService.getCreditDetails(leadId);
         return ResponseEntity.ok(response);
     }
 }

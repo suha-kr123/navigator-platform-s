@@ -2,6 +2,7 @@ package com.nivasafinance.features.lead.service.impl;
 
 import com.nivasafinance.features.lead.dto.CreateLeadRequest;
 import com.nivasafinance.features.lead.dto.CreateLeadResponse;
+import com.nivasafinance.features.lead.dto.UpdateCreditDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdatePreliminaryDetailsRequest;
 import com.nivasafinance.features.lead.entity.Contact;
 import com.nivasafinance.features.lead.entity.Lead;
@@ -14,6 +15,7 @@ import com.nivasafinance.features.person.dto.PersonCreateRequest;
 import com.nivasafinance.features.person.dto.PersonResponse;
 import com.nivasafinance.features.person.entity.MobileNumberDetails;
 import com.nivasafinance.features.person.service.PersonService;
+import com.nivasafinance.security.context.UserContext;
 import lombok.AllArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.context.MessageSource;
@@ -81,6 +83,59 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     public void updatePreliminaryDetails(UUID leadIdentifier, UpdatePreliminaryDetailsRequest request) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
         lead.setPreliminaryDetails(request.getPreliminaryDetails());
+        leadRepositoryWrapper.saveWithException(lead);
+    }
+
+    @Override
+    @Transactional
+    public void updateCreditDetails(UUID leadIdentifier, UpdateCreditDetailsRequest request) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        
+        // Get current username from UserContext
+        String currentUsername = UserContext.getUserInfo().getUsername();
+        
+        // Get existing credit rating details or create new instance
+        Lead.CreditRatingDetails creditDetails = lead.getCreditRatingDetails();
+        if (creditDetails == null) {
+            creditDetails = new Lead.CreditRatingDetails();
+        }
+        
+        // Merge/update only non-null fields from request
+        if (request.getOccupationProfile() != null) {
+            creditDetails.setOccupationProfile(request.getOccupationProfile());
+        }
+        if (request.getRoofProfile() != null) {
+            creditDetails.setRoofProfile(request.getRoofProfile());
+        }
+        if (request.getLtv() != null) {
+            creditDetails.setLtv(request.getLtv());
+        }
+        if (request.getFoir() != null) {
+            creditDetails.setFoir(request.getFoir());
+        }
+        if (request.getMonthlyFamilyIncome() != null) {
+            creditDetails.setMonthlyFamilyIncome(request.getMonthlyFamilyIncome());
+        }
+        if (request.getPropertyDocumentType() != null) {
+            creditDetails.setPropertyDocumentType(request.getPropertyDocumentType());
+        }
+        if (request.getEligibleLoanAmount() != null) {
+            creditDetails.setEligibleLoanAmount(request.getEligibleLoanAmount());
+        }
+        if (request.getLocation() != null) {
+            creditDetails.setLocation(request.getLocation());
+        }
+        if (request.getBureauRating() != null) {
+            creditDetails.setBureauRating(request.getBureauRating());
+        }
+        if (request.getCustomerProfiles() != null) {
+            creditDetails.setCustomerProfiles(request.getCustomerProfiles());
+        }
+        
+        // Set underwriter to current username
+        creditDetails.setUnderwriter(currentUsername);
+        
+        lead.setCreditRatingDetails(creditDetails);
         leadRepositoryWrapper.saveWithException(lead);
     }
 
