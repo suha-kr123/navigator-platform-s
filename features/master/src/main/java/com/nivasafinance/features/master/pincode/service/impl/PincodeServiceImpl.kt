@@ -17,59 +17,19 @@ class PincodeServiceImpl(
 
     @Suppress("TooGenericExceptionCaught", "SwallowedException")
     @Transactional(readOnly = true)
-    override fun getPincodeDetails(pincode: String): List<PincodeResponse> {
-        return try {
-            PincodeExceptionFactory.validatePincode(pincode, messageSource)
-            val pincodes = pincodeRepository.findAllByPincode(pincode)
-            if (pincodes.isEmpty()) {
-                throw PincodeExceptionFactory.notFound(pincode, messageSource)
-            }
-            pincodes.map { toPincodeResponse(it) }
-        } catch (e: com.nivasafinance.features.master.pincode.exception.PincodeNotFoundException) {
-            throw e
-        } catch (e: com.nivasafinance.features.master.pincode.exception.PincodeValidationException) {
-            throw e
-        } catch (e: com.nivasafinance.features.master.pincode.exception.PincodeOperationException) {
-            throw e
-        } catch (e: Exception) {
-            throw PincodeExceptionFactory.retrieveEntityFailed(messageSource)
+    override fun getPincodeDetails(pincode: String): PincodeResponse {
+        val pincodes = pincodeRepository.findAllByPincode(pincode)
+        if (pincodes.isEmpty()) {
+            throw PincodeExceptionFactory.notFound(pincode, messageSource)
         }
-    }
-
-    @Suppress("TooGenericExceptionCaught", "SwallowedException")
-    @Transactional(readOnly = true)
-    override fun isPincodeValid(pincode: String): Boolean {
-        return try {
-            PincodeExceptionFactory.validatePincode(pincode, messageSource)
-            val pincodes = pincodeRepository.findAllByPincode(pincode)
-            pincodes.isNotEmpty() && pincodes.any { it.isServicable }
-        } catch (e: Exception) {
-            // For validation, we intentionally return false for any exception
-            false
-        }
-    }
-
-    @Suppress("TooGenericExceptionCaught", "SwallowedException")
-    override fun getPincodeDetailsSafe(pincode: String): List<PincodeResponse> {
-        return try {
-            PincodeExceptionFactory.validatePincode(pincode, messageSource)
-            val pincodes = pincodeRepository.findAllByPincode(pincode)
-            pincodes.map { toPincodeResponse(it) }
-        } catch (e: Exception) {
-            // For safe operation, we intentionally return empty list for any exception
-            emptyList()
-        }
-    }
-
-    private fun toPincodeResponse(pincode: Pincode): PincodeResponse {
+        val areas = pincodes.map { it.area }
         return PincodeResponse(
-            id = pincode.id,
-            pincode = pincode.pincode,
-            area = pincode.area,
-            district = pincode.district,
-            state = pincode.state,
-            country = pincode.country,
-            isServicable = pincode.isServicable
+            pincode = pincodes.first().pincode,
+            area = areas,
+            district = pincodes.first().district,
+            state = pincodes.first().state,
+            country = pincodes.first().country,
+            isServicable = pincodes.first().isServicable
         )
     }
 }

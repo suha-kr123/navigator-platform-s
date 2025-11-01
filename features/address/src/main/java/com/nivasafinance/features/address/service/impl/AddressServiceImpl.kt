@@ -38,12 +38,10 @@ class AddressServiceImpl(
     override fun createAddress(addressRequest: CreateAddressRequest): AddressResponse {
         AddressExceptionFactory.validateAddressForCreation(addressRequest.pincode, messageSource)
 
-        val pincodeDetails = pincodeService.getPincodeDetailsSafe(addressRequest.pincode)
-
-        val (finalDistrict, finalState) = if (pincodeDetails.isNotEmpty()) {
-            val masterData = pincodeDetails.first()
+        val (finalDistrict, finalState) = try {
+            val masterData = pincodeService.getPincodeDetails(addressRequest.pincode)
             Pair(masterData.district ?: addressRequest.district, masterData.state ?: addressRequest.state)
-        } else {
+        } catch (_: Exception) {
             Pair(addressRequest.district, addressRequest.state)
         }
 
@@ -69,18 +67,17 @@ class AddressServiceImpl(
         updateAddressRequest.pincode?.let { pincode ->
             AddressExceptionFactory.validateAddressForCreation(pincode, messageSource)
 
-            val pincodeDetails = pincodeService.getPincodeDetailsSafe(pincode)
-
-            address.pincode = pincode
-
-            if (pincodeDetails.isNotEmpty()) {
-                val masterData = pincodeDetails.first()
+            try {
+                val masterData = pincodeService.getPincodeDetails(pincode)
                 masterData.district?.let { address.district = it }
                 masterData.state?.let { address.state = it }
-            } else {
+            } catch (_: Exception) {
                 updateAddressRequest.district?.let { address.district = it }
                 updateAddressRequest.state?.let { address.state = it }
             }
+
+
+            address.pincode = pincode
         }
 
         if (updateAddressRequest.pincode == null) {

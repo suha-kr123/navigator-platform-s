@@ -15,7 +15,7 @@ class PincodeController(
 ) {
 
     @GetMapping("/{pincode}")
-    fun getPincodeDetails(@PathVariable pincode: String): ResponseEntity<List<PincodeResponse>> {
+    fun getPincodeDetails(@PathVariable pincode: String): ResponseEntity<PincodeResponse> {
         val pincodes = pincodeService.getPincodeDetails(pincode)
         return ResponseEntity.ok(pincodes)
     }
