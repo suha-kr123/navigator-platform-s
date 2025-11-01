@@ -1,5 +1,7 @@
 package com.nivasafinance.features.lead.controller;
 
+import com.nivasafinance.common.base.model.PaginatedResponse;
+import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.common.constants.ApiConstants;
 import com.nivasafinance.features.lead.dto.LeadDocumentCreateRequest;
 import com.nivasafinance.features.lead.dto.LeadDocumentCreateResponse;
@@ -14,7 +16,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -36,8 +37,12 @@ public class LeadDocumentsController {
     }
 
     @GetMapping
-    public ResponseEntity<List<LeadDocumentResponse>> getAllLeadDocuments(@PathVariable UUID leadId) {
-        List<LeadDocumentResponse> documents = leadDocumentReadService.getAllLeadDocuments(leadId);
+    public ResponseEntity<PaginatedResponse<LeadDocumentResponse>> getAllLeadDocuments(
+            @PathVariable UUID leadId,
+            @Valid PaginationRequest paginationRequest) {
+        
+        PaginatedResponse<LeadDocumentResponse> documents = leadDocumentReadService.getAllLeadDocuments(
+                leadId, paginationRequest);
         return ResponseEntity.ok(documents);
     }
 

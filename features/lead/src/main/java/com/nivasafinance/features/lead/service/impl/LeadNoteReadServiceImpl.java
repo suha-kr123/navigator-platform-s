@@ -1,5 +1,7 @@
 package com.nivasafinance.features.lead.service.impl;
 
+import com.nivasafinance.common.base.model.PaginatedResponse;
+import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.features.lead.dto.LeadNoteResponse;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadNoteReadService;
@@ -7,7 +9,6 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -18,8 +19,10 @@ public class LeadNoteReadServiceImpl implements LeadNoteReadService {
     private final LeadRepositoryWrapper leadRepositoryWrapper;
 
     @Override
-    public List<LeadNoteResponse> getAllLeadNotes(UUID leadIdentifier) {
-        return leadRepositoryWrapper.findAllNotesByLeadIdentifier(leadIdentifier);
+    public PaginatedResponse<LeadNoteResponse> getAllLeadNotes(
+            UUID leadIdentifier, PaginationRequest paginationRequest) {
+        return leadRepositoryWrapper.findAllNotesByLeadIdentifier(
+                leadIdentifier, paginationRequest);
     }
 
     @Override

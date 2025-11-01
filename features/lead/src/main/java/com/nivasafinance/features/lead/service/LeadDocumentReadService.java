@@ -1,8 +1,9 @@
 package com.nivasafinance.features.lead.service;
 
+import com.nivasafinance.common.base.model.PaginatedResponse;
+import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.features.lead.dto.LeadDocumentResponse;
 
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -12,11 +13,13 @@ import java.util.UUID;
 public interface LeadDocumentReadService {
 
     /**
-     * Retrieves all documents for a lead.
+     * Retrieves all documents for a lead with pagination.
      * @param leadIdentifier The lead identifier
-     * @return List of lead documents
+     * @param paginationRequest The pagination request containing offset, limit, sortBy, and sortDirection
+     * @return Paginated response of lead documents
      */
-    List<LeadDocumentResponse> getAllLeadDocuments(UUID leadIdentifier);
+    PaginatedResponse<LeadDocumentResponse> getAllLeadDocuments(
+            UUID leadIdentifier, PaginationRequest paginationRequest);
 
     /**
      * Retrieves a specific document for a lead.

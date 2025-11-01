@@ -1,5 +1,7 @@
 package com.nivasafinance.features.lead.service.impl;
 
+import com.nivasafinance.common.base.model.PaginatedResponse;
+import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.features.lead.dto.LeadDocumentResponse;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadDocumentReadService;
@@ -7,7 +9,6 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -18,8 +19,10 @@ public class LeadDocumentReadServiceImpl implements LeadDocumentReadService {
     private final LeadRepositoryWrapper leadRepositoryWrapper;
 
     @Override
-    public List<LeadDocumentResponse> getAllLeadDocuments(UUID leadIdentifier) {
-        return leadRepositoryWrapper.findAllDocumentsByLeadIdentifier(leadIdentifier);
+    public PaginatedResponse<LeadDocumentResponse> getAllLeadDocuments(
+            UUID leadIdentifier, PaginationRequest paginationRequest) {
+        return leadRepositoryWrapper.findAllDocumentsByLeadIdentifier(
+                leadIdentifier, paginationRequest);
     }
 
     @Override

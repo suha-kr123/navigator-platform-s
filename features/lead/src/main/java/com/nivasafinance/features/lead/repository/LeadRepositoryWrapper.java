@@ -2,6 +2,9 @@ package com.nivasafinance.features.lead.repository;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nivasafinance.common.base.model.PaginatedResponse;
+import com.nivasafinance.common.base.model.PaginationInfo;
+import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.features.lead.dto.LeadDocumentResponse;
 import com.nivasafinance.features.lead.dto.LeadNoteResponse;
 import com.nivasafinance.features.lead.dto.LeadResponse;
@@ -245,14 +248,52 @@ public class LeadRepositoryWrapper {
     }
 
     /**
-     * Get all documents for a lead by lead identifier.
+     * Get all documents for a lead by lead identifier with pagination.
      * Joins n_lead and n_document tables, extracts tags and status from Lead's documentDetails JSONB.
      */
-    public List<LeadDocumentResponse> findAllDocumentsByLeadIdentifier(UUID leadIdentifier) {
-        String sql = sqlQueryForLeadDocuments + " WHERE l.lead_identifier = ?";
+    public PaginatedResponse<LeadDocumentResponse> findAllDocumentsByLeadIdentifier(
+            UUID leadIdentifier, PaginationRequest paginationRequest) {
+        
+        int offset = paginationRequest.getOffset();
+        int limit = paginationRequest.getLimit();
+        String sortBy = paginationRequest.getSortBy();
+        String sortDirection = paginationRequest.getSortDirection();
+        
+        // Count query
+        String countSql = """
+                SELECT COUNT(*)
+                FROM n_lead l
+                CROSS JOIN LATERAL jsonb_array_elements(l.document_details) doc_detail
+                JOIN n_document d ON (doc_detail->>'id')::bigint = d.id
+                WHERE l.lead_identifier = ?
+                """;
+        
+        // Main query with sorting and pagination
+        String sql = sqlQueryForLeadDocuments + 
+                     " WHERE l.lead_identifier = ?" +
+                     " ORDER BY d." + sortBy + " " + sortDirection +
+                     " LIMIT ? OFFSET ?";
 
         try {
-            return jdbcTemplate.query(sql, new LeadDocumentRowMapper(codeValueMasterService, objectMapper), leadIdentifier);
+            // Get total count
+            Long totalCount = jdbcTemplate.queryForObject(countSql, Long.class, leadIdentifier);
+            long total = (totalCount != null) ? totalCount : 0L;
+            
+            // Get paginated data
+            List<LeadDocumentResponse> documents = jdbcTemplate.query(
+                    sql, new LeadDocumentRowMapper(codeValueMasterService, objectMapper), 
+                    leadIdentifier, limit, offset);
+            
+            // Calculate pagination info
+            int totalPages = (int) Math.ceil((double) total / limit);
+            int currentPage = offset / limit;
+            boolean hasNext = offset + limit < total;
+            boolean hasPrevious = offset > 0;
+            
+            PaginationInfo paginationInfo = new PaginationInfo(
+                    offset, limit, total, totalPages, currentPage, hasNext, hasPrevious);
+            
+            return new PaginatedResponse<>(documents, paginationInfo);
         } catch (DataAccessException e) {
             throw new RuntimeException("Failed to retrieve documents for lead: " + leadIdentifier, e);
         }
@@ -287,8 +328,8 @@ public class LeadRepositoryWrapper {
                   n.created_by as createdBy,
                   n.updated_by as updatedBy
               FROM n_lead l
-              CROSS JOIN LATERAL unnest(l.notes) note_id
-              JOIN n_note n ON note_id = n.id
+              CROSS JOIN LATERAL  jsonb_array_elements(l.notes) note_id
+              JOIN n_note n ON note_id::INT = n.id
             """;
 
     /**
@@ -312,14 +353,51 @@ public class LeadRepositoryWrapper {
     }
 
     /**
-     * Get all notes for a lead by lead identifier.
+     * Get all notes for a lead by lead identifier with pagination.
      * Joins n_lead and n_note tables using the notes array.
      */
-    public List<LeadNoteResponse> findAllNotesByLeadIdentifier(UUID leadIdentifier) {
-        String sql = sqlQueryForLeadNotes + " WHERE l.lead_identifier = ?";
+    public PaginatedResponse<LeadNoteResponse> findAllNotesByLeadIdentifier(
+            UUID leadIdentifier, PaginationRequest paginationRequest) {
+        
+        int offset = paginationRequest.getOffset();
+        int limit = paginationRequest.getLimit();
+        String sortBy = paginationRequest.getSortBy() != null ? paginationRequest.getSortBy() : "createdAt";
+        String sortDirection = paginationRequest.getSortDirection() != null ? paginationRequest.getSortDirection() : "DESC";
+        
+        // Count query
+        String countSql = """
+                SELECT COUNT(*)
+                FROM n_lead l
+                CROSS JOIN LATERAL jsonb_array_elements(l.notes) note_id
+                JOIN n_note n ON note_id::INT = n.id
+                WHERE l.lead_identifier = ?
+                """;
+        
+        // Main query with sorting and pagination
+        String sql = sqlQueryForLeadNotes + 
+                     " WHERE l.lead_identifier = ?" +
+                     " ORDER BY n." + sortBy + " " + sortDirection +
+                     " LIMIT ? OFFSET ?";
 
         try {
-            return jdbcTemplate.query(sql, new LeadNoteRowMapper(), leadIdentifier);
+            // Get total count
+            Long totalCount = jdbcTemplate.queryForObject(countSql, Long.class, leadIdentifier);
+            long total = (totalCount != null) ? totalCount : 0L;
+            
+            // Get paginated data
+            List<LeadNoteResponse> notes = jdbcTemplate.query(
+                    sql, new LeadNoteRowMapper(), leadIdentifier, limit, offset);
+            
+            // Calculate pagination info
+            int totalPages = (int) Math.ceil((double) total / limit);
+            int currentPage = offset / limit;
+            boolean hasNext = offset + limit < total;
+            boolean hasPrevious = offset > 0;
+            
+            PaginationInfo paginationInfo = new PaginationInfo(
+                    offset, limit, total, totalPages, currentPage, hasNext, hasPrevious);
+            
+            return new PaginatedResponse<>(notes, paginationInfo);
         } catch (DataAccessException e) {
             throw new RuntimeException("Failed to retrieve notes for lead: " + leadIdentifier, e);
         }

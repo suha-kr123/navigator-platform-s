@@ -1,8 +1,9 @@
 package com.nivasafinance.features.lead.service;
 
+import com.nivasafinance.common.base.model.PaginatedResponse;
+import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.features.lead.dto.LeadNoteResponse;
 
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -12,11 +13,13 @@ import java.util.UUID;
 public interface LeadNoteReadService {
 
     /**
-     * Retrieves all notes for a lead.
+     * Retrieves all notes for a lead with pagination.
      * @param leadIdentifier The lead identifier
-     * @return List of lead notes
+     * @param paginationRequest The pagination request containing offset, limit, sortBy, and sortDirection
+     * @return Paginated response of lead notes
      */
-    List<LeadNoteResponse> getAllLeadNotes(UUID leadIdentifier);
+    PaginatedResponse<LeadNoteResponse> getAllLeadNotes(
+            UUID leadIdentifier, PaginationRequest paginationRequest);
 
     /**
      * Retrieves a specific note for a lead.

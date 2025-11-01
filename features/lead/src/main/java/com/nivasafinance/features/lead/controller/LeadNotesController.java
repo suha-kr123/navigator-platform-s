@@ -1,5 +1,7 @@
 package com.nivasafinance.features.lead.controller;
 
+import com.nivasafinance.common.base.model.PaginatedResponse;
+import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.common.constants.ApiConstants;
 import com.nivasafinance.features.lead.dto.LeadNoteCreateRequest;
 import com.nivasafinance.features.lead.dto.LeadNoteCreateResponse;
@@ -13,7 +15,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -34,8 +35,12 @@ public class LeadNotesController {
     }
 
     @GetMapping
-    public ResponseEntity<List<LeadNoteResponse>> getAllLeadNotes(@PathVariable UUID leadId) {
-        List<LeadNoteResponse> notes = leadNoteReadService.getAllLeadNotes(leadId);
+    public ResponseEntity<PaginatedResponse<LeadNoteResponse>> getAllLeadNotes(
+            @PathVariable UUID leadId,
+            @Valid PaginationRequest paginationRequest) {
+        
+        PaginatedResponse<LeadNoteResponse> notes = leadNoteReadService.getAllLeadNotes(
+                leadId, paginationRequest);
         return ResponseEntity.ok(notes);
     }
 
