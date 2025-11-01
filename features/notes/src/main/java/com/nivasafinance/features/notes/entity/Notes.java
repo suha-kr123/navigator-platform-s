@@ -7,15 +7,29 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+
 import java.util.UUID;
 
+
+@EqualsAndHashCode(callSuper = true)
+@Data
 @Entity
-@Table(name = "notes")
+@Table(name = "n_note")
+@AllArgsConstructor
+@NoArgsConstructor
 public class Notes extends AuditableEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private Long id;
+
+    @Column(name = "identifier", nullable = false, unique = true)
+    private UUID identifier;
 
     @Column(name = "title", nullable = false)
     private String title;
@@ -23,36 +37,5 @@ public class Notes extends AuditableEntity {
     @Column(name = "content", columnDefinition = "TEXT", nullable = false)
     private String content;
 
-    public Notes() {
-    }
-
-    public Notes(String title, String content) {
-        this.title = title;
-        this.content = content;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public String getContent() {
-        return content;
-    }
-
-    public void setContent(String content) {
-        this.content = content;
-    }
 }
 

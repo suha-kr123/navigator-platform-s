@@ -13,6 +13,10 @@ public class NotesExceptionFactory {
         return new NotesNotFoundException(notesId, messageSource);
     }
 
+    public static NotesNotFoundException notFound(Long notesId, MessageSource messageSource) {
+        return new NotesNotFoundException(notesId, messageSource);
+    }
+
     public static NotesOperationException createFailed(MessageSource messageSource) {
         return new NotesOperationException("error.notes.operation.create", messageSource);
     }

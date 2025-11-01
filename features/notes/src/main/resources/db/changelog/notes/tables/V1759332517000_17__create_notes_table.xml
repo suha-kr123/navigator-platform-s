@@ -6,9 +6,12 @@
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
     <changeSet id="V1759332517000_17" author="system" context="default">
-        <createTable tableName="notes">
-            <column name="id" type="uuid" defaultValueComputed="gen_random_uuid()">
+        <createTable tableName="n_note">
+            <column name="id" type="bigint" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="identifier" type="uuid" defaultValueComputed="gen_random_uuid()">
+                <constraints nullable="false"/>
             </column>
             <column name="title" type="varchar(255)">
                 <constraints nullable="false"/>
@@ -22,6 +25,11 @@
             <column name="updated_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP"/>
             <column name="version" type="bigint" defaultValueNumeric="0"/>
         </createTable>
+
+        <createIndex indexName="idx_n_note_identifier" tableName="n_note">
+            <column name="identifier"/>
+        </createIndex>
+
     </changeSet>
 
 </databaseChangeLog>

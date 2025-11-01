@@ -15,5 +15,13 @@ public class NotesNotFoundException extends ResourceNotFoundException {
                 messageSource
         ));
     }
+
+    public NotesNotFoundException(Long notesId, MessageSource messageSource) {
+        super(ExceptionUtils.createLocalizedMessage(
+                "error.notes.not.found",
+                new Object[]{notesId.toString()},
+                messageSource
+        ));
+    }
 }
 

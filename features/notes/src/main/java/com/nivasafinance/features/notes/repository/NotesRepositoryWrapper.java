@@ -3,8 +3,6 @@ package com.nivasafinance.features.notes.repository;
 import com.nivasafinance.features.notes.entity.Notes;
 import com.nivasafinance.features.notes.exception.NotesExceptionFactory;
 import org.springframework.context.MessageSource;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import java.util.UUID;
 
@@ -27,7 +25,7 @@ public class NotesRepositoryWrapper {
         }
     }
 
-    public void deleteByIdWithException(UUID notesId) {
+    public void deleteByIdWithException(Long notesId) {
         try {
             notesRepository.deleteById(notesId);
         } catch (RuntimeException e) {
@@ -35,7 +33,7 @@ public class NotesRepositoryWrapper {
         }
     }
 
-    public Notes findByIdWithException(UUID notesId) {
+    public Notes findByIdWithException(Long notesId) {
         try {
             return notesRepository.findById(notesId).orElseThrow(() ->
                     NotesExceptionFactory.notFound(notesId, messageSource)
@@ -45,11 +43,13 @@ public class NotesRepositoryWrapper {
         }
     }
 
-    public Page<Notes> findAll(Pageable pageable) {
+    public Notes findByIdentifierWithException(UUID identifier) {
         try {
-            return notesRepository.findAll(pageable);
+            return notesRepository.findByIdentifier(identifier).orElseThrow(() ->
+                    NotesExceptionFactory.notFound(identifier, messageSource)
+            );
         } catch (Exception e) {
-            throw NotesExceptionFactory.retrieveEntityFailed(messageSource);
+            throw NotesExceptionFactory.notFound(identifier, messageSource);
         }
     }
 }
