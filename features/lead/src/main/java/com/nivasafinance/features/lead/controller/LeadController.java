@@ -6,9 +6,11 @@ import com.nivasafinance.features.lead.dto.CreateLeadResponse;
 import com.nivasafinance.features.lead.dto.CreditDetailsResponse;
 import com.nivasafinance.features.lead.dto.LeadResponse;
 import com.nivasafinance.features.lead.dto.PreliminaryDetailsResponse;
+import com.nivasafinance.features.lead.dto.PropertyDetailsResponse;
 import com.nivasafinance.features.lead.dto.ProposedDetailsResponse;
 import com.nivasafinance.features.lead.dto.UpdateCreditDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdatePreliminaryDetailsRequest;
+import com.nivasafinance.features.lead.dto.UpdatePropertyDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdateProposedDetailsRequest;
 import com.nivasafinance.features.lead.service.LeadReadService;
 import com.nivasafinance.features.lead.service.LeadWriteService;
@@ -78,6 +80,20 @@ public class LeadController {
     @GetMapping("/{leadId}/proposed-details")
     public ResponseEntity<ProposedDetailsResponse> getProposedDetails(@PathVariable UUID leadId) {
         ProposedDetailsResponse response = leadReadService.getProposedDetails(leadId);
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{leadId}/property-details")
+    public ResponseEntity<Void> updatePropertyDetails(
+            @PathVariable UUID leadId,
+            @Valid @RequestBody UpdatePropertyDetailsRequest request) {
+        leadWriteService.updatePropertyDetails(leadId, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{leadId}/property-details")
+    public ResponseEntity<PropertyDetailsResponse> getPropertyDetails(@PathVariable UUID leadId) {
+        PropertyDetailsResponse response = leadReadService.getPropertyDetails(leadId);
         return ResponseEntity.ok(response);
     }
 }

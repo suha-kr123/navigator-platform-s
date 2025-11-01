@@ -1,9 +1,12 @@
 package com.nivasafinance.features.lead.service.impl;
 
+import com.nivasafinance.common.dto.AddressData;
+import com.nivasafinance.common.dto.GeoData;
 import com.nivasafinance.features.lead.dto.CreateLeadRequest;
 import com.nivasafinance.features.lead.dto.CreateLeadResponse;
 import com.nivasafinance.features.lead.dto.UpdateCreditDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdatePreliminaryDetailsRequest;
+import com.nivasafinance.features.lead.dto.UpdatePropertyDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdateProposedDetailsRequest;
 import com.nivasafinance.features.lead.entity.Contact;
 import com.nivasafinance.features.lead.entity.Lead;
@@ -12,12 +15,15 @@ import com.nivasafinance.features.lead.repository.ApplicantRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.ContactRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadWriteService;
+import com.nivasafinance.features.master.pincode.dto.PincodeResponse;
+import com.nivasafinance.features.master.pincode.service.PincodeService;
 import com.nivasafinance.features.person.dto.PersonCreateRequest;
 import com.nivasafinance.features.person.dto.PersonResponse;
 import com.nivasafinance.features.person.entity.MobileNumberDetails;
 import com.nivasafinance.features.person.service.PersonService;
 import com.nivasafinance.security.context.UserContext;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
@@ -30,6 +36,7 @@ import java.util.UUID;
 @Service
 @Transactional
 @AllArgsConstructor
+@Slf4j
 public class LeadWriteServiceImpl implements LeadWriteService {
 
     private final LeadRepositoryWrapper leadRepositoryWrapper;
@@ -37,6 +44,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     private final ApplicantRepositoryWrapper applicantRepositoryWrapper;
     private final PersonService personService;
     private final MessageSource messageSource;
+    private final PincodeService pincodeService;
 
 
     @Override
@@ -169,6 +177,83 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         }
         
         lead.setProposedDetails(proposedDetails);
+        leadRepositoryWrapper.saveWithException(lead);
+    }
+
+    @Override
+    @Transactional
+    public void updatePropertyDetails(UUID leadIdentifier, UpdatePropertyDetailsRequest request) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        
+        // Get existing otherDetails or create new instance
+        Lead.OtherDetails otherDetails = lead.getOtherDetails();
+        if (otherDetails == null) {
+            otherDetails = new Lead.OtherDetails();
+        }
+        
+        // Get existing propertyDetails or create new instance
+        Lead.PropertyDetails propertyDetails = otherDetails.getPropertyDetails();
+        if (propertyDetails == null) {
+            propertyDetails = new Lead.PropertyDetails();
+        }
+        
+        // Handle address update
+        if (request.getAddress() != null) {
+            AddressData addressData = propertyDetails.getAddress();
+            if (addressData == null) {
+                addressData = new AddressData();
+            }
+            
+            // Merge address fields from request
+            if (request.getAddress().getAddressLineOne() != null) {
+                addressData.setAddressLineOne(request.getAddress().getAddressLineOne());
+            }
+            if (request.getAddress().getAddressLineTwo() != null) {
+                addressData.setAddressLineTwo(request.getAddress().getAddressLineTwo());
+            }
+            addressData.setPincode(request.getAddress().getPincode());
+            addressData.setCountry(null); // to set to default
+            addressData.setState(null);
+            addressData.setDistrict(null);
+            addressData.setIsServiceable(false);
+
+            // Try to fetch pincode data
+            try {
+                PincodeResponse pincodeResponse = pincodeService.getPincodeDetails(request.getAddress().getPincode());
+                addressData.setDistrict(pincodeResponse.getDistrict());
+                addressData.setState(pincodeResponse.getState());
+                addressData.setCountry(pincodeResponse.getCountry());
+                addressData.setIsServiceable(pincodeResponse.isServicable());
+            } catch (Exception e) {
+                log.warn("Failed to fetch pincode details for pincode: {}. Continuing with null values.",
+                        request.getAddress().getPincode(), e);
+            }
+            if (request.getAddress().getArea() != null) {
+                addressData.setArea(request.getAddress().getArea());
+            }
+            
+            propertyDetails.setAddress(addressData);
+        }
+        
+        // Handle geoData update
+        if (request.getGeoData() != null) {
+            GeoData geoData = propertyDetails.getGeoData();
+            if (geoData == null) {
+                geoData = new GeoData();
+            }
+            
+            if (request.getGeoData().getLatitude() != null) {
+                geoData.setLatitude(request.getGeoData().getLatitude());
+            }
+            if (request.getGeoData().getLongitude() != null) {
+                geoData.setLongitude(request.getGeoData().getLongitude());
+            }
+            
+            propertyDetails.setGeoData(geoData);
+        }
+        
+        otherDetails.setPropertyDetails(propertyDetails);
+        lead.setOtherDetails(otherDetails);
         leadRepositoryWrapper.saveWithException(lead);
     }
 

@@ -3,6 +3,7 @@ package com.nivasafinance.features.lead.service.impl;
 import com.nivasafinance.features.lead.dto.CreditDetailsResponse;
 import com.nivasafinance.features.lead.dto.LeadResponse;
 import com.nivasafinance.features.lead.dto.PreliminaryDetailsResponse;
+import com.nivasafinance.features.lead.dto.PropertyDetailsResponse;
 import com.nivasafinance.features.lead.dto.ProposedDetailsResponse;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
@@ -89,6 +90,24 @@ public class LeadReadServiceImpl implements LeadReadService {
                 .tenureValue(proposedDetails.getTenureValue())
                 .tenureType(proposedDetails.getTenureType())
                 .emi(proposedDetails.getEmi())
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PropertyDetailsResponse getPropertyDetails(UUID leadIdentifier) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        Lead.OtherDetails otherDetails = lead.getOtherDetails();
+        
+        if (otherDetails == null || otherDetails.getPropertyDetails() == null) {
+            return PropertyDetailsResponse.builder().build();
+        }
+        
+        Lead.PropertyDetails propertyDetails = otherDetails.getPropertyDetails();
+        
+        return PropertyDetailsResponse.builder()
+                .address(propertyDetails.getAddress())
+                .geoData(propertyDetails.getGeoData())
                 .build();
     }
 }

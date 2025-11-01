@@ -1,6 +1,7 @@
 package com.nivasafinance.features.lead.entity;
 
 import com.nivasafinance.common.audit.AuditableEntity;
+import com.nivasafinance.common.dto.AddressData;
 import com.nivasafinance.common.dto.GeoData;
 import com.nivasafinance.common.enums.TenureType;
 import com.nivasafinance.features.lead.enums.LeadStatus;
@@ -248,22 +249,6 @@ public class Lead extends AuditableEntity {
     public static class PropertyDetails {
         private AddressData address;
         private GeoData geoData;
-    }
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    public static class AddressData {
-        private String id;
-        private String addressLineOne;
-        private String addressLineTwo;
-        private String pincode;
-        private String district;
-        private String country;
-        private String state;
-        private String taluka;
-        private Boolean isServicable;
     }
 
     @Data
