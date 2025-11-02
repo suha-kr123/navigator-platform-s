@@ -28,6 +28,7 @@ class Office(
     @Column(name = "code", nullable = false)
     var code: String = "",
 
+    //todo address jsonb
     @Column(name = "address_id")
     var addressId: UUID? = null,
 

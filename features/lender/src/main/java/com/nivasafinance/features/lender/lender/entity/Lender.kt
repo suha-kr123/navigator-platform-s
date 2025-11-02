@@ -13,7 +13,7 @@ import jakarta.persistence.Table
 import java.util.UUID
 
 @Entity
-@Table(name = "lender")
+@Table(name = "n_lender")
 data class Lender(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
