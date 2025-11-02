@@ -43,7 +43,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -87,14 +86,10 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         lead.setLeadIdentifier(UUID.randomUUID());
         lead.setRequestedAmount(request.getRequestedLoanAmount());
         lead.setProductCode(request.getProduct());
-        lead.setStatus(LeadStatus.ENQUIRY); // Using ENQUIRY as IN_PROGRESS status
+        lead.setStatus(LeadStatus.ENQUIRY);
 
-        // Set contact details
-        Lead.ContactDetails contactDetails = new Lead.ContactDetails();
-        contactDetails.setContactId(savedContact.getId());
-        List<Lead.ContactDetails> contactDetailsList = new ArrayList<>();
-        contactDetailsList.add(contactDetails);
-        lead.setContactDetails(contactDetailsList);
+        // Set contact to lead
+        lead.setContacts(List.of(savedContact.getId()));
 
         Lead savedLead = leadRepositoryWrapper.saveWithException(lead);
 

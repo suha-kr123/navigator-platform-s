@@ -19,9 +19,9 @@
 
             <column name="office_key" type="VARCHAR(255)"/>
 
-            <column name="contact_details" type="JSONB"/>
-            <column name="applicant_details" type="JSONB"/>
-            <column name="co_applicant_details" type="JSONB"/>
+            <column name="contacts" type="JSONB"/>
+            <column name="applicant" type="bigint"/>
+            <column name="co_applicants" type="JSONB"/>
             <column name="workflow_details" type="JSONB"/>
 
             <column name="purpose" type="VARCHAR(255)"/>

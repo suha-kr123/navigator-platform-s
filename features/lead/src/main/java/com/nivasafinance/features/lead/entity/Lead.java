@@ -41,18 +41,16 @@ public class Lead extends AuditableEntity {
 
     @Type(JsonType.class)
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "contact_details", columnDefinition = "jsonb")
-    private List<ContactDetails> contactDetails;
+    @Column(name = "contacts", columnDefinition = "jsonb")
+    private List<Long> contacts;
+
+    @Column(name = "applicant")
+    private Long applicant;
 
     @Type(JsonType.class)
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "applicant_details", columnDefinition = "jsonb")
-    private ApplicantDetails applicantDetails;
-
-    @Type(JsonType.class)
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "co_applicant_details", columnDefinition = "jsonb")
-    private List<CoApplicantDetails> coApplicantDetails;
+    @Column(name = "co_applicants")
+    private List<Long> coApplicants;
 
     @Type(JsonType.class)
     @JdbcTypeCode(SqlTypes.JSON)
@@ -125,30 +123,6 @@ public class Lead extends AuditableEntity {
     private Checklist checklist;
 
     // Nested data classes for JSONB fields
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    public static class ContactDetails {
-        private Long contactId;
-    }
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    public static class ApplicantDetails {
-        private Long applicantId;
-    }
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    public static class CoApplicantDetails {
-        private Long applicantId;
-    }
 
     @Data
     @NoArgsConstructor

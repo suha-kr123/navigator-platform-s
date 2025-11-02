@@ -19,7 +19,12 @@
                 <constraints nullable="false"/>
             </column>
 
-            <column name="type" type="VARCHAR(100)"/>
+            <column name="decision_maker" type="boolean" defaultValue="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="property_owner" type="boolean" defaultValue="false">
+                <constraints nullable="false"/>
+            </column>
 
             <column name="created_by" type="varchar(255)"/>
             <column name="updated_by" type="varchar(255)"/>

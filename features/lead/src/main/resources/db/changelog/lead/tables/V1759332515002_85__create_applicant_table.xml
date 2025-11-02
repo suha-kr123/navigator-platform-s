@@ -19,8 +19,6 @@
                 <constraints nullable="false"/>
             </column>
 
-            <column name="type" type="VARCHAR(100)"/>
-
             <column name="created_by" type="varchar(255)"/>
             <column name="updated_by" type="varchar(255)"/>
 

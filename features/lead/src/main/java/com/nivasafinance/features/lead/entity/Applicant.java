@@ -1,13 +1,11 @@
 package com.nivasafinance.features.lead.entity;
 
 import com.nivasafinance.common.audit.AuditableEntity;
-import com.nivasafinance.features.lead.enums.ApplicantPersonType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
 
 import java.util.UUID;
 
@@ -28,8 +26,4 @@ public class Applicant extends AuditableEntity {
 
     @Column(name = "person_id", nullable = false)
     private Long personId;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "type", length = 100)
-    private ApplicantPersonType type;
 }

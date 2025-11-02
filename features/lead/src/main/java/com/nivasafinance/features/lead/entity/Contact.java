@@ -29,7 +29,9 @@ public class Contact extends AuditableEntity {
     @Column(name = "person_id", nullable = false)
     private Long personId;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "type", length = 100)
-    private ContactPersonType type;
+    @Column(name = "decision_maker", nullable = false)
+    private Boolean isDecisionMaker = false;
+
+    @Column(name = "property_owner", nullable = false)
+    private Boolean isPropertyOwner = false;
 }
