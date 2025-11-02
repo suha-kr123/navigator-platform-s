@@ -5,8 +5,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 public interface SourcingChannelRepository extends JpaRepository<SourcingChannel, Long> {
-    Optional<SourcingChannel> findBySourcingIdentifier(String sourcingIdentifier);
+    Optional<SourcingChannel> findBySourcingIdentifier(UUID sourcingIdentifier);
 }

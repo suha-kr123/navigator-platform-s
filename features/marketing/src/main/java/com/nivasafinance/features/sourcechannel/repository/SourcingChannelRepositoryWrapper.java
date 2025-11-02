@@ -10,6 +10,8 @@ import org.springframework.context.MessageSource;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 @Service
 @AllArgsConstructor
 public class SourcingChannelRepositoryWrapper {
@@ -32,7 +34,7 @@ public class SourcingChannelRepositoryWrapper {
     }
 
     public SourcingChannel findBySourcingIdentifierWithException(String sourcingIdentifier) {
-        return sourcingChannelRepository.findBySourcingIdentifier(sourcingIdentifier)
+        return sourcingChannelRepository.findBySourcingIdentifier(UUID.fromString(sourcingIdentifier))
                 .orElseThrow(() -> SourcingChannelExceptionFactory.notFound(sourcingIdentifier, messageSource));
     }
 
