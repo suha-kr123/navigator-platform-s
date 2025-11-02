@@ -35,6 +35,13 @@ public class ProductReadServiceImpl extends BaseNavigatorService implements Prod
         }
     }
 
+    @Override
+    public ProductResponse getProductByCode(String code) {
+        Product product = productRepository.findByCode(code).orElseThrow(()->
+                ProductExceptionFactory.productCodeNotFound(code, getMessageSource()));
+        return mapEntityToResponse(product);
+    }
+
     private ProductResponse mapEntityToResponse(Product product) {
         return new ProductResponse(
                 product.getId(),

@@ -16,6 +16,10 @@ public class ProductExceptionFactory {
         return new ProductNotFoundException("error.product.not.found", messageSource);
     }
 
+    public static ProductCodeNotFoundException productCodeNotFound(String code, MessageSource messageSource) {
+        return new ProductCodeNotFoundException("error.product.code.not.found", code, messageSource);
+    }
+
     public static ProductOperationException productAlreadyExists(MessageSource messageSource) {
         return new ProductOperationException("error.product.already.exists", messageSource);
     }

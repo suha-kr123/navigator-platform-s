@@ -7,5 +7,6 @@ import java.util.List;
 public interface ProductReadService {
     
     List<ProductResponse> getAllProducts();
+    ProductResponse getProductByCode(String code);
 }
 
