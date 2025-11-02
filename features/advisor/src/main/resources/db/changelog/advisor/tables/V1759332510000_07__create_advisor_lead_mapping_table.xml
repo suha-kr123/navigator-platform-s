@@ -6,7 +6,7 @@
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
     <changeSet id="V1759332510000_07" author="system" context="default">
-        <createTable tableName="advisor_lead_mapping">
+        <createTable tableName="n_advisor_lead_mapping">
             <column name="id" type="BIGINT" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
             </column>

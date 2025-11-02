@@ -13,7 +13,7 @@ import org.hibernate.type.SqlTypes
 import java.util.UUID
 
 @Entity
-@Table(name = "advisor_lead_mapping")
+@Table(name = "n_advisor_lead_mapping")
 @NoArg
 @Suppress("LongParameterList")
 data class AdvisorLeadMapping(
