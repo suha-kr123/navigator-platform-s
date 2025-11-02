@@ -9,7 +9,6 @@
     <include file="db/changelog/address/db.changelog-address.xml"/>
     <include file="db/changelog/advisor/db.changelog-advisor.xml"/>
     <include file="db/changelog/document/db.changelog-document.xml"/>
-    <include file="db/changelog/identifiers/db.changelog-identifiers.xml"/>
     <include file="db/changelog/lead/db.changelog-lead.xml"/>
     <include file="db/changelog/lender/db.changelog-lender.xml"/>
     <include file="db/changelog/master/db.changelog-master-module.xml"/>

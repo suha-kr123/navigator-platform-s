@@ -13,7 +13,6 @@ dependencies {
     implementation(project(":features:notes"))
     implementation(project(":features:document"))
     implementation(project(":features:person"))
-    implementation(project(":features:identifiers"))
     implementation(project(":features:address"))
     implementation(project(":features:lender"))
     implementation(project(":features:master"))
