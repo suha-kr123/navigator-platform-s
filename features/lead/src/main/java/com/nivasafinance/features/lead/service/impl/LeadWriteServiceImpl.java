@@ -107,46 +107,22 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         
         // Get current username from UserContext
         String currentUsername = UserContext.getUserInfo().getUsername();
-        
-        // Get existing credit rating details or create new instance
+
         Lead.CreditRatingDetails creditDetails = lead.getCreditRatingDetails();
         if (creditDetails == null) {
             creditDetails = new Lead.CreditRatingDetails();
         }
-        
-        // Merge/update only non-null fields from request
-        if (request.getOccupationProfile() != null) {
-            creditDetails.setOccupationProfile(request.getOccupationProfile());
-        }
-        if (request.getRoofProfile() != null) {
-            creditDetails.setRoofProfile(request.getRoofProfile());
-        }
-        if (request.getLtv() != null) {
-            creditDetails.setLtv(request.getLtv());
-        }
-        if (request.getFoir() != null) {
-            creditDetails.setFoir(request.getFoir());
-        }
-        if (request.getMonthlyFamilyIncome() != null) {
-            creditDetails.setMonthlyFamilyIncome(request.getMonthlyFamilyIncome());
-        }
-        if (request.getPropertyDocumentType() != null) {
-            creditDetails.setPropertyDocumentType(request.getPropertyDocumentType());
-        }
-        if (request.getEligibleLoanAmount() != null) {
-            creditDetails.setEligibleLoanAmount(request.getEligibleLoanAmount());
-        }
-        if (request.getLocation() != null) {
-            creditDetails.setLocation(request.getLocation());
-        }
-        if (request.getBureauRating() != null) {
-            creditDetails.setBureauRating(request.getBureauRating());
-        }
-        if (request.getCustomerProfiles() != null) {
-            creditDetails.setCustomerProfiles(request.getCustomerProfiles());
-        }
-        
-        // Set underwriter to current username
+
+        creditDetails.setOccupationProfile(request.getOccupationProfile());
+        creditDetails.setRoofProfile(request.getRoofProfile());
+        creditDetails.setLtv(request.getLtv());
+        creditDetails.setFoir(request.getFoir());
+        creditDetails.setMonthlyFamilyIncome(request.getMonthlyFamilyIncome());
+        creditDetails.setPropertyDocumentType(request.getPropertyDocumentType());
+        creditDetails.setEligibleLoanAmount(request.getEligibleLoanAmount());
+        creditDetails.setLocation(request.getLocation());
+        creditDetails.setBureauRating(request.getBureauRating());
+        creditDetails.setCustomerProfiles(request.getCustomerProfiles());
         creditDetails.setUnderwriter(currentUsername);
         
         lead.setCreditRatingDetails(creditDetails);
@@ -157,29 +133,17 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     @Transactional
     public void updateProposedDetails(UUID leadIdentifier, UpdateProposedDetailsRequest request) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
-        
-        // Get existing proposed details or create new instance
+
         Lead.ProposedDetails proposedDetails = lead.getProposedDetails();
         if (proposedDetails == null) {
             proposedDetails = new Lead.ProposedDetails();
         }
-        
-        // Merge/update only non-null fields from request
-        if (request.getProposedLoanAmount() != null) {
-            proposedDetails.setProposedLoanAmount(request.getProposedLoanAmount());
-        }
-        if (request.getRoi() != null) {
-            proposedDetails.setRoi(request.getRoi());
-        }
-        if (request.getTenureValue() != null) {
-            proposedDetails.setTenureValue(request.getTenureValue());
-        }
-        if (request.getTenureType() != null) {
-            proposedDetails.setTenureType(request.getTenureType());
-        }
-        if (request.getEmi() != null) {
-            proposedDetails.setEmi(request.getEmi());
-        }
+
+        proposedDetails.setProposedLoanAmount(request.getProposedLoanAmount());
+        proposedDetails.setRoi(request.getRoi());
+        proposedDetails.setTenureValue(request.getTenureValue());
+        proposedDetails.setTenureType(request.getTenureType());
+        proposedDetails.setEmi(request.getEmi());
         
         lead.setProposedDetails(proposedDetails);
         leadRepositoryWrapper.saveWithException(lead);
@@ -189,73 +153,40 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     @Transactional
     public void updatePropertyDetails(UUID leadIdentifier, UpdatePropertyDetailsRequest request) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
-        
-        // Get existing otherDetails or create new instance
+
         Lead.OtherDetails otherDetails = lead.getOtherDetails();
         if (otherDetails == null) {
             otherDetails = new Lead.OtherDetails();
         }
-        
-        // Get existing propertyDetails or create new instance
+
         Lead.PropertyDetails propertyDetails = otherDetails.getPropertyDetails();
         if (propertyDetails == null) {
             propertyDetails = new Lead.PropertyDetails();
         }
-        
-        // Handle address update
-        if (request.getAddress() != null) {
-            AddressData addressData = propertyDetails.getAddress();
-            if (addressData == null) {
-                addressData = new AddressData();
-            }
-            
-            // Merge address fields from request
-            if (request.getAddress().getAddressLineOne() != null) {
-                addressData.setAddressLineOne(request.getAddress().getAddressLineOne());
-            }
-            if (request.getAddress().getAddressLineTwo() != null) {
-                addressData.setAddressLineTwo(request.getAddress().getAddressLineTwo());
-            }
-            addressData.setPincode(request.getAddress().getPincode());
-            addressData.setCountry(null); // to set to default
-            addressData.setState(null);
-            addressData.setDistrict(null);
-            addressData.setIsServiceable(false);
 
-            // Try to fetch pincode data
-            try {
-                PincodeResponse pincodeResponse = pincodeService.getPincodeDetails(request.getAddress().getPincode());
-                addressData.setDistrict(pincodeResponse.getDistrict());
-                addressData.setState(pincodeResponse.getState());
-                addressData.setCountry(pincodeResponse.getCountry());
-                addressData.setIsServiceable(pincodeResponse.isServicable());
-            } catch (Exception e) {
-                log.warn("Failed to fetch pincode details for pincode: {}. Continuing with null values.",
-                        request.getAddress().getPincode(), e);
-            }
-            if (request.getAddress().getArea() != null) {
-                addressData.setArea(request.getAddress().getArea());
-            }
-            
-            propertyDetails.setAddress(addressData);
+        AddressData addressData = new AddressData();
+        addressData.setAddressLineOne(request.getAddress().getAddressLineOne());
+        addressData.setAddressLineTwo(request.getAddress().getAddressLineTwo());
+        addressData.setPincode(request.getAddress().getPincode());
+        addressData.setCountry(null); // to set to default
+        addressData.setState(null);
+        addressData.setDistrict(null);
+        addressData.setIsServiceable(false);
+
+        // Try to fetch pincode data
+        try {
+            PincodeResponse pincodeResponse = pincodeService.getPincodeDetails(request.getAddress().getPincode());
+            addressData.setDistrict(pincodeResponse.getDistrict());
+            addressData.setState(pincodeResponse.getState());
+            addressData.setCountry(pincodeResponse.getCountry());
+            addressData.setIsServiceable(pincodeResponse.isServicable());
+        } catch (Exception e) {
+            log.warn("Failed to fetch pincode details for pincode: {}. Continuing with null values.",
+                    request.getAddress().getPincode(), e);
         }
+        addressData.setArea(request.getAddress().getArea());
         
-        // Handle geoData update
-        if (request.getGeoData() != null) {
-            GeoData geoData = propertyDetails.getGeoData();
-            if (geoData == null) {
-                geoData = new GeoData();
-            }
-            
-            if (request.getGeoData().getLatitude() != null) {
-                geoData.setLatitude(request.getGeoData().getLatitude());
-            }
-            if (request.getGeoData().getLongitude() != null) {
-                geoData.setLongitude(request.getGeoData().getLongitude());
-            }
-            
-            propertyDetails.setGeoData(geoData);
-        }
+        propertyDetails.setAddress(addressData);
         
         otherDetails.setPropertyDetails(propertyDetails);
         lead.setOtherDetails(otherDetails);
@@ -297,14 +228,12 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         SourcingChannelRequest sourcingChannelRequest = new SourcingChannelRequest(
                 request.getSourcingChannel(),
                 request.getMarketingSource(),
-                request.getSourceId()
+                new SourcingChannelRequest.MarketingDetails(request.getSourceId())
         );
         
         if (lead.getSourcingChannelId() != null) {
-            // Update existing sourcing channel
             sourcingChannelWriteService.update(lead.getSourcingChannelId(), sourcingChannelRequest);
         } else {
-            // Create new sourcing channel
             SourcingChannelResponse sourcingChannelResponse = 
                 sourcingChannelWriteService.create(sourcingChannelRequest);
             lead.setSourcingChannelId(sourcingChannelResponse.getId());

@@ -57,7 +57,7 @@ public class LeadController {
         return ResponseEntity.ok(response);
     }
 
-    @PatchMapping("/{leadId}/credit-details")
+    @PutMapping("/{leadId}/credit-details")
     public ResponseEntity<Void> updateCreditDetails(
             @PathVariable UUID leadId,
             @RequestBody UpdateCreditDetailsRequest request) {
@@ -71,7 +71,7 @@ public class LeadController {
         return ResponseEntity.ok(response);
     }
 
-    @PatchMapping("/{leadId}/proposed-details")
+    @PutMapping("/{leadId}/proposed-details")
     public ResponseEntity<Void> updateProposedDetails(
             @PathVariable UUID leadId,
             @Valid @RequestBody UpdateProposedDetailsRequest request) {
@@ -85,7 +85,7 @@ public class LeadController {
         return ResponseEntity.ok(response);
     }
 
-    @PatchMapping("/{leadId}/property-details")
+    @PutMapping("/{leadId}/property-details")
     public ResponseEntity<Void> updatePropertyDetails(
             @PathVariable UUID leadId,
             @Valid @RequestBody UpdatePropertyDetailsRequest request) {
@@ -99,7 +99,7 @@ public class LeadController {
         return ResponseEntity.ok(response);
     }
 
-    @PatchMapping("/{leadId}/sourcing-details")
+    @PutMapping("/{leadId}/sourcing-details")
     public ResponseEntity<Void> updateSourcingDetails(
             @PathVariable UUID leadId,
             @Valid @RequestBody UpdateSourcingDetailsRequest request) {

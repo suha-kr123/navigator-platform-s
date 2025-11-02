@@ -10,6 +10,13 @@ import lombok.NoArgsConstructor;
 public class SourcingChannelRequest {
     private String sourcingChannel;
     private String marketingSource;
-    private String sourceId;
+    private MarketingDetails marketingDetails;
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class MarketingDetails {
+        private String sourceId;
+    }
 }
 

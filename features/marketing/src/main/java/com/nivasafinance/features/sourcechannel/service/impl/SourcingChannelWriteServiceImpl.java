@@ -25,10 +25,10 @@ public class SourcingChannelWriteServiceImpl implements SourcingChannelWriteServ
                 .sourcingIdentifier(UUID.randomUUID())
                 .sourcingChannel(request.getSourcingChannel())
                 .marketingSource(request.getMarketingSource());
-        if (request.getSourceId() != null) {
+        if (request.getMarketingDetails() != null) {
             builder.marketingDetails(SourcingChannel.MarketingDetails
                     .builder()
-                    .sourceId(request.getSourceId())
+                    .sourceId(request.getMarketingDetails().getSourceId())
                     .build());
         }
         SourcingChannel sourcingChannel = builder.build();
@@ -42,13 +42,14 @@ public class SourcingChannelWriteServiceImpl implements SourcingChannelWriteServ
 
         existingEntity.setSourcingChannel(request.getSourcingChannel());
         existingEntity.setMarketingSource(request.getMarketingSource());
-
-        if (request.getSourceId() != null) {
+        if (request.getMarketingDetails() != null) {
             SourcingChannel.MarketingDetails marketingDetails = existingEntity.getMarketingDetails();
             if(marketingDetails == null){
                 marketingDetails = new SourcingChannel.MarketingDetails();
             }
-            marketingDetails.setSourceId(request.getSourceId());
+            marketingDetails.setSourceId(request.getMarketingDetails().getSourceId());
+        }else {
+            existingEntity.setMarketingDetails(null);
         }
 
         SourcingChannel savedEntity = sourcingChannelRepositoryWrapper.saveWithException(existingEntity);
