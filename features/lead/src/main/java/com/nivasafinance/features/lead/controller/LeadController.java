@@ -16,6 +16,7 @@ import com.nivasafinance.features.lead.dto.SourcingDetailsResponse;
 import com.nivasafinance.features.lead.dto.TrancheResponse;
 import com.nivasafinance.features.lead.dto.UpdateCreditDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdateDisbursementDetailsRequest;
+import com.nivasafinance.features.lead.dto.UpdateLeadRequest;
 import com.nivasafinance.features.lead.dto.UpdatePreliminaryDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdatePropertyDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdateProposedDetailsRequest;
@@ -49,6 +50,14 @@ public class LeadController {
     @GetMapping("/{leadId}")
     public ResponseEntity<LeadResponse> getLeads(@PathVariable UUID leadId) {
         return ResponseEntity.status(HttpStatus.OK).body(leadReadService.getLeadByIdentifier(leadId));
+    }
+
+    @PutMapping("/{leadId}")
+    public ResponseEntity<Void> updateLead(
+            @PathVariable UUID leadId,
+            @Valid @RequestBody UpdateLeadRequest request) {
+        leadWriteService.updateLead(leadId, request);
+        return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/{leadId}/preliminary-details")

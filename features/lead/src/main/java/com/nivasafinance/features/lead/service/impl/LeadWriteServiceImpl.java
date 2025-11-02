@@ -8,6 +8,7 @@ import com.nivasafinance.features.lead.dto.OnholdLeadRequest;
 import com.nivasafinance.features.lead.dto.RejectLeadRequest;
 import com.nivasafinance.features.lead.dto.UpdateCreditDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdateDisbursementDetailsRequest;
+import com.nivasafinance.features.lead.dto.UpdateLeadRequest;
 import com.nivasafinance.features.lead.dto.UpdatePreliminaryDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdatePropertyDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdateProposedDetailsRequest;
@@ -24,6 +25,7 @@ import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadWriteService;
 import com.nivasafinance.features.master.pincode.dto.PincodeResponse;
 import com.nivasafinance.features.master.pincode.service.PincodeService;
+import com.nivasafinance.features.master.products.service.ProductReadService;
 import com.nivasafinance.features.person.dto.PersonCreateRequest;
 import com.nivasafinance.features.person.dto.PersonResponse;
 import com.nivasafinance.features.person.entity.MobileNumberDetails;
@@ -57,14 +59,14 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     private final MessageSource messageSource;
     private final PincodeService pincodeService;
     private final SourcingChannelWriteService sourcingChannelWriteService;
+    private final ProductReadService productReadService;
 
 
     @Override
     @Transactional
     public CreateLeadResponse createLead(CreateLeadRequest request) {
-        // TODO: Check if product exists in product module
-        // ProductService productService = ...;
-        // productService.validateProductExists(request.getProduct());
+        //validates product exists
+        productReadService.getProductByCode(request.getProduct());
 
         //TODO : Check if active lead already exists with this phone number
        /* if (existingActiveLead.isPresent()) {
@@ -97,6 +99,22 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         Lead savedLead = leadRepositoryWrapper.saveWithException(lead);
 
         return new CreateLeadResponse(savedLead.getLeadIdentifier());
+    }
+
+    @Override
+    @Transactional
+    public void updateLead(UUID leadIdentifier, UpdateLeadRequest request) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        
+        lead.setRequestedAmount(request.getRequestedAmount());
+        lead.setOfficeKey(request.getOfficeKey());
+        lead.setOwner(request.getOwner());
+        lead.setPurpose(request.getPurpose());
+        //validates product exists
+        productReadService.getProductByCode(request.getProductCode());
+        lead.setProductCode(request.getProductCode());
+        
+        leadRepositoryWrapper.saveWithException(lead);
     }
 
     @Override
