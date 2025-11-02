@@ -3,17 +3,22 @@ package com.nivasafinance.features.lead.controller;
 import com.nivasafinance.common.constants.ApiConstants;
 import com.nivasafinance.features.lead.dto.CreateLeadRequest;
 import com.nivasafinance.features.lead.dto.CreateLeadResponse;
+import com.nivasafinance.features.lead.dto.CreateTrancheRequest;
 import com.nivasafinance.features.lead.dto.CreditDetailsResponse;
+import com.nivasafinance.features.lead.dto.DisbursementDetailsResponse;
 import com.nivasafinance.features.lead.dto.LeadResponse;
 import com.nivasafinance.features.lead.dto.PreliminaryDetailsResponse;
 import com.nivasafinance.features.lead.dto.PropertyDetailsResponse;
 import com.nivasafinance.features.lead.dto.ProposedDetailsResponse;
 import com.nivasafinance.features.lead.dto.SourcingDetailsResponse;
+import com.nivasafinance.features.lead.dto.TrancheResponse;
 import com.nivasafinance.features.lead.dto.UpdateCreditDetailsRequest;
+import com.nivasafinance.features.lead.dto.UpdateDisbursementDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdatePreliminaryDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdatePropertyDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdateProposedDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdateSourcingDetailsRequest;
+import com.nivasafinance.features.lead.dto.UpdateTrancheRequest;
 import com.nivasafinance.features.lead.service.LeadReadService;
 import com.nivasafinance.features.lead.service.LeadWriteService;
 import jakarta.validation.Valid;
@@ -111,5 +116,52 @@ public class LeadController {
     public ResponseEntity<SourcingDetailsResponse> getSourcingDetails(@PathVariable UUID leadId) {
         SourcingDetailsResponse response = leadReadService.getSourcingDetails(leadId);
         return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/{leadId}/disbursement-details")
+    public ResponseEntity<Void> updateDisbursementDetails(
+            @PathVariable UUID leadId,
+            @Valid @RequestBody UpdateDisbursementDetailsRequest request) {
+        leadWriteService.updateDisbursementDetails(leadId, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{leadId}/disbursement-details")
+    public ResponseEntity<DisbursementDetailsResponse> getDisbursementDetails(@PathVariable UUID leadId) {
+        DisbursementDetailsResponse response = leadReadService.getDisbursementDetails(leadId);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{leadId}/disbursement-details/tranches")
+    public ResponseEntity<Void> createTranche(
+            @PathVariable UUID leadId,
+            @Valid @RequestBody CreateTrancheRequest request) {
+        leadWriteService.createTranche(leadId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @PutMapping("/{leadId}/disbursement-details/tranches/{trancheIdentifier}")
+    public ResponseEntity<Void> updateTranche(
+            @PathVariable UUID leadId,
+            @PathVariable UUID trancheIdentifier,
+            @Valid @RequestBody UpdateTrancheRequest request) {
+        leadWriteService.updateTranche(leadId, trancheIdentifier, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{leadId}/disbursement-details/tranches/{trancheIdentifier}")
+    public ResponseEntity<TrancheResponse> getTrancheByIdentifier(
+            @PathVariable UUID leadId,
+            @PathVariable UUID trancheIdentifier) {
+        TrancheResponse response = leadReadService.getTrancheByIdentifier(leadId, trancheIdentifier);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{leadId}/disbursement-details/tranches/{trancheIdentifier}")
+    public ResponseEntity<Void> deleteTranche(
+            @PathVariable UUID leadId,
+            @PathVariable UUID trancheIdentifier) {
+        leadWriteService.deleteTranche(leadId, trancheIdentifier);
+        return ResponseEntity.noContent().build();
     }
 }

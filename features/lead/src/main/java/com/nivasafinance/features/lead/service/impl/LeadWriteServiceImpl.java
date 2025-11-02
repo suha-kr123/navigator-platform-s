@@ -4,11 +4,14 @@ import com.nivasafinance.common.dto.AddressData;
 import com.nivasafinance.common.dto.GeoData;
 import com.nivasafinance.features.lead.dto.CreateLeadRequest;
 import com.nivasafinance.features.lead.dto.CreateLeadResponse;
+import com.nivasafinance.features.lead.dto.CreateTrancheRequest;
 import com.nivasafinance.features.lead.dto.UpdateCreditDetailsRequest;
+import com.nivasafinance.features.lead.dto.UpdateDisbursementDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdatePreliminaryDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdatePropertyDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdateProposedDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdateSourcingDetailsRequest;
+import com.nivasafinance.features.lead.dto.UpdateTrancheRequest;
 import com.nivasafinance.features.lead.entity.Contact;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.enums.LeadStatus;
@@ -35,6 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -237,6 +241,111 @@ public class LeadWriteServiceImpl implements LeadWriteService {
             SourcingChannelResponse sourcingChannelResponse = 
                 sourcingChannelWriteService.create(sourcingChannelRequest);
             lead.setSourcingChannelId(sourcingChannelResponse.getId());
+        }
+        
+        leadRepositoryWrapper.saveWithException(lead);
+    }
+
+    @Override
+    @Transactional
+    public void updateDisbursementDetails(UUID leadIdentifier, UpdateDisbursementDetailsRequest request) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        
+        // Get existing disbursement details or create new instance
+        Lead.DisbursementDetails disbursementDetails = lead.getDisbursementDetails();
+        if (disbursementDetails == null) {
+            disbursementDetails = new Lead.DisbursementDetails();
+        }
+        
+        // Preserve existing tranches
+        List<Lead.Tranche> existingTranches = disbursementDetails.getTranches();
+        
+        // Set all disbursement fields from request (PUT semantics - full replacement)
+        disbursementDetails.setDisbursedAmount(request.getDisbursedAmount());
+        disbursementDetails.setRoi(request.getRoi());
+        disbursementDetails.setTenureValue(request.getTenureValue());
+        disbursementDetails.setTenureType(request.getTenureType());
+        disbursementDetails.setDisbursedDate(request.getDisbursedDate());
+        disbursementDetails.setProcessingFees(request.getProcessingFees());
+        
+        // Restore tranches (preserve existing tranches)
+        disbursementDetails.setTranches(existingTranches);
+        
+        lead.setDisbursementDetails(disbursementDetails);
+        leadRepositoryWrapper.saveWithException(lead);
+    }
+
+    @Override
+    @Transactional
+    public void createTranche(UUID leadIdentifier, CreateTrancheRequest request) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        
+        // Validate that disbursement details exist
+        Lead.DisbursementDetails disbursementDetails = lead.getDisbursementDetails();
+        if (disbursementDetails == null) {
+            throw new RuntimeException("Disbursement details must exist before adding tranches");
+        }
+        
+        // Get existing tranches or create new list
+        List<Lead.Tranche> tranches = disbursementDetails.getTranches();
+        if (tranches == null) {
+            tranches = new ArrayList<>();
+        }
+        
+        // Create new tranche
+        Lead.Tranche tranche = Lead.Tranche.builder()
+                .identifier(UUID.randomUUID())
+                .amount(request.getAmount())
+                .date(request.getDate())
+                .build();
+        
+        tranches.add(tranche);
+        disbursementDetails.setTranches(tranches);
+        lead.setDisbursementDetails(disbursementDetails);
+        leadRepositoryWrapper.saveWithException(lead);
+    }
+
+    @Override
+    @Transactional
+    public void updateTranche(UUID leadIdentifier, UUID trancheIdentifier, UpdateTrancheRequest request) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        
+        // Validate that disbursement details exist
+        Lead.DisbursementDetails disbursementDetails = lead.getDisbursementDetails();
+        if (disbursementDetails == null || disbursementDetails.getTranches() == null) {
+            throw new RuntimeException("Tranche not found with identifier: " + trancheIdentifier);
+        }
+        
+        // Find tranche by identifier
+        Lead.Tranche tranche = disbursementDetails.getTranches().stream()
+                .filter(t -> trancheIdentifier.equals(t.getIdentifier()))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Tranche not found with identifier: " + trancheIdentifier));
+        
+        // Update tranche fields (PUT semantics - full replacement)
+        tranche.setAmount(request.getAmount());
+        tranche.setDate(request.getDate());
+        
+        leadRepositoryWrapper.saveWithException(lead);
+    }
+
+    @Override
+    @Transactional
+    public void deleteTranche(UUID leadIdentifier, UUID trancheIdentifier) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        
+        // Validate that disbursement details exist
+        Lead.DisbursementDetails disbursementDetails = lead.getDisbursementDetails();
+        if (disbursementDetails == null || disbursementDetails.getTranches() == null) {
+            throw new RuntimeException("Tranche not found with identifier: " + trancheIdentifier);
+        }
+        
+        // Find and remove tranche by identifier
+        List<Lead.Tranche> tranches = disbursementDetails.getTranches();
+        boolean removed = tranches.removeIf(t -> trancheIdentifier.equals(t.getIdentifier()));
+        
+        if (!removed) {
+            throw new RuntimeException("Tranche not found with identifier: " + trancheIdentifier);
         }
         
         leadRepositoryWrapper.saveWithException(lead);

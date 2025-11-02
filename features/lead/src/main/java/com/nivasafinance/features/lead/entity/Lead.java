@@ -208,6 +208,7 @@ public class Lead extends AuditableEntity {
     @AllArgsConstructor
     @Builder
     public static class Tranche {
+        private UUID identifier;
         private BigDecimal amount;
         private LocalDate date;
     }

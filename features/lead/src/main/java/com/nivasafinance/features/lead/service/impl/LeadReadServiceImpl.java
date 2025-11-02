@@ -1,11 +1,13 @@
 package com.nivasafinance.features.lead.service.impl;
 
 import com.nivasafinance.features.lead.dto.CreditDetailsResponse;
+import com.nivasafinance.features.lead.dto.DisbursementDetailsResponse;
 import com.nivasafinance.features.lead.dto.LeadResponse;
 import com.nivasafinance.features.lead.dto.PreliminaryDetailsResponse;
 import com.nivasafinance.features.lead.dto.PropertyDetailsResponse;
 import com.nivasafinance.features.lead.dto.ProposedDetailsResponse;
 import com.nivasafinance.features.lead.dto.SourcingDetailsResponse;
+import com.nivasafinance.features.lead.dto.TrancheResponse;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadReadService;
@@ -15,7 +17,9 @@ import com.nivasafinance.features.sourcechannel.service.SourcingChannelReadServi
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -131,6 +135,62 @@ public class LeadReadServiceImpl implements LeadReadService {
         
         return SourcingDetailsResponse.builder()
                 .sourcingChannelDetails(sourcingChannelResponse)
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DisbursementDetailsResponse getDisbursementDetails(UUID leadIdentifier) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        Lead.DisbursementDetails disbursementDetails = lead.getDisbursementDetails();
+        
+        if (disbursementDetails == null) {
+            return DisbursementDetailsResponse.builder().build();
+        }
+        
+        // Map tranches to response
+        List<TrancheResponse> trancheResponses = null;
+        if (disbursementDetails.getTranches() != null) {
+            trancheResponses = disbursementDetails.getTranches().stream()
+                    .map(tranche -> TrancheResponse.builder()
+                            .identifier(tranche.getIdentifier())
+                            .amount(tranche.getAmount())
+                            .date(tranche.getDate())
+                            .build())
+                    .collect(Collectors.toList());
+        }
+        
+        return DisbursementDetailsResponse.builder()
+                .disbursedAmount(disbursementDetails.getDisbursedAmount())
+                .roi(disbursementDetails.getRoi())
+                .tenureValue(disbursementDetails.getTenureValue())
+                .tenureType(disbursementDetails.getTenureType())
+                .disbursedDate(disbursementDetails.getDisbursedDate())
+                .processingFees(disbursementDetails.getProcessingFees())
+                .tranches(trancheResponses)
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public TrancheResponse getTrancheByIdentifier(UUID leadIdentifier, UUID trancheIdentifier) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        Lead.DisbursementDetails disbursementDetails = lead.getDisbursementDetails();
+        
+        if (disbursementDetails == null || disbursementDetails.getTranches() == null) {
+            throw new RuntimeException("Tranche not found with identifier: " + trancheIdentifier);
+        }
+        
+        // Find tranche by identifier
+        Lead.Tranche tranche = disbursementDetails.getTranches().stream()
+                .filter(t -> trancheIdentifier.equals(t.getIdentifier()))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Tranche not found with identifier: " + trancheIdentifier));
+        
+        return TrancheResponse.builder()
+                .identifier(tranche.getIdentifier())
+                .amount(tranche.getAmount())
+                .date(tranche.getDate())
                 .build();
     }
 }
