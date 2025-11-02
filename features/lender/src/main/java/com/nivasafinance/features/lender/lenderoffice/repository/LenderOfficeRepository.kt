@@ -11,9 +11,6 @@ import java.util.UUID
 @Repository
 interface LenderOfficeRepository : JpaRepository<LenderOffice, UUID> {
     fun findByKey(key: String): LenderOffice?
-    fun findByLenderKey(lenderKey: String): List<LenderOffice>
-    fun findByAddressId(addressId: UUID): List<LenderOffice>
-    fun findByStatus(status: LenderOfficeStatus): List<LenderOffice>
 
     @Query("SELECT lo FROM LenderOffice lo WHERE lo.lenderKey = :lenderKey AND lo.status = :status")
     fun findByLenderKeyAndStatus(

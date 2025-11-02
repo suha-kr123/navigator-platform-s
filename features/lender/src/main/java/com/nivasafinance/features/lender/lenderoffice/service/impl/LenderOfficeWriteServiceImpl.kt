@@ -1,5 +1,6 @@
 package com.nivasafinance.features.lender.lenderoffice.service.impl
 
+import com.nivasafinance.common.dto.AddressData
 import com.nivasafinance.features.address.service.AddressService
 import com.nivasafinance.features.lender.lenderoffice.dto.LenderOfficeReponseData
 import com.nivasafinance.features.lender.lenderoffice.dto.LenderOfficeRequestData
@@ -18,14 +19,13 @@ class LenderOfficeWriteServiceImpl(
 ) : LenderOfficeWriteService {
 
     override fun create(lenderOfficeData: LenderOfficeRequestData): LenderOfficeReponseData {
-        val addressResponse = addressService.createAddress(lenderOfficeData.createAddressRequest)
-        val addressId = checkNotNull(addressResponse.id) { "Address ID cannot be null" }
+        //todo set address
 
         val lenderOffice = LenderOffice(
             name = lenderOfficeData.name,
             key = lenderOfficeData.key,
             lenderKey = lenderOfficeData.lenderKey,
-            addressId = addressId,
+            addressData = null,
             status = lenderOfficeData.status
         )
         val savedLenderOffice = lenderOfficeRepositoryWrapper.saveWithException(lenderOffice)
@@ -35,15 +35,13 @@ class LenderOfficeWriteServiceImpl(
     override fun update(id: UUID, lenderOfficeData: LenderOfficeRequestData): LenderOfficeReponseData {
         val existingLenderOffice = lenderOfficeRepositoryWrapper.findByIdWithException(id)
 
-        // Create new address for update
-        val addressResponse = addressService.createAddress(lenderOfficeData.createAddressRequest)
-        val addressId = checkNotNull(addressResponse.id) { "Address ID cannot be null" }
+        //todo set address
 
         val updatedLenderOffice = existingLenderOffice.copy(
             name = lenderOfficeData.name,
             key = lenderOfficeData.key,
             lenderKey = lenderOfficeData.lenderKey,
-            addressId = addressId,
+            addressData = null,
             status = lenderOfficeData.status
         )
         val savedLenderOffice = lenderOfficeRepositoryWrapper.saveWithException(updatedLenderOffice)

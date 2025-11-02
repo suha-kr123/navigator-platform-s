@@ -6,7 +6,7 @@
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
     <changeSet id="V1759548361000_21" author="system" context="default">
-        <createTable tableName="lender_office">
+        <createTable tableName="n_lender_office">
             <column name="id" type="uuid" defaultValueComputed="gen_random_uuid()">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
@@ -19,9 +19,9 @@
             <column name="lender_key" type="varchar(20)">
                 <constraints nullable="false"/>
             </column>
-            <column name="address_id" type="uuid">
-                <constraints nullable="false"/>
-            </column>
+
+            <column name="address" type="jsonb"/>
+
             <column name="status" type="varchar(40)">
                 <constraints nullable="false"/>
             </column>
@@ -33,10 +33,10 @@
         </createTable>
         
         <addForeignKeyConstraint
-                baseTableName="lender_office"
+                baseTableName="n_lender_office"
                 baseColumnNames="lender_key"
                 constraintName="fk_lender_office_lender"
-                referencedTableName="lender"
+                referencedTableName="n_lender"
                 referencedColumnNames="key"/>
     </changeSet>
 

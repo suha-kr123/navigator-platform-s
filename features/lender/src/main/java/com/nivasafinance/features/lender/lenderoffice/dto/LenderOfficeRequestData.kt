@@ -7,6 +7,6 @@ data class LenderOfficeRequestData(
     val name: String,
     val key: String,
     val lenderKey: String,
-    val createAddressRequest: CreateAddressRequest,
+    val createAddressRequest: CreateAddressRequest?,
     val status: LenderOfficeStatus
 )

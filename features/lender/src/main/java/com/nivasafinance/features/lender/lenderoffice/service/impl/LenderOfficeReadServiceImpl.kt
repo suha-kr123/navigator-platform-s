@@ -32,32 +32,16 @@ class LenderOfficeReadServiceImpl(
         status: LenderOfficeStatus
     ): List<LenderOfficeReponseData> {
         return lenderOfficeRepositoryWrapper.findByLenderKeyAndStatus(lenderKey, status)
-            .map { it.toResponseWithoutAddress() }
+            .map { it.toResponse() }
     }
 
     private fun LenderOffice.toResponse(): LenderOfficeReponseData {
-        val addressResponse = try {
-            addressService.getAddressById(this.addressId)
-        } catch (_: Exception) {
-            null
-        }
-
         return LenderOfficeReponseData(
             id = checkNotNull(this.id) { "Lender office ID cannot be null" },
             name = this.name,
             key = this.key,
             lenderKey = this.lenderKey,
-            address = addressResponse
-        )
-    }
-
-    private fun LenderOffice.toResponseWithoutAddress(): LenderOfficeReponseData {
-        return LenderOfficeReponseData(
-            id = checkNotNull(this.id) { "Lender office ID cannot be null" },
-            name = this.name,
-            key = this.key,
-            lenderKey = this.lenderKey,
-            address = null
+            address = this.addressData
         )
     }
 }
