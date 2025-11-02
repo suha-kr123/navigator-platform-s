@@ -1,10 +1,11 @@
 package com.nivasafinance.features.lead.service.impl;
 
 import com.nivasafinance.common.dto.AddressData;
-import com.nivasafinance.common.dto.GeoData;
 import com.nivasafinance.features.lead.dto.CreateLeadRequest;
 import com.nivasafinance.features.lead.dto.CreateLeadResponse;
 import com.nivasafinance.features.lead.dto.CreateTrancheRequest;
+import com.nivasafinance.features.lead.dto.OnholdLeadRequest;
+import com.nivasafinance.features.lead.dto.RejectLeadRequest;
 import com.nivasafinance.features.lead.dto.UpdateCreditDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdateDisbursementDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdatePreliminaryDetailsRequest;
@@ -12,9 +13,11 @@ import com.nivasafinance.features.lead.dto.UpdatePropertyDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdateProposedDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdateSourcingDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdateTrancheRequest;
+import com.nivasafinance.features.lead.dto.WithdrawLeadRequest;
 import com.nivasafinance.features.lead.entity.Contact;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.enums.LeadStatus;
+import com.nivasafinance.features.lead.enums.LeadSubStatus;
 import com.nivasafinance.features.lead.repository.ApplicantRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.ContactRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
@@ -346,6 +349,113 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         
         if (!removed) {
             throw new RuntimeException("Tranche not found with identifier: " + trancheIdentifier);
+        }
+        
+        leadRepositoryWrapper.saveWithException(lead);
+    }
+
+    @Override
+    @Transactional
+    public void rejectLead(UUID leadIdentifier, RejectLeadRequest request) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        
+        // Set status to REJECTED
+        lead.setStatus(LeadStatus.REJECTED);
+        
+        // Store reason code if provided
+        if (request.getReasonCode() != null) {
+            Lead.ReasonDetails reasons = lead.getReasons();
+            if (reasons == null) {
+                reasons = new Lead.ReasonDetails();
+            }
+            reasons.setReject(request.getReasonCode());
+            lead.setReasons(reasons);
+        }
+        
+        leadRepositoryWrapper.saveWithException(lead);
+    }
+
+    @Override
+    @Transactional
+    public void withdrawLead(UUID leadIdentifier, WithdrawLeadRequest request) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        
+        // Set status to WITHDRAWN
+        lead.setStatus(LeadStatus.WITHDRAWN);
+        
+        // Store reason code if provided
+        if (request.getReasonCode() != null) {
+            Lead.ReasonDetails reasons = lead.getReasons();
+            if (reasons == null) {
+                reasons = new Lead.ReasonDetails();
+            }
+            reasons.setWithdrawn(request.getReasonCode());
+            lead.setReasons(reasons);
+        }
+        
+        leadRepositoryWrapper.saveWithException(lead);
+    }
+
+    @Override
+    @Transactional
+    public void submitLead(UUID leadIdentifier) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        
+        // Set status to SUBMITTED
+        lead.setStatus(LeadStatus.SUBMITTED);
+        
+        leadRepositoryWrapper.saveWithException(lead);
+    }
+
+    @Override
+    @Transactional
+    public void disburseLead(UUID leadIdentifier) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        
+        // Set status to DISBURSED
+        lead.setStatus(LeadStatus.DISBURSED);
+        
+        leadRepositoryWrapper.saveWithException(lead);
+    }
+
+    @Override
+    @Transactional
+    public void completeLead(UUID leadIdentifier) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        
+        // Set status to COMPLETED
+        lead.setStatus(LeadStatus.COMPLETED);
+        
+        leadRepositoryWrapper.saveWithException(lead);
+    }
+
+    @Override
+    @Transactional
+    public void qualifyLead(UUID leadIdentifier) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        
+        // Set status to QUALIFIED
+        lead.setStatus(LeadStatus.QUALIFIED);
+        
+        leadRepositoryWrapper.saveWithException(lead);
+    }
+
+    @Override
+    @Transactional
+    public void onholdLead(UUID leadIdentifier, OnholdLeadRequest request) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        
+        // Set substatus to ONHOLD (keep current status)
+        lead.setSubstatus(LeadSubStatus.ONHOLD);
+        
+        // Store reason code if provided
+        if (request.getReasonCode() != null) {
+            Lead.ReasonDetails reasons = lead.getReasons();
+            if (reasons == null) {
+                reasons = new Lead.ReasonDetails();
+            }
+            reasons.setOnhold(request.getReasonCode());
+            lead.setReasons(reasons);
         }
         
         leadRepositoryWrapper.saveWithException(lead);

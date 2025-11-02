@@ -3,6 +3,8 @@ package com.nivasafinance.features.lead.service;
 import com.nivasafinance.features.lead.dto.CreateLeadRequest;
 import com.nivasafinance.features.lead.dto.CreateLeadResponse;
 import com.nivasafinance.features.lead.dto.CreateTrancheRequest;
+import com.nivasafinance.features.lead.dto.OnholdLeadRequest;
+import com.nivasafinance.features.lead.dto.RejectLeadRequest;
 import com.nivasafinance.features.lead.dto.UpdateCreditDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdateDisbursementDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdatePreliminaryDetailsRequest;
@@ -10,6 +12,7 @@ import com.nivasafinance.features.lead.dto.UpdatePropertyDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdateProposedDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdateSourcingDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdateTrancheRequest;
+import com.nivasafinance.features.lead.dto.WithdrawLeadRequest;
 
 import java.util.UUID;
 
@@ -24,4 +27,11 @@ public interface LeadWriteService {
     void createTranche(UUID leadIdentifier, CreateTrancheRequest request);
     void updateTranche(UUID leadIdentifier, UUID trancheIdentifier, UpdateTrancheRequest request);
     void deleteTranche(UUID leadIdentifier, UUID trancheIdentifier);
+    void rejectLead(UUID leadIdentifier, RejectLeadRequest request);
+    void withdrawLead(UUID leadIdentifier, WithdrawLeadRequest request);
+    void submitLead(UUID leadIdentifier);
+    void disburseLead(UUID leadIdentifier);
+    void completeLead(UUID leadIdentifier);
+    void qualifyLead(UUID leadIdentifier);
+    void onholdLead(UUID leadIdentifier, OnholdLeadRequest request);
 }

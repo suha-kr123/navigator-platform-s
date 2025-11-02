@@ -7,9 +7,11 @@ import com.nivasafinance.features.lead.dto.CreateTrancheRequest;
 import com.nivasafinance.features.lead.dto.CreditDetailsResponse;
 import com.nivasafinance.features.lead.dto.DisbursementDetailsResponse;
 import com.nivasafinance.features.lead.dto.LeadResponse;
+import com.nivasafinance.features.lead.dto.OnholdLeadRequest;
 import com.nivasafinance.features.lead.dto.PreliminaryDetailsResponse;
 import com.nivasafinance.features.lead.dto.PropertyDetailsResponse;
 import com.nivasafinance.features.lead.dto.ProposedDetailsResponse;
+import com.nivasafinance.features.lead.dto.RejectLeadRequest;
 import com.nivasafinance.features.lead.dto.SourcingDetailsResponse;
 import com.nivasafinance.features.lead.dto.TrancheResponse;
 import com.nivasafinance.features.lead.dto.UpdateCreditDetailsRequest;
@@ -19,6 +21,7 @@ import com.nivasafinance.features.lead.dto.UpdatePropertyDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdateProposedDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdateSourcingDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdateTrancheRequest;
+import com.nivasafinance.features.lead.dto.WithdrawLeadRequest;
 import com.nivasafinance.features.lead.service.LeadReadService;
 import com.nivasafinance.features.lead.service.LeadWriteService;
 import jakarta.validation.Valid;
@@ -162,6 +165,54 @@ public class LeadController {
             @PathVariable UUID leadId,
             @PathVariable UUID trancheIdentifier) {
         leadWriteService.deleteTranche(leadId, trancheIdentifier);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{leadId}/status/reject")
+    public ResponseEntity<Void> rejectLead(
+            @PathVariable UUID leadId,
+            @Valid @RequestBody RejectLeadRequest request) {
+        leadWriteService.rejectLead(leadId, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{leadId}/status/withdraw")
+    public ResponseEntity<Void> withdrawLead(
+            @PathVariable UUID leadId,
+            @Valid @RequestBody WithdrawLeadRequest request) {
+        leadWriteService.withdrawLead(leadId, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{leadId}/status/submit")
+    public ResponseEntity<Void> submitLead(@PathVariable UUID leadId) {
+        leadWriteService.submitLead(leadId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{leadId}/status/disburse")
+    public ResponseEntity<Void> disburseLead(@PathVariable UUID leadId) {
+        leadWriteService.disburseLead(leadId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{leadId}/status/complete")
+    public ResponseEntity<Void> completeLead(@PathVariable UUID leadId) {
+        leadWriteService.completeLead(leadId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{leadId}/status/qualify")
+    public ResponseEntity<Void> qualifyLead(@PathVariable UUID leadId) {
+        leadWriteService.qualifyLead(leadId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{leadId}/status/onhold")
+    public ResponseEntity<Void> onholdLead(
+            @PathVariable UUID leadId,
+            @Valid @RequestBody OnholdLeadRequest request) {
+        leadWriteService.onholdLead(leadId, request);
         return ResponseEntity.noContent().build();
     }
 }
