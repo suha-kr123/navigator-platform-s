@@ -10,8 +10,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.UUID;
-
 @RestController
 @RequestMapping(ApiConstants.V1 + "/offices")
 @AllArgsConstructor
@@ -26,9 +24,9 @@ public class OfficeController {
         return ResponseEntity.status(HttpStatus.CREATED).body(createdOffice);
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<OfficeResponse> getOffice(@PathVariable UUID id) {
-        OfficeResponse office = officeReadService.getOffice(id);
+    @GetMapping("/{key}")
+    public ResponseEntity<OfficeResponse> getOffice(@PathVariable String key) {
+        OfficeResponse office = officeReadService.getOfficeByKey(key);
         return ResponseEntity.ok(office);
     }
 }

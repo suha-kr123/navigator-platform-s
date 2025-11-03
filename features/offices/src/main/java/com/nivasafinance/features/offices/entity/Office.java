@@ -12,8 +12,6 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.Type;
 import org.hibernate.type.SqlTypes;
 
-import java.util.UUID;
-
 @Entity
 @Table(name = "n_office")
 @NoArgsConstructor
@@ -23,17 +21,16 @@ import java.util.UUID;
 public class Office extends AuditableEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(columnDefinition = "UUID")
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "key", nullable = false)
+    @Column(name = "key", nullable = false, unique = true)
     private String key;
 
-    @Column(name = "code", nullable = false)
+    @Column(name = "code", nullable = false, unique = true)
     private String code;
 
     @Type(JsonType.class)
@@ -42,7 +39,7 @@ public class Office extends AuditableEntity {
     private AddressData addressData;
 
     @Column(name = "parent_id")
-    private UUID parentId;
+    private Long parentId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_id", insertable = false, updatable = false)

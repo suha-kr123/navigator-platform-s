@@ -8,16 +8,18 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.UUID;
+import java.util.Optional;
 
 @Repository
 @JaversSpringDataAuditable
-public interface OfficeRepository extends JpaRepository<Office, UUID> {
+public interface OfficeRepository extends JpaRepository<Office, Long> {
+
+    Optional<Office> findByKey(String key);
 
     @Query("SELECT o FROM Office o WHERE o.parentId IS NULL ORDER BY o.code DESC")
     List<Office> findByParentIdIsNullOrderByCodeDesc();
 
     @Query("SELECT o FROM Office o WHERE o.parentId = :parentId ORDER BY o.code DESC")
-    List<Office> findByParentIdOrderByCodeDesc(@Param("parentId") UUID parentId);
+    List<Office> findByParentIdOrderByCodeDesc(@Param("parentId") Long parentId);
 }
 

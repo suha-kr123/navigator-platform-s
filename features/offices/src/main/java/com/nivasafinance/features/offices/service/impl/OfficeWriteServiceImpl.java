@@ -9,12 +9,15 @@ import com.nivasafinance.features.offices.repository.OfficeRepository;
 import com.nivasafinance.features.offices.service.OfficeCodeFactory;
 import com.nivasafinance.features.offices.service.OfficeWriteService;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional
 @AllArgsConstructor
+@Slf4j
 public class OfficeWriteServiceImpl implements OfficeWriteService {
 
     private final OfficeRepository officeRepository;
@@ -22,7 +25,7 @@ public class OfficeWriteServiceImpl implements OfficeWriteService {
     private final OfficeCodeFactory officeCodeFactory;
 
     @Override
-    @Transactional(noRollbackFor = Exception.class)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public OfficeResponse createOffice(OfficeCreateRequest request) {
         // Use common address data service for address creation
         AddressData addressData = addressDataService.createAddressData(request.getAddress());

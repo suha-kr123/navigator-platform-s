@@ -5,17 +5,16 @@ import com.nivasafinance.common.exception.ResourceNotFoundException;
 import org.springframework.context.MessageSource;
 
 import java.io.Serial;
-import java.util.UUID;
 
 public class OfficeNotFoundException extends ResourceNotFoundException {
 
     @Serial
     private static final long serialVersionUID = 1L;
 
-    public OfficeNotFoundException(UUID id, MessageSource messageSource) {
+    public OfficeNotFoundException(String key, MessageSource messageSource) {
         super(ExceptionUtils.createLocalizedMessage(
-                "error.office.id.not.found",
-                new Object[]{id.toString()},
+                "error.office.key.not.found",
+                new Object[]{key},
                 messageSource
         ));
     }

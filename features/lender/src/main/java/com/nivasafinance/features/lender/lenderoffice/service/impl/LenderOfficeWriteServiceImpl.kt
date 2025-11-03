@@ -1,7 +1,5 @@
 package com.nivasafinance.features.lender.lenderoffice.service.impl
 
-import com.nivasafinance.common.dto.AddressData
-import com.nivasafinance.common.dto.AddressRequest
 import com.nivasafinance.features.address.service.AddressDataService
 import com.nivasafinance.features.lender.lenderoffice.dto.LenderOfficeReponseData
 import com.nivasafinance.features.lender.lenderoffice.dto.LenderOfficeRequestData
@@ -10,7 +8,7 @@ import com.nivasafinance.features.lender.lenderoffice.repository.LenderOfficeRep
 import com.nivasafinance.features.lender.lenderoffice.service.LenderOfficeWriteService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.util.UUID
+import java.util.*
 
 @Service
 @Transactional
@@ -22,13 +20,7 @@ class LenderOfficeWriteServiceImpl(
     override fun create(lenderOfficeData: LenderOfficeRequestData): LenderOfficeReponseData {
         // Use common address data service for address creation
         val addressData = lenderOfficeData.createAddressRequest?.let { addressRequest ->
-            val addressReq = AddressRequest(
-                addressRequest.addressLineOne,
-                addressRequest.addressLineTwo,
-                addressRequest.pincode,
-                null // area field
-            )
-            addressDataService.createAddressData(addressReq)
+            addressDataService.createAddressData(addressRequest)
         }
 
         val lenderOffice = LenderOffice(
@@ -47,13 +39,7 @@ class LenderOfficeWriteServiceImpl(
 
         // Use common address data service for address creation
         val addressData = lenderOfficeData.createAddressRequest?.let { addressRequest ->
-            val addressReq = AddressRequest(
-                addressRequest.addressLineOne,
-                addressRequest.addressLineTwo,
-                addressRequest.pincode,
-                null // area field
-            )
-            addressDataService.createAddressData(addressReq)
+            addressDataService.createAddressData(addressRequest)
         }
 
         val updatedLenderOffice = existingLenderOffice.copy(
@@ -77,7 +63,7 @@ class LenderOfficeWriteServiceImpl(
             name = this.name,
             key = this.key,
             lenderKey = this.lenderKey,
-            address = null // Address details will be populated by LenderOfficeReadServiceImpl
+            address = this.addressData
         )
     }
 }

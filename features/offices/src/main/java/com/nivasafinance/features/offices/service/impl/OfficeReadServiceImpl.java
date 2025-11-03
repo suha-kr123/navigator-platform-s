@@ -10,8 +10,6 @@ import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.UUID;
-
 @Service
 @Transactional(readOnly = true)
 @AllArgsConstructor
@@ -21,9 +19,9 @@ public class OfficeReadServiceImpl implements OfficeReadService {
     private final MessageSource messageSource;
 
     @Override
-    public OfficeResponse getOffice(UUID id) {
-        Office entity = officeRepository.findById(id).orElseThrow(() ->
-                new OfficeNotFoundException(id, messageSource)
+    public OfficeResponse getOfficeByKey(String key) {
+        Office entity = officeRepository.findByKey(key).orElseThrow(() ->
+                new OfficeNotFoundException(key, messageSource)
         );
         return toResponse(entity);
     }

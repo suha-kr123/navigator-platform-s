@@ -9,7 +9,7 @@
         <comment>Create offices table with address data stored as JSONB</comment>
 
         <createTable tableName="n_office">
-            <column name="id" type="UUID" defaultValueComputed="gen_random_uuid()">
+            <column name="id" type="BIGINT" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
 
@@ -27,7 +27,7 @@
 
             <column name="address_data" type="JSONB"/>
 
-            <column name="parent_id" type="UUID"/>
+            <column name="parent_id" type="BIGINT"/>
 
             <column name="created_by" type="VARCHAR(255)"/>
             <column name="created_at" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
