@@ -2,8 +2,9 @@ package com.nivasafinance.features.task.service.impl;
 
 import com.nivasafinance.features.task.dto.CompleteTaskRequest;
 import com.nivasafinance.features.task.dto.CreateTaskRequest;
+import com.nivasafinance.features.task.dto.ReassignTaskRequest;
+import com.nivasafinance.features.task.dto.RescheduleTaskRequest;
 import com.nivasafinance.features.task.dto.TaskResponse;
-import com.nivasafinance.features.task.dto.UpdateTaskRequest;
 import com.nivasafinance.features.task.entity.Task;
 import com.nivasafinance.features.task.entity.TaskConfig;
 import com.nivasafinance.features.task.exception.TaskConfigNotFoundException;
@@ -24,7 +25,6 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -52,58 +52,76 @@ public class TaskServiceImpl implements TaskService {
         task.setAssignedTo(request.getAssignedTo());
         task.setAssignedToRole(request.getAssignedToRole());
         task.setDueAt(request.getDueAt());
-        task.setTaskDetails(request.getTaskDetails() != null ? request.getTaskDetails() : new HashMap<>());
+        task.setTaskDetails(ValidationUtils.isNonNull(request.getTaskDetails()) ? request.getTaskDetails() : new HashMap<>());
 
         // Save task
         Task savedTask = taskRepository.save(task);
         log.info("Task created successfully with ID: {}", savedTask.getId());
 
-        return mapToTaskResponse(savedTask, taskConfig);
+        return TaskResponse.from(savedTask, taskConfig);
     }
 
     @Override
-    public TaskResponse updateTask(UpdateTaskRequest request) {
-        log.info("Updating task ID: {}", request.getTaskId());
+    public TaskResponse reassignTask(ReassignTaskRequest request) {
+        log.info("Reassigning task ID: {} to user: {} or role: {}", 
+                request.getTaskId(), request.getNewAssignedTo(), request.getNewAssignedToRole());
 
         // Validate request
-        validateUpdateTaskRequest(request);
+        validateReassignTaskRequest(request);
 
         // Get task
         Task task = taskRepository.findById(request.getTaskId())
                 .orElseThrow(() -> new TaskNotFoundException(request.getTaskId(), messageSource));
 
         // Validate task is not completed
-        if (task.getOutcome() != null) {
-            throw new TaskOperationException(
-                    "error.task.cannot.update.completed",
-                    new Object[]{request.getTaskId()},
-                    messageSource
-            );
+        if (ValidationUtils.isNonNull(task.getOutcome())) {
+            throw TaskOperationException.cannotReassignCompleted(request.getTaskId(), messageSource);
         }
 
-        // Update fields only if provided (patch operation)
-        if (request.getAssignedTo() != null) {
-            task.setAssignedTo(request.getAssignedTo());
-        }
-        if (request.getAssignedToRole() != null) {
-            task.setAssignedToRole(request.getAssignedToRole());
-        }
-        if (request.getDueAt() != null) {
-            task.setDueAt(request.getDueAt());
-        }
-        if (request.getTaskDetails() != null) {
-            // Merge task details instead of replacing
-            Map<String, Object> existingDetails = task.getTaskDetails() != null ? task.getTaskDetails() : new HashMap<>();
-            existingDetails.putAll(request.getTaskDetails());
-            task.setTaskDetails(existingDetails);
-        }
+        // Update assignment
+        task.setAssignedTo(request.getNewAssignedTo());
+        task.setAssignedToRole(request.getNewAssignedToRole());
 
-        // Save task - updatedBy from AuditableEntity will capture who updated it
+        // Save task - updatedBy from AuditableEntity will capture who reassigned it
         Task savedTask = taskRepository.save(task);
-        log.info("Task updated successfully");
+        log.info("Task reassigned successfully");
 
         TaskConfig taskConfig = getActiveTaskConfig(task.getTaskConfigKey());
-        return mapToTaskResponse(savedTask, taskConfig);
+        return TaskResponse.from(savedTask, taskConfig);
+    }
+
+    @Override
+    public TaskResponse rescheduleTask(RescheduleTaskRequest request) {
+        log.info("Rescheduling task ID: {} to {}", request.getTaskId(), request.getNewDueAt());
+
+        // Validate request
+        validateRescheduleTaskRequest(request);
+
+        // Get task
+        Task task = taskRepository.findById(request.getTaskId())
+                .orElseThrow(() -> new TaskNotFoundException(request.getTaskId(), messageSource));
+
+        // Validate task is not completed
+        if (ValidationUtils.isNonNull(task.getOutcome())) {
+            throw TaskOperationException.cannotRescheduleCompleted(request.getTaskId(), messageSource);
+        }
+
+        // Update due date
+        task.setDueAt(request.getNewDueAt());
+
+        // Add reschedule reason to task details if provided
+        if (ValidationUtils.isNonNullOrEmpty(request.getReason())) {
+            Map<String, Object> taskDetails = ValidationUtils.isNonNull(task.getTaskDetails()) ? task.getTaskDetails() : new HashMap<>();
+            taskDetails.put("rescheduleReason", request.getReason());
+            task.setTaskDetails(taskDetails);
+        }
+
+        // Save task - updatedBy from AuditableEntity will capture who rescheduled it
+        Task savedTask = taskRepository.save(task);
+        log.info("Task rescheduled successfully to {}", request.getNewDueAt());
+
+        TaskConfig taskConfig = getActiveTaskConfig(task.getTaskConfigKey());
+        return TaskResponse.from(savedTask, taskConfig);
     }
 
     @Override
@@ -118,12 +136,8 @@ public class TaskServiceImpl implements TaskService {
                 .orElseThrow(() -> new TaskNotFoundException(request.getTaskId(), messageSource));
 
         // Validate task can be completed
-        if (task.getOutcome() != null) {
-            throw new TaskOperationException(
-                    "error.task.already.completed",
-                    new Object[]{request.getTaskId()},
-                    messageSource
-            );
+        if (ValidationUtils.isNonNull(task.getOutcome())) {
+            throw TaskOperationException.alreadyCompleted(request.getTaskId(), messageSource);
         }
 
         // Validate outcome is valid for this task config
@@ -132,52 +146,13 @@ public class TaskServiceImpl implements TaskService {
 
         // Update task with outcome
         task.setOutcome(request.getOutcome());
-        task.setOutcomeDetails(request.getOutcomeDetails() != null ? request.getOutcomeDetails() : new HashMap<>());
+        task.setOutcomeDetails(ValidationUtils.isNonNull(request.getOutcomeDetails()) ? request.getOutcomeDetails() : new HashMap<>());
 
         // Save task - updatedBy from AuditableEntity will capture who completed it
         Task savedTask = taskRepository.save(task);
         log.info("Task completed successfully with outcome: {}", request.getOutcome());
 
-        return mapToTaskResponse(savedTask, taskConfig);
-    }
-
-    @Override
-    public TaskResponse cancelTask(Long taskId, String reason) {
-        log.info("Cancelling task ID: {}", taskId);
-
-        // Validate inputs
-        if (!ValidationUtils.isNonNull(taskId)) {
-            throw new TaskValidationException("error.task.id.required", null, messageSource);
-        }
-
-        // Get task
-        Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new TaskNotFoundException(taskId, messageSource));
-
-        // Validate task is not already completed or cancelled
-        if (task.getOutcome() != null) {
-            throw new TaskOperationException(
-                    "error.task.cannot.cancel.completed",
-                    new Object[]{taskId},
-                    messageSource
-            );
-        }
-
-        // Set outcome to CANCELLED
-        task.setOutcome("CANCELLED");
-        Map<String, Object> outcomeDetails = new HashMap<>();
-        outcomeDetails.put("cancelledAt", LocalDateTime.now());
-        if (reason != null && !reason.trim().isEmpty()) {
-            outcomeDetails.put("cancellationReason", reason);
-        }
-        task.setOutcomeDetails(outcomeDetails);
-
-        // Save task - updatedBy from AuditableEntity will capture who cancelled it
-        Task savedTask = taskRepository.save(task);
-        log.info("Task cancelled successfully");
-
-        TaskConfig taskConfig = getActiveTaskConfig(task.getTaskConfigKey());
-        return mapToTaskResponse(savedTask, taskConfig);
+        return TaskResponse.from(savedTask, taskConfig);
     }
 
     @Override
@@ -187,98 +162,7 @@ public class TaskServiceImpl implements TaskService {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new TaskNotFoundException(taskId, messageSource));
         TaskConfig taskConfig = getActiveTaskConfig(task.getTaskConfigKey());
-        return mapToTaskResponse(task, taskConfig);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<TaskResponse> getTasksByConfigKey(String taskConfigKey) {
-        log.debug("Getting tasks by config key: {}", taskConfigKey);
-        TaskConfig taskConfig = getActiveTaskConfig(taskConfigKey);
-        List<Task> tasks = taskRepository.findByTaskConfigKey(taskConfigKey);
-        return tasks.stream()
-                .map(task -> mapToTaskResponse(task, taskConfig))
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<TaskResponse> getTasksByAssignedTo(String assignedTo) {
-        log.debug("Getting tasks assigned to: {}", assignedTo);
-        List<Task> tasks = taskRepository.findByAssignedTo(assignedTo);
-        return tasks.stream()
-                .map(this::mapToTaskResponseWithConfig)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<TaskResponse> getTasksByAssignedToRole(String assignedToRole) {
-        log.debug("Getting tasks assigned to role: {}", assignedToRole);
-        List<Task> tasks = taskRepository.findByAssignedToRole(assignedToRole);
-        return tasks.stream()
-                .map(this::mapToTaskResponseWithConfig)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<TaskResponse> getPendingTasksByConfigKey(String taskConfigKey) {
-        log.debug("Getting pending tasks for config key: {}", taskConfigKey);
-        TaskConfig taskConfig = getActiveTaskConfig(taskConfigKey);
-        List<Task> tasks = taskRepository.findByTaskConfigKeyAndOutcomeIsNull(taskConfigKey);
-        return tasks.stream()
-                .map(task -> mapToTaskResponse(task, taskConfig))
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<TaskResponse> getTasksByOutcome(String outcome) {
-        log.debug("Getting tasks with outcome: {}", outcome);
-        List<Task> tasks = taskRepository.findByOutcome(outcome);
-        return tasks.stream()
-                .map(this::mapToTaskResponseWithConfig)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public boolean canCompleteTask(Long taskId) {
-        try {
-            Task task = taskRepository.findById(taskId)
-                    .orElse(null);
-            return task != null && task.getOutcome() == null;
-        } catch (Exception e) {
-            log.error("Error checking if task can be completed: {}", taskId, e);
-            return false;
-        }
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public boolean isValidOutcome(String taskConfigKey, String outcome) {
-        try {
-            TaskConfig taskConfig = taskConfigRepository.findByTaskConfigKey(taskConfigKey)
-                    .orElse(null);
-            if (taskConfig == null || taskConfig.getTaskConfigDetails() == null) {
-                return false;
-            }
-
-            Map<String, Object> configDetails = taskConfig.getTaskConfigDetails();
-            if (configDetails.containsKey("allowedOutcomes")) {
-                Object allowedOutcomes = configDetails.get("allowedOutcomes");
-                if (allowedOutcomes instanceof List) {
-                    return ((List<?>) allowedOutcomes).contains(outcome);
-                }
-            }
-
-            // If no allowed outcomes configured, any outcome is valid
-            return true;
-        } catch (Exception e) {
-            log.error("Error validating outcome for task config: {}", taskConfigKey, e);
-            return false;
-        }
+        return TaskResponse.from(task, taskConfig);
     }
 
     // Private helper methods
@@ -288,11 +172,7 @@ public class TaskServiceImpl implements TaskService {
                 .orElseThrow(() -> new TaskConfigNotFoundException(taskConfigKey, messageSource));
 
         if (!Boolean.TRUE.equals(taskConfig.getIsActive())) {
-            throw new TaskOperationException(
-                    "error.task.config.inactive",
-                    new Object[]{taskConfigKey},
-                    messageSource
-            );
+            throw TaskOperationException.taskConfigInactive(taskConfigKey, messageSource);
         }
 
         return taskConfig;
@@ -300,81 +180,70 @@ public class TaskServiceImpl implements TaskService {
 
     private void validateCreateTaskRequest(CreateTaskRequest request) {
         if (!ValidationUtils.isNonNull(request)) {
-            throw new TaskValidationException("error.task.request.required", null, messageSource);
+            throw TaskValidationException.requestRequired(messageSource);
         }
-        if (!ValidationUtils.isNonNullOrEmpty(request.getTaskConfigKey())) {
-            throw new TaskValidationException("error.task.config.key.required", null, messageSource);
+        //validate task config key and as well check if that exists in task config table
+        TaskConfig taskConfig = taskConfigRepository.findByTaskConfigKey(request.getTaskConfigKey())
+                .orElseThrow(() -> new TaskConfigNotFoundException(request.getTaskConfigKey(), messageSource));
+        if (!Boolean.TRUE.equals(taskConfig.getIsActive())) {
+            throw TaskOperationException.taskConfigInactive(request.getTaskConfigKey(), messageSource);
         }
+        //check if assigned to or assigned to role is provided (at least one)
         if (!ValidationUtils.hasAtLeastOne(request.getAssignedTo(), request.getAssignedToRole())) {
-            throw new TaskValidationException("error.task.assignment.required", null, messageSource);
+            throw TaskValidationException.assignmentRequired(messageSource);
+        }
+        //make sure due date can't be in the past (if provided)
+        if (ValidationUtils.isNonNull(request.getDueAt()) && request.getDueAt().isBefore(LocalDateTime.now())) {
+            throw TaskOperationException.dueDateInPast(request.getTaskConfigKey(), messageSource);
         }
     }
 
-    private void validateUpdateTaskRequest(UpdateTaskRequest request) {
+    private void validateReassignTaskRequest(ReassignTaskRequest request) {
         if (!ValidationUtils.isNonNull(request)) {
-            throw new TaskValidationException("error.task.request.required", null, messageSource);
+            throw TaskValidationException.requestRequired(messageSource);
         }
         if (!ValidationUtils.isNonNull(request.getTaskId())) {
-            throw new TaskValidationException("error.task.id.required", null, messageSource);
+            throw TaskValidationException.taskIdRequired(messageSource);
         }
-        // At least one field should be provided for update
-        if (!ValidationUtils.hasAtLeastOne(request.getAssignedTo(), request.getAssignedToRole(), 
-                request.getDueAt(), request.getTaskDetails())) {
-            throw new TaskValidationException("error.task.no.fields.to.update", null, messageSource);
+        if (!ValidationUtils.hasAtLeastOne(request.getNewAssignedTo(), request.getNewAssignedToRole())) {
+            throw TaskValidationException.newAssignmentRequired(messageSource);
+        }
+    }
+
+    private void validateRescheduleTaskRequest(RescheduleTaskRequest request) {
+        if (!ValidationUtils.isNonNull(request)) {
+            throw TaskValidationException.requestRequired(messageSource);
+        }
+        if (!ValidationUtils.isNonNull(request.getTaskId())) {
+            throw TaskValidationException.taskIdRequired(messageSource);
+        }
+        if (!ValidationUtils.isNonNull(request.getNewDueAt())) {
+            throw TaskValidationException.dueDateRequired(messageSource);
         }
     }
 
     private void validateCompleteTaskRequest(CompleteTaskRequest request) {
         if (!ValidationUtils.isNonNull(request)) {
-            throw new TaskValidationException("error.task.request.required", null, messageSource);
+            throw TaskValidationException.requestRequired(messageSource);
         }
         if (!ValidationUtils.isNonNull(request.getTaskId())) {
-            throw new TaskValidationException("error.task.id.required", null, messageSource);
+            throw TaskValidationException.taskIdRequired(messageSource);
         }
         if (!ValidationUtils.isNonNullOrEmpty(request.getOutcome())) {
-            throw new TaskValidationException("error.task.outcome.required", null, messageSource);
+            throw TaskValidationException.outcomeRequired(messageSource);
         }
     }
 
     private void validateOutcome(TaskConfig taskConfig, String outcome) {
         Map<String, Object> configDetails = taskConfig.getTaskConfigDetails();
-        if (configDetails != null && configDetails.containsKey("allowedOutcomes")) {
+        if (ValidationUtils.isNonNull(configDetails) && configDetails.containsKey("allowedOutcomes")) {
             Object allowedOutcomes = configDetails.get("allowedOutcomes");
             if (allowedOutcomes instanceof List) {
                 if (!((List<?>) allowedOutcomes).contains(outcome)) {
-                    throw new TaskValidationException(
-                            "error.task.outcome.invalid",
-                            new Object[]{outcome, taskConfig.getTaskConfigKey()},
-                            messageSource
-                    );
+                    throw TaskValidationException.invalidOutcome(outcome, taskConfig.getTaskConfigKey(), messageSource);
                 }
             }
         }
-    }
-
-    private TaskResponse mapToTaskResponse(Task task, TaskConfig taskConfig) {
-        return TaskResponse.builder()
-                .id(task.getId())
-                .taskConfigKey(task.getTaskConfigKey())
-                .taskName(taskConfig.getName())
-                .taskDescription(taskConfig.getDescription())
-                .assignedTo(task.getAssignedTo())
-                .assignedToRole(task.getAssignedToRole())
-                .dueAt(task.getDueAt())
-                .outcome(task.getOutcome())
-                .outcomeDetails(task.getOutcomeDetails())
-                .taskDetails(task.getTaskDetails())
-                .createdAt(task.getCreatedAt())
-                .createdBy(task.getCreatedBy())
-                .updatedAt(task.getUpdatedAt())
-                .updatedBy(task.getUpdatedBy())
-                .build();
-    }
-
-    private TaskResponse mapToTaskResponseWithConfig(Task task) {
-        TaskConfig taskConfig = taskConfigRepository.findByTaskConfigKey(task.getTaskConfigKey())
-                .orElse(null);
-        return mapToTaskResponse(task, taskConfig);
     }
 }
 
