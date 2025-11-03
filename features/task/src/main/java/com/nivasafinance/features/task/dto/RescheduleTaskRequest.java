@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 @Data
 @NoArgsConstructor
@@ -15,10 +15,10 @@ import jakarta.validation.constraints.NotBlank;
 @Builder
 public class RescheduleTaskRequest {
     
-    @NotBlank(message = "Task ID is required")
-    private Long taskId;
+    @NotNull(message = "Task ID is required")
+    private String taskIdentifier;
 
-    @NotBlank(message = "New due at is required")
+    @NotNull(message = "New due at is required")
     private LocalDateTime newDueAt;
     
     private String reason;

@@ -15,8 +15,8 @@ import jakarta.validation.constraints.NotBlank;
 @Builder
 public class CompleteTaskRequest {
     
-    @NotBlank(message = "Task ID is required")
-    private Long taskId;
+    @NotBlank(message = "Task identifier is required")
+    private String taskIdentifier;
 
     @NotBlank(message = "Outcome is required")
     private String outcome;

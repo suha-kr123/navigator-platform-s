@@ -7,8 +7,8 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface TaskRepository extends JpaRepository<Task, Long> {
+public interface TaskRepository extends JpaRepository<Task, String> {
     
-    Optional<Task> findById(Long id);
+    Optional<Task> findByTaskIdentifier(String taskIdentifier);
 }
 
