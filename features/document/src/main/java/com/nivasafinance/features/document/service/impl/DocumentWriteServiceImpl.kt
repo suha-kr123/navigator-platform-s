@@ -9,7 +9,6 @@ import com.nivasafinance.features.document.exception.DocumentExceptionFactory
 import com.nivasafinance.features.document.repository.DocumentRepositoryWrapper
 import com.nivasafinance.features.document.service.DocumentWriteService
 import com.nivasafinance.features.document.storage.ContentRepositoryFactory
-import com.nivasafinance.features.master.codemaster.SystemControlledMasterCodes.DOCUMENT_MASTER
 import com.nivasafinance.features.master.codemaster.dto.MasterCodeWithValuesResponse
 import com.nivasafinance.features.master.codemaster.service.CodeMasterService
 import org.slf4j.LoggerFactory

@@ -15,6 +15,12 @@ class CodeValueMasterServiceImpl(
         return masterCodeValueRepositoryWrapper.findByKeyWithException(key).mapToCodeValueResponse()
     }
 
+    override fun getByKeys(keys: List<String>): List<CodeValueResponse> {
+        return keys.map { key->
+            masterCodeValueRepositoryWrapper.findByKeyWithException(key).mapToCodeValueResponse()
+        }
+    }
+
     override fun getCodeValueByKeyAndCodeKey(
         key: String,
         codeKey: String

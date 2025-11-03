@@ -6,6 +6,8 @@ interface CodeValueMasterService {
 
     fun getByKey(key: String): CodeValueResponse
 
+    fun getByKeys(keys: List<String>): List<CodeValueResponse>
+
     fun getCodeValueByKeyAndCodeKey(key: String, codeKey: String): CodeValueResponse
 
     fun getCodeValueByKeysAndCodeKey(key: List<String>, codeKey: String): List<CodeValueResponse>

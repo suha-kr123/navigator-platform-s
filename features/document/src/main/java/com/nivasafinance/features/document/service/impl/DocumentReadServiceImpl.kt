@@ -6,8 +6,6 @@ import com.nivasafinance.features.document.dto.toDocumentResponse
 import com.nivasafinance.features.document.repository.DocumentRepositoryWrapper
 import com.nivasafinance.features.document.service.DocumentReadService
 import com.nivasafinance.features.document.storage.ContentRepositoryFactory
-import com.nivasafinance.features.master.codemaster.SystemControlledMasterCodes.DOCUMENT_MASTER
-import com.nivasafinance.features.master.codemaster.service.CodeMasterService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID

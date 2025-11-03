@@ -71,9 +71,8 @@ public class LeadDocumentRepositoryWrapper {
             if (tagsJson != null && !tagsJson.equals("null")) {
                 try {
                     // Parse JSONB array to List<String> using Jackson
-                    List<String> tags = objectMapper.readValue(tagsJson, new TypeReference<List<String>>() {
-                    });
-                    List<CodeValueResponse> tagsCodes = codeValueMasterService.getCodeValueByKeysAndCodeKey(tags, SystemControlledMasterCodes.DOCUMENT_MASTER);
+                    List<String> tags = objectMapper.readValue(tagsJson, new TypeReference<>() {});
+                    List<CodeValueResponse> tagsCodes = codeValueMasterService.getByKeys(tags);
                     response.setTags(tagsCodes);
                 } catch (Exception e) {
                     response.setTags(null);
