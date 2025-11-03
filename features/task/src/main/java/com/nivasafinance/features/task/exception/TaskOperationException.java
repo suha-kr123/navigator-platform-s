@@ -50,5 +50,19 @@ public class TaskOperationException extends RuntimeException {
                 new Object[]{taskId}, messageSource)
         );
     }
+
+    public static TaskOperationException cannotReassignToSameUserOrRole(Long taskId, MessageSource messageSource) {
+        return new TaskOperationException(
+            ExceptionUtils.createLocalizedMessage("error.task.cannot.reassign.same", 
+                new Object[]{taskId}, messageSource)
+        );
+    }
+
+    public static TaskOperationException rescheduleNotAllowed(String taskConfigKey, MessageSource messageSource) {
+        return new TaskOperationException(
+            ExceptionUtils.createLocalizedMessage("error.task.reschedule.not.allowed", 
+                new Object[]{taskConfigKey}, messageSource)
+        );
+    }
 }
 
