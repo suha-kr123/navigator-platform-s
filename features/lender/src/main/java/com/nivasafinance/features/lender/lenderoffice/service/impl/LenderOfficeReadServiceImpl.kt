@@ -1,6 +1,5 @@
 package com.nivasafinance.features.lender.lenderoffice.service.impl
 
-import com.nivasafinance.features.address.service.AddressService
 import com.nivasafinance.features.lender.lenderoffice.dto.LenderOfficeReponseData
 import com.nivasafinance.features.lender.lenderoffice.entity.LenderOffice
 import com.nivasafinance.features.lender.lenderoffice.enum.LenderOfficeStatus
@@ -13,8 +12,7 @@ import java.util.UUID
 @Service
 @Transactional(readOnly = true)
 class LenderOfficeReadServiceImpl(
-    private val lenderOfficeRepositoryWrapper: LenderOfficeRepositoryWrapper,
-    private val addressService: AddressService
+    private val lenderOfficeRepositoryWrapper: LenderOfficeRepositoryWrapper
 ) : LenderOfficeReadService {
 
     override fun getByKey(key: String): LenderOfficeReponseData {

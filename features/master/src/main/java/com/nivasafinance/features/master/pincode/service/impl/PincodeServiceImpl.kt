@@ -6,6 +6,7 @@ import com.nivasafinance.features.master.pincode.exception.PincodeExceptionFacto
 import com.nivasafinance.features.master.pincode.repository.PincodeRepository
 import com.nivasafinance.features.master.pincode.service.PincodeService
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 
 @Service
@@ -15,7 +16,7 @@ class PincodeServiceImpl(
 ) : PincodeService, BaseNavigatorService() {
 
     @Suppress("TooGenericExceptionCaught", "SwallowedException")
-    @Transactional(readOnly = true, noRollbackFor = [Exception::class])
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     override fun getPincodeDetails(pincode: String): PincodeResponse {
         val pincodes = pincodeRepository.findAllByPincode(pincode)
         if (pincodes.isEmpty()) {

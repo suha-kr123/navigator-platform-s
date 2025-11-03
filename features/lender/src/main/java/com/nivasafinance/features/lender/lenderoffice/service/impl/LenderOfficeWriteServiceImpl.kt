@@ -1,7 +1,8 @@
 package com.nivasafinance.features.lender.lenderoffice.service.impl
 
 import com.nivasafinance.common.dto.AddressData
-import com.nivasafinance.features.address.service.AddressService
+import com.nivasafinance.common.dto.AddressRequest
+import com.nivasafinance.features.address.service.AddressDataService
 import com.nivasafinance.features.lender.lenderoffice.dto.LenderOfficeReponseData
 import com.nivasafinance.features.lender.lenderoffice.dto.LenderOfficeRequestData
 import com.nivasafinance.features.lender.lenderoffice.entity.LenderOffice
@@ -14,18 +15,27 @@ import java.util.UUID
 @Service
 @Transactional
 class LenderOfficeWriteServiceImpl(
-    private val addressService: AddressService,
+    private val addressDataService: AddressDataService,
     private val lenderOfficeRepositoryWrapper: LenderOfficeRepositoryWrapper
 ) : LenderOfficeWriteService {
 
     override fun create(lenderOfficeData: LenderOfficeRequestData): LenderOfficeReponseData {
-        //todo set address
+        // Use common address data service for address creation
+        val addressData = lenderOfficeData.createAddressRequest?.let { addressRequest ->
+            val addressReq = AddressRequest(
+                addressRequest.addressLineOne,
+                addressRequest.addressLineTwo,
+                addressRequest.pincode,
+                null // area field
+            )
+            addressDataService.createAddressData(addressReq)
+        }
 
         val lenderOffice = LenderOffice(
             name = lenderOfficeData.name,
             key = lenderOfficeData.key,
             lenderKey = lenderOfficeData.lenderKey,
-            addressData = null,
+            addressData = addressData,
             status = lenderOfficeData.status
         )
         val savedLenderOffice = lenderOfficeRepositoryWrapper.saveWithException(lenderOffice)
@@ -35,13 +45,22 @@ class LenderOfficeWriteServiceImpl(
     override fun update(id: UUID, lenderOfficeData: LenderOfficeRequestData): LenderOfficeReponseData {
         val existingLenderOffice = lenderOfficeRepositoryWrapper.findByIdWithException(id)
 
-        //todo set address
+        // Use common address data service for address creation
+        val addressData = lenderOfficeData.createAddressRequest?.let { addressRequest ->
+            val addressReq = AddressRequest(
+                addressRequest.addressLineOne,
+                addressRequest.addressLineTwo,
+                addressRequest.pincode,
+                null // area field
+            )
+            addressDataService.createAddressData(addressReq)
+        }
 
         val updatedLenderOffice = existingLenderOffice.copy(
             name = lenderOfficeData.name,
             key = lenderOfficeData.key,
             lenderKey = lenderOfficeData.lenderKey,
-            addressData = null,
+            addressData = addressData,
             status = lenderOfficeData.status
         )
         val savedLenderOffice = lenderOfficeRepositoryWrapper.saveWithException(updatedLenderOffice)

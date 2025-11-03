@@ -1,6 +1,7 @@
 package com.nivasafinance.features.lead.service.impl;
 
 import com.nivasafinance.common.dto.AddressData;
+import com.nivasafinance.features.address.service.AddressDataService;
 import com.nivasafinance.features.lead.dto.CreateLeadRequest;
 import com.nivasafinance.features.lead.dto.CreateLeadResponse;
 import com.nivasafinance.features.lead.dto.CreateTrancheRequest;
@@ -23,8 +24,6 @@ import com.nivasafinance.features.lead.repository.ApplicantRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.ContactRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadWriteService;
-import com.nivasafinance.features.master.pincode.dto.PincodeResponse;
-import com.nivasafinance.features.master.pincode.service.PincodeService;
 import com.nivasafinance.features.master.products.service.ProductReadService;
 import com.nivasafinance.features.person.dto.PersonCreateRequest;
 import com.nivasafinance.features.person.dto.PersonCreateResponse;
@@ -57,7 +56,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     private final ApplicantRepositoryWrapper applicantRepositoryWrapper;
     private final PersonWriteService personWriteService;
     private final MessageSource messageSource;
-    private final PincodeService pincodeService;
+    private final AddressDataService addressDataService;
     private final SourcingChannelWriteService sourcingChannelWriteService;
     private final ProductReadService productReadService;
 
@@ -185,27 +184,8 @@ public class LeadWriteServiceImpl implements LeadWriteService {
             propertyDetails = new Lead.PropertyDetails();
         }
 
-        AddressData addressData = new AddressData();
-        addressData.setAddressLineOne(request.getAddress().getAddressLineOne());
-        addressData.setAddressLineTwo(request.getAddress().getAddressLineTwo());
-        addressData.setPincode(request.getAddress().getPincode());
-        addressData.setCountry(null); // to set to default
-        addressData.setState(null);
-        addressData.setDistrict(null);
-        addressData.setIsServiceable(false);
-
-        // Try to fetch pincode data
-        try {
-            PincodeResponse pincodeResponse = pincodeService.getPincodeDetails(request.getAddress().getPincode());
-            addressData.setDistrict(pincodeResponse.getDistrict());
-            addressData.setState(pincodeResponse.getState());
-            addressData.setCountry(pincodeResponse.getCountry());
-            addressData.setIsServiceable(pincodeResponse.isServicable());
-        } catch (Exception e) {
-            log.warn("Failed to fetch pincode details for pincode: {}. Continuing with null values.",
-                    request.getAddress().getPincode(), e);
-        }
-        addressData.setArea(request.getAddress().getArea());
+        // Use common address data service for address creation
+        AddressData addressData = addressDataService.createAddressData(request.getAddress());
         
         propertyDetails.setAddress(addressData);
         
