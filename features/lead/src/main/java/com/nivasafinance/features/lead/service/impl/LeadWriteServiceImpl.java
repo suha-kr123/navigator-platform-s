@@ -27,9 +27,10 @@ import com.nivasafinance.features.master.pincode.dto.PincodeResponse;
 import com.nivasafinance.features.master.pincode.service.PincodeService;
 import com.nivasafinance.features.master.products.service.ProductReadService;
 import com.nivasafinance.features.person.dto.PersonCreateRequest;
+import com.nivasafinance.features.person.dto.PersonCreateResponse;
 import com.nivasafinance.features.person.dto.PersonResponse;
 import com.nivasafinance.features.person.entity.MobileNumberDetails;
-import com.nivasafinance.features.person.service.PersonService;
+import com.nivasafinance.features.person.service.PersonWriteService;
 import com.nivasafinance.features.sourcechannel.dto.SourcingChannelRequest;
 import com.nivasafinance.features.sourcechannel.dto.SourcingChannelResponse;
 import com.nivasafinance.features.sourcechannel.service.SourcingChannelWriteService;
@@ -54,7 +55,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     private final LeadRepositoryWrapper leadRepositoryWrapper;
     private final ContactRepositoryWrapper contactRepositoryWrapper;
     private final ApplicantRepositoryWrapper applicantRepositoryWrapper;
-    private final PersonService personService;
+    private final PersonWriteService personWriteService;
     private final MessageSource messageSource;
     private final PincodeService pincodeService;
     private final SourcingChannelWriteService sourcingChannelWriteService;
@@ -73,7 +74,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         }*/
         PersonCreateRequest personCreateRequest = getPersonCreateRequest(request);
 
-        PersonResponse personResponse = personService.createPerson(personCreateRequest);
+        PersonCreateResponse personResponse = personWriteService.createPerson(personCreateRequest);
 
         // Create contact
         Contact contact = new Contact();
@@ -222,8 +223,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
                 null, // lastName
                 mobileNumbers,
                 null, // dateOfBirth
-                null, // gender
-                null  // extData
+                null // gender
         );
     }
 
@@ -232,8 +232,8 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         // Create person with phoneNo
         MobileNumberDetails mobileNumber = new MobileNumberDetails();
         mobileNumber.setNumber(request.getPhoneNumber().getMobileNumber());
-        mobileNumber.setPrimary(true);
-        mobileNumber.setWhatsappAvailable(request.getPhoneNumber().isWhatsapp());
+        mobileNumber.setIsPrimary(true);
+        mobileNumber.setIsWhatsappAvailable(request.getPhoneNumber().isWhatsapp());
 
         List<MobileNumberDetails> mobileNumbers = new ArrayList<>();
         mobileNumbers.add(mobileNumber);

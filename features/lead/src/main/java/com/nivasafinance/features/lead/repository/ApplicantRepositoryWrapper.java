@@ -40,4 +40,14 @@ public class ApplicantRepositoryWrapper {
             throw exception;
         }
     }
+
+    public void delete(Applicant applicant) {
+        try {
+            applicantRepository.delete(applicant);
+        } catch (DataAccessException e) {
+            RuntimeException exception = new RuntimeException("Failed to delete applicant", e);
+            exception.initCause(e);
+            throw exception;
+        }
+    }
 }

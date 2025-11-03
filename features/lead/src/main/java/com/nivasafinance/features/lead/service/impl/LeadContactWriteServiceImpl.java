@@ -1,0 +1,273 @@
+package com.nivasafinance.features.lead.service.impl;
+
+import com.nivasafinance.features.lead.dto.LeadContactPersonDetails;
+import com.nivasafinance.features.lead.dto.CreateLeadContactRequest;
+import com.nivasafinance.features.lead.dto.UpdateLeadContactRequest;
+import com.nivasafinance.features.lead.entity.Applicant;
+import com.nivasafinance.features.lead.entity.Contact;
+import com.nivasafinance.features.lead.entity.Lead;
+import com.nivasafinance.features.lead.enums.LeadContactPersonType;
+import com.nivasafinance.features.lead.repository.ApplicantRepositoryWrapper;
+import com.nivasafinance.features.lead.repository.ContactRepositoryWrapper;
+import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
+import com.nivasafinance.features.lead.service.LeadContactWriteService;
+import com.nivasafinance.features.person.dto.PersonCreateRequest;
+import com.nivasafinance.features.person.dto.PersonCreateResponse;
+import com.nivasafinance.features.person.dto.PersonUpdateRequest;
+import com.nivasafinance.features.person.service.PersonWriteService;
+import lombok.AllArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+@Service
+@AllArgsConstructor
+@Transactional
+public class LeadContactWriteServiceImpl implements LeadContactWriteService {
+
+    private final LeadRepositoryWrapper leadRepositoryWrapper;
+    private final ContactRepositoryWrapper contactRepositoryWrapper;
+    private final ApplicantRepositoryWrapper applicantRepositoryWrapper;
+    private final PersonWriteService personWriteService;
+
+    @Override
+    @Transactional
+    public void createContact(UUID leadId, CreateLeadContactRequest request) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadId);
+
+        // Create Person
+        PersonCreateRequest personRequest = mapToPersonCreateRequest(request.getContactPersonDetails());
+        PersonCreateResponse personResponse = personWriteService.createPerson(personRequest);
+
+        // Create Contact
+        Contact contact = new Contact();
+        contact.setPersonId(personResponse.getId());
+        contact.setIsDecisionMaker(request.getIsDecisionMaker());
+        contact.setIsPropertyOwner(request.getIsPropertyOwner());
+        Contact savedContact = contactRepositoryWrapper.saveWithException(contact);
+
+        // Handle decision maker logic
+        if (request.getIsDecisionMaker()) {
+            unsetOtherDecisionMakers(lead, savedContact.getId());
+        }
+
+        // Add contact to lead
+        addContactToLead(lead, savedContact.getId());
+
+        // Handle applicant type
+        handleApplicantType(lead, savedContact, request.getApplicantType());
+
+        leadRepositoryWrapper.saveWithException(lead);
+    }
+
+    @Override
+    @Transactional
+    public void updateContact(UUID leadId, UUID contactId, UpdateLeadContactRequest request) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadId);
+        Contact contact = findContactByIdentifier(lead, contactId);
+
+        // Update Person
+        PersonUpdateRequest personRequest = mapToPersonUpdateRequest(request.getContactPersonDetails());
+        personWriteService.updatePerson(contact.getPersonId(), personRequest);
+
+        // Determine current applicant type
+        LeadContactPersonType currentType = determineCurrentApplicantType(lead, contact);
+
+        // Update contact details
+        contact.setIsDecisionMaker(request.getIsDecisionMaker());
+        contact.setIsPropertyOwner(request.getIsPropertyOwner());
+        contactRepositoryWrapper.saveWithException(contact);
+
+        // Handle decision maker logic
+        if (request.getIsDecisionMaker()) {
+            unsetOtherDecisionMakers(lead, contact.getId());
+        }
+
+        // Handle applicant type changes
+        if (currentType != request.getApplicantType()) {
+            // Remove old applicant type
+            removeApplicantType(lead, contact, currentType);
+            // Add new applicant type
+            handleApplicantType(lead, contact, request.getApplicantType());
+        }
+
+        leadRepositoryWrapper.saveWithException(lead);
+    }
+
+    @Override
+    @Transactional
+    public void deleteContact(UUID leadId, UUID contactId) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadId);
+
+        // At least one contact should exist after deleting
+        if (lead.getContacts() == null || lead.getContacts().size() < 2) {
+            throw new RuntimeException("Cannot delete contact. At least one contact must remain for the lead.");
+        }
+
+        Contact contact = findContactByIdentifier(lead, contactId);
+
+        // Determine and remove applicant type
+        LeadContactPersonType currentType = determineCurrentApplicantType(lead, contact);
+        removeApplicantType(lead, contact, currentType);
+
+        // Remove contact from lead
+        removeContactFromLead(lead, contact.getId());
+
+        // For now, we'll keep the person entity as it might be used elsewhere
+
+        leadRepositoryWrapper.saveWithException(lead);
+    }
+
+    private void handleApplicantType(Lead lead, Contact contact, LeadContactPersonType type) {
+        if (type == LeadContactPersonType.APPLICANT) {
+            // Remove existing applicant
+            if (lead.getApplicant() != null) {
+                // Delete old applicant from applicant table
+                Applicant oldApplicant = applicantRepositoryWrapper.findByIdWithException(lead.getApplicant());
+                applicantRepositoryWrapper.delete(oldApplicant);
+            }
+
+            // Create new applicant
+            Applicant newApplicant = new Applicant();
+            newApplicant.setIdentifier(UUID.randomUUID());
+            newApplicant.setPersonId(contact.getPersonId());
+            Applicant savedApplicant = applicantRepositoryWrapper.saveWithException(newApplicant);
+
+            // Update lead
+            lead.setApplicant(savedApplicant.getId());
+
+        } else if (type == LeadContactPersonType.CO_APPLICANT) {
+            // Create co-applicant
+            Applicant coApplicant = new Applicant();
+            coApplicant.setIdentifier(UUID.randomUUID());
+            coApplicant.setPersonId(contact.getPersonId());
+            Applicant savedCoApplicant = applicantRepositoryWrapper.saveWithException(coApplicant);
+
+            // Add to co-applicants list
+            List<Long> coApplicants = lead.getCoApplicants();
+            if (coApplicants == null) {
+                coApplicants = new ArrayList<>();
+            }
+            coApplicants.add(savedCoApplicant.getId());
+            lead.setCoApplicants(coApplicants);
+        }
+    }
+
+    private void removeApplicantType(Lead lead, Contact contact, LeadContactPersonType type) {
+        if (type == LeadContactPersonType.APPLICANT && lead.getApplicant() != null) {
+            // Delete from applicant table
+            Applicant applicant = applicantRepositoryWrapper.findByIdWithException(lead.getApplicant());
+            applicantRepositoryWrapper.delete(applicant);
+            lead.setApplicant(null);
+
+        } else if (type == LeadContactPersonType.CO_APPLICANT && lead.getCoApplicants() != null) {
+            // Find and remove co-applicant
+            List<Long> coApplicants = lead.getCoApplicants();
+            for (Long coApplicantId : new ArrayList<>(coApplicants)) {
+                Applicant coApplicant = applicantRepositoryWrapper.findByIdWithException(coApplicantId);
+                if (coApplicant.getPersonId().equals(contact.getPersonId())) {
+                    applicantRepositoryWrapper.delete(coApplicant);
+                    coApplicants.remove(coApplicantId);
+                    break;
+                }
+            }
+            lead.setCoApplicants(coApplicants);
+        }
+    }
+
+    private LeadContactPersonType determineCurrentApplicantType(Lead lead, Contact contact) {
+        // Check if applicant
+        if (lead.getApplicant() != null) {
+            Applicant applicant = applicantRepositoryWrapper.findByIdWithException(lead.getApplicant());
+            if (applicant.getPersonId().equals(contact.getPersonId())) {
+                return LeadContactPersonType.APPLICANT;
+            }
+        }
+
+        // Check if co-applicant
+        if (lead.getCoApplicants() != null) {
+            for (Long coApplicantId : lead.getCoApplicants()) {
+                Applicant coApplicant = applicantRepositoryWrapper.findByIdWithException(coApplicantId);
+                if (coApplicant.getPersonId().equals(contact.getPersonId())) {
+                    return LeadContactPersonType.CO_APPLICANT;
+                }
+            }
+        }
+
+        return LeadContactPersonType.NONE;
+    }
+
+    private void unsetOtherDecisionMakers(Lead lead, Long currentContactId) {
+        if (lead.getContacts() == null) {
+            return;
+        }
+
+        for (Long contactId : lead.getContacts()) {
+            if (!contactId.equals(currentContactId)) {
+                Contact contact = contactRepositoryWrapper.findByIdWithException(contactId);
+                if (contact.getIsDecisionMaker()) {
+                    contact.setIsDecisionMaker(false);
+                    contactRepositoryWrapper.saveWithException(contact);
+                }
+            }
+        }
+    }
+
+    private void addContactToLead(Lead lead, Long contactId) {
+        List<Long> contacts = lead.getContacts();
+        if (contacts == null) {
+            contacts = new ArrayList<>();
+        }
+        contacts.add(contactId);
+        lead.setContacts(contacts);
+    }
+
+    private void removeContactFromLead(Lead lead, Long contactId) {
+        List<Long> contacts = lead.getContacts();
+        if (contacts != null) {
+            contacts.remove(contactId);
+            lead.setContacts(contacts);
+        }
+    }
+
+    private Contact findContactByIdentifier(Lead lead, UUID contactIdentifier) {
+        if (lead.getContacts() == null) {
+            throw new RuntimeException("Contact not found with identifier: " + contactIdentifier);
+        }
+
+        for (Long contactId : lead.getContacts()) {
+            Contact contact = contactRepositoryWrapper.findByIdWithException(contactId);
+            if (contact.getIdentifier().equals(contactIdentifier)) {
+                return contact;
+            }
+        }
+
+        throw new RuntimeException("Contact not found with identifier: " + contactIdentifier);
+    }
+
+    private PersonCreateRequest mapToPersonCreateRequest(LeadContactPersonDetails details) {
+        return new PersonCreateRequest(
+                details.getFirstName(),
+                details.getMiddleName(),
+                details.getLastName(),
+                details.getMobileNumbers(),
+                details.getDateOfBirth(),
+                details.getGender()
+        );
+    }
+
+    private PersonUpdateRequest mapToPersonUpdateRequest(LeadContactPersonDetails details) {
+        return new PersonUpdateRequest(
+                details.getFirstName(),
+                details.getMiddleName(),
+                details.getLastName(),
+                details.getMobileNumbers(),
+                details.getDateOfBirth(),
+                details.getGender()
+        );
+    }
+}
+
