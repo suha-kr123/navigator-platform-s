@@ -30,31 +30,31 @@ public class TaskOperationException extends RuntimeException {
         );
     }
 
-    public static TaskOperationException alreadyCompleted(Long taskId, MessageSource messageSource) {
+    public static TaskOperationException alreadyCompleted(String taskIdentifier, MessageSource messageSource) {
         return new TaskOperationException(
             ExceptionUtils.createLocalizedMessage("error.task.already.completed", 
-                new Object[]{taskId}, messageSource)
+                new Object[]{taskIdentifier}, messageSource)
         );
     }
 
-    public static TaskOperationException cannotReassignCompleted(Long taskId, MessageSource messageSource) {
+    public static TaskOperationException cannotReassignCompleted(String taskIdentifier, MessageSource messageSource) {
         return new TaskOperationException(
             ExceptionUtils.createLocalizedMessage("error.task.cannot.reassign.completed", 
-                new Object[]{taskId}, messageSource)
+                new Object[]{taskIdentifier}, messageSource)
         );
     }
 
-    public static TaskOperationException cannotRescheduleCompleted(Long taskId, MessageSource messageSource) {
+    public static TaskOperationException cannotRescheduleCompleted(String taskIdentifier, MessageSource messageSource) {
         return new TaskOperationException(
             ExceptionUtils.createLocalizedMessage("error.task.cannot.reschedule.completed", 
-                new Object[]{taskId}, messageSource)
+                new Object[]{taskIdentifier}, messageSource)
         );
     }
 
-    public static TaskOperationException cannotReassignToSameUserOrRole(Long taskId, MessageSource messageSource) {
+    public static TaskOperationException cannotReassignToSameUserOrRole(String taskIdentifier, MessageSource messageSource) {
         return new TaskOperationException(
             ExceptionUtils.createLocalizedMessage("error.task.cannot.reassign.same", 
-                new Object[]{taskId}, messageSource)
+                new Object[]{taskIdentifier}, messageSource)
         );
     }
 

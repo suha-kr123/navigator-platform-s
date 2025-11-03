@@ -8,16 +8,19 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.Type;
 import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.UUID;
 
 @Entity
 @Table(name = "n_tasks")
@@ -30,6 +33,10 @@ public class Task extends AuditableEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "task_identifier", nullable = false, unique = true, updatable = false)
+    @Setter(AccessLevel.NONE)
+    private String taskIdentifier = UUID.randomUUID().toString();
 
     @Column(name = "task_config_key", nullable = false, length = 100)
     private String taskConfigKey;

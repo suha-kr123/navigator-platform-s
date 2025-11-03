@@ -32,14 +32,14 @@ public class TaskRepositoryWrapper {
     }
 
     /**
-     * Finds task by ID
-     * @param taskId the task ID
+    * Finds task by task identifier
+     * @param taskIdentifier the task identifier
      * @return Task
      * @throws TaskNotFoundException if task not found
      */
-    public Task findByIdWithException(Long taskId) {
-        return taskRepository.findById(taskId)
-                .orElseThrow(() -> new TaskNotFoundException(taskId, messageSource));
+    public Task findByTaskIdentifierWithException(String taskIdentifier) {
+        return taskRepository.findByTaskIdentifier(taskIdentifier)
+                .orElseThrow(() -> TaskNotFoundException.taskNotFound(taskIdentifier, messageSource));
     }
 }
 

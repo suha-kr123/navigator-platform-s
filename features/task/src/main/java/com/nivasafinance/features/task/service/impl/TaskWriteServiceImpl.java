@@ -83,7 +83,7 @@ public class TaskWriteServiceImpl implements TaskWriteService {
 
     private Task validateReassignTaskRequest(ReassignTaskRequest request) {
         validateRequestNotNull(request);
-        Task task = taskRepositoryWrapper.findByIdWithException(request.getTaskId());
+        Task task = taskRepositoryWrapper.findByTaskIdentifierWithException(request.getTaskIdentifier());
         validateTaskNotCompleted(task);
         validateAssignment(task, request.getNewAssignedTo(), request.getNewAssignedToRole());
         return task;
@@ -91,7 +91,7 @@ public class TaskWriteServiceImpl implements TaskWriteService {
 
     private Task validateRescheduleTaskRequest(RescheduleTaskRequest request) {
         validateRequestNotNull(request);
-        Task task = taskRepositoryWrapper.findByIdWithException(request.getTaskId());
+        Task task = taskRepositoryWrapper.findByTaskIdentifierWithException(request.getTaskIdentifier());
         validateTaskNotCompleted(task);
         validateDueDate(request.getNewDueAt(), task.getTaskConfigKey());
         return task;
@@ -99,7 +99,7 @@ public class TaskWriteServiceImpl implements TaskWriteService {
 
     private TaskValidationResult validateCompleteTaskRequest(CompleteTaskRequest request) {
         validateRequestNotNull(request);
-        Task task = taskRepositoryWrapper.findByIdWithException(request.getTaskId());
+        Task task = taskRepositoryWrapper.findByTaskIdentifierWithException(request.getTaskIdentifier());
         validateTaskNotCompleted(task);
         validateIfUserCanCompleteTask(task.getTaskConfigKey());
         TaskConfig taskConfig = getActiveTaskConfig(task.getTaskConfigKey());
@@ -115,7 +115,7 @@ public class TaskWriteServiceImpl implements TaskWriteService {
 
     private void validateTaskNotCompleted(Task task) {
         if (ValidationUtils.isNonNull(task.getOutcome())) {
-            throw TaskOperationException.alreadyCompleted(task.getId(), messageSource);
+            throw TaskOperationException.alreadyCompleted(task.getTaskIdentifier(), messageSource);
         }
     }
 
@@ -127,7 +127,7 @@ public class TaskWriteServiceImpl implements TaskWriteService {
         if (ValidationUtils.isNonNull(task)) {
             if ((ValidationUtils.isNonNull(assignedTo) && assignedTo.equals(task.getAssignedTo())) ||
                 (ValidationUtils.isNonNull(assignedToRole) && assignedToRole.equals(task.getAssignedToRole()))) {
-                throw TaskOperationException.cannotReassignToSameUserOrRole(task.getId(), messageSource);
+                throw TaskOperationException.cannotReassignToSameUserOrRole(task.getTaskIdentifier(), messageSource);
             }
         }
 

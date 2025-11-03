@@ -11,6 +11,10 @@
             <column name="id" type="BIGSERIAL" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
+            <!-- task_identifier (UUID as String for external API) -->
+            <column name="task_identifier" type="VARCHAR(36)">
+                <constraints nullable="false" unique="true"/>
+            </column>
             <!-- task_config_key -->
             <column name="task_config_key" type="VARCHAR(100)">
                 <constraints nullable="false"/>
@@ -47,6 +51,11 @@
                 referencedTableName="n_task_config"
                 referencedColumnNames="task_config_key"
                 onDelete="CASCADE"/>
+
+        <!-- index for task_identifier (for fast lookups by UUID) -->
+        <createIndex indexName="idx_tasks_task_identifier" tableName="n_tasks" unique="true">
+            <column name="task_identifier"/>
+        </createIndex>
 
         <!-- index for task_config_key -->
         <createIndex indexName="idx_tasks_task_config_key" tableName="n_tasks">

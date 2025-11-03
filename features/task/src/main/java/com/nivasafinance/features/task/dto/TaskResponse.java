@@ -16,7 +16,7 @@ import java.util.Map;
 @Builder
 public class TaskResponse {
   
-    private Long id;
+    private String taskIdentifier;
 
     private String taskConfigKey;
 
@@ -53,7 +53,7 @@ public class TaskResponse {
      */
     public static TaskResponse from(Task task, TaskConfig taskConfig) {
         return TaskResponse.builder()
-                .id(task.getId())
+                .taskIdentifier(task.getTaskIdentifier())
                 .taskConfigKey(task.getTaskConfigKey())
                 .taskName(taskConfig != null ? taskConfig.getName() : null)
                 .taskDescription(taskConfig != null ? taskConfig.getDescription() : null)
