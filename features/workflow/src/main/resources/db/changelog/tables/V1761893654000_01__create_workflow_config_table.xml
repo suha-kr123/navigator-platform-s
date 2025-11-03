@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="create_n_workflow_config_table" author="system">
+        <createTable tableName="n_workflow_config">
+            <!-- id -->
+            <column name="id" type="BIGSERIAL" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <!-- workflow_config_key -->
+            <column name="workflow_config_key" type="VARCHAR(100)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <!-- name -->
+            <column name="name" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <!-- description -->
+            <column name="description" type="VARCHAR(255)"/>
+            <!-- workflow_config_details -->
+            <column name="workflow_config_details" type="JSONB"/>
+            <!-- is_active -->
+            <column name="is_active" type="BOOLEAN" defaultValueBoolean="true"/>
+            <!-- created_at -->
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="NOW()"/>
+            <!-- created_by -->
+            <column name="created_by" type="VARCHAR(255)"/>
+            <!-- updated_at -->
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="NOW()"/>   
+            <!-- updated_by -->
+            <column name="updated_by" type="VARCHAR(255)"/>
+            <!-- version -->
+            <column name="version" type="BIGINT" defaultValueNumeric="0"/>
+        </createTable>
+
+        <!-- index for workflow_config_key -->
+        <createIndex indexName="idx_workflow_config_key" tableName="n_workflow_config">
+            <column name="workflow_config_key"/>
+        </createIndex>
+
+        <!-- index for is_active -->
+        <createIndex indexName="idx_workflow_config_active" tableName="n_workflow_config">
+            <column name="is_active"/>
+        </createIndex>
+
+        <!-- GIN index for workflow_config_details JSONB queries -->
+        <sql>
+            CREATE INDEX idx_workflow_config_details ON n_workflow_config USING GIN (workflow_config_details);
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>
+
