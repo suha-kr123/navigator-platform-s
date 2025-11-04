@@ -33,4 +33,5 @@ public interface LeadWriteService {
     void withdrawLead(UUID leadIdentifier, WithdrawLeadRequest request);
     void completeLead(UUID leadIdentifier);
     void onholdLead(UUID leadIdentifier, OnholdLeadRequest request);
+    void resumeLead(UUID leadIdentifier);
 }

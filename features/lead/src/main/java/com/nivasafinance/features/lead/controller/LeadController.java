@@ -213,4 +213,10 @@ public class LeadController {
         leadWriteService.onholdLead(leadId, request);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/{leadId}/status/resume")
+    public ResponseEntity<Void> resumeLead(@PathVariable UUID leadId) {
+        leadWriteService.resumeLead(leadId);
+        return ResponseEntity.noContent().build();
+    }
 }

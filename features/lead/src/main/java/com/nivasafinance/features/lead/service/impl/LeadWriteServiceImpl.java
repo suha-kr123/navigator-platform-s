@@ -2,6 +2,7 @@ package com.nivasafinance.features.lead.service.impl;
 
 import com.nivasafinance.common.dto.AddressData;
 import com.nivasafinance.features.address.service.AddressDataService;
+import com.nivasafinance.common.exception.BadRequestException;
 import com.nivasafinance.features.lead.dto.CreateLeadRequest;
 import com.nivasafinance.features.lead.dto.CreateLeadResponse;
 import com.nivasafinance.features.lead.dto.CreateTrancheRequest;
@@ -355,12 +356,16 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         // Set status to REJECTED
         lead.setStatus(LeadStatus.REJECTED);
         
+        // Clear substatus when rejecting
+        lead.setSubstatus(null);
+
         // Store reason code if provided
         if (request.getReasonCode() != null) {
             Lead.ReasonDetails reasons = lead.getReasons();
             if (reasons == null) {
                 reasons = new Lead.ReasonDetails();
             }
+            reasons.setOnhold(null);
             reasons.setReject(request.getReasonCode());
             lead.setReasons(reasons);
         }
@@ -376,12 +381,16 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         // Set status to WITHDRAWN
         lead.setStatus(LeadStatus.WITHDRAWN);
         
+        // Clear substatus when withdrawing
+        lead.setSubstatus(null);
+
         // Store reason code if provided
         if (request.getReasonCode() != null) {
             Lead.ReasonDetails reasons = lead.getReasons();
             if (reasons == null) {
                 reasons = new Lead.ReasonDetails();
             }
+            reasons.setOnhold(null);
             reasons.setWithdrawn(request.getReasonCode());
             lead.setReasons(reasons);
         }
@@ -394,6 +403,11 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     public void completeLead(UUID leadIdentifier) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
         
+        // Validate lead is not on hold
+        if (LeadSubStatus.ONHOLD.equals(lead.getSubstatus())) {
+            throw new BadRequestException("Cannot complete lead, lead is on hold");
+        }
+
         // Set status to COMPLETED
         lead.setStatus(LeadStatus.COMPLETED);
         
@@ -405,6 +419,11 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     public void onholdLead(UUID leadIdentifier, OnholdLeadRequest request) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
         
+        // Validate lead is not rejected or withdrawn
+        if (LeadStatus.REJECTED.equals(lead.getStatus()) || LeadStatus.WITHDRAWN.equals(lead.getStatus())) {
+            throw new BadRequestException("Cannot put lead on hold, lead is already rejected or withdrawn");
+        }
+
         // Set substatus to ONHOLD (keep current status)
         lead.setSubstatus(LeadSubStatus.ONHOLD);
         
@@ -417,7 +436,30 @@ public class LeadWriteServiceImpl implements LeadWriteService {
             reasons.setOnhold(request.getReasonCode());
             lead.setReasons(reasons);
         }
-        
+
+        leadRepositoryWrapper.saveWithException(lead);
+    }
+
+    @Override
+    @Transactional
+    public void resumeLead(UUID leadIdentifier) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+
+        // Validate lead is on hold
+        if (!LeadSubStatus.ONHOLD.equals(lead.getSubstatus())) {
+            throw new BadRequestException("Cannot resume lead, lead is not on hold");
+        }
+
+        // Clear substatus to resume lead
+        lead.setSubstatus(null);
+
+        // Clear onhold reason if exists
+        if (lead.getReasons() != null) {
+            Lead.ReasonDetails reasons = lead.getReasons();
+            reasons.setOnhold(null);
+            lead.setReasons(reasons);
+        }
+
         leadRepositoryWrapper.saveWithException(lead);
     }
 }
