@@ -49,15 +49,19 @@ tasks.named<JacocoReport>("jacocoTestReport") {
         files(classDirectories.files.map {
             fileTree(it) {
                 include("**/service/impl/**")
+                include("**/service/**")
                 include("**/controller/**")
                 include("**/repository/**")
+                include("**/provider/**")
+                include("**/framework/**")
                 exclude(
                     "**/dto/**",
                     "**/entity/**",
                     "**/enum/**",
                     "**/exception/**",
                     "**/config/**",
-                    "**/base/**"
+                    "**/base/**",
+                    "**/test/**"
                 )
             }
         })
@@ -96,15 +100,19 @@ tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
         files(classDirectories.files.map {
             fileTree(it) {
                 include("**/service/impl/**")
+                include("**/service/**")
                 include("**/controller/**")
                 include("**/repository/**")
+                include("**/provider/**")
+                include("**/framework/**")
                 exclude(
                     "**/dto/**",
                     "**/entity/**",
                     "**/enum/**",
                     "**/exception/**",
                     "**/config/**",
-                    "**/base/**"
+                    "**/base/**",
+                    "**/test/**"
                 )
             }
         })
