@@ -74,8 +74,7 @@ public class LeadReadServiceImpl implements LeadReadService {
                     ? codeValueMasterService.getByKey(creditDetails.getMonthlyFamilyIncome()) : null)
                 .propertyDocumentType(creditDetails.getPropertyDocumentType() != null 
                     ? codeValueMasterService.getByKey(creditDetails.getPropertyDocumentType()) : null)
-                .eligibleLoanAmount(creditDetails.getEligibleLoanAmount() != null 
-                    ? codeValueMasterService.getByKey(creditDetails.getEligibleLoanAmount()) : null)
+                .eligibleLoanAmount(creditDetails.getEligibleLoanAmount())
                 .location(creditDetails.getLocation() != null 
                     ? codeValueMasterService.getByKey(creditDetails.getLocation()) : null)
                 .bureauRating(creditDetails.getBureauRating() != null 

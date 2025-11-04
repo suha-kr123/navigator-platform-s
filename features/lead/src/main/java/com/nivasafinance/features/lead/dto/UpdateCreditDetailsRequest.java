@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -16,7 +18,7 @@ public class UpdateCreditDetailsRequest {
     private String foir;
     private String monthlyFamilyIncome;
     private String propertyDocumentType;
-    private String eligibleLoanAmount;
+    private BigDecimal eligibleLoanAmount;
     private String location;
     private String bureauRating;
     private String customerProfiles;

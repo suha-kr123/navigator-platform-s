@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -18,7 +20,7 @@ public class CreditDetailsResponse {
     private CodeValueResponse foir;
     private CodeValueResponse monthlyFamilyIncome;
     private CodeValueResponse propertyDocumentType;
-    private CodeValueResponse eligibleLoanAmount;
+    private BigDecimal eligibleLoanAmount;
     private CodeValueResponse location;
     private CodeValueResponse bureauRating;
     private CodeValueResponse customerProfiles;
