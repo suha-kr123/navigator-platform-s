@@ -60,6 +60,15 @@ public class LeadLenderController {
         leadLenderWriteService.rejectLeadLender(leadIdentifier, lenderIdentifier, request);
     }
 
+    @PostMapping("/{lenderIdentifier}/submit")
+    @ResponseStatus(HttpStatus.OK)
+    public void submitLeadLender(
+        @PathVariable UUID leadIdentifier,
+        @PathVariable UUID lenderIdentifier
+    ) {
+        leadLenderWriteService.submitLeadLender(leadIdentifier, lenderIdentifier);
+    }
+
     @GetMapping("/{lenderIdentifier}")
     public LeadLenderResponse getLeadLenderByIdentifier(
         @PathVariable UUID leadIdentifier,

@@ -134,6 +134,43 @@ public class LeadLenderWriteServiceImpl implements LeadLenderWriteService {
         leadLenderRepositoryWrapper.saveWithException(existingEntity);
     }
 
+    @Override
+    @Transactional
+    public void submitLeadLender(UUID leadIdentifier, UUID lenderIdentifier) {
+        // Validate that lead exists and get internal ID
+        var lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        
+        LeadLender existingEntity = leadLenderRepositoryWrapper.findByLenderIdentifierWithException(lenderIdentifier);
+        
+        // Validate that the lender belongs to the specified lead
+        if (!existingEntity.getLeadId().equals(lead.getId())) {
+            throw new InvalidLeadLenderStatusException(
+                "Lead lender with identifier " + lenderIdentifier + " does not belong to lead " + leadIdentifier
+            );
+        }
+
+        // Check if already submitted
+        if (existingEntity.getStatus() == LeadLenderStatus.SUBMITTED) {
+            throw new InvalidLeadLenderStatusException(
+                "Lead lender relationship is already submitted. Current status: " + 
+                existingEntity.getStatus()
+            );
+        }
+
+        // Check if already rejected
+        if (existingEntity.getStatus() == LeadLenderStatus.REJECTED) {
+            throw new InvalidLeadLenderStatusException(
+                "Cannot submit rejected lead lender relationship. Current status: " + 
+                existingEntity.getStatus()
+            );
+        }
+
+        // Update the status to SUBMITTED
+        existingEntity.setStatus(LeadLenderStatus.SUBMITTED);
+        
+        leadLenderRepositoryWrapper.saveWithException(existingEntity);
+    }
+
     private void validateOfficeForLender(String officeKey, LeadLender existingEntity) {
         LenderOfficeReponseData lenderOffice = lenderOfficeReadService.getByKey(officeKey);
 

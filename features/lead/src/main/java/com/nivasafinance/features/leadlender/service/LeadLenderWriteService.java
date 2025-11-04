@@ -14,5 +14,7 @@ public interface LeadLenderWriteService {
     void updateLeadLender(UUID leadIdentifier, UUID lenderIdentifier, UpdateLeadLenderRequest request);
     
     void rejectLeadLender(UUID leadIdentifier, UUID lenderIdentifier, RejectLeadLenderRequest request);
+    
+    void submitLeadLender(UUID leadIdentifier, UUID lenderIdentifier);
 }
 
