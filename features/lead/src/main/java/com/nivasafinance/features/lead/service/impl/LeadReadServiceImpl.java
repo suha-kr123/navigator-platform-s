@@ -3,6 +3,7 @@ package com.nivasafinance.features.lead.service.impl;
 import com.nivasafinance.features.lead.dto.CreditDetailsResponse;
 import com.nivasafinance.features.lead.dto.DisbursementDetailsResponse;
 import com.nivasafinance.features.lead.dto.LeadResponse;
+import com.nivasafinance.features.lead.dto.LeadTemplateResponse;
 import com.nivasafinance.features.lead.dto.PreliminaryDetailsResponse;
 import com.nivasafinance.features.lead.dto.PropertyDetailsResponse;
 import com.nivasafinance.features.lead.dto.ProposedDetailsResponse;
@@ -11,6 +12,8 @@ import com.nivasafinance.features.lead.dto.TrancheResponse;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadReadService;
+import com.nivasafinance.features.master.codemaster.SystemControlledMasterCodes;
+import com.nivasafinance.features.master.codemaster.service.CodeMasterService;
 import com.nivasafinance.features.master.codemaster.service.CodeValueMasterService;
 import com.nivasafinance.features.sourcechannel.dto.SourcingChannelResponse;
 import com.nivasafinance.features.sourcechannel.service.SourcingChannelReadService;
@@ -27,14 +30,48 @@ public class LeadReadServiceImpl implements LeadReadService {
 
     private final LeadRepositoryWrapper leadRepositoryWrapper;
     private final CodeValueMasterService codeValueMasterService;
+    private final CodeMasterService codeMasterService;
     private final SourcingChannelReadService sourcingChannelReadService;
 
     public LeadReadServiceImpl(LeadRepositoryWrapper leadRepositoryWrapper,
                                 CodeValueMasterService codeValueMasterService,
+                                CodeMasterService codeMasterService,
                                 SourcingChannelReadService sourcingChannelReadService) {
         this.leadRepositoryWrapper = leadRepositoryWrapper;
         this.codeValueMasterService = codeValueMasterService;
+        this.codeMasterService = codeMasterService;
         this.sourcingChannelReadService = sourcingChannelReadService;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public LeadTemplateResponse getLeadTemplate() {
+        return LeadTemplateResponse.builder()
+                .leadRejectionReasons(codeMasterService.getAllCodeValuesByCodeKey(
+                        SystemControlledMasterCodes.LEAD_REJECT_REASON_MASTER, true))
+                .leadWithdrawalReasons(codeMasterService.getAllCodeValuesByCodeKey(
+                        SystemControlledMasterCodes.LEAD_WITHDRAWAL_REASON_MASTER, true))
+                .leadOnholdReasons(codeMasterService.getAllCodeValuesByCodeKey(
+                        SystemControlledMasterCodes.LEAD_ONHOLD_REASON_MASTER, true))
+                .occupationProfiles(codeMasterService.getAllCodeValuesByCodeKey(
+                        SystemControlledMasterCodes.LEAD_OCCUPATION_PROFILE_MASTER, true))
+                .roofProfiles(codeMasterService.getAllCodeValuesByCodeKey(
+                        SystemControlledMasterCodes.LEAD_ROOF_PROFILE_MASTER, true))
+                .ltvOptions(codeMasterService.getAllCodeValuesByCodeKey(
+                        SystemControlledMasterCodes.LEAD_LTV_MASTER, true))
+                .foirOptions(codeMasterService.getAllCodeValuesByCodeKey(
+                        SystemControlledMasterCodes.LEAD_FOIR_MASTER, true))
+                .monthlyIncomes(codeMasterService.getAllCodeValuesByCodeKey(
+                        SystemControlledMasterCodes.LEAD_MONTHLY_INCOME_MASTER, true))
+                .propertyDocumentTypes(codeMasterService.getAllCodeValuesByCodeKey(
+                        SystemControlledMasterCodes.LEAD_PROPERTY_DOCUMENT_TYPE_MASTER, true))
+                .locations(codeMasterService.getAllCodeValuesByCodeKey(
+                        SystemControlledMasterCodes.LEAD_LOCATION_MASTER, true))
+                .bureauRatings(codeMasterService.getAllCodeValuesByCodeKey(
+                        SystemControlledMasterCodes.LEAD_BUREAU_RATING_MASTER, true))
+                .customerProfiles(codeMasterService.getAllCodeValuesByCodeKey(
+                        SystemControlledMasterCodes.LEAD_CUSTOMER_PROFILE_MASTER, true))
+                .build();
     }
 
     @Override

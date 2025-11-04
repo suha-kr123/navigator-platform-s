@@ -7,6 +7,7 @@ import com.nivasafinance.features.lead.dto.CreateTrancheRequest;
 import com.nivasafinance.features.lead.dto.CreditDetailsResponse;
 import com.nivasafinance.features.lead.dto.DisbursementDetailsResponse;
 import com.nivasafinance.features.lead.dto.LeadResponse;
+import com.nivasafinance.features.lead.dto.LeadTemplateResponse;
 import com.nivasafinance.features.lead.dto.OnholdLeadRequest;
 import com.nivasafinance.features.lead.dto.PreliminaryDetailsResponse;
 import com.nivasafinance.features.lead.dto.PropertyDetailsResponse;
@@ -40,6 +41,12 @@ public class LeadController {
 
     private final LeadWriteService leadWriteService;
     private final LeadReadService leadReadService;
+
+    @GetMapping("/template")
+    public ResponseEntity<LeadTemplateResponse> getLeadTemplate() {
+        LeadTemplateResponse response = leadReadService.getLeadTemplate();
+        return ResponseEntity.ok(response);
+    }
 
     @PostMapping
     public ResponseEntity<CreateLeadResponse> createLead(@Valid @RequestBody CreateLeadRequest request) {
