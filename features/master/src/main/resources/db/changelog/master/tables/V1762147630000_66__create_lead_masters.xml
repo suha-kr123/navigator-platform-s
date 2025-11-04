@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1762147630000_66" author="system" context="default">
+        <!-- delete LEAD_REJECT_MASTER duplicate -->
+        <delete tableName="master_code">
+            <where>key = 'LEAD_REJECT_MASTER'</where>
+        </delete>
+
+        <!-- Rename DOCUMENT_MASTER to LEAD_DOCUMENT_MASTER -->
+        <update tableName="master_code">
+            <column name="key" value="LEAD_DOCUMENT_MASTER"/>
+            <where>key = 'DOCUMENT_MASTER'</where>
+        </update>
+
+        <!-- Update corresponding master_code_value references -->
+        <update tableName="master_code_value">
+            <column name="code_key" value="LEAD_DOCUMENT_MASTER"/>
+            <where>code_key = 'DOCUMENT_MASTER'</where>
+        </update>
+
+        <!-- Insert Lead Credit Profile Master Codes -->
+        
+        <!-- Occupation Profile Master -->
+        <insert tableName="master_code">
+            <column name="parent_id" value="NULL"/>
+            <column name="key" value="LEAD_OCCUPATION_PROFILE_MASTER"/>
+            <column name="name" value='{"default": "Occupation Profile Master"}'/>
+            <column name="description" value='{"default": "Occupation profiles for credit rating"}'/>
+            <column name="is_system_defined" valueBoolean="false"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" valueDate="2025-01-27 10:00:00"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+
+        <!-- Roof Profile Master -->
+        <insert tableName="master_code">
+            <column name="parent_id" value="NULL"/>
+            <column name="key" value="LEAD_ROOF_PROFILE_MASTER"/>
+            <column name="name" value='{"default": "Roof Profile Master"}'/>
+            <column name="description" value='{"default": "Roof profiles for credit rating"}'/>
+            <column name="is_system_defined" valueBoolean="false"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" valueDate="2025-01-27 10:00:00"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+
+        <!-- LTV Master -->
+        <insert tableName="master_code">
+            <column name="parent_id" value="NULL"/>
+            <column name="key" value="LEAD_LTV_MASTER"/>
+            <column name="name" value='{"default": "LTV Master"}'/>
+            <column name="description" value='{"default": "Loan to Value ratios"}'/>
+            <column name="is_system_defined" valueBoolean="false"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" valueDate="2025-01-27 10:00:00"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+
+        <!-- FOIR Master -->
+        <insert tableName="master_code">
+            <column name="parent_id" value="NULL"/>
+            <column name="key" value="LEAD_FOIR_MASTER"/>
+            <column name="name" value='{"default": "FOIR Master"}'/>
+            <column name="description" value='{"default": "Fixed Obligation to Income Ratio"}'/>
+            <column name="is_system_defined" valueBoolean="false"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" valueDate="2025-01-27 10:00:00"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+
+        <!-- Monthly Income Master -->
+        <insert tableName="master_code">
+            <column name="parent_id" value="NULL"/>
+            <column name="key" value="LEAD_MONTHLY_INCOME_MASTER"/>
+            <column name="name" value='{"default": "Monthly Income Master"}'/>
+            <column name="description" value='{"default": "Monthly family income ranges"}'/>
+            <column name="is_system_defined" valueBoolean="false"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" valueDate="2025-01-27 10:00:00"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+
+        <!-- Property Document Type Master -->
+        <insert tableName="master_code">
+            <column name="parent_id" value="NULL"/>
+            <column name="key" value="LEAD_PROPERTY_DOCUMENT_TYPE_MASTER"/>
+            <column name="name" value='{"default": "Property Document Type Master"}'/>
+            <column name="description" value='{"default": "Property document types"}'/>
+            <column name="is_system_defined" valueBoolean="false"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" valueDate="2025-01-27 10:00:00"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+
+        <!-- Location Master -->
+        <insert tableName="master_code">
+            <column name="parent_id" value="NULL"/>
+            <column name="key" value="LEAD_LOCATION_MASTER"/>
+            <column name="name" value='{"default": "Location Master"}'/>
+            <column name="description" value='{"default": "Location categories"}'/>
+            <column name="is_system_defined" valueBoolean="false"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" valueDate="2025-01-27 10:00:00"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+
+        <!-- Bureau Rating Master -->
+        <insert tableName="master_code">
+            <column name="parent_id" value="NULL"/>
+            <column name="key" value="LEAD_BUREAU_RATING_MASTER"/>
+            <column name="name" value='{"default": "Bureau Rating Master"}'/>
+            <column name="description" value='{"default": "Credit bureau ratings"}'/>
+            <column name="is_system_defined" valueBoolean="false"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" valueDate="2025-01-27 10:00:00"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+
+        <!-- Customer Profile Master -->
+        <insert tableName="master_code">
+            <column name="parent_id" value="NULL"/>
+            <column name="key" value="LEAD_CUSTOMER_PROFILE_MASTER"/>
+            <column name="name" value='{"default": "Customer Profile Master"}'/>
+            <column name="description" value='{"default": "Customer profile categories"}'/>
+            <column name="is_system_defined" valueBoolean="false"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" valueDate="2025-01-27 10:00:00"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+
+    </changeSet>
+
+</databaseChangeLog>
