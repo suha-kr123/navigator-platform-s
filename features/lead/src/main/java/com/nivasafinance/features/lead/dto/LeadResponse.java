@@ -3,6 +3,7 @@ package com.nivasafinance.features.lead.dto;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.enums.LeadStatus;
 import com.nivasafinance.features.lead.enums.LeadSubStatus;
+import com.nivasafinance.features.master.products.dto.ProductResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,7 +19,8 @@ import java.util.UUID;
 public class LeadResponse {
     private UUID leadIdentifier;
     private BigDecimal requestedAmount;
-    //todo : product
+    private String productCode;
+    private String productName;
     private String purpose;
     private String primaryPersonName;
     private String primaryPersonNumber;

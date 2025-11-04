@@ -8,6 +8,7 @@ import com.nivasafinance.features.lead.exception.LeadNotFoundException;
 import com.nivasafinance.features.master.codemaster.SystemControlledMasterCodes;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import com.nivasafinance.features.master.codemaster.service.CodeValueMasterService;
+import com.nivasafinance.features.master.products.service.ProductReadService;
 import lombok.AllArgsConstructor;
 import org.springframework.context.MessageSource;
 import org.springframework.dao.DataAccessException;
@@ -26,6 +27,7 @@ public class LeadRepositoryWrapper {
     private final MessageSource messageSource;
     private final JdbcTemplate jdbcTemplate;
     private final CodeValueMasterService codeValueMasterService;
+    private final ProductReadService productReadService;
 
     public Lead saveWithException(Lead lead) {
         try {
@@ -69,6 +71,7 @@ public class LeadRepositoryWrapper {
                 SELECT
                      l.lead_identifier as leadIdentifier,
                      l.requested_amount as requestedAmount,
+                     l.product_code as productCode,
                      l.purpose,
                      l.office_key as officeKey,
                      l.workflow_details->>'currentStage' as currentStage,
@@ -119,13 +122,13 @@ public class LeadRepositoryWrapper {
                  FROM n_lead l
                  -- Left join with applicant -> person (for primary person name/number)
                  LEFT JOIN n_applicant applicant ON
-                     (l.applicant_details->>'applicantId')::bigint = applicant.id
+                     l.applicant = applicant.id
                  LEFT JOIN n_person applicant_person ON
                      applicant.person_id = applicant_person.id
                  -- Left join with first co-applicant -> person
                  LEFT JOIN LATERAL (
-                     SELECT (co_app->>'applicantId')::bigint as applicant_id
-                     FROM jsonb_array_elements(l.co_applicant_details) AS co_app
+                     SELECT (co_app)::bigint as applicant_id
+                     FROM jsonb_array_elements(l.co_applicants) AS co_app
                      LIMIT 1
                  ) first_co_applicant ON true
                  LEFT JOIN n_applicant co_applicant ON
@@ -134,8 +137,8 @@ public class LeadRepositoryWrapper {
                      co_applicant.person_id = co_applicant_person.id
                  -- Left join with first contact -> person
                  LEFT JOIN LATERAL (
-                     SELECT (cont->>'contactId')::bigint as contact_id
-                     FROM jsonb_array_elements(l.contact_details) AS cont
+                     SELECT (cont)::bigint as contact_id
+                     FROM jsonb_array_elements(l.contacts) AS cont
                      LIMIT 1
                  ) first_contact ON true
                  LEFT JOIN n_contact contact ON
@@ -171,6 +174,9 @@ public class LeadRepositoryWrapper {
                             leadResponse.getReasonCode(), SystemControlledMasterCodes.LEAD_WITHDRAWAL_REASON_MASTER);
                     leadResponse.setReason(codeValueResponse.getValue());
                 }
+            }
+            if(leadResponse.getProductCode() != null) {
+                leadResponse.setProductName(productReadService.getProductByCode(leadResponse.getProductCode()).getName());
             }
             return leadResponse;
         } catch (EmptyResultDataAccessException e) {
