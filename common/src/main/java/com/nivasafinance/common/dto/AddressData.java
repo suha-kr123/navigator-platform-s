@@ -1,5 +1,6 @@
 package com.nivasafinance.common.dto;
 
+import com.nivasafinance.common.enums.AddressType;
 import jakarta.validation.constraints.Pattern;
 import lombok.*;
 
@@ -9,6 +10,7 @@ import lombok.*;
 @Builder
 public class AddressData {
     private String id;
+    private AddressType addressType;
     private String addressLineOne;
     private String addressLineTwo;
     @NonNull
