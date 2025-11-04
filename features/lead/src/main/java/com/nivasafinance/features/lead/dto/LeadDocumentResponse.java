@@ -1,6 +1,5 @@
 package com.nivasafinance.features.lead.dto;
 
-import com.nivasafinance.features.lead.enums.LeadDocumentStatus;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,7 +20,6 @@ public class LeadDocumentResponse {
     private String type;
     private Long size;
     private List<CodeValueResponse> tags;
-    private LeadDocumentStatus status;
     private LocalDateTime createdAt;
     private String createdBy;
 }

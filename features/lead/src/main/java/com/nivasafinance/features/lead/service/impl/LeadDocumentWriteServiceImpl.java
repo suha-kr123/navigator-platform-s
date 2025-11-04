@@ -8,7 +8,6 @@ import com.nivasafinance.features.document.service.DocumentWriteService;
 import com.nivasafinance.features.lead.dto.LeadDocumentCreateRequest;
 import com.nivasafinance.features.lead.dto.LeadDocumentCreateResponse;
 import com.nivasafinance.features.lead.entity.Lead;
-import com.nivasafinance.features.lead.enums.LeadDocumentStatus;
 import com.nivasafinance.features.lead.exception.VerifiedDocumentDeletionException;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadDocumentWriteService;
@@ -49,14 +48,9 @@ public class LeadDocumentWriteServiceImpl implements LeadDocumentWriteService {
         // Create the document
         DocumentCreateResponse documentResponse = documentWriteService.createDocument(documentRequest);
 
-        // Set default status if not provided
-        LeadDocumentStatus status = request.getStatus() != null ?
-                request.getStatus() : LeadDocumentStatus.UNVERIFIED;
-
         // Create DocumentDetail for the lead
         Lead.DocumentDetail documentDetail = Lead.DocumentDetail.builder()
                 .id(documentResponse.getId())
-                .status(status.name())
                 .tag(request.getTags())
                 .build();
 
@@ -88,19 +82,6 @@ public class LeadDocumentWriteServiceImpl implements LeadDocumentWriteService {
         // Check if document is verified
         List<Lead.DocumentDetail> documentDetails = lead.getDocumentDetails();
         if (documentDetails != null) {
-            documentDetails.stream()
-                    .filter(detail -> detail.getId().equals(document.getId()))
-                    .findFirst()
-                    .ifPresent(detail -> {
-                        if (LeadDocumentStatus.VERIFIED.name().equals(detail.getStatus())) {
-                            throw new VerifiedDocumentDeletionException(
-                                    "error.lead.document.verified.cannot.delete",
-                                    null,
-                                    messageSource
-                            );
-                        }
-                    });
-
             // Remove from lead's document details
             documentDetails.removeIf(detail -> detail.getId().equals(document.getId()));
             lead.setDocumentDetails(documentDetails);

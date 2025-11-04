@@ -6,8 +6,6 @@ import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationInfo;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.features.lead.dto.LeadDocumentResponse;
-import com.nivasafinance.features.lead.enums.LeadDocumentStatus;
-import com.nivasafinance.features.master.codemaster.SystemControlledMasterCodes;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import com.nivasafinance.features.master.codemaster.service.CodeValueMasterService;
 import lombok.AllArgsConstructor;
@@ -38,7 +36,6 @@ public class LeadDocumentRepositoryWrapper {
                   d.size,
                   d.created_at as createdAt,
                   d.created_by as createdBy,
-                  doc_detail->>'status' as status,
                   doc_detail->'tag' as tags
               FROM n_lead l
               CROSS JOIN LATERAL jsonb_array_elements(l.document_details) doc_detail
@@ -61,11 +58,6 @@ public class LeadDocumentRepositoryWrapper {
             response.setSize(rs.getLong("size"));
             response.setCreatedAt(rs.getTimestamp("createdAt").toLocalDateTime());
             response.setCreatedBy(rs.getString("createdBy"));
-
-            String statusStr = rs.getString("status");
-            if (statusStr != null) {
-                response.setStatus(LeadDocumentStatus.valueOf(statusStr));
-            }
 
             String tagsJson = rs.getString("tags");
             if (tagsJson != null && !tagsJson.equals("null")) {

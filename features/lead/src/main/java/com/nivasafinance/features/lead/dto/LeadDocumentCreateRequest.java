@@ -1,6 +1,5 @@
 package com.nivasafinance.features.lead.dto;
 
-import com.nivasafinance.features.lead.enums.LeadDocumentStatus;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,7 +18,5 @@ public class LeadDocumentCreateRequest {
     private String name;
     
     private List<String> tags;
-    
-    private LeadDocumentStatus status;
 }
 

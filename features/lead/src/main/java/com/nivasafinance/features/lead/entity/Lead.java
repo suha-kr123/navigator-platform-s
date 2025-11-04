@@ -117,11 +117,6 @@ public class Lead extends AuditableEntity {
     @Column(name = "other_details", columnDefinition = "jsonb")
     private OtherDetails otherDetails;
 
-    @Type(JsonType.class)
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "checklist", columnDefinition = "jsonb")
-    private Checklist checklist;
-
     // Nested data classes for JSONB fields
 
     @Data
@@ -141,7 +136,6 @@ public class Lead extends AuditableEntity {
     @Builder
     public static class DocumentDetail {
         private Long id;
-        private String status;
         private List<String> tag;
     }
 
@@ -224,24 +218,5 @@ public class Lead extends AuditableEntity {
     public static class PropertyDetails {
         private AddressData address;
         private GeoData geoData;
-    }
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    public static class Checklist {
-        private String type;
-        private List<ChecklistItem> data;
-    }
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    public static class ChecklistItem {
-        private Long id;
-        private String tag;
-        private String status;
     }
 }
