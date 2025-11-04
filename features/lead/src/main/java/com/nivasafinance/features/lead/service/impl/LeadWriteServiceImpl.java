@@ -86,7 +86,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         lead.setLeadIdentifier(UUID.randomUUID());
         lead.setRequestedAmount(request.getRequestedLoanAmount());
         lead.setProductCode(request.getProduct());
-        lead.setStatus(LeadStatus.ENQUIRY);
+        lead.setStatus(LeadStatus.ACTIVE);
 
         // Set contact to lead
         lead.setContacts(List.of(savedContact.getId()));
@@ -391,44 +391,11 @@ public class LeadWriteServiceImpl implements LeadWriteService {
 
     @Override
     @Transactional
-    public void submitLead(UUID leadIdentifier) {
-        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
-        
-        // Set status to SUBMITTED
-        lead.setStatus(LeadStatus.SUBMITTED);
-        
-        leadRepositoryWrapper.saveWithException(lead);
-    }
-
-    @Override
-    @Transactional
-    public void disburseLead(UUID leadIdentifier) {
-        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
-        
-        // Set status to DISBURSED
-        lead.setStatus(LeadStatus.DISBURSED);
-        
-        leadRepositoryWrapper.saveWithException(lead);
-    }
-
-    @Override
-    @Transactional
     public void completeLead(UUID leadIdentifier) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
         
         // Set status to COMPLETED
         lead.setStatus(LeadStatus.COMPLETED);
-        
-        leadRepositoryWrapper.saveWithException(lead);
-    }
-
-    @Override
-    @Transactional
-    public void qualifyLead(UUID leadIdentifier) {
-        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
-        
-        // Set status to QUALIFIED
-        lead.setStatus(LeadStatus.QUALIFIED);
         
         leadRepositoryWrapper.saveWithException(lead);
     }

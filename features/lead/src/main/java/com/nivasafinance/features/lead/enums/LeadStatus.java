@@ -5,14 +5,12 @@ import lombok.Getter;
 @Getter
 public enum LeadStatus {
 
-    ENQUIRY(1L, "ENQUIRY", "Enquiry"),
+    ACTIVE(1L, "ENQUIRY", "Enquiry"),
     REJECTED(2L, "REJECTED", "Rejected"),
     WITHDRAWN(3L, "WITHDRAWN", "Withdrawn"),
-    QUALIFIED(4L, "QUALIFIED", "Qualified"),
-    SUBMITTED(5L, "SUBMITTED", "Submitted"),
-    DISBURSED(6L, "DISBURSED", "Disbursed"),
     COMPLETED(7L, "COMPLETED", "Completed"),
-    DROP_OFF(8L, "DROP_OFF", "Drop Off");
+
+    ;
 
     private final Long id;
     private final String code;
@@ -24,8 +22,8 @@ public enum LeadStatus {
         this.value = value;
     }
 
-    public boolean inProgress() {
-        return this == ENQUIRY || this == SUBMITTED || this == QUALIFIED;
+    public boolean isActive() {
+        return this == ACTIVE;
     }
 
 }

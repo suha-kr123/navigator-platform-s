@@ -200,27 +200,9 @@ public class LeadController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/{leadId}/status/submit")
-    public ResponseEntity<Void> submitLead(@PathVariable UUID leadId) {
-        leadWriteService.submitLead(leadId);
-        return ResponseEntity.noContent().build();
-    }
-
-    @PostMapping("/{leadId}/status/disburse")
-    public ResponseEntity<Void> disburseLead(@PathVariable UUID leadId) {
-        leadWriteService.disburseLead(leadId);
-        return ResponseEntity.noContent().build();
-    }
-
     @PostMapping("/{leadId}/status/complete")
     public ResponseEntity<Void> completeLead(@PathVariable UUID leadId) {
         leadWriteService.completeLead(leadId);
-        return ResponseEntity.noContent().build();
-    }
-
-    @PostMapping("/{leadId}/status/qualify")
-    public ResponseEntity<Void> qualifyLead(@PathVariable UUID leadId) {
-        leadWriteService.qualifyLead(leadId);
         return ResponseEntity.noContent().build();
     }
 
