@@ -21,5 +21,6 @@
 
     <!-- Common module migrations -->
     <include file="/db/changelog/tables/V1759332511000_33__create_api_audit_log_table.xml"/>
+    <include file="/db/changelog/tables/V1762316813000_24__delete_api_audit_table.xml"/>
 
 </databaseChangeLog>
