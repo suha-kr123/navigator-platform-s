@@ -1,6 +1,7 @@
 package com.nivasafinance.features.sourcechannel.dto;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -15,8 +16,10 @@ public class SourcingChannelRequest {
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
+    @Builder
     public static class MarketingDetails {
         private String sourceId;
+        private String campaignId;
     }
 }
 

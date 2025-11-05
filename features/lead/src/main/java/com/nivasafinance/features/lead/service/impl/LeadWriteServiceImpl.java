@@ -101,7 +101,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     @Transactional
     public void updateLead(UUID leadIdentifier, UpdateLeadRequest request) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
-        
+
         lead.setRequestedAmount(request.getRequestedAmount());
         lead.setOfficeKey(request.getOfficeKey());
         lead.setOwner(request.getOwner());
@@ -109,7 +109,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         //validates product exists
         productReadService.getProductByCode(request.getProductCode());
         lead.setProductCode(request.getProductCode());
-        
+
         leadRepositoryWrapper.saveWithException(lead);
     }
 
@@ -125,7 +125,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     @Transactional
     public void updateCreditDetails(UUID leadIdentifier, UpdateCreditDetailsRequest request) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
-        
+
         // Get current username from UserContext
         String currentUsername = UserContext.getUserInfo().getUsername();
 
@@ -145,7 +145,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         creditDetails.setBureauRating(request.getBureauRating());
         creditDetails.setCustomerProfiles(request.getCustomerProfiles());
         creditDetails.setUnderwriter(currentUsername);
-        
+
         lead.setCreditRatingDetails(creditDetails);
         leadRepositoryWrapper.saveWithException(lead);
     }
@@ -165,7 +165,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         proposedDetails.setTenureValue(request.getTenureValue());
         proposedDetails.setTenureType(request.getTenureType());
         proposedDetails.setEmi(request.getEmi());
-        
+
         lead.setProposedDetails(proposedDetails);
         leadRepositoryWrapper.saveWithException(lead);
     }
@@ -187,9 +187,9 @@ public class LeadWriteServiceImpl implements LeadWriteService {
 
         // Use common address data service for address creation
         AddressData addressData = addressDataService.createAddressData(request.getAddress());
-        
+
         propertyDetails.setAddress(addressData);
-        
+
         otherDetails.setPropertyDetails(propertyDetails);
         lead.setOtherDetails(otherDetails);
         leadRepositoryWrapper.saveWithException(lead);
@@ -229,17 +229,20 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         SourcingChannelRequest sourcingChannelRequest = new SourcingChannelRequest(
                 request.getSourcingChannel(),
                 request.getMarketingSource(),
-                new SourcingChannelRequest.MarketingDetails(request.getSourceId())
+                SourcingChannelRequest.MarketingDetails.builder()
+                        .sourceId(request.getSourceId())
+                        .campaignId(request.getCampaignId())
+                        .build()
         );
-        
+
         if (lead.getSourcingChannelId() != null) {
             sourcingChannelWriteService.update(lead.getSourcingChannelId(), sourcingChannelRequest);
         } else {
-            SourcingChannelResponse sourcingChannelResponse = 
+            SourcingChannelResponse sourcingChannelResponse =
                 sourcingChannelWriteService.create(sourcingChannelRequest);
             lead.setSourcingChannelId(sourcingChannelResponse.getId());
         }
-        
+
         leadRepositoryWrapper.saveWithException(lead);
     }
 
@@ -247,16 +250,16 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     @Transactional
     public void updateDisbursementDetails(UUID leadIdentifier, UpdateDisbursementDetailsRequest request) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
-        
+
         // Get existing disbursement details or create new instance
         Lead.DisbursementDetails disbursementDetails = lead.getDisbursementDetails();
         if (disbursementDetails == null) {
             disbursementDetails = new Lead.DisbursementDetails();
         }
-        
+
         // Preserve existing tranches
         List<Lead.Tranche> existingTranches = disbursementDetails.getTranches();
-        
+
         // Set all disbursement fields from request (PUT semantics - full replacement)
         disbursementDetails.setDisbursedAmount(request.getDisbursedAmount());
         disbursementDetails.setRoi(request.getRoi());
@@ -264,10 +267,10 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         disbursementDetails.setTenureType(request.getTenureType());
         disbursementDetails.setDisbursedDate(request.getDisbursedDate());
         disbursementDetails.setProcessingFees(request.getProcessingFees());
-        
+
         // Restore tranches (preserve existing tranches)
         disbursementDetails.setTranches(existingTranches);
-        
+
         lead.setDisbursementDetails(disbursementDetails);
         leadRepositoryWrapper.saveWithException(lead);
     }
@@ -276,26 +279,26 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     @Transactional
     public void createTranche(UUID leadIdentifier, CreateTrancheRequest request) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
-        
+
         // Validate that disbursement details exist
         Lead.DisbursementDetails disbursementDetails = lead.getDisbursementDetails();
         if (disbursementDetails == null) {
             throw new RuntimeException("Disbursement details must exist before adding tranches");
         }
-        
+
         // Get existing tranches or create new list
         List<Lead.Tranche> tranches = disbursementDetails.getTranches();
         if (tranches == null) {
             tranches = new ArrayList<>();
         }
-        
+
         // Create new tranche
         Lead.Tranche tranche = Lead.Tranche.builder()
                 .identifier(UUID.randomUUID())
                 .amount(request.getAmount())
                 .date(request.getDate())
                 .build();
-        
+
         tranches.add(tranche);
         disbursementDetails.setTranches(tranches);
         lead.setDisbursementDetails(disbursementDetails);
@@ -306,23 +309,23 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     @Transactional
     public void updateTranche(UUID leadIdentifier, UUID trancheIdentifier, UpdateTrancheRequest request) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
-        
+
         // Validate that disbursement details exist
         Lead.DisbursementDetails disbursementDetails = lead.getDisbursementDetails();
         if (disbursementDetails == null || disbursementDetails.getTranches() == null) {
             throw new RuntimeException("Tranche not found with identifier: " + trancheIdentifier);
         }
-        
+
         // Find tranche by identifier
         Lead.Tranche tranche = disbursementDetails.getTranches().stream()
                 .filter(t -> trancheIdentifier.equals(t.getIdentifier()))
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Tranche not found with identifier: " + trancheIdentifier));
-        
+
         // Update tranche fields (PUT semantics - full replacement)
         tranche.setAmount(request.getAmount());
         tranche.setDate(request.getDate());
-        
+
         leadRepositoryWrapper.saveWithException(lead);
     }
 
@@ -330,21 +333,21 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     @Transactional
     public void deleteTranche(UUID leadIdentifier, UUID trancheIdentifier) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
-        
+
         // Validate that disbursement details exist
         Lead.DisbursementDetails disbursementDetails = lead.getDisbursementDetails();
         if (disbursementDetails == null || disbursementDetails.getTranches() == null) {
             throw new RuntimeException("Tranche not found with identifier: " + trancheIdentifier);
         }
-        
+
         // Find and remove tranche by identifier
         List<Lead.Tranche> tranches = disbursementDetails.getTranches();
         boolean removed = tranches.removeIf(t -> trancheIdentifier.equals(t.getIdentifier()));
-        
+
         if (!removed) {
             throw new RuntimeException("Tranche not found with identifier: " + trancheIdentifier);
         }
-        
+
         leadRepositoryWrapper.saveWithException(lead);
     }
 
@@ -352,10 +355,10 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     @Transactional
     public void rejectLead(UUID leadIdentifier, RejectLeadRequest request) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
-        
+
         // Set status to REJECTED
         lead.setStatus(LeadStatus.REJECTED);
-        
+
         // Clear substatus when rejecting
         lead.setSubstatus(null);
 
@@ -369,7 +372,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
             reasons.setReject(request.getReasonCode());
             lead.setReasons(reasons);
         }
-        
+
         leadRepositoryWrapper.saveWithException(lead);
     }
 
@@ -377,10 +380,10 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     @Transactional
     public void withdrawLead(UUID leadIdentifier, WithdrawLeadRequest request) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
-        
+
         // Set status to WITHDRAWN
         lead.setStatus(LeadStatus.WITHDRAWN);
-        
+
         // Clear substatus when withdrawing
         lead.setSubstatus(null);
 
@@ -394,7 +397,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
             reasons.setWithdrawn(request.getReasonCode());
             lead.setReasons(reasons);
         }
-        
+
         leadRepositoryWrapper.saveWithException(lead);
     }
 
@@ -402,7 +405,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     @Transactional
     public void completeLead(UUID leadIdentifier) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
-        
+
         // Validate lead is not on hold
         if (LeadSubStatus.ONHOLD.equals(lead.getSubstatus())) {
             throw new BadRequestException("Cannot complete lead, lead is on hold");
@@ -410,7 +413,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
 
         // Set status to COMPLETED
         lead.setStatus(LeadStatus.COMPLETED);
-        
+
         leadRepositoryWrapper.saveWithException(lead);
     }
 
@@ -418,7 +421,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     @Transactional
     public void onholdLead(UUID leadIdentifier, OnholdLeadRequest request) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
-        
+
         // Validate lead is not rejected or withdrawn
         if (LeadStatus.REJECTED.equals(lead.getStatus()) || LeadStatus.WITHDRAWN.equals(lead.getStatus())) {
             throw new BadRequestException("Cannot put lead on hold, lead is already rejected or withdrawn");
@@ -426,7 +429,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
 
         // Set substatus to ONHOLD (keep current status)
         lead.setSubstatus(LeadSubStatus.ONHOLD);
-        
+
         // Store reason code if provided
         if (request.getReasonCode() != null) {
             Lead.ReasonDetails reasons = lead.getReasons();

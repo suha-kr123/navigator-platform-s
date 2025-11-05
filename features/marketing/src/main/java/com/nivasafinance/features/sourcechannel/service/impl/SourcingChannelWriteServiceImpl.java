@@ -29,6 +29,7 @@ public class SourcingChannelWriteServiceImpl implements SourcingChannelWriteServ
             builder.marketingDetails(SourcingChannel.MarketingDetails
                     .builder()
                     .sourceId(request.getMarketingDetails().getSourceId())
+                    .campaignId(request.getMarketingDetails().getCampaignId())
                     .build());
         }
         SourcingChannel sourcingChannel = builder.build();
@@ -48,6 +49,8 @@ public class SourcingChannelWriteServiceImpl implements SourcingChannelWriteServ
                 marketingDetails = new SourcingChannel.MarketingDetails();
             }
             marketingDetails.setSourceId(request.getMarketingDetails().getSourceId());
+            marketingDetails.setCampaignId(request.getMarketingDetails().getCampaignId());
+            existingEntity.setMarketingDetails(marketingDetails);
         }else {
             existingEntity.setMarketingDetails(null);
         }
