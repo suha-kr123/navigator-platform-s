@@ -5,8 +5,7 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
-    <!-- Include all table creation changesets for task module -->
-    <includeAll path="classpath:db/changelog/task/tables"/>
+    <includeAll path="classpath:db/changelog/workflow/tables"/>
 
 </databaseChangeLog>
 

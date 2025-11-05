@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="create_n_stage_config_table" author="system">
+        <createTable tableName="n_stage_config">
+            <!-- id -->
+            <column name="id" type="BIGSERIAL" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <!-- name -->
+            <column name="name" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <!-- key (unique identifier for stage) -->
+            <column name="key" type="VARCHAR(100)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <!-- description -->
+            <column name="description" type="VARCHAR(500)"/>
+            <!-- stage_config (contains possible_next_stages etc.) -->
+            <column name="stage_config" type="JSONB">
+                <constraints nullable="false"/>
+            </column>
+            <!-- assignee_roles (contains roles array) -->
+            <column name="assignee_roles" type="JSONB">
+                <constraints nullable="false"/>
+            </column>
+            <!-- sub_stages_code (master code key reference) -->
+            <column name="sub_stages_code" type="VARCHAR(100)"/>
+            <!-- is_active -->
+            <column name="is_active" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <!-- created_at -->
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="NOW()"/>
+            <!-- created_by -->
+            <column name="created_by" type="VARCHAR(255)"/>
+            <!-- updated_at -->
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="NOW()"/>
+            <!-- updated_by -->
+            <column name="updated_by" type="VARCHAR(255)"/>
+            <!-- version -->
+            <column name="version" type="BIGINT" defaultValueNumeric="0"/>
+        </createTable>
+
+        <!-- index for key (for fast lookups) -->
+        <createIndex indexName="idx_stage_config_key" tableName="n_stage_config" unique="true">
+            <column name="key"/>
+        </createIndex>
+
+        <!-- index for is_active -->
+        <createIndex indexName="idx_stage_config_is_active" tableName="n_stage_config">
+            <column name="is_active"/>
+        </createIndex>
+
+        <!-- GIN index for stage_config JSONB column -->
+        <sql>CREATE INDEX IF NOT EXISTS idx_stage_config_stage_config_gin ON n_stage_config USING GIN (stage_config);</sql>
+        <sql>COMMENT ON INDEX idx_stage_config_stage_config_gin IS 'GIN index on n_stage_config.stage_config JSONB column for improved JSON query performance';</sql>
+
+        <!-- GIN index for assignee_roles JSONB column -->
+        <sql>CREATE INDEX IF NOT EXISTS idx_stage_config_assignee_roles_gin ON n_stage_config USING GIN (assignee_roles);</sql>
+        <sql>COMMENT ON INDEX idx_stage_config_assignee_roles_gin IS 'GIN index on n_stage_config.assignee_roles JSONB column for improved JSON query performance';</sql>
+
+        <!-- index for sub_stages_code (for lookups by master code) -->
+        <createIndex indexName="idx_stage_config_sub_stages_code" tableName="n_stage_config">
+            <column name="sub_stages_code"/>
+        </createIndex>
+
+    </changeSet>
+    
+</databaseChangeLog>
+
