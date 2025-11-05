@@ -12,4 +12,5 @@ public class UpdateSourcingDetailsRequest {
     private String marketingSource;
     private String sourceId;
     private String campaignId;
+    private String sourcedBy;
 }

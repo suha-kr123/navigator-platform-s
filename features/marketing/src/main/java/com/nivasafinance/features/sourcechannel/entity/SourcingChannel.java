@@ -44,5 +44,6 @@ public class SourcingChannel extends AuditableEntity {
     public static class MarketingDetails {
         private String sourceId;
         private String campaignId;
+        private String sourcedBy;
     }
 }

@@ -20,6 +20,7 @@ public class SourcingChannelRequest {
     public static class MarketingDetails {
         private String sourceId;
         private String campaignId;
+        private String sourcedBy;
     }
 }
 
