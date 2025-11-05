@@ -21,6 +21,7 @@ import com.nivasafinance.features.lead.entity.Contact;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.enums.LeadStatus;
 import com.nivasafinance.features.lead.enums.LeadSubStatus;
+import com.nivasafinance.features.lead.exception.ActiveLeadAlreadyExistsException;
 import com.nivasafinance.features.lead.repository.ApplicantRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.ContactRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
@@ -30,6 +31,8 @@ import com.nivasafinance.features.person.dto.PersonCreateRequest;
 import com.nivasafinance.features.person.dto.PersonCreateResponse;
 import com.nivasafinance.features.person.dto.PersonResponse;
 import com.nivasafinance.features.person.entity.MobileNumberDetails;
+import com.nivasafinance.features.person.exception.PersonMobileNumberNotFoundException;
+import com.nivasafinance.features.person.service.PersonReadService;
 import com.nivasafinance.features.person.service.PersonWriteService;
 import com.nivasafinance.features.sourcechannel.dto.SourcingChannelRequest;
 import com.nivasafinance.features.sourcechannel.dto.SourcingChannelResponse;
@@ -44,6 +47,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -56,6 +60,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     private final ContactRepositoryWrapper contactRepositoryWrapper;
     private final ApplicantRepositoryWrapper applicantRepositoryWrapper;
     private final PersonWriteService personWriteService;
+    private final PersonReadService personReadService;
     private final MessageSource messageSource;
     private final AddressDataService addressDataService;
     private final SourcingChannelWriteService sourcingChannelWriteService;
@@ -68,10 +73,9 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         //validates product exists
         productReadService.getProductByCode(request.getProduct());
 
-        //TODO : Check if active lead already exists with this phone number
-       /* if (existingActiveLead.isPresent()) {
-            throw new ActiveLeadAlreadyExistsException(request.getPhoneNumber().getMobileNumber(), messageSource);
-        }*/
+        // Check if active lead already exists with this phone number
+        checkForActiveLead(request);
+
         PersonCreateRequest personCreateRequest = getPersonCreateRequest(request);
 
         PersonCreateResponse personResponse = personWriteService.createPerson(personCreateRequest);
@@ -465,5 +469,28 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         }
 
         leadRepositoryWrapper.saveWithException(lead);
+    }
+
+    private void checkForActiveLead(CreateLeadRequest request) {
+        try {
+            PersonResponse existingPerson = personReadService.getPersonByPrimaryMobile(
+                    request.getPhoneNumber().getMobileNumber()
+            );
+
+            // Person exists, check if they are a contact in any active/onhold lead
+            Optional<Lead> existingActiveLead = leadRepositoryWrapper.findActiveLeadByContactPersonId(
+                    existingPerson.getId()
+            );
+
+            if (existingActiveLead.isPresent()) {
+                throw new ActiveLeadAlreadyExistsException(
+                        request.getPhoneNumber().getMobileNumber(),
+                        messageSource
+                );
+            }
+        } catch (PersonMobileNumberNotFoundException e) {
+            // Person not found - this is fine, we'll create a new person
+            // Continue with normal flow
+        }
     }
 }

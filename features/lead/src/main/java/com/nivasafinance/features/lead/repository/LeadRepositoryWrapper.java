@@ -17,6 +17,7 @@ import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -183,6 +184,41 @@ public class LeadRepositoryWrapper {
             throw new LeadNotFoundException(leadIdentifier, messageSource);
         } catch (DataAccessException e) {
             throw new RuntimeException("Failed to retrieve lead response by identifier", e);
+        }
+    }
+
+    /**
+     * Find active or onhold lead where the given person is a contact.
+     * Active leads are those with status = 'ACTIVE' and substatus is either NULL or 'ONHOLD'.
+     *
+     * @param personId The person ID to search for in contacts
+     * @return Optional containing the lead if found, empty otherwise
+     */
+    public Optional<Lead> findActiveLeadByContactPersonId(Long personId) {
+        try {
+            String sql = """
+                SELECT l.*
+                FROM n_lead l
+                JOIN LATERAL (
+                    SELECT (contact_id)::bigint as id
+                    FROM jsonb_array_elements(l.contacts) AS contact_id
+                ) contact_ids ON true
+                JOIN n_contact c ON c.id = contact_ids.id
+                WHERE c.person_id = ?
+                  AND l.status = 'ACTIVE'
+                LIMIT 1
+                """;
+            
+            Lead lead = jdbcTemplate.queryForObject(
+                sql,
+                new BeanPropertyRowMapper<>(Lead.class),
+                personId
+            );
+            return Optional.ofNullable(lead);
+        } catch (EmptyResultDataAccessException e) {
+            return Optional.empty();
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Failed to find active lead by contact person", e);
         }
     }
 }
