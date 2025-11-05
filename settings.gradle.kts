@@ -18,5 +18,6 @@ include("features:rolemanagement")
 include("features:notification-executor")
 include("features:marketing")
 include("features:workflow")
+include("features:stage")
 include("features:task")
 
