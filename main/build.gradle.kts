@@ -12,6 +12,7 @@ dependencies {
     implementation(project(":security"))
     implementation(project(":features:creditbureau"))
     implementation(project(":features:person"))
+    implementation(project(":features:usermanagement"))
     implementation(project(":features:advisor"))
     implementation(project(":features:master"))
     implementation(project(":features:address"))
