@@ -1,5 +1,7 @@
 package com.nivasafinance.features.usermanagement.service.impl;
 
+import com.nivasafinance.features.person.dto.PersonResponse;
+import com.nivasafinance.features.person.service.PersonReadService;
 import com.nivasafinance.features.usermanagement.dto.UserResponse;
 import com.nivasafinance.features.usermanagement.entity.User;
 import com.nivasafinance.features.usermanagement.repository.UserRepositoryWrapper;
@@ -14,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserReadServiceImpl implements UserReadService {
 
     private final UserRepositoryWrapper userRepositoryWrapper;
+    private final PersonReadService personReadService;  // Add this dependency
 
     @Override
     public UserResponse getUserByUsername(String username) {
@@ -22,12 +25,17 @@ public class UserReadServiceImpl implements UserReadService {
     }
 
     private UserResponse mapToResponse(User user) {
+        // Fetch PersonResponse if person is linked
+        PersonResponse personResponse = null;
+        if (user.getPerson() != null) {
+            personResponse = personReadService.getPersonById(user.getPerson().getId());
+        }
+
         return UserResponse.builder()
                 .id(user.getId())
-                .personId(user.getPerson() != null ? user.getPerson().getId() : null)
+                .personResponse(personResponse)  // Set full PersonResponse
                 .username(user.getUsername())
                 .status(user.getStatus())
                 .build();
     }
 }
-
