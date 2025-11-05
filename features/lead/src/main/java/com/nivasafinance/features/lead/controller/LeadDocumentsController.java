@@ -3,6 +3,7 @@ package com.nivasafinance.features.lead.controller;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.common.constants.ApiConstants;
+import com.nivasafinance.features.lead.dto.HouseFrontPhotoRequest;
 import com.nivasafinance.features.lead.dto.LeadDocumentCreateRequest;
 import com.nivasafinance.features.lead.dto.LeadDocumentCreateResponse;
 import com.nivasafinance.features.lead.dto.LeadDocumentResponse;
@@ -33,6 +34,16 @@ public class LeadDocumentsController {
             @RequestPart("file") MultipartFile file
     ) {
         LeadDocumentCreateResponse response = leadDocumentWriteService.createLeadDocument(leadId,file, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping(value = "/front-house-photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<LeadDocumentCreateResponse> createHouseFrontPhoto(
+            @PathVariable UUID leadId,
+            @Valid @RequestPart("metadata") HouseFrontPhotoRequest request,
+            @RequestPart("file") MultipartFile file
+    ) {
+        LeadDocumentCreateResponse response = leadDocumentWriteService.createHouseFrontPhoto(leadId, file, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 

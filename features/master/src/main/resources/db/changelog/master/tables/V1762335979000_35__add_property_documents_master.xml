@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1762335979000_88" author="system" context="default">
+        
+        <!-- Insert LEAD_PROPERTY_DOCUMENTS as a child of LEAD_DOCUMENT_MASTER -->
+        <insert tableName="master_code">
+            <column name="parent_id" valueComputed="(SELECT id FROM master_code WHERE key = 'LEAD_DOCUMENT_MASTER')"/>
+            <column name="key" value="LEAD_PROPERTY_DOCUMENTS"/>
+            <column name="name" value='{"default": "Property Documents"}'/>
+            <column name="description" value='{"default": "Property documents for lead"}'/>
+            <column name="is_system_defined" valueBoolean="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" valueDate="2025-01-27 10:00:00"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+
+        <!-- Insert master_code_value entries for property documents -->
+        <insert tableName="master_code_value">
+            <column name="key" value="HOUSE_FRONT"/>
+            <column name="code_key" value="LEAD_PROPERTY_DOCUMENTS"/>
+            <column name="value" value='{"default": "House Front"}'/>
+            <column name="description" value='{"default": "Front view of the house"}'/>
+            <column name="is_active" valueBoolean="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" valueDate="2025-01-27 10:00:00"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="master_code_value">
+            <column name="key" value="HOUSE_LEFT"/>
+            <column name="code_key" value="LEAD_PROPERTY_DOCUMENTS"/>
+            <column name="value" value='{"default": "House Left"}'/>
+            <column name="description" value='{"default": "Left side view of the house"}'/>
+            <column name="is_active" valueBoolean="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" valueDate="2025-01-27 10:00:00"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="master_code_value">
+            <column name="key" value="HOUSE_RIGHT"/>
+            <column name="code_key" value="LEAD_PROPERTY_DOCUMENTS"/>
+            <column name="value" value='{"default": "House Right"}'/>
+            <column name="description" value='{"default": "Right side view of the house"}'/>
+            <column name="is_active" valueBoolean="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" valueDate="2025-01-27 10:00:00"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="master_code_value">
+            <column name="key" value="HOUSE_INSIDE"/>
+            <column name="code_key" value="LEAD_PROPERTY_DOCUMENTS"/>
+            <column name="value" value='{"default": "House Inside"}'/>
+            <column name="description" value='{"default": "Interior view of the house"}'/>
+            <column name="is_active" valueBoolean="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" valueDate="2025-01-27 10:00:00"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+    </changeSet>
+
+</databaseChangeLog>

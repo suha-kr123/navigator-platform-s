@@ -1,5 +1,6 @@
 package com.nivasafinance.features.lead.service;
 
+import com.nivasafinance.features.lead.dto.HouseFrontPhotoRequest;
 import com.nivasafinance.features.lead.dto.LeadDocumentCreateRequest;
 import com.nivasafinance.features.lead.dto.LeadDocumentCreateResponse;
 import org.springframework.web.multipart.MultipartFile;
@@ -19,6 +20,15 @@ public interface LeadDocumentWriteService {
      * @return The created document response
      */
     LeadDocumentCreateResponse createLeadDocument(UUID leadIdentifier, MultipartFile file, LeadDocumentCreateRequest request);
+
+    /**
+     * Creates a house front photo for a lead with geolocation data.
+     * @param leadIdentifier The lead identifier
+     * @param file The photo file (JPG/JPEG/PNG only)
+     * @param request The house front photo request containing GeoData
+     * @return The created document response
+     */
+    LeadDocumentCreateResponse createHouseFrontPhoto(UUID leadIdentifier, MultipartFile file, HouseFrontPhotoRequest request);
 
     /**
      * Deletes a document from a lead.
