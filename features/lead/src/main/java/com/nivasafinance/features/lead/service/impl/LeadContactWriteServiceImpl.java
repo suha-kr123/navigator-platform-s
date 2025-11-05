@@ -234,18 +234,11 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
     }
 
     private Contact findContactByIdentifier(Lead lead, UUID contactIdentifier) {
-        if (lead.getContacts() == null) {
+        Contact contact = contactRepositoryWrapper.findByIdentifierWithException(contactIdentifier);
+        if(lead.getContacts() == null || !lead.getContacts().contains(contact.getId())) {
             throw new RuntimeException("Contact not found with identifier: " + contactIdentifier);
         }
-
-        for (Long contactId : lead.getContacts()) {
-            Contact contact = contactRepositoryWrapper.findByIdWithException(contactId);
-            if (contact.getIdentifier().equals(contactIdentifier)) {
-                return contact;
-            }
-        }
-
-        throw new RuntimeException("Contact not found with identifier: " + contactIdentifier);
+        return contact;
     }
 
     private PersonCreateRequest mapToPersonCreateRequest(LeadContactPersonDetails details) {

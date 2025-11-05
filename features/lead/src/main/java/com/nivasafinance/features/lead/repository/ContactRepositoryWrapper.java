@@ -40,4 +40,14 @@ public class ContactRepositoryWrapper {
             throw exception;
         }
     }
+
+    public Contact findByIdentifierWithException(UUID identifier) {
+        try {
+            return contactRepository.findByIdentifier(identifier).orElseThrow(() ->
+                    new RuntimeException("Contact not found with id: " + identifier)
+            );
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Failed to retrieve contact by identifier", e);
+        }
+    }
 }
