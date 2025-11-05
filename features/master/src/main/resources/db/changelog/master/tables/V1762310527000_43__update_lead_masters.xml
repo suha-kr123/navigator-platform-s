@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1762310527000_96" author="system" context="default">
+
+        <!-- Lead Rejection Master -->
+        <insert tableName="master_code">
+            <column name="parent_id" value="NULL"/>
+            <column name="key" value="LEAD_REJECT_REASON_MASTER"/>
+            <column name="name" value='{"default": "Lead Rejection Master"}'/>
+            <column name="description" value='{"default": "Lead Rejection Master"}'/>
+            <column name="is_system_defined" valueBoolean="true"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+
+        <!-- Lead WITHDRAWAL Master -->
+        <insert tableName="master_code">
+            <column name="parent_id" value="NULL"/>
+            <column name="key" value="LEAD_WITHDRAWAL_REASON_MASTER"/>
+            <column name="name" value='{"default": "Lead WITHDRAWAL Master"}'/>
+            <column name="description" value='{"default": "Lead WITHDRAWAL Master"}'/>
+            <column name="is_system_defined" valueBoolean="true"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+
+        <!-- Lead OnHold Master -->
+        <insert tableName="master_code">
+            <column name="parent_id" value="NULL"/>
+            <column name="key" value="LEAD_ONHOLD_REASON_MASTER"/>
+            <column name="name" value='{"default": "Lead ONHOLD Master"}'/>
+            <column name="description" value='{"default": "Lead ONHOLD Master"}'/>
+            <column name="is_system_defined" valueBoolean="true"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <!-- Update Lead Master Codes to be system defined -->
+        
+        <!-- Update Occupation Profile Master -->
+        <update tableName="master_code">
+            <column name="is_system_defined" valueBoolean="true"/>
+            <where>key = 'LEAD_OCCUPATION_PROFILE_MASTER'</where>
+        </update>
+
+        <!-- Update Roof Profile Master -->
+        <update tableName="master_code">
+            <column name="is_system_defined" valueBoolean="true"/>
+            <where>key = 'LEAD_ROOF_PROFILE_MASTER'</where>
+        </update>
+
+        <!-- Update LTV Master -->
+        <update tableName="master_code">
+            <column name="is_system_defined" valueBoolean="true"/>
+            <where>key = 'LEAD_LTV_MASTER'</where>
+        </update>
+
+        <!-- Update FOIR Master -->
+        <update tableName="master_code">
+            <column name="is_system_defined" valueBoolean="true"/>
+            <where>key = 'LEAD_FOIR_MASTER'</where>
+        </update>
+
+        <!-- Update Monthly Income Master -->
+        <update tableName="master_code">
+            <column name="is_system_defined" valueBoolean="true"/>
+            <where>key = 'LEAD_MONTHLY_INCOME_MASTER'</where>
+        </update>
+
+        <!-- Update Property Document Type Master -->
+        <update tableName="master_code">
+            <column name="is_system_defined" valueBoolean="true"/>
+            <where>key = 'LEAD_PROPERTY_DOCUMENT_TYPE_MASTER'</where>
+        </update>
+
+        <!-- Update Location Master -->
+        <update tableName="master_code">
+            <column name="is_system_defined" valueBoolean="true"/>
+            <where>key = 'LEAD_LOCATION_MASTER'</where>
+        </update>
+
+        <!-- Update Bureau Rating Master -->
+        <update tableName="master_code">
+            <column name="is_system_defined" valueBoolean="true"/>
+            <where>key = 'LEAD_BUREAU_RATING_MASTER'</where>
+        </update>
+
+        <!-- Update Customer Profile Master -->
+        <update tableName="master_code">
+            <column name="is_system_defined" valueBoolean="true"/>
+            <where>key = 'LEAD_CUSTOMER_PROFILE_MASTER'</where>
+        </update>
+        
+    </changeSet>
+
+</databaseChangeLog>
