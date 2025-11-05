@@ -27,7 +27,7 @@ public class UserContextInterceptor implements HandlerInterceptor {
             HttpServletResponse response,
             Object handler) throws Exception {
         
-        String authHeader = request.getHeader("Authorization");
+       /* String authHeader = request.getHeader("Authorization");
 
         if (authHeader == null || authHeader.isBlank() || !authHeader.startsWith(BEARER_PREFIX)) {
             logger.warn("Missing or invalid Authorization header");
@@ -36,10 +36,10 @@ public class UserContextInterceptor implements HandlerInterceptor {
             return false;
         }
 
-        String token = authHeader.substring(BEARER_PREFIX.length());
+        String token = authHeader.substring(BEARER_PREFIX.length());*/
 
         try {
-            DecodedJWT decodedJWT = JWT.decode(token);
+            /*DecodedJWT decodedJWT = JWT.decode(token);
 
             // Extract userId - throw exception if not found
             String userId = decodedJWT.getClaim("sub").asString();
@@ -54,9 +54,10 @@ public class UserContextInterceptor implements HandlerInterceptor {
             }
 
             String email = decodedJWT.getClaim("email").asString();
-            String phoneNumber = decodedJWT.getClaim("phone_number").asString();
+            String phoneNumber = decodedJWT.getClaim("phone_number").asString();*/
 
-            UserInfo userInfo = new UserInfo(userId, username, email, phoneNumber);
+            //TODO set this
+            UserInfo userInfo = new UserInfo("123", "system", "system@gmail.com", "99882323");
             UserContext.setUserInfo(userInfo);
             logger.info("UserContext set successfully for user: {}", userInfo);
 
