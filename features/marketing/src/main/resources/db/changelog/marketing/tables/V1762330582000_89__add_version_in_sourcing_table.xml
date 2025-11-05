@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1762330582000_43" author="system" context="default">
+        
+        <!-- Add your database changes here -->
+
+        <addColumn tableName="n_sourcing_channel_details">
+            <column name="version" type="bigint" defaultValueNumeric="0"/>
+        </addColumn>
+
+        <!-- Create sequence for id auto-increment -->
+        <createSequence sequenceName="n_sourcing_channel_details_id_seq" 
+                        startValue="1" 
+                        incrementBy="1"/>
+
+        <!-- Set the sequence as default value for id column -->
+        <addDefaultValue tableName="n_sourcing_channel_details" 
+                        columnName="id" 
+                        defaultValueSequenceNext="n_sourcing_channel_details_id_seq"/>
+
+        <!-- Change sourcing_identifier column type from VARCHAR to UUID -->
+        <modifyDataType tableName="n_sourcing_channel_details" 
+                        columnName="sourcing_identifier" 
+                        newDataType="UUID"/>
+
+        
+    </changeSet>
+
+</databaseChangeLog>

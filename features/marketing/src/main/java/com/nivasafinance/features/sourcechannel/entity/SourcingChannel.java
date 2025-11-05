@@ -23,7 +23,7 @@ public class SourcingChannel extends AuditableEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "sourcing_identifier", nullable = false, unique = true, length = 255)
+    @Column(name = "sourcing_identifier", nullable = false, unique = true)
     private UUID sourcingIdentifier;
 
     @Column(name = "sourcing_channel_name", length = 255)
