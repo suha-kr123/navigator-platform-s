@@ -5,7 +5,6 @@ import com.nivasafinance.features.master.pincode.dto.PincodeResponse;
 import com.nivasafinance.features.master.pincode.exception.PincodeExceptionFactory;
 import com.nivasafinance.features.master.pincode.repository.PincodeRepository;
 import com.nivasafinance.features.master.pincode.service.PincodeService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -16,7 +15,6 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional
-@RequiredArgsConstructor
 public class PincodeServiceImpl extends BaseNavigatorService implements PincodeService {
     
     private final PincodeRepository pincodeRepository;

@@ -2,7 +2,6 @@ package com.nivasafinance.features.document.repository;
 
 import com.nivasafinance.features.document.entity.Document;
 import com.nivasafinance.features.document.exception.DocumentExceptionFactory;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Page;
@@ -13,7 +12,6 @@ import java.util.List;
 import java.util.UUID;
 
 @Component
-@RequiredArgsConstructor
 public class DocumentRepositoryWrapper {
     
     private final DocumentRepository documentRepository;
