@@ -7,7 +7,7 @@ import com.nivasafinance.features.leadstages.entity.LeadStageAssignmentHistory;
 import com.nivasafinance.features.leadstages.entity.LeadStageHistory;
 import com.nivasafinance.features.leadstages.repository.LeadStageHistoryRepositoryWrapper;
 import com.nivasafinance.features.leadstages.service.LeadStageHistoryWriteService;
-import com.nivasafinance.features.leadstages.service.exception.LeadStageHistoryValidationException;
+import com.nivasafinance.features.leadstages.exception.LeadStageHistoryValidationException;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import com.nivasafinance.features.rolemanagement.role.service.UserRoleService;
 import com.nivasafinance.features.stage.dto.StageConfigResponse;
