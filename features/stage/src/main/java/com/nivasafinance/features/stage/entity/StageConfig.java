@@ -1,12 +1,10 @@
 package com.nivasafinance.features.stage.entity;
 
-import com.nivasafinance.common.audit.AuditableEntity;
+import com.nivasafinance.common.audit.IdentifiableEntity;
+
 import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -24,11 +22,7 @@ import java.util.Map;
 @AllArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class StageConfig extends AuditableEntity {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class StageConfig extends IdentifiableEntity {
 
     @Column(name = "name", nullable = false, length = 100)
     private String name;

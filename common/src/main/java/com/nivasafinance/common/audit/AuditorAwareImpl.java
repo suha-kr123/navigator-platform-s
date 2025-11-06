@@ -11,9 +11,7 @@ public class AuditorAwareImpl implements AuditorAware<String> {
 
     @Override
     public Optional<String> getCurrentAuditor() {
-        String username = UserContext.getUserInfo() != null 
-                ? UserContext.getUserInfo().getUsername() 
-                : "system";
+        String username = UserContext.getCurrentUsername();
         // Truncate username to 255 characters to prevent database issues
         if (username.length() > MAX_USERNAME_LENGTH) {
             username = username.substring(0, MAX_USERNAME_LENGTH);
