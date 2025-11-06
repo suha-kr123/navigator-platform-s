@@ -5,7 +5,6 @@ import com.nivasafinance.common.exception.ResourceNotFoundException;
 import org.springframework.context.MessageSource;
 
 import java.io.Serial;
-import java.util.UUID;
 
 public class PersonNotFoundException extends ResourceNotFoundException {
 

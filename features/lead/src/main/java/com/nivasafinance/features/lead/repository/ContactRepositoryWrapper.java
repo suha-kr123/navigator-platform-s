@@ -1,23 +1,18 @@
 package com.nivasafinance.features.lead.repository;
 
 import com.nivasafinance.features.lead.entity.Contact;
-import com.nivasafinance.features.lead.exception.LeadExceptionFactory;
 import org.springframework.context.MessageSource;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
 public class ContactRepositoryWrapper {
 
     private final ContactRepository contactRepository;
-    private final MessageSource messageSource;
-
     public ContactRepositoryWrapper(ContactRepository contactRepository, MessageSource messageSource) {
         this.contactRepository = contactRepository;
-        this.messageSource = messageSource;
     }
 
     public Contact saveWithException(Contact contact) {

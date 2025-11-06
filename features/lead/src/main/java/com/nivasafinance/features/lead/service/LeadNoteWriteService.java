@@ -2,7 +2,6 @@ package com.nivasafinance.features.lead.service;
 
 import com.nivasafinance.features.lead.dto.LeadNoteCreateRequest;
 import com.nivasafinance.features.lead.dto.LeadNoteCreateResponse;
-import com.nivasafinance.features.lead.dto.LeadNoteResponse;
 import com.nivasafinance.features.lead.dto.LeadNoteUpdateRequest;
 
 import java.util.UUID;

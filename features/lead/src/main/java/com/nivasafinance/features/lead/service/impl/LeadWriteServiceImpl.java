@@ -22,7 +22,6 @@ import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.enums.LeadStatus;
 import com.nivasafinance.features.lead.enums.LeadSubStatus;
 import com.nivasafinance.features.lead.exception.ActiveLeadAlreadyExistsException;
-import com.nivasafinance.features.lead.repository.ApplicantRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.ContactRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadWriteService;
@@ -40,7 +39,6 @@ import com.nivasafinance.features.sourcechannel.service.SourcingChannelWriteServ
 import com.nivasafinance.security.context.UserContext;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -58,7 +56,6 @@ public class LeadWriteServiceImpl implements LeadWriteService {
 
     private final LeadRepositoryWrapper leadRepositoryWrapper;
     private final ContactRepositoryWrapper contactRepositoryWrapper;
-    private final ApplicantRepositoryWrapper applicantRepositoryWrapper;
     private final PersonWriteService personWriteService;
     private final PersonReadService personReadService;
     private final MessageSource messageSource;
@@ -97,6 +94,9 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         lead.setContacts(List.of(savedContact.getId()));
 
         Lead savedLead = leadRepositoryWrapper.saveWithException(lead);
+
+        // event publisher to start the workflow
+        // TODO: to be done by Disha S K after the business event is implemented
 
         return new CreateLeadResponse(savedLead.getLeadIdentifier());
     }
@@ -199,7 +199,6 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         leadRepositoryWrapper.saveWithException(lead);
     }
 
-    @NotNull
     private PersonCreateRequest getPersonCreateRequest(CreateLeadRequest request) {
         List<MobileNumberDetails> mobileNumbers = getMobileNumberDetails(request);
         return new PersonCreateRequest(
@@ -212,7 +211,6 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         );
     }
 
-    @NotNull
     private List<MobileNumberDetails> getMobileNumberDetails(CreateLeadRequest request) {
         // Create person with phoneNo
         MobileNumberDetails mobileNumber = new MobileNumberDetails();

@@ -49,7 +49,6 @@ public class StageReadServiceImpl implements StageReadService {
         return Collections.emptyList();
     }
 
-    @SuppressWarnings("unchecked")
     private List<String> extractAssigneeRoles(Map<String, Object> assigneeRoles) {
         if (!ValidationUtils.isNonNull(assigneeRoles)) {
             return Collections.emptyList();

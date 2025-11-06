@@ -2,7 +2,6 @@ package com.nivasafinance.features.lead.service.impl;
 
 import com.nivasafinance.features.lead.dto.LeadNoteCreateRequest;
 import com.nivasafinance.features.lead.dto.LeadNoteCreateResponse;
-import com.nivasafinance.features.lead.dto.LeadNoteResponse;
 import com.nivasafinance.features.lead.dto.LeadNoteUpdateRequest;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;

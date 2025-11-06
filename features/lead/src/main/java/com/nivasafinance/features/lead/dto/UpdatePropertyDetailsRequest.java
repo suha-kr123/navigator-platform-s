@@ -1,7 +1,6 @@
 package com.nivasafinance.features.lead.dto;
 
 import com.nivasafinance.common.dto.AddressRequest;
-import com.nivasafinance.common.dto.GeoData;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;

@@ -5,19 +5,12 @@ import org.springframework.context.MessageSource;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
 @Service
 public class ApplicantRepositoryWrapper {
 
     private final ApplicantRepository applicantRepository;
-    private final MessageSource messageSource;
-
     public ApplicantRepositoryWrapper(ApplicantRepository applicantRepository, MessageSource messageSource) {
         this.applicantRepository = applicantRepository;
-        this.messageSource = messageSource;
     }
 
     public Applicant saveWithException(Applicant applicant) {

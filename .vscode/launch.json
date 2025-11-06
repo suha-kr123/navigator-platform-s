@@ -6,7 +6,8 @@
       "request": "launch",
       "mainClass": "com.nivasafinance.NavigatorApplication",
       "projectName": "main",
-      "console": "internalConsole"
+      "console": "internalConsole",
+      "internalConsoleOptions": "openOnSessionStart"
     },
     {
       "type": "java",
@@ -14,7 +15,8 @@
       "request": "launch",
       "mainClass": "com.nivasafinance.NavigatorApplication",
       "projectName": "main",
-      "console": "internalConsole"
+      "console": "internalConsole",
+      "internalConsoleOptions": "openOnSessionStart"
     }
   ]
 }
