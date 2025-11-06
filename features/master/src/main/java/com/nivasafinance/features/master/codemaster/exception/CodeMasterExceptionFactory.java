@@ -4,10 +4,7 @@ import org.springframework.context.MessageSource;
 
 public class CodeMasterExceptionFactory {
     
-    private final MessageSource messageSource;
-    
     public CodeMasterExceptionFactory(MessageSource messageSource) {
-        this.messageSource = messageSource;
     }
     
     public CodeMasterNotFoundException notFound(String codeName, MessageSource messageSource) {

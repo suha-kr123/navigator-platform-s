@@ -41,7 +41,7 @@ public class AddressDataServiceImpl implements AddressDataService {
             addressData.setDistrict(pincodeResponse.getDistrict());
             addressData.setState(pincodeResponse.getState());
             addressData.setCountry(pincodeResponse.getCountry());
-            addressData.setIsServiceable(pincodeResponse.isServicable());
+            addressData.setIsServiceable(pincodeResponse.getIsServicable());
         } catch (Exception e) {
             log.warn("Failed to fetch pincode details for pincode: {}. Continuing with null values.",
                     addressRequest.getPincode(), e);

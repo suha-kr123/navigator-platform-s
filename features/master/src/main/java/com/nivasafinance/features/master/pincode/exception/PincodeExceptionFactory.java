@@ -7,10 +7,7 @@ public class PincodeExceptionFactory {
     
     private static final int PINCODE_LENGTH = 6;
     
-    private final MessageSource messageSource;
-    
     public PincodeExceptionFactory(MessageSource messageSource) {
-        this.messageSource = messageSource;
     }
     
     public PincodeNotFoundException notFound(String pincode, MessageSource messageSource) {
