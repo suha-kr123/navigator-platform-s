@@ -10,9 +10,25 @@ import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+/**
+ * Base class for all entities that need auditing.
+ * Provides automatic tracking of creation and modification timestamps and users.
+ * 
+ * For entities that use Long ID with IDENTITY generation, extend {@link IdentifiableEntity} instead.
+ * For entities that use UUID or other ID types, extend this class directly.
+ * 
+ * Child classes should use @EqualsAndHashCode(callSuper = true) to include
+ * audit fields in equals/hashCode calculations.
+ */
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
+@Getter
+@Setter
+@NoArgsConstructor
 public abstract class AuditableEntity {
 
     @CreatedBy
@@ -34,45 +50,5 @@ public abstract class AuditableEntity {
     @Version
     @Column(name = "version")
     private Long version = 0L;
-
-    public String getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(String createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public String getUpdatedBy() {
-        return updatedBy;
-    }
-
-    public void setUpdatedBy(String updatedBy) {
-        this.updatedBy = updatedBy;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public Long getVersion() {
-        return version;
-    }
-
-    public void setVersion(Long version) {
-        this.version = version;
-    }
 }
 

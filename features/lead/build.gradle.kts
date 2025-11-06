@@ -8,8 +8,6 @@ plugins {
 
 dependencies {
     implementation(project(":features:master"))
-//    implementation(project(":features:tasks"))
- //   implementation(project(":features:pipelines"))
     implementation(project(":features:notes"))
     implementation(project(":features:document"))
     implementation(project(":features:person"))
@@ -17,6 +15,8 @@ dependencies {
     implementation(project(":features:lender"))
     implementation(project(":features:master"))
     implementation(project(":features:marketing"))
+    implementation(project(":features:rolemanagement"))
+    implementation(project(":features:stage"))
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
 }
 

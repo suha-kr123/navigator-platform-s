@@ -1,5 +1,6 @@
 package com.nivasafinance.features.stage.dto;
 
+import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import com.nivasafinance.features.stage.entity.StageConfig;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,7 +26,7 @@ public class StageConfigResponse {
     
     private List<String> assigneeRoles;
     
-    private List<SubStageResponse> subStages;
+    private List<CodeValueResponse> subStages;
     
     private Boolean isActive;
     
@@ -36,21 +37,9 @@ public class StageConfigResponse {
     private LocalDateTime updatedAt;
     
     private String updatedBy;
-
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    public static class SubStageResponse {
-        private String key;
-        private String name;
-    }
-
-    
     
     public static StageConfigResponse from(StageConfig stageConfig, List<String> possibleNextStages, 
-                                           List<String> assigneeRoles, List<SubStageResponse> subStages) {
+                                           List<String> assigneeRoles, List<CodeValueResponse> subStages) {
         return StageConfigResponse.builder()
                 .key(stageConfig.getKey())
                 .name(stageConfig.getName())

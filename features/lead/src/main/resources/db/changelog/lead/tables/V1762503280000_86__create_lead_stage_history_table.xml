@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="create_n_lead_stage_history_table" author="system">
+        <createTable tableName="n_lead_stage_history">
+            <!-- id -->
+            <column name="id" type="BIGSERIAL" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <!-- lead_id -->
+            <column name="lead_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- stage_key -->
+            <column name="stage_key" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- stage_from -->
+            <column name="stage_from" type="VARCHAR(100)"/>
+
+            <!-- sub_stage_key -->
+            <column name="sub_stage_key" type="VARCHAR(100)"/>
+
+            <!-- entered_at -->
+            <column name="entered_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- exited_at -->
+            <column name="exited_at" type="TIMESTAMP"/>
+
+            <!-- moved_by -->
+            <column name="moved_by" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- remarks -->
+            <column name="remarks" type="TEXT"/>
+
+            <!-- Audit fields -->
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="NOW()"/>
+            <column name="created_by" type="VARCHAR(255)"/>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="NOW()"/>
+            <column name="updated_by" type="VARCHAR(255)"/>
+            <column name="version" type="BIGINT" defaultValueNumeric="0"/>
+        </createTable>
+
+        <!-- Index for lead_id queries (most common lookup) -->
+        <createIndex indexName="idx_lead_stage_history_lead_id" tableName="n_lead_stage_history">
+            <column name="lead_id"/>
+        </createIndex>
+
+        <!-- Index for finding current stage (where exited_at is null) -->
+        <createIndex indexName="idx_lead_stage_history_current" tableName="n_lead_stage_history">
+            <column name="lead_id"/>
+            <column name="exited_at"/>
+        </createIndex>
+
+        <!-- Index for stage_key lookups -->
+        <createIndex indexName="idx_lead_stage_history_stage_key" tableName="n_lead_stage_history">
+            <column name="stage_key"/>
+        </createIndex>
+
+        <!-- Index for entered_at (for chronological queries) -->
+        <createIndex indexName="idx_lead_stage_history_entered_at" tableName="n_lead_stage_history">
+            <column name="lead_id"/>
+            <column name="entered_at" descending="true"/>
+        </createIndex>
+
+        <!-- Index for sub_stage_key lookups -->
+        <createIndex indexName="idx_lead_stage_history_sub_stage_key" tableName="n_lead_stage_history">
+            <column name="sub_stage_key"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>
+

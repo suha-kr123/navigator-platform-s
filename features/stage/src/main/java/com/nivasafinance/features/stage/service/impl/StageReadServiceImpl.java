@@ -30,7 +30,7 @@ public class StageReadServiceImpl implements StageReadService {
         
         List<String> possibleNextStages = extractPossibleNextStages(stageConfig.getStageConfig());
         List<String> assigneeRoles = extractAssigneeRoles(stageConfig.getAssigneeRoles());
-        List<StageConfigResponse.SubStageResponse> subStages = fetchSubStages(stageConfig.getSubStagesCode());
+        List<CodeValueResponse> subStages = fetchSubStages(stageConfig.getSubStagesCode());
         
         return StageConfigResponse.from(stageConfig, possibleNextStages, assigneeRoles, subStages);
     }
@@ -65,22 +65,13 @@ public class StageReadServiceImpl implements StageReadService {
         return Collections.emptyList();
     }
 
-    private List<StageConfigResponse.SubStageResponse> fetchSubStages(String subStagesCode) {
+    private List<CodeValueResponse> fetchSubStages(String subStagesCode) {
         if (!ValidationUtils.isNonNullOrEmpty(subStagesCode)) {
             return Collections.emptyList();
         }
         
         List<CodeValueResponse> codeValues = codeMasterService.getAllCodeValuesByCodeKey(subStagesCode, true);
         
-        return codeValues.stream()
-                .map(this::mapToSubStageResponse)
-                .collect(Collectors.toList());
-    }
-
-    private StageConfigResponse.SubStageResponse mapToSubStageResponse(CodeValueResponse codeValue) {
-        return StageConfigResponse.SubStageResponse.builder()
-                .key(codeValue.getKey())
-                .name(ValidationUtils.isNonNull(codeValue.getValue()) ? codeValue.getValue() : "")
-                .build();
+        return codeValues;
     }
 }
