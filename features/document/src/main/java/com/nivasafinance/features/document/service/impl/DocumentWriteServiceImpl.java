@@ -9,7 +9,6 @@ import com.nivasafinance.features.document.exception.DocumentExceptionFactory;
 import com.nivasafinance.features.document.repository.DocumentRepositoryWrapper;
 import com.nivasafinance.features.document.service.DocumentWriteService;
 import com.nivasafinance.features.document.storage.ContentRepositoryFactory;
-import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.MessageSource;
@@ -21,7 +20,6 @@ import java.util.UUID;
 
 @Service
 @Transactional
-@RequiredArgsConstructor
 public class DocumentWriteServiceImpl implements DocumentWriteService {
     
     private static final Logger logger = LoggerFactory.getLogger(DocumentWriteServiceImpl.class);

@@ -4,7 +4,6 @@ import com.nivasafinance.features.master.codemaster.entity.MasterCodeValue;
 import com.nivasafinance.features.master.codemaster.exception.CodeMasterExceptionFactory;
 import com.nivasafinance.features.master.codemaster.exception.CodeMasterNotFoundException;
 import com.nivasafinance.features.master.codemaster.exception.CodeMasterOperationException;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
@@ -13,7 +12,6 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
 public class MasterCodeValueRepositoryWrapper {
     
     private final MasterCodeValueRepository masterCodeValueRepository;
