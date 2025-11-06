@@ -44,9 +44,6 @@ public class Task extends AuditableEntity {
     @Column(name = "assigned_to", length = 255)
     private String assignedTo;
 
-    @Column(name = "assigned_to_role", length = 100)
-    private String assignedToRole;
-
     @Column(name = "due_at")
     private LocalDateTime dueAt;
 

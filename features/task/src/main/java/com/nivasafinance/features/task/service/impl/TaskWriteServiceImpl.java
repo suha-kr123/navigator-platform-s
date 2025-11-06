@@ -1,5 +1,7 @@
 package com.nivasafinance.features.task.service.impl;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nivasafinance.features.task.dto.CompleteTaskRequest;
 import com.nivasafinance.features.task.dto.CreateTaskRequest;
 import com.nivasafinance.features.task.dto.ReassignTaskRequest;
@@ -11,6 +13,7 @@ import com.nivasafinance.features.task.exception.TaskOperationException;
 import com.nivasafinance.features.task.exception.TaskValidationException;
 import com.nivasafinance.features.task.repository.TaskConfigRepositoryWrapper;
 import com.nivasafinance.features.task.repository.TaskRepositoryWrapper;
+import com.nivasafinance.features.task.service.TaskConfigValidationService;
 import com.nivasafinance.features.task.service.TaskWriteService;
 import com.nivasafinance.common.utils.ValidationUtils;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +32,9 @@ public class TaskWriteServiceImpl implements TaskWriteService {
 
     private final TaskRepositoryWrapper taskRepositoryWrapper;
     private final TaskConfigRepositoryWrapper taskConfigRepositoryWrapper;
+    private final TaskConfigValidationService taskConfigValidationService;
     private final MessageSource messageSource;
+    private final ObjectMapper objectMapper;
 
     @Override
     public TaskResponse createTask(CreateTaskRequest request) {
@@ -37,16 +42,16 @@ public class TaskWriteServiceImpl implements TaskWriteService {
         TaskConfig taskConfig = getActiveTaskConfig(request.getTaskConfigKey());
         Task task = buildTaskFromRequest(request);
         Task savedTask = taskRepositoryWrapper.saveWithException(task);
-        return TaskResponse.from(savedTask, taskConfig);
+        return TaskResponse.from(savedTask, taskConfig, objectMapper);
     }
 
     @Override
     public TaskResponse reassignTask(ReassignTaskRequest request) {
         Task task = validateReassignTaskRequest(request);
-        updateTaskAssignment(task, request.getNewAssignedTo(), request.getNewAssignedToRole());
+        updateTaskAssignment(task, request.getNewAssignedTo());
         Task savedTask = taskRepositoryWrapper.saveWithException(task);
         TaskConfig taskConfig = getActiveTaskConfig(task.getTaskConfigKey());
-        return TaskResponse.from(savedTask, taskConfig);
+        return TaskResponse.from(savedTask, taskConfig, objectMapper);
     }
 
     @Override
@@ -54,7 +59,7 @@ public class TaskWriteServiceImpl implements TaskWriteService {
         Task oldTask = validateRescheduleTaskRequest(request);
         TaskConfig taskConfig = getActiveTaskConfig(oldTask.getTaskConfigKey());
         
-        taskConfigRepositoryWrapper.validateRescheduleAllowed(taskConfig);
+        taskConfigValidationService.validateRescheduleAllowed(taskConfig);
         
         closeTaskWithRescheduledOutcome(oldTask, request);
         taskRepositoryWrapper.saveWithException(oldTask);
@@ -62,15 +67,18 @@ public class TaskWriteServiceImpl implements TaskWriteService {
         Task newTask = createRescheduledTask(oldTask, request.getNewDueAt(), request.getReason());
         Task savedNewTask = taskRepositoryWrapper.saveWithException(newTask);
         
-        return TaskResponse.from(savedNewTask, taskConfig);
+        return TaskResponse.from(savedNewTask, taskConfig, objectMapper);
     }
 
     @Override
     public TaskResponse completeTask(CompleteTaskRequest request) {
         TaskValidationResult validationResult = validateCompleteTaskRequest(request);
-        updateTaskOutcome(validationResult.task, request.getOutcome(), request.getOutcomeDetails());
+        Map<String, Object> outcomeDetailsMap = ValidationUtils.isNonNull(request.getOutcomeDetails()) 
+            ? objectMapper.convertValue(request.getOutcomeDetails(), new TypeReference<Map<String, Object>>() {}) 
+            : new HashMap<>();
+        updateTaskOutcome(validationResult.task, request.getOutcomeCodeValueKey(), outcomeDetailsMap);
         Task savedTask = taskRepositoryWrapper.saveWithException(validationResult.task);
-        return TaskResponse.from(savedTask, validationResult.taskConfig);
+        return TaskResponse.from(savedTask, validationResult.taskConfig, objectMapper);
     }
 
     private void validateCreateTaskRequest(CreateTaskRequest request) {
@@ -78,14 +86,14 @@ public class TaskWriteServiceImpl implements TaskWriteService {
         validateIfUserCanCreateTask(request.getTaskConfigKey());
         validateIfTaskConfigExistsAndIsActive(request.getTaskConfigKey());
         validateDueDate(request.getDueAt(), request.getTaskConfigKey());
-        validateAssignment(null, request.getAssignedTo(), request.getAssignedToRole());
+        validateAssignment(null, request.getAssignedTo());
     }
 
     private Task validateReassignTaskRequest(ReassignTaskRequest request) {
         validateRequestNotNull(request);
         Task task = taskRepositoryWrapper.findByTaskIdentifierWithException(request.getTaskIdentifier());
         validateTaskNotCompleted(task);
-        validateAssignment(task, request.getNewAssignedTo(), request.getNewAssignedToRole());
+        validateAssignment(task, request.getNewAssignedTo());
         return task;
     }
 
@@ -103,7 +111,7 @@ public class TaskWriteServiceImpl implements TaskWriteService {
         validateTaskNotCompleted(task);
         validateIfUserCanCompleteTask(task.getTaskConfigKey());
         TaskConfig taskConfig = getActiveTaskConfig(task.getTaskConfigKey());
-        taskConfigRepositoryWrapper.validateOutcome(taskConfig, request.getOutcome());
+        taskConfigValidationService.validateOutcome(taskConfig, request.getOutcomeCodeValueKey());
         return new TaskValidationResult(task, taskConfig);
     }
 
@@ -119,27 +127,26 @@ public class TaskWriteServiceImpl implements TaskWriteService {
         }
     }
 
-    private void validateAssignment(Task task, String assignedTo, String assignedToRole) {
-        if (!ValidationUtils.hasAtLeastOne(assignedTo, assignedToRole)) {
+    private void validateAssignment(Task task, String assignedTo) {
+        if (!ValidationUtils.isNonNull(assignedTo)) {
             throw TaskValidationException.assignmentRequired(messageSource);
         }
 
         if (ValidationUtils.isNonNull(task)) {
-            if ((ValidationUtils.isNonNull(assignedTo) && assignedTo.equals(task.getAssignedTo())) ||
-                (ValidationUtils.isNonNull(assignedToRole) && assignedToRole.equals(task.getAssignedToRole()))) {
+            if (assignedTo.equals(task.getAssignedTo())) {
                 throw TaskOperationException.cannotReassignToSameUserOrRole(task.getTaskIdentifier(), messageSource);
             }
         }
 
-        //todo: to be implemented by Disa S K after role management feature is implemented
+        //TODO: to be implemented by Disa S K after role management feature is implemented
     }
     
     private void validateIfUserCanCreateTask(String taskConfigKey) {
-        //todo: to be implemented by Disa S K after role management feature is implemented
+        //TODO: to be implemented by Disa S K after role management feature is implemented
     }
 
     private void validateIfUserCanCompleteTask(String taskConfigKey) {
-        //todo: to be implemented by Disa S K after role management feature is implemented
+        //TODO: to be implemented by Disa S K after role management feature is implemented
     }
 
     private void validateDueDate(LocalDateTime dueAt, String taskConfigKey) {
@@ -156,9 +163,11 @@ public class TaskWriteServiceImpl implements TaskWriteService {
         Task task = new Task();
         task.setTaskConfigKey(request.getTaskConfigKey());
         task.setAssignedTo(request.getAssignedTo());
-        task.setAssignedToRole(request.getAssignedToRole());
         task.setDueAt(request.getDueAt());
-        task.setTaskDetails(ValidationUtils.isNonNull(request.getTaskDetails()) ? request.getTaskDetails() : new HashMap<>());
+        Map<String, Object> taskDetailsMap = ValidationUtils.isNonNull(request.getTaskDetails()) 
+            ? objectMapper.convertValue(request.getTaskDetails(), new TypeReference<Map<String, Object>>() {}) 
+            : new HashMap<>();
+        task.setTaskDetails(taskDetailsMap);
         return task;
     }
 
@@ -166,9 +175,8 @@ public class TaskWriteServiceImpl implements TaskWriteService {
         return taskConfigRepositoryWrapper.findActiveByTaskConfigKey(taskConfigKey);
     }
 
-    private void updateTaskAssignment(Task task, String assignedTo, String assignedToRole) {
+    private void updateTaskAssignment(Task task, String assignedTo) {
         task.setAssignedTo(assignedTo);
-        task.setAssignedToRole(assignedToRole);
     }
 
     private void closeTaskWithRescheduledOutcome(Task task, RescheduleTaskRequest request) {
@@ -184,7 +192,6 @@ public class TaskWriteServiceImpl implements TaskWriteService {
         Task newTask = new Task();
         newTask.setTaskConfigKey(oldTask.getTaskConfigKey());
         newTask.setAssignedTo(oldTask.getAssignedTo());
-        newTask.setAssignedToRole(oldTask.getAssignedToRole());
         newTask.setDueAt(newDueAt);
         
         Map<String, Object> taskDetails = ValidationUtils.isNonNull(oldTask.getTaskDetails()) 

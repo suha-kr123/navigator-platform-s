@@ -8,6 +8,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -16,12 +18,6 @@ public class TaskRepositoryWrapper {
     private final TaskRepository taskRepository;
     private final MessageSource messageSource;
 
-    /**
-     * Saves task with exception handling
-     * @param task the task to save
-     * @return saved Task
-     * @throws TaskOperationException if save fails
-     */
     public Task saveWithException(Task task) {
         try {
             return taskRepository.save(task);
@@ -31,15 +27,13 @@ public class TaskRepositoryWrapper {
         }
     }
 
-    /**
-    * Finds task by task identifier
-     * @param taskIdentifier the task identifier
-     * @return Task
-     * @throws TaskNotFoundException if task not found
-     */
     public Task findByTaskIdentifierWithException(String taskIdentifier) {
         return taskRepository.findByTaskIdentifier(taskIdentifier)
                 .orElseThrow(() -> TaskNotFoundException.taskNotFound(taskIdentifier, messageSource));
+    }
+
+    public Optional<Task> findById(Long id) {
+        return taskRepository.findById(id);
     }
 }
 

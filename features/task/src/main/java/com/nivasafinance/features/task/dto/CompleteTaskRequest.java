@@ -5,8 +5,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Map;
-
 import jakarta.validation.constraints.NotBlank;
 
 @Data
@@ -14,13 +12,12 @@ import jakarta.validation.constraints.NotBlank;
 @AllArgsConstructor
 @Builder
 public class CompleteTaskRequest {
-    
+
     @NotBlank(message = "Task identifier is required")
     private String taskIdentifier;
 
     @NotBlank(message = "Outcome is required")
-    private String outcome;
-    
-    private Map<String, Object> outcomeDetails;
-}
+    private String outcomeCodeValueKey;
 
+    private OutcomeDetails outcomeDetails;
+}

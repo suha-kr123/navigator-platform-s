@@ -21,8 +21,6 @@
             </column>
             <!-- assigned_to -->
             <column name="assigned_to" type="VARCHAR(255)"/>
-            <!-- assigned_to_role -->
-            <column name="assigned_to_role" type="VARCHAR(100)"/>
             <!-- due_at -->
             <column name="due_at" type="TIMESTAMP"/>
             <!-- outcome -->
@@ -70,11 +68,6 @@
         <!-- index for assigned_to -->
         <createIndex indexName="idx_tasks_assigned_to" tableName="n_tasks">
             <column name="assigned_to"/>
-        </createIndex>
-
-        <!-- index for assigned_to_role -->
-        <createIndex indexName="idx_tasks_assigned_to_role" tableName="n_tasks">
-            <column name="assigned_to_role"/>
         </createIndex>
 
         <!-- index for due_at -->

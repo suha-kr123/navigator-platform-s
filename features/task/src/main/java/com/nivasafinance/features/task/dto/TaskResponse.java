@@ -1,5 +1,6 @@
 package com.nivasafinance.features.task.dto;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nivasafinance.features.task.entity.Task;
 import com.nivasafinance.features.task.entity.TaskConfig;
 import lombok.AllArgsConstructor;
@@ -8,7 +9,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -26,15 +26,13 @@ public class TaskResponse {
 
     private String assignedTo;
 
-    private String assignedToRole;
-
     private LocalDateTime dueAt;
 
     private String outcome;
 
-    private Map<String, Object> outcomeDetails;
+    private OutcomeDetails outcomeDetails;
 
-    private Map<String, Object> taskDetails;
+    private TaskDetails taskDetails;
 
     private LocalDateTime createdAt;
 
@@ -44,25 +42,27 @@ public class TaskResponse {
 
     private String updatedBy;
 
-    /**
-     * Factory method to create TaskResponse from Task and TaskConfig entities
-     * 
-     * @param task the task entity
-     * @param taskConfig the task config entity
-     * @return TaskResponse
-     */
-    public static TaskResponse from(Task task, TaskConfig taskConfig) {
+    public static TaskResponse from(Task task, TaskConfig taskConfig, ObjectMapper objectMapper) {
+        OutcomeDetails outcomeDetails = null;
+        if (task.getOutcomeDetails() != null && !task.getOutcomeDetails().isEmpty()) {
+            outcomeDetails = objectMapper.convertValue(task.getOutcomeDetails(), OutcomeDetails.class);
+        }
+        
+        TaskDetails taskDetails = null;
+        if (task.getTaskDetails() != null && !task.getTaskDetails().isEmpty()) {
+            taskDetails = objectMapper.convertValue(task.getTaskDetails(), TaskDetails.class);
+        }
+        
         return TaskResponse.builder()
                 .taskIdentifier(task.getTaskIdentifier())
                 .taskConfigKey(task.getTaskConfigKey())
                 .taskName(taskConfig != null ? taskConfig.getName() : null)
                 .taskDescription(taskConfig != null ? taskConfig.getDescription() : null)
                 .assignedTo(task.getAssignedTo())
-                .assignedToRole(task.getAssignedToRole())
                 .dueAt(task.getDueAt())
                 .outcome(task.getOutcome())
-                .outcomeDetails(task.getOutcomeDetails())
-                .taskDetails(task.getTaskDetails())
+                .outcomeDetails(outcomeDetails)
+                .taskDetails(taskDetails)
                 .createdAt(task.getCreatedAt())
                 .createdBy(task.getCreatedBy())
                 .updatedAt(task.getUpdatedAt())

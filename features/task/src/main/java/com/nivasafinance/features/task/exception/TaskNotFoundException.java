@@ -16,7 +16,6 @@ public class TaskNotFoundException extends ResourceNotFoundException {
         super(message);
     }
 
-    // Factory methods
     public static TaskNotFoundException taskNotFound(String taskIdentifier, MessageSource messageSource) {
         return new TaskNotFoundException(
             ExceptionUtils.createLocalizedMessage(
