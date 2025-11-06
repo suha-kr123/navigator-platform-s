@@ -95,7 +95,7 @@ public class LeadLenderReadServiceImpl implements LeadLenderReadService {
                 String description = stageValue.getDescription() != null && stageValue.getDescription().getDefaultValue() != null
                     ? stageValue.getDescription().getDefaultValue()
                     : null;
-                stageResponse = new CodeValueResponse(stageValue.getId(), leadLender.getStage(), value, description, stageValue.isActive());
+                stageResponse = new CodeValueResponse(stageValue.getId(), leadLender.getStage(), value, description, stageValue.getIsActive());
             } catch (Exception e) {
                 // Fallback with minimal data
                 stageResponse = new CodeValueResponse(null, leadLender.getStage(), leadLender.getStage(), null, true);
@@ -114,7 +114,7 @@ public class LeadLenderReadServiceImpl implements LeadLenderReadService {
                 String description = remarksValue.getDescription() != null && remarksValue.getDescription().getDefaultValue() != null
                     ? remarksValue.getDescription().getDefaultValue()
                     : null;
-                remarksResponse = new CodeValueResponse(remarksValue.getId(), remarksKey, value, description, remarksValue.isActive());
+                remarksResponse = new CodeValueResponse(remarksValue.getId(), remarksKey, value, description, remarksValue.getIsActive());
             } catch (Exception e) {
                 // Fallback with minimal data
                 remarksResponse = new CodeValueResponse(null, remarksKey, remarksKey, null, true);

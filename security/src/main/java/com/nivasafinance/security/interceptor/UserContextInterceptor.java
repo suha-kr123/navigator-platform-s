@@ -1,8 +1,6 @@
 package com.nivasafinance.security.interceptor;
 
-import com.auth0.jwt.JWT;
 import com.auth0.jwt.exceptions.JWTDecodeException;
-import com.auth0.jwt.interfaces.DecodedJWT;
 import com.nivasafinance.security.context.UserContext;
 import com.nivasafinance.security.model.UserInfo;
 import jakarta.servlet.http.HttpServletRequest;
@@ -13,14 +11,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.ModelAndView;
 
-import java.util.Map;
-
 @Component
 public class UserContextInterceptor implements HandlerInterceptor {
 
     private static final Logger logger = LoggerFactory.getLogger(UserContextInterceptor.class);
-    private static final String BEARER_PREFIX = "Bearer ";
-
     @Override
     public boolean preHandle(
             HttpServletRequest request,
@@ -77,37 +71,6 @@ public class UserContextInterceptor implements HandlerInterceptor {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             response.getWriter().write("Internal server error");
             return false;
-        }
-    }
-
-    private String extractUsername(DecodedJWT decodedJWT) {
-        try {
-            // Try to get username from user_metadata first
-            var userMetadataClaim = decodedJWT.getClaim("user_metadata");
-            if (!userMetadataClaim.isNull()) {
-                Map<String, Object> userMetadata = userMetadataClaim.asMap();
-                if (userMetadata != null) {
-                    Object usernameObj = userMetadata.get("username");
-                    if (usernameObj != null) {
-                        String username = usernameObj.toString();
-                        if (!username.isBlank()) {
-                            return username;
-                        }
-                    }
-                }
-            }
-
-            // Fallback to direct username claim
-            String usernameClaim = decodedJWT.getClaim("username").asString();
-            if (usernameClaim != null && !usernameClaim.isBlank()) {
-                return usernameClaim;
-            }
-
-            // If neither found, return null (will trigger exception)
-            return null;
-        } catch (Exception ex) {
-            logger.warn("Error extracting username: {}", ex.getMessage());
-            return null;
         }
     }
 

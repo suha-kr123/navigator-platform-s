@@ -1,6 +1,5 @@
 package com.nivasafinance.features.advisor.entity;
 
-import com.nivasafinance.common.annotations.NoArg;
 import com.nivasafinance.common.audit.AuditableEntity;
 import com.nivasafinance.features.advisor.enums.AdvisorStatus;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
