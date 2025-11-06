@@ -11,6 +11,6 @@ dependencies {
 }
 
 springBoot {
-    mainClass.set("com.nivasafinance.NavigatorApplicationKt")
+    mainClass.set("com.nivasafinance.NavigatorApplication")
 }
 

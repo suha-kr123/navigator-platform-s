@@ -7,9 +7,11 @@ plugins {
 }
 
 dependencies {
+    implementation(project(":features:task"))
+    implementation(project(":features:lead"))
 }
 
 springBoot {
-    mainClass.set("com.nivasafinance.NavigatorApplicationKt")
+    mainClass.set("com.nivasafinance.NavigatorApplication")
 }
 
