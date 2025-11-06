@@ -1,5 +1,5 @@
 plugins {
-    id("kotlin-conventions")
+    id("java-conventions")
     id("testing-conventions")
     id("dokka-conventions")
     id("spring-conventions")
@@ -17,9 +17,10 @@ dependencies {
     implementation(project(":features:marketing"))
     implementation(project(":features:rolemanagement"))
     implementation(project(":features:stage"))
+    implementation(project(":features:task"))
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
 }
 
 springBoot {
-    mainClass.set("com.nivasafinance.NavigatorApplicationKt")
+    mainClass.set("com.nivasafinance.NavigatorApplication")
 }
