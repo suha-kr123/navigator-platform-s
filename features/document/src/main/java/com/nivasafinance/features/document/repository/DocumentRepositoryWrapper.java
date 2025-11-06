@@ -15,12 +15,10 @@ import java.util.UUID;
 public class DocumentRepositoryWrapper {
     
     private final DocumentRepository documentRepository;
-    private final MessageSource messageSource;
     private final DocumentExceptionFactory documentExceptionFactory;
     
     public DocumentRepositoryWrapper(DocumentRepository documentRepository, MessageSource messageSource) {
         this.documentRepository = documentRepository;
-        this.messageSource = messageSource;
         this.documentExceptionFactory = new DocumentExceptionFactory(messageSource);
     }
     

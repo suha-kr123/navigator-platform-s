@@ -5,17 +5,15 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import jakarta.validation.constraints.NotBlank;
+import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ReassignTaskRequest {
-    
-    @NotBlank(message = "Task identifier is required")
-    private String taskIdentifier;
-
-    private String newAssignedTo;
+public class OutcomeDetails {
+    private String remarks;
+    private LocalDateTime completedAt;
+    private String completedBy;
 }
 

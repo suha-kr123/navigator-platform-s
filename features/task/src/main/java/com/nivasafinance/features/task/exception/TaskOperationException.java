@@ -14,8 +14,6 @@ public class TaskOperationException extends RuntimeException {
         super(message);
     }
 
-    // Factory methods for common operation errors
-
     public static TaskOperationException taskConfigInactive(String taskConfigKey, MessageSource messageSource) {
         return new TaskOperationException(
             ExceptionUtils.createLocalizedMessage("error.task.config.inactive", 

@@ -6,7 +6,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.Map;
 
 import jakarta.validation.constraints.NotBlank;
 
@@ -15,16 +14,13 @@ import jakarta.validation.constraints.NotBlank;
 @AllArgsConstructor
 @Builder
 public class CreateTaskRequest {
- 
+
     @NotBlank(message = "Task config key is required")
     private String taskConfigKey;
 
     private String assignedTo;
 
-    private String assignedToRole;
-
     private LocalDateTime dueAt;
-    
-    private Map<String, Object> taskDetails;
-}
 
+    private TaskDetails taskDetails;
+}

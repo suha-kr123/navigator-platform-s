@@ -1,12 +1,9 @@
 package com.nivasafinance.features.leadlender.service.impl;
 
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
-import com.nivasafinance.features.leadlender.dto.ApprovedDetails;
 import com.nivasafinance.features.leadlender.dto.CreateLeadLenderRequest;
 import com.nivasafinance.features.leadlender.dto.CreateLeadLenderResponse;
-import com.nivasafinance.features.leadlender.dto.LoginDetails;
 import com.nivasafinance.features.leadlender.dto.RejectLeadLenderRequest;
-import com.nivasafinance.features.leadlender.dto.RmDetails;
 import com.nivasafinance.features.leadlender.dto.UpdateLeadLenderRequest;
 import com.nivasafinance.features.leadlender.entity.LeadLender;
 import com.nivasafinance.features.leadlender.enums.LeadLenderStatus;

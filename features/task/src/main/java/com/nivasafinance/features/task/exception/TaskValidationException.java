@@ -15,8 +15,6 @@ public class TaskValidationException extends ValidationException {
         super(message);
     }
 
-    // Factory methods for common validation errors
-    
     public static TaskValidationException requestRequired(MessageSource messageSource) {
         return new TaskValidationException(
             ExceptionUtils.createLocalizedMessage("error.task.request.required", null, messageSource)

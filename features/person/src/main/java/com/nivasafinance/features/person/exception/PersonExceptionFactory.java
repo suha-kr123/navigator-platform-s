@@ -2,8 +2,6 @@ package com.nivasafinance.features.person.exception;
 
 import org.springframework.context.MessageSource;
 
-import java.util.UUID;
-
 public class PersonExceptionFactory {
 
     public static PersonNotFoundException notFound(Long id, MessageSource messageSource) {
