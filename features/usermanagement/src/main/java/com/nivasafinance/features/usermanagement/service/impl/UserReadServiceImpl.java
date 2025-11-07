@@ -16,7 +16,13 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserReadServiceImpl implements UserReadService {
 
     private final UserRepositoryWrapper userRepositoryWrapper;
-    private final PersonReadService personReadService;  // Add this dependency
+    private final PersonReadService personReadService;
+
+    @Override
+    public UserResponse getUserById(Long userId) {
+        User user = userRepositoryWrapper.findByIdWithException(userId);
+        return mapToResponse(user);
+    }
 
     @Override
     public UserResponse getUserByUsername(String username) {
