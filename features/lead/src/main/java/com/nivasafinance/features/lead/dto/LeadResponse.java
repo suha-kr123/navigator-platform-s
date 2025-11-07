@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Data
@@ -26,11 +27,16 @@ public class LeadResponse {
     private String officeName;
     private String officeKey;
     private String currentStage;
+    private String currentSubStage;
+    private String currentStageAssignedTo;
     private String ownerUsername;
     private LeadStatus status;
     private LeadSubStatus subStatus;
     private String reasonCode;
     private String reason;
+    private LocalDate leadCreatedAt;
+    //todo : last stage changed at
+    private LocalDate lastStageChangedAt;
 
     public static LeadResponse leadToResponse(Lead lead) {
         LeadResponse.LeadResponseBuilder builder = LeadResponse.builder()

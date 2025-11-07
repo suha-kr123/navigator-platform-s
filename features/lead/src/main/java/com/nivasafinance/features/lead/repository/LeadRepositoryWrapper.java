@@ -75,8 +75,11 @@ public class LeadRepositoryWrapper {
                      l.product_code as productCode,
                      l.purpose,
                      l.office_key as officeKey,
-                     l.workflow_details->>'currentStage' as currentStage,
+                     l.workflow_details->>'currentStageKey' as currentStage,
+                     l.workflow_details->>'currentSubStageKey' as currentSubStage,
+                     l.workflow_details->>'assignedTo' as currentStageAssignedTo,
                      l.owner as ownerUsername,
+                     l.created_at as leadCreatedAt,
                      l.status,
                      l.substatus as subStatus,
                      CASE
@@ -119,7 +122,7 @@ public class LeadRepositoryWrapper {
                              LIMIT 1
                          )
                      ) as primaryPersonNumber,
-                     NULL as officeName  -- TODO: Join with office table if needed
+                     o.name as officeName
                  FROM n_lead l
                  -- Left join with applicant -> person (for primary person name/number)
                  LEFT JOIN n_applicant applicant ON
@@ -146,7 +149,7 @@ public class LeadRepositoryWrapper {
                      first_contact.contact_id = contact.id
                  LEFT JOIN n_person contact_person ON
                      contact.person_id = contact_person.id
-                
+                 LEFT JOIN n_office o ON o.key = l.office_key
                  WHERE l.lead_identifier = ?
                     \s""";
 
