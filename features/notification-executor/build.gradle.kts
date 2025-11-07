@@ -8,7 +8,6 @@ plugins {
 
 dependencies {
     implementation(project(":common"))
-    implementation(project(":security"))
 }
 
 springBoot {

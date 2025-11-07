@@ -11,7 +11,6 @@ dependencies {
     implementation(libs.auth0.jwt)
     implementation(libs.auth0.jwks)
     implementation(libs.javers.spring.boot.starter.sql)
-    implementation(project(":security"))
 }
 
 springBoot {

@@ -11,7 +11,7 @@ import com.nivasafinance.features.leadstages.exception.LeadStageHistoryValidatio
 import com.nivasafinance.features.rolemanagement.role.service.UserRoleService;
 import com.nivasafinance.features.stage.dto.StageConfigResponse;
 import com.nivasafinance.features.stage.service.StageReadService;
-import com.nivasafinance.security.context.UserContext;
+import com.nivasafinance.common.context.UserContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
@@ -128,7 +128,7 @@ public class LeadStageHistoryWriteServiceImpl implements LeadStageHistoryWriteSe
                 leadStageHistory.setStageKey(request.getStageKey());
                 leadStageHistory.setStageFrom(ValidationUtils.isNonNull(previousEntry) ? request.getPreviousStageKey() : null);
                 leadStageHistory.setEnteredAt(LocalDateTime.now());
-                leadStageHistory.setMovedBy(UserContext.getCurrentUsername());
+                leadStageHistory.setMovedBy(UserContext.getUsername());
                 leadStageHistory.setRemarks(request.getRemarks());
                 return leadStageHistory;
         }
@@ -175,7 +175,7 @@ public class LeadStageHistoryWriteServiceImpl implements LeadStageHistoryWriteSe
                 LeadStageAssignmentHistory assignment = LeadStageAssignmentHistory.builder()
                         .assignedTo(assignedTo)
                         .assignedAt(LocalDateTime.now())
-                        .assignedBy(UserContext.getCurrentUsername())
+                        .assignedBy(UserContext.getUsername())
                         .build();
                 assignment.setStageHistory(leadStageHistory);
                 leadStageHistory.getAssignmentHistory().add(assignment);
@@ -211,7 +211,7 @@ public class LeadStageHistoryWriteServiceImpl implements LeadStageHistoryWriteSe
                 LeadStageAssignmentHistory assignment = LeadStageAssignmentHistory.builder()
                         .assignedTo(newAssignedTo)
                         .assignedAt(LocalDateTime.now())
-                        .assignedBy(UserContext.getCurrentUsername())
+                        .assignedBy(UserContext.getUsername())
                         .build();
                 assignment.setStageHistory(currentEntry);
                 currentEntry.getAssignmentHistory().add(assignment);

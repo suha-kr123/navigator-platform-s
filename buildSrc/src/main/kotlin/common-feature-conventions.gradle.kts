@@ -8,6 +8,5 @@ plugins {
 dependencies {
     implementation(project(":common"))
     implementation(project(":features:rolemanagement"))
-    implementation(project(":security"))
 }
 

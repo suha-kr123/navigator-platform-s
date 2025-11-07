@@ -9,7 +9,6 @@ plugins {
 
 dependencies {
     implementation(project(":common"))
-    implementation(project(":security"))
     implementation(project(":features:creditbureau"))
     implementation(project(":features:person"))
     implementation(project(":features:usermanagement"))

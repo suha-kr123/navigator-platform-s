@@ -1,11 +1,10 @@
 package com.nivasafinance.features.rolemanagement.aspect;
 
+import com.nivasafinance.common.context.UserContext;
 import com.nivasafinance.common.exception.ForbiddenException;
 import com.nivasafinance.common.exception.UnauthorizedException;
 import com.nivasafinance.features.rolemanagement.annotation.RequirePermission;
 import com.nivasafinance.features.rolemanagement.permissionchecker.PermissionCheckerService;
-import com.nivasafinance.security.context.UserContext;
-import com.nivasafinance.security.model.UserInfo;
 import lombok.RequiredArgsConstructor;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -27,13 +26,13 @@ public class AuthorizationAspect {
     
     @Around("@annotation(requirePermission)")
     public Object checkPermission(ProceedingJoinPoint joinPoint, RequirePermission requirePermission) throws Throwable {
-        UserInfo userInfo = UserContext.getUserInfo();
-        if (userInfo == null) {
+        String userName = UserContext.getUsername();
+        if (userName == null) {
             throw new UnauthorizedException("User not authenticated");
         }
         
         boolean hasPermission = permissionCheckerService.checkPermissionForUser(
-                userInfo.getUsername(),
+                userName,
                 requirePermission.action(),
                 requirePermission.module(),
                 requirePermission.operation()
@@ -42,7 +41,7 @@ public class AuthorizationAspect {
         if (!hasPermission) {
             logger.warn(
                     "Access denied for user {} to {} {}",
-                    userInfo.getUsername(),
+                    userName,
                     requirePermission.action(),
                     requirePermission.module()
             );
@@ -53,7 +52,7 @@ public class AuthorizationAspect {
         
         logger.debug(
                 "Permission granted for user {} to {} {}",
-                userInfo.getUsername(),
+                userName,
                 requirePermission.action(),
                 requirePermission.module()
         );

@@ -36,7 +36,7 @@ import com.nivasafinance.features.person.service.PersonWriteService;
 import com.nivasafinance.features.sourcechannel.dto.SourcingChannelRequest;
 import com.nivasafinance.features.sourcechannel.dto.SourcingChannelResponse;
 import com.nivasafinance.features.sourcechannel.service.SourcingChannelWriteService;
-import com.nivasafinance.security.context.UserContext;
+import com.nivasafinance.common.context.UserContext;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
@@ -131,7 +131,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
 
         // Get current username from UserContext
-        String currentUsername = UserContext.getUserInfo().getUsername();
+        String currentUsername = UserContext.getUsername();
 
         Lead.CreditRatingDetails creditDetails = lead.getCreditRatingDetails();
         if (creditDetails == null) {
