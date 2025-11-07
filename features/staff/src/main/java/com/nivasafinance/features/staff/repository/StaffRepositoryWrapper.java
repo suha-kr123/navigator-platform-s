@@ -54,6 +54,14 @@ public class StaffRepositoryWrapper {
         return staffRepository.existsByUserIdAndOfficeKey(userId, officeKey);
     }
 
+    public Staff saveWithException(Staff staff) {
+        try {
+            return staffRepository.save(staff);
+        } catch (DataAccessException ex) {
+            throw new RuntimeException("Failed to save staff", ex);
+        }
+    }
+
     public PaginatedResponse<Staff> findStaff(String officeKey, String nameQuery, PaginationRequest paginationRequest) {
         return executeStaffQuery(officeKey, nameQuery, paginationRequest);
     }
