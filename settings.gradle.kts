@@ -21,4 +21,5 @@ include("features:marketing")
 include("features:workflow")
 include("features:stage")
 include("features:task")
+include("features:staff")
 
