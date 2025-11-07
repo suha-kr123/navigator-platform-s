@@ -71,6 +71,9 @@ public class LeadReadServiceImpl implements LeadReadService {
                         SystemControlledMasterCodes.LEAD_BUREAU_RATING_MASTER, true))
                 .customerProfiles(codeMasterService.getAllCodeValuesByCodeKey(
                         SystemControlledMasterCodes.LEAD_CUSTOMER_PROFILE_MASTER, true))
+                .leadPurposes(codeMasterService.getAllCodeValuesByCodeKey(
+                        SystemControlledMasterCodes.LEAD_PURPOSE_MASTER, true
+                ))
                 .build();
     }
 
