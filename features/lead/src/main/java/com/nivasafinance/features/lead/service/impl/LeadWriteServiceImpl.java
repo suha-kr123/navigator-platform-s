@@ -89,6 +89,11 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         lead.setRequestedAmount(request.getRequestedLoanAmount());
         lead.setProductCode(request.getProduct());
         lead.setStatus(LeadStatus.ACTIVE);
+        if(request.getOfficeKey() != null) {
+            lead.setOfficeKey(request.getOfficeKey());
+        }else {
+            lead.setOfficeKey("HQ"); //always goes to HQ for now
+        }
 
         // Set contact to lead
         lead.setContacts(List.of(savedContact.getId()));

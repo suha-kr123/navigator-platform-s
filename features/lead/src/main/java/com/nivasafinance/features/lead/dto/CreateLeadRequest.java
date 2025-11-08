@@ -19,6 +19,8 @@ public class CreateLeadRequest {
 
     private String product;
 
+    private String officeKey;
+
     @Data
     @AllArgsConstructor
     @NoArgsConstructor

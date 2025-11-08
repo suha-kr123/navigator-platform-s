@@ -6,8 +6,7 @@
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
     <!-- Office module migrations -->
-    <include file="tables/V1730700000000_01__create_offices_table.xml"
-             relativeToChangelogFile="true"/>
+    <includeAll path="classpath:db/changelog/offices/tables"/>
 
 </databaseChangeLog>
 
