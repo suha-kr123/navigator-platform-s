@@ -1,5 +1,6 @@
 package com.nivasafinance.features.usermanagement.service.impl;
 
+import com.nivasafinance.common.exception.BadRequestException;
 import com.nivasafinance.features.person.dto.PersonResponse;
 import com.nivasafinance.features.person.service.PersonReadService;
 import com.nivasafinance.features.usermanagement.dto.UserResponse;
@@ -28,6 +29,13 @@ public class UserReadServiceImpl implements UserReadService {
     public UserResponse getUserByUsername(String username) {
         User user = userRepositoryWrapper.findByUsernameWithException(username);
         return mapToResponse(user);
+    }
+
+    @Override
+    public void checkForUserNameAvailability(String username) {
+        if(userRepositoryWrapper.existsByUsername(username)){
+            throw new BadRequestException("Username is already taken");
+        }
     }
 
     private UserResponse mapToResponse(User user) {

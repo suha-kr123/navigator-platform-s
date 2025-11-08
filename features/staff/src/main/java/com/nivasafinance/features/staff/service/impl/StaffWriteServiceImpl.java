@@ -38,19 +38,7 @@ public class StaffWriteServiceImpl implements StaffWriteService {
 
         UserCreateRequest userRequest = request.getUser();
 
-        UserResponse existingUser = null;
-        try {
-            existingUser = userReadService.getUserByUsername(userRequest.getUsername());
-        } catch (UserNotFoundException ignored) {
-            // Username is available
-        }
-
-        if (existingUser != null) {
-            if (staffRepositoryWrapper.existsByUserIdAndOfficeKey(existingUser.getId(), request.getOfficeKey())) {
-                throw StaffExceptionFactory.alreadyExists(existingUser.getId(), request.getOfficeKey(), messageSource);
-            }
-            throw UserExceptionFactory.userAlreadyExists(userRequest.getUsername());
-        }
+        userReadService.checkForUserNameAvailability(userRequest.getUsername());
 
         UserCreateRequest userCreateRequest = UserCreateRequest.builder()
                 .username(userRequest.getUsername())

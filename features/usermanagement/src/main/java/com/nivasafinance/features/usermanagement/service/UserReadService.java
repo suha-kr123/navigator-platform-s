@@ -7,5 +7,7 @@ public interface UserReadService {
     UserResponse getUserById(Long userId);
 
     UserResponse getUserByUsername(String username);
+
+    void checkForUserNameAvailability(String username);
 }
 
