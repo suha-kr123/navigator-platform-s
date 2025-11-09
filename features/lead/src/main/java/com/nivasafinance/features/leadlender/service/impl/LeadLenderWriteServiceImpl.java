@@ -1,6 +1,8 @@
 package com.nivasafinance.features.leadlender.service.impl;
 
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
+import com.nivasafinance.features.lead.service.LeadReadService;
+import com.nivasafinance.features.lead.service.LeadWriteService;
 import com.nivasafinance.features.leadlender.dto.CreateLeadLenderRequest;
 import com.nivasafinance.features.leadlender.dto.CreateLeadLenderResponse;
 import com.nivasafinance.features.leadlender.dto.RejectLeadLenderRequest;
@@ -26,7 +28,8 @@ import java.util.UUID;
 public class LeadLenderWriteServiceImpl implements LeadLenderWriteService {
 
     private final LeadLenderRepositoryWrapper leadLenderRepositoryWrapper;
-    private final LeadRepositoryWrapper leadRepositoryWrapper;
+    private final LeadWriteService leadWriteService;
+    private final LeadReadService leadReadService;
     private final LenderReadService lenderReadService;
     private final LenderOfficeReadService lenderOfficeReadService;
 
@@ -34,7 +37,7 @@ public class LeadLenderWriteServiceImpl implements LeadLenderWriteService {
     @Transactional
     public CreateLeadLenderResponse createLeadLender(UUID leadIdentifier, CreateLeadLenderRequest request) {
         // Validate that lead exists and get internal ID
-        var lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        var lead = leadReadService.getLeadBasicByIdentifier(leadIdentifier);
         
         // First validate that the lender exists
         lenderReadService.getByKey(request.getLenderKey());
@@ -60,6 +63,7 @@ public class LeadLenderWriteServiceImpl implements LeadLenderWriteService {
         entity.setLenderIdentifier(UUID.randomUUID());
 
         LeadLender savedLeadLender = leadLenderRepositoryWrapper.saveWithException(entity);
+        leadWriteService.touchLead(leadIdentifier);
         return new CreateLeadLenderResponse(savedLeadLender.getLenderIdentifier());
     }
 
@@ -67,7 +71,7 @@ public class LeadLenderWriteServiceImpl implements LeadLenderWriteService {
     @Transactional
     public void updateLeadLender(UUID leadIdentifier, UUID lenderIdentifier, UpdateLeadLenderRequest request) {
         // Validate that lead exists and get internal ID
-        var lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        var lead = leadReadService.getLeadBasicByIdentifier(leadIdentifier);
         
         LeadLender existingEntity = leadLenderRepositoryWrapper.findByLenderIdentifierWithException(lenderIdentifier);
         
@@ -97,13 +101,14 @@ public class LeadLenderWriteServiceImpl implements LeadLenderWriteService {
         existingEntity.setRemarks(request.getRemarks());
 
         leadLenderRepositoryWrapper.saveWithException(existingEntity);
+        leadWriteService.touchLead(leadIdentifier);
     }
 
     @Override
     @Transactional
     public void rejectLeadLender(UUID leadIdentifier, UUID lenderIdentifier, RejectLeadLenderRequest request) {
         // Validate that lead exists and get internal ID
-        var lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        var lead = leadReadService.getLeadBasicByIdentifier(leadIdentifier);
         
         LeadLender existingEntity = leadLenderRepositoryWrapper.findByLenderIdentifierWithException(lenderIdentifier);
         
@@ -129,13 +134,14 @@ public class LeadLenderWriteServiceImpl implements LeadLenderWriteService {
         existingEntity.setRemarks(request.getRemarks());
         
         leadLenderRepositoryWrapper.saveWithException(existingEntity);
+        leadWriteService.touchLead(leadIdentifier);
     }
 
     @Override
     @Transactional
     public void submitLeadLender(UUID leadIdentifier, UUID lenderIdentifier) {
         // Validate that lead exists and get internal ID
-        var lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        var lead = leadReadService.getLeadBasicByIdentifier(leadIdentifier);
         
         LeadLender existingEntity = leadLenderRepositoryWrapper.findByLenderIdentifierWithException(lenderIdentifier);
         
@@ -166,6 +172,7 @@ public class LeadLenderWriteServiceImpl implements LeadLenderWriteService {
         existingEntity.setStatus(LeadLenderStatus.SUBMITTED);
         
         leadLenderRepositoryWrapper.saveWithException(existingEntity);
+        leadWriteService.touchLead(leadIdentifier);
     }
 
     private void validateOfficeForLender(String officeKey, LeadLender existingEntity) {

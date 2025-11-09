@@ -123,6 +123,12 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     }
 
     @Override
+    public void touchLead(UUID leadIdentifier) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        leadRepositoryWrapper.saveWithException(lead);
+    }
+
+    @Override
     @Transactional
     public void updatePreliminaryDetails(UUID leadIdentifier, UpdatePreliminaryDetailsRequest request) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);

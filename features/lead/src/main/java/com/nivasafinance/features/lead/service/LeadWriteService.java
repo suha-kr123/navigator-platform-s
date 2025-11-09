@@ -20,6 +20,8 @@ import java.util.UUID;
 public interface LeadWriteService {
     CreateLeadResponse createLead(CreateLeadRequest request);
     void updateLead(UUID leadIdentifier, UpdateLeadRequest request);
+    // to update updatedby and updated at
+    void touchLead(UUID leadIdentifier);
     void updatePreliminaryDetails(UUID leadIdentifier, UpdatePreliminaryDetailsRequest request);
     void updateCreditDetails(UUID leadIdentifier, UpdateCreditDetailsRequest request);
     void updateProposedDetails(UUID leadIdentifier, UpdateProposedDetailsRequest request);
