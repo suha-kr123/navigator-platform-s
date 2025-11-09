@@ -1,11 +1,15 @@
 package com.nivasafinance.features.lead.controller;
 
 import com.nivasafinance.common.constants.ApiConstants;
+import com.nivasafinance.common.base.model.PaginatedResponse;
+import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.features.lead.dto.CreateLeadRequest;
 import com.nivasafinance.features.lead.dto.CreateLeadResponse;
 import com.nivasafinance.features.lead.dto.CreateTrancheRequest;
 import com.nivasafinance.features.lead.dto.CreditDetailsResponse;
 import com.nivasafinance.features.lead.dto.DisbursementDetailsResponse;
+import com.nivasafinance.features.lead.dto.LeadDashboardFilters;
+import com.nivasafinance.features.lead.dto.LeadDashboardResponse;
 import com.nivasafinance.features.lead.dto.LeadResponse;
 import com.nivasafinance.features.lead.dto.LeadTemplateResponse;
 import com.nivasafinance.features.lead.dto.OnholdLeadRequest;
@@ -41,6 +45,16 @@ public class LeadController {
 
     private final LeadWriteService leadWriteService;
     private final LeadReadService leadReadService;
+
+    @GetMapping("/dashboard")
+    public ResponseEntity<PaginatedResponse<LeadDashboardResponse>> getLeadDashboard(
+            @Valid PaginationRequest paginationRequest,
+            @ModelAttribute LeadDashboardFilters filters
+    ) {
+        PaginatedResponse<LeadDashboardResponse> response =
+                leadReadService.getLeadDashboard(paginationRequest, filters);
+        return ResponseEntity.ok(response);
+    }
 
     @GetMapping("/template")
     public ResponseEntity<LeadTemplateResponse> getLeadTemplate() {

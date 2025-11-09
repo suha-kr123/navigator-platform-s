@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1762691879000_24" author="system" context="default">
+        <createIndex indexName="idx_n_lead_office_key" tableName="n_lead">
+            <column name="office_key"/>
+        </createIndex>
+
+        <createIndex indexName="idx_n_lead_requested_amount" tableName="n_lead">
+            <column name="requested_amount" descending="true"/>
+        </createIndex>
+
+        <createIndex indexName="idx_n_lead_created_at" tableName="n_lead">
+            <column name="created_at" descending="true"/>
+        </createIndex>
+
+    </changeSet>
+
+</databaseChangeLog>

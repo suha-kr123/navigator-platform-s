@@ -1,7 +1,10 @@
 package com.nivasafinance.features.lead.service.impl;
 
+import com.nivasafinance.common.base.model.PaginatedResponse;
+import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.features.lead.dto.*;
 import com.nivasafinance.features.lead.entity.Lead;
+import com.nivasafinance.features.lead.repository.LeadDashboardWrapper;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadReadService;
 import com.nivasafinance.features.master.codemaster.SystemControlledMasterCodes;
@@ -24,15 +27,18 @@ public class LeadReadServiceImpl implements LeadReadService {
     private final CodeValueMasterService codeValueMasterService;
     private final CodeMasterService codeMasterService;
     private final SourcingChannelReadService sourcingChannelReadService;
+    private final LeadDashboardWrapper leadDashboardWrapper;
 
     public LeadReadServiceImpl(LeadRepositoryWrapper leadRepositoryWrapper,
                                 CodeValueMasterService codeValueMasterService,
                                 CodeMasterService codeMasterService,
-                                SourcingChannelReadService sourcingChannelReadService) {
+                                SourcingChannelReadService sourcingChannelReadService,
+                                LeadDashboardWrapper leadDashboardWrapper) {
         this.leadRepositoryWrapper = leadRepositoryWrapper;
         this.codeValueMasterService = codeValueMasterService;
         this.codeMasterService = codeMasterService;
         this.sourcingChannelReadService = sourcingChannelReadService;
+        this.leadDashboardWrapper = leadDashboardWrapper;
     }
 
     @Override
@@ -229,5 +235,12 @@ public class LeadReadServiceImpl implements LeadReadService {
     public LeadBasicResponse getLeadBasicByIdentifier(UUID leadIdentifier) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
         return LeadBasicResponse.builder().id(lead.getId()).leadIdentifier(leadIdentifier).build();
+    }
+
+    @Override
+    public PaginatedResponse<LeadDashboardResponse> getLeadDashboard(
+            PaginationRequest paginationRequest,
+            LeadDashboardFilters filters) {
+        return leadDashboardWrapper.findLeadDashboard(paginationRequest, filters);
     }
 }

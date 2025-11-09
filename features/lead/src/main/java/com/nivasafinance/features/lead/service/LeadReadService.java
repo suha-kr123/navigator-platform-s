@@ -1,5 +1,7 @@
 package com.nivasafinance.features.lead.service;
 
+import com.nivasafinance.common.base.model.PaginatedResponse;
+import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.features.lead.dto.*;
 
 import java.util.UUID;
@@ -15,4 +17,7 @@ public interface LeadReadService {
     DisbursementDetailsResponse getDisbursementDetails(UUID leadIdentifier);
     TrancheResponse getTrancheByIdentifier(UUID leadIdentifier, UUID trancheIdentifier);
     LeadBasicResponse getLeadBasicByIdentifier(UUID leadIdentifier);
+    PaginatedResponse<LeadDashboardResponse> getLeadDashboard(
+            PaginationRequest paginationRequest,
+            LeadDashboardFilters filters);
 }
