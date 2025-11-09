@@ -1,14 +1,6 @@
 package com.nivasafinance.features.lead.service.impl;
 
-import com.nivasafinance.features.lead.dto.CreditDetailsResponse;
-import com.nivasafinance.features.lead.dto.DisbursementDetailsResponse;
-import com.nivasafinance.features.lead.dto.LeadResponse;
-import com.nivasafinance.features.lead.dto.LeadTemplateResponse;
-import com.nivasafinance.features.lead.dto.PreliminaryDetailsResponse;
-import com.nivasafinance.features.lead.dto.PropertyDetailsResponse;
-import com.nivasafinance.features.lead.dto.ProposedDetailsResponse;
-import com.nivasafinance.features.lead.dto.SourcingDetailsResponse;
-import com.nivasafinance.features.lead.dto.TrancheResponse;
+import com.nivasafinance.features.lead.dto.*;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadReadService;
@@ -231,5 +223,11 @@ public class LeadReadServiceImpl implements LeadReadService {
                 .amount(tranche.getAmount())
                 .date(tranche.getDate())
                 .build();
+    }
+
+    @Override
+    public LeadBasicResponse getLeadBasicByIdentifier(UUID leadIdentifier) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        return LeadBasicResponse.builder().id(lead.getId()).leadIdentifier(leadIdentifier).build();
     }
 }
