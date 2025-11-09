@@ -26,17 +26,12 @@ public class LeadResponse {
     private String primaryPersonNumber;
     private String officeName;
     private String officeKey;
-    private String currentStage;
-    private String currentSubStage;
-    private String currentStageAssignedTo;
     private String ownerUsername;
     private LeadStatus status;
     private LeadSubStatus subStatus;
     private String reasonCode;
     private String reason;
     private LocalDate leadCreatedAt;
-    //todo : last stage changed at
-    private LocalDate lastStageChangedAt;
 
     public static LeadResponse leadToResponse(Lead lead) {
         LeadResponse.LeadResponseBuilder builder = LeadResponse.builder()
