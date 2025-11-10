@@ -10,6 +10,6 @@ public class ActiveLeadAlreadyExistsException extends LeadConflictException {
     private static final long serialVersionUID = 3847561923847561923L;
 
     public ActiveLeadAlreadyExistsException(String phoneNo, MessageSource messageSource) {
-        super("error.lead.active.already.exists", new Object[]{phoneNo}, messageSource);
+        super("error.lead.active.already.exists.with.phone.no", new Object[]{phoneNo}, messageSource);
     }
 }
