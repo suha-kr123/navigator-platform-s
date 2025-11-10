@@ -197,7 +197,7 @@ public class LeadRepositoryWrapper {
     public Optional<Lead> findActiveLeadByContactPersonId(Long personId) {
         try {
             String sql = """
-                SELECT l.*
+                SELECT l.id
                 FROM n_lead l
                 JOIN LATERAL (
                     SELECT (contact_id)::bigint as id
@@ -209,11 +209,12 @@ public class LeadRepositoryWrapper {
                 LIMIT 1
                 """;
             
-            Lead lead = jdbcTemplate.queryForObject(
+            Long leadId = jdbcTemplate.queryForObject(
                 sql,
-                new BeanPropertyRowMapper<>(Lead.class),
+                Long.class,
                 personId
             );
+            Lead lead = leadId != null ? leadRepository.findById(leadId).orElse(null) : null;
             return Optional.ofNullable(lead);
         } catch (EmptyResultDataAccessException e) {
             return Optional.empty();

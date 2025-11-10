@@ -30,8 +30,9 @@ import com.nivasafinance.features.person.dto.PersonCreateRequest;
 import com.nivasafinance.features.person.dto.PersonCreateResponse;
 import com.nivasafinance.features.person.dto.PersonResponse;
 import com.nivasafinance.features.person.entity.MobileNumberDetails;
+import com.nivasafinance.features.person.entity.Person;
 import com.nivasafinance.features.person.exception.PersonMobileNumberNotFoundException;
-import com.nivasafinance.features.person.service.PersonReadService;
+import com.nivasafinance.features.person.repository.PersonRepositoryWrapper;
 import com.nivasafinance.features.person.service.PersonWriteService;
 import com.nivasafinance.features.sourcechannel.dto.SourcingChannelRequest;
 import com.nivasafinance.features.sourcechannel.dto.SourcingChannelResponse;
@@ -57,7 +58,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     private final LeadRepositoryWrapper leadRepositoryWrapper;
     private final ContactRepositoryWrapper contactRepositoryWrapper;
     private final PersonWriteService personWriteService;
-    private final PersonReadService personReadService;
+    private final PersonRepositoryWrapper personRepositoryWrapper;
     private final MessageSource messageSource;
     private final AddressDataService addressDataService;
     private final SourcingChannelWriteService sourcingChannelWriteService;
@@ -68,7 +69,9 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     @Transactional
     public CreateLeadResponse createLead(CreateLeadRequest request) {
         //validates product exists
-        productReadService.getProductByCode(request.getProduct());
+        if (request.getProduct() != null) {
+            productReadService.getProductByCode(request.getProduct());
+        }
 
         // Check if active lead already exists with this phone number
         checkForActiveLead(request);
@@ -89,9 +92,9 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         lead.setRequestedAmount(request.getRequestedLoanAmount());
         lead.setProductCode(request.getProduct());
         lead.setStatus(LeadStatus.ACTIVE);
-        if(request.getOfficeKey() != null) {
+        if (request.getOfficeKey() != null) {
             lead.setOfficeKey(request.getOfficeKey());
-        }else {
+        } else {
             lead.setOfficeKey("HQ"); //always goes to HQ for now
         }
 
@@ -116,8 +119,10 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         lead.setOwner(request.getOwner());
         lead.setPurpose(request.getPurpose());
         //validates product exists
-        productReadService.getProductByCode(request.getProductCode());
-        lead.setProductCode(request.getProductCode());
+        if (request.getProductCode() != null) {
+            productReadService.getProductByCode(request.getProductCode());
+            lead.setProductCode(request.getProductCode());
+        }
 
         leadRepositoryWrapper.saveWithException(lead);
     }
@@ -481,25 +486,25 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     }
 
     private void checkForActiveLead(CreateLeadRequest request) {
-        try {
-            PersonResponse existingPerson = personReadService.getPersonByPrimaryMobile(
-                    request.getPhoneNumber().getMobileNumber()
-            );
+        // If personReadService.getPersonByPrimaryMobile function and catch exception it will throw
+        // silently rolled back exceptions
+        // As a workaround directly calling personRepositoryWrapper
+        Optional<Person> existingPerson = personRepositoryWrapper
+                .findByPrimaryMobileNumber(request.getPhoneNumber().getMobileNumber());
 
-            // Person exists, check if they are a contact in any active/onhold lead
-            Optional<Lead> existingActiveLead = leadRepositoryWrapper.findActiveLeadByContactPersonId(
-                    existingPerson.getId()
-            );
+        if (existingPerson.isEmpty()) {
+            return;
+        }
+        // Person exists, check if they are a contact in any active/onhold lead
+        Optional<Lead> existingActiveLead = leadRepositoryWrapper.findActiveLeadByContactPersonId(
+                existingPerson.get().getId()
+        );
 
-            if (existingActiveLead.isPresent()) {
-                throw new ActiveLeadAlreadyExistsException(
-                        request.getPhoneNumber().getMobileNumber(),
-                        messageSource
-                );
-            }
-        } catch (PersonMobileNumberNotFoundException e) {
-            // Person not found - this is fine, we'll create a new person
-            // Continue with normal flow
+        if (existingActiveLead.isPresent()) {
+            throw new ActiveLeadAlreadyExistsException(
+                    request.getPhoneNumber().getMobileNumber(),
+                    messageSource
+            );
         }
     }
 }
