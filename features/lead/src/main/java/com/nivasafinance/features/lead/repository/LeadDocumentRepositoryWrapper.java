@@ -1,5 +1,6 @@
 package com.nivasafinance.features.lead.repository;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nivasafinance.common.base.model.PaginatedResponse;
@@ -66,8 +67,8 @@ public class LeadDocumentRepositoryWrapper {
                     List<String> tags = objectMapper.readValue(tagsJson, new TypeReference<>() {});
                     List<CodeValueResponse> tagsCodes = codeValueMasterService.getByKeys(tags);
                     response.setTags(tagsCodes);
-                } catch (Exception e) {
-                    response.setTags(null);
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException("Failed to parse tags JSONB array: " + tagsJson, e);
                 }
             }
 
