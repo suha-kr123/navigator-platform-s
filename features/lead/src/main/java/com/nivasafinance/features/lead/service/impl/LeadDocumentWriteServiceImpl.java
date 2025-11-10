@@ -13,6 +13,7 @@ import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadDocumentWriteService;
 import com.nivasafinance.features.master.codemaster.SystemLeadDocumentsMaster;
+import com.nivasafinance.features.master.codemaster.service.CodeValueMasterService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +34,7 @@ public class LeadDocumentWriteServiceImpl implements LeadDocumentWriteService {
     private final DocumentWriteService documentWriteService;
     private final DocumentReadService documentReadService;
     private final LeadRepositoryWrapper leadRepositoryWrapper;
+    private final CodeValueMasterService codeValueMasterService;
     @Override
     public LeadDocumentCreateResponse createLeadDocument(UUID leadIdentifier, MultipartFile file, LeadDocumentCreateRequest request) {
         // Find the lead
@@ -47,6 +49,8 @@ public class LeadDocumentWriteServiceImpl implements LeadDocumentWriteService {
 
         // Create the document
         DocumentCreateResponse documentResponse = documentWriteService.createDocument(documentRequest);
+
+        codeValueMasterService.getByKeys(request.getTags()); //validate
 
         // Create DocumentDetail for the lead
         Lead.DocumentDetail documentDetail = Lead.DocumentDetail.builder()
