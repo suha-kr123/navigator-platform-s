@@ -1,22 +1,10 @@
 package com.nivasafinance.features.lead.service.impl;
 
+import com.nivasafinance.common.context.UserContext;
 import com.nivasafinance.common.dto.AddressData;
-import com.nivasafinance.features.address.service.AddressDataService;
 import com.nivasafinance.common.exception.BadRequestException;
-import com.nivasafinance.features.lead.dto.CreateLeadRequest;
-import com.nivasafinance.features.lead.dto.CreateLeadResponse;
-import com.nivasafinance.features.lead.dto.CreateTrancheRequest;
-import com.nivasafinance.features.lead.dto.OnholdLeadRequest;
-import com.nivasafinance.features.lead.dto.RejectLeadRequest;
-import com.nivasafinance.features.lead.dto.UpdateCreditDetailsRequest;
-import com.nivasafinance.features.lead.dto.UpdateDisbursementDetailsRequest;
-import com.nivasafinance.features.lead.dto.UpdateLeadRequest;
-import com.nivasafinance.features.lead.dto.UpdatePreliminaryDetailsRequest;
-import com.nivasafinance.features.lead.dto.UpdatePropertyDetailsRequest;
-import com.nivasafinance.features.lead.dto.UpdateProposedDetailsRequest;
-import com.nivasafinance.features.lead.dto.UpdateSourcingDetailsRequest;
-import com.nivasafinance.features.lead.dto.UpdateTrancheRequest;
-import com.nivasafinance.features.lead.dto.WithdrawLeadRequest;
+import com.nivasafinance.features.address.service.AddressDataService;
+import com.nivasafinance.features.lead.dto.*;
 import com.nivasafinance.features.lead.entity.Contact;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.enums.LeadStatus;
@@ -25,19 +13,17 @@ import com.nivasafinance.features.lead.exception.ActiveLeadAlreadyExistsExceptio
 import com.nivasafinance.features.lead.repository.ContactRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadWriteService;
+import com.nivasafinance.features.master.codemaster.service.CodeValueMasterService;
 import com.nivasafinance.features.master.products.service.ProductReadService;
 import com.nivasafinance.features.person.dto.PersonCreateRequest;
 import com.nivasafinance.features.person.dto.PersonCreateResponse;
-import com.nivasafinance.features.person.dto.PersonResponse;
 import com.nivasafinance.features.person.entity.MobileNumberDetails;
 import com.nivasafinance.features.person.entity.Person;
-import com.nivasafinance.features.person.exception.PersonMobileNumberNotFoundException;
 import com.nivasafinance.features.person.repository.PersonRepositoryWrapper;
 import com.nivasafinance.features.person.service.PersonWriteService;
 import com.nivasafinance.features.sourcechannel.dto.SourcingChannelRequest;
 import com.nivasafinance.features.sourcechannel.dto.SourcingChannelResponse;
 import com.nivasafinance.features.sourcechannel.service.SourcingChannelWriteService;
-import com.nivasafinance.common.context.UserContext;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
@@ -48,6 +34,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+import static com.nivasafinance.features.master.codemaster.SystemControlledMasterCodes.LEAD_PRIORITY_MASTER;
 
 @Service
 @Transactional
@@ -63,6 +51,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     private final AddressDataService addressDataService;
     private final SourcingChannelWriteService sourcingChannelWriteService;
     private final ProductReadService productReadService;
+    private final CodeValueMasterService codeValueMasterService;
 
 
     @Override
@@ -123,6 +112,26 @@ public class LeadWriteServiceImpl implements LeadWriteService {
             productReadService.getProductByCode(request.getProductCode());
             lead.setProductCode(request.getProductCode());
         }
+
+        Lead.OtherDetails otherDetails = lead.getOtherDetails();
+        if (otherDetails == null) {
+            otherDetails = new Lead.OtherDetails();
+        }
+        if (request.getPreferredCallStartTime() != null && request.getPreferredCallEndTime() != null) {
+            if (request.getPreferredCallStartTime().isAfter(request.getPreferredCallEndTime())) {
+                throw new BadRequestException("Preferred call start time cannot be after preferred call end time");
+            }
+            otherDetails.setPreferredCallStartTime(request.getPreferredCallStartTime());
+            otherDetails.setPreferredCallEndTime(request.getPreferredCallEndTime());
+        } else {
+            otherDetails.setPreferredCallStartTime(null);
+            otherDetails.setPreferredCallEndTime(null);
+        }
+        if (request.getPriority() != null) {
+            codeValueMasterService.getCodeValueByKeyAndCodeKey(request.getPriority(), LEAD_PRIORITY_MASTER);
+            otherDetails.setPriority(request.getPriority());
+        }
+        lead.setOtherDetails(otherDetails);
 
         leadRepositoryWrapper.saveWithException(lead);
     }

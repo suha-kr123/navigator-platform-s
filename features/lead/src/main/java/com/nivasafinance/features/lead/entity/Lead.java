@@ -1,5 +1,6 @@
 package com.nivasafinance.features.lead.entity;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.nivasafinance.common.audit.AuditableEntity;
 import com.nivasafinance.common.dto.AddressData;
 import com.nivasafinance.common.dto.GeoData;
@@ -14,6 +15,7 @@ import org.hibernate.annotations.Type;
 import org.hibernate.type.SqlTypes;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -117,6 +119,16 @@ public class Lead extends AuditableEntity {
     @Column(name = "other_details", columnDefinition = "jsonb")
     private OtherDetails otherDetails;
 
+    @Type(JsonType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "onhold_details", columnDefinition = "jsonb")
+    private OnHoldDetails onHoldDetails;
+
+    @Type(JsonType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "rejection_details", columnDefinition = "jsonb")
+    private RejectionDetails rejectionDetails;
+
     // Nested data classes for JSONB fields
 
     @Data
@@ -209,6 +221,11 @@ public class Lead extends AuditableEntity {
     @Builder
     public static class OtherDetails {
         private PropertyDetails propertyDetails;
+        private String priority;
+        @JsonFormat(pattern = "HH:mm:ss")
+        private LocalTime preferredCallStartTime;
+        @JsonFormat(pattern = "HH:mm:ss")
+        private LocalTime preferredCallEndTime;
     }
 
     @Data
@@ -218,5 +235,23 @@ public class Lead extends AuditableEntity {
     public static class PropertyDetails {
         private AddressData address;
         private GeoData geoData;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class OnHoldDetails {
+        private LocalDate onHoldMovementDate;
+        private String onHoldBy;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class RejectionDetails {
+        private LocalDate rejectionDate;
+        private String rejectedBy;
     }
 }

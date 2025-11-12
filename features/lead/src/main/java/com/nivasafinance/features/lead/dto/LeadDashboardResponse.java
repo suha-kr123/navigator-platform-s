@@ -1,6 +1,7 @@
 package com.nivasafinance.features.lead.dto;
 
 import com.nivasafinance.features.lead.enums.LeadStatus;
+import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import com.nivasafinance.features.notes.dto.NotesResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,6 +10,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.UUID;
 
 @Data
@@ -30,6 +32,10 @@ public class LeadDashboardResponse {
     private String lastActivityBy;
     private String advisor; //todo advisor
     private String leadOwner;
+    private LocalTime preferredCallStartTime;
+    private LocalTime preferredCallEndTime;
+    private CodeValueResponse priority;
+    private String partners;
 
     //TODO :: to add stage, substage, next task data, stageOwner, stageTat
 }

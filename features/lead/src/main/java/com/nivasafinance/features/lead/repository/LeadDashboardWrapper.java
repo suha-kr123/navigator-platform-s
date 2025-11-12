@@ -6,6 +6,9 @@ import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.features.lead.dto.LeadDashboardFilters;
 import com.nivasafinance.features.lead.dto.LeadDashboardResponse;
 import com.nivasafinance.features.lead.enums.LeadStatus;
+import com.nivasafinance.features.master.codemaster.SystemControlledMasterCodes;
+import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
+import com.nivasafinance.features.master.codemaster.service.CodeValueMasterService;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
@@ -15,6 +18,7 @@ import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -35,9 +39,11 @@ public class LeadDashboardWrapper {
     }
 
     private final JdbcTemplate jdbcTemplate;
+    private final CodeValueMasterService codeValueMasterService;
 
-    public LeadDashboardWrapper(JdbcTemplate jdbcTemplate) {
+    public LeadDashboardWrapper(JdbcTemplate jdbcTemplate, CodeValueMasterService codeValueMasterService) {
         this.jdbcTemplate = jdbcTemplate;
+        this.codeValueMasterService = codeValueMasterService;
     }
 
     public PaginatedResponse<LeadDashboardResponse> findLeadDashboard(
@@ -100,7 +106,11 @@ public class LeadDashboardWrapper {
                                      l.updated_at                   AS last_activity_at,
                                      l.updated_by                   AS last_activity_by,
                                      lead_owner_person.display_name              AS lead_owner_name,
-                                     latest_note.content                         AS note_content
+                                     latest_note.content                         AS note_content,
+                                     (l.other_details->>'preferredCallStartTime')::time AS preferred_call_start_time,
+                                     (l.other_details->>'preferredCallEndTime')::time   AS preferred_call_end_time,
+                                     l.other_details->>'priority'                       AS priority_key,
+                                     partners.partner_names                             AS partners
                                  """ + fromClause + whereClause +
                          " ORDER BY " + sortColumn + " " + sortDirection +
                          " LIMIT ? OFFSET ?";
@@ -115,7 +125,7 @@ public class LeadDashboardWrapper {
 
             List<LeadDashboardResponse> content = jdbcTemplate.query(
                     dataSql,
-                    new LeadDashboardRowMapper(),
+                    new LeadDashboardRowMapper(codeValueMasterService),
                     dataQueryParams.toArray()
             );
 
@@ -244,6 +254,13 @@ public class LeadDashboardWrapper {
                     ORDER BY n.created_at DESC
                     LIMIT 1
                 ) latest_note ON true
+                LEFT JOIN LATERAL (
+                    SELECT string_agg(lndr.name, ', ' ORDER BY lndr.name) AS partner_names
+                    FROM n_lead_lender lead_lender
+                    JOIN n_lender lndr ON lndr.key = lead_lender.lender_key
+                    WHERE lead_lender.lead_id = l.id
+                      AND lead_lender.status IN ('SELECTED', 'SUBMITTED')
+                ) partners ON true
                 """;
     }
 
@@ -284,6 +301,13 @@ public class LeadDashboardWrapper {
     }
 
     private static class LeadDashboardRowMapper implements RowMapper<LeadDashboardResponse> {
+
+        private final CodeValueMasterService codeValueMasterService;
+
+        private LeadDashboardRowMapper(CodeValueMasterService codeValueMasterService) {
+            this.codeValueMasterService = codeValueMasterService;
+        }
+
         @Override
         public LeadDashboardResponse mapRow(ResultSet rs, int rowNum) throws SQLException {
             LeadDashboardResponse.LeadDashboardResponseBuilder builder = LeadDashboardResponse.builder()
@@ -299,7 +323,10 @@ public class LeadDashboardWrapper {
                     .lastActivityBy(rs.getString("last_activity_by"))
                     .recentNote(rs.getString("note_content"))
                     //todo add advisor
-                    .leadOwner(rs.getString("lead_owner_name"));
+                    .leadOwner(rs.getString("lead_owner_name"))
+                    .preferredCallStartTime(getLocalTime(rs, "preferred_call_start_time"))
+                    .preferredCallEndTime(getLocalTime(rs, "preferred_call_end_time"))
+                    .partners(rs.getString("partners"));
 
             String status = rs.getString("lead_status");
             if (status != null) {
@@ -310,12 +337,24 @@ public class LeadDashboardWrapper {
                 }
             }
 
+            String priorityKey = rs.getString("priority_key");
+            if (priorityKey != null) {
+                CodeValueResponse priority = codeValueMasterService.getCodeValueByKeyAndCodeKey(
+                        priorityKey,
+                        SystemControlledMasterCodes.LEAD_PRIORITY_MASTER
+                );
+                builder.priority(priority);
+            }
+
             return builder.build();
         }
 
         private LocalDateTime getLocalDateTime(ResultSet rs, String column) throws SQLException {
             return rs.getTimestamp(column) != null ? rs.getTimestamp(column).toLocalDateTime() : null;
         }
+
+        private LocalTime getLocalTime(ResultSet rs, String column) throws SQLException {
+            return rs.getTime(column) != null ? rs.getTime(column).toLocalTime() : null;
+        }
     }
 }
-

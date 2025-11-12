@@ -13,10 +13,13 @@ import lombok.AllArgsConstructor;
 import org.springframework.context.MessageSource;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -79,6 +82,9 @@ public class LeadRepositoryWrapper {
                      l.created_at as leadCreatedAt,
                      l.status,
                      l.substatus as subStatus,
+                    (l.other_details->>'preferredCallStartTime')::time as preferred_call_start_time,
+                    (l.other_details->>'preferredCallEndTime')::time as preferred_call_end_time,
+                    l.other_details->>'priority' as priority_key,
                      CASE
                          WHEN l.status = 'REJECTED' AND l.reasons ->> 'reject' IS NOT NULL
                              THEN l.reasons ->> 'reject'
@@ -136,33 +142,9 @@ public class LeadRepositoryWrapper {
                     \s""";
 
         try {
-            LeadResponse leadResponse = jdbcTemplate.queryForObject(
-                    sql,
-                    new BeanPropertyRowMapper<>(LeadResponse.class),
-                    leadIdentifier
-            );
+            LeadResponse leadResponse = jdbcTemplate.queryForObject(sql, (rs, rowNum) -> mapLeadResponse(rs), leadIdentifier);
             if (leadResponse == null) {
                 throw new LeadNotFoundException(leadIdentifier, messageSource);
-            }
-            if (leadResponse.getReasonCode() != null) {
-                if (leadResponse.getSubStatus() == LeadSubStatus.ONHOLD) {
-                    CodeValueResponse codeValueResponse = codeValueMasterService.getCodeValueByKeyAndCodeKey(
-                            leadResponse.getReasonCode(), SystemControlledMasterCodes.LEAD_ONHOLD_REASON_MASTER);
-                    leadResponse.setReason(codeValueResponse.getValue());
-                }
-                if (leadResponse.getStatus() == LeadStatus.REJECTED) {
-                    CodeValueResponse codeValueResponse = codeValueMasterService.getCodeValueByKeyAndCodeKey(
-                            leadResponse.getReasonCode(), SystemControlledMasterCodes.LEAD_REJECT_REASON_MASTER);
-                    leadResponse.setReason(codeValueResponse.getValue());
-                }
-                if (leadResponse.getStatus() == LeadStatus.WITHDRAWN) {
-                    CodeValueResponse codeValueResponse = codeValueMasterService.getCodeValueByKeyAndCodeKey(
-                            leadResponse.getReasonCode(), SystemControlledMasterCodes.LEAD_WITHDRAWAL_REASON_MASTER);
-                    leadResponse.setReason(codeValueResponse.getValue());
-                }
-            }
-            if(leadResponse.getProductCode() != null) {
-                leadResponse.setProductName(productReadService.getProductByCode(leadResponse.getProductCode()).getName());
             }
             return leadResponse;
         } catch (EmptyResultDataAccessException e) {
@@ -206,5 +188,83 @@ public class LeadRepositoryWrapper {
         } catch (DataAccessException e) {
             throw new RuntimeException("Failed to find active lead by contact person", e);
         }
+    }
+
+    private LeadResponse mapLeadResponse(ResultSet rs) throws SQLException {
+        UUID leadIdentifier = rs.getString("leadIdentifier") != null ? UUID.fromString(rs.getString("leadIdentifier")) : null;
+
+        LeadResponse.LeadResponseBuilder builder = LeadResponse.builder()
+                .leadIdentifier(leadIdentifier)
+                .requestedAmount(rs.getBigDecimal("requestedAmount"))
+                .productCode(rs.getString("productCode"))
+                .purpose(rs.getString("purpose"))
+                .officeKey(rs.getString("officeKey"))
+                .ownerUsername(rs.getString("ownerUsername"))
+                .primaryPersonName(rs.getString("primaryPersonName"))
+                .primaryPersonNumber(rs.getString("primaryPersonNumber"))
+                .officeName(rs.getString("officeName"))
+                .reasonCode(rs.getString("reasonCode"))
+                .preferredCallStartTime(getLocalTime(rs, "preferred_call_start_time"))
+                .preferredCallEndTime(getLocalTime(rs, "preferred_call_end_time"));
+
+        String status = rs.getString("status");
+        if (status != null) {
+            try {
+                builder.status(LeadStatus.valueOf(status));
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+
+        String subStatus = rs.getString("subStatus");
+        if (subStatus != null) {
+            try {
+                builder.subStatus(LeadSubStatus.valueOf(subStatus));
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+
+        builder.leadCreatedAt(getLocalDate(rs, "leadCreatedAt"));
+
+        LeadResponse leadResponse = builder.build();
+
+        if (leadResponse.getReasonCode() != null) {
+            if (leadResponse.getSubStatus() == LeadSubStatus.ONHOLD) {
+                CodeValueResponse codeValueResponse = codeValueMasterService.getCodeValueByKeyAndCodeKey(
+                        leadResponse.getReasonCode(), SystemControlledMasterCodes.LEAD_ONHOLD_REASON_MASTER);
+                leadResponse.setReason(codeValueResponse.getValue());
+            }
+            if (leadResponse.getStatus() == LeadStatus.REJECTED) {
+                CodeValueResponse codeValueResponse = codeValueMasterService.getCodeValueByKeyAndCodeKey(
+                        leadResponse.getReasonCode(), SystemControlledMasterCodes.LEAD_REJECT_REASON_MASTER);
+                leadResponse.setReason(codeValueResponse.getValue());
+            }
+            if (leadResponse.getStatus() == LeadStatus.WITHDRAWN) {
+                CodeValueResponse codeValueResponse = codeValueMasterService.getCodeValueByKeyAndCodeKey(
+                        leadResponse.getReasonCode(), SystemControlledMasterCodes.LEAD_WITHDRAWAL_REASON_MASTER);
+                leadResponse.setReason(codeValueResponse.getValue());
+            }
+        }
+        if(leadResponse.getProductCode() != null) {
+            leadResponse.setProductName(productReadService.getProductByCode(leadResponse.getProductCode()).getName());
+        }
+
+        String priorityKey = rs.getString("priority_key");
+        if (priorityKey != null) {
+            CodeValueResponse priority = codeValueMasterService.getCodeValueByKeyAndCodeKey(
+                    priorityKey,
+                    SystemControlledMasterCodes.LEAD_PRIORITY_MASTER
+            );
+            leadResponse.setPriority(priority);
+        }
+
+        return leadResponse;
+    }
+
+    private LocalDate getLocalDate(ResultSet rs, String column) throws SQLException {
+        return rs.getTimestamp(column) != null ? rs.getTimestamp(column).toLocalDateTime().toLocalDate() : null;
+    }
+
+    private LocalTime getLocalTime(ResultSet rs, String column) throws SQLException {
+        return rs.getTime(column) != null ? rs.getTime(column).toLocalTime() : null;
     }
 }

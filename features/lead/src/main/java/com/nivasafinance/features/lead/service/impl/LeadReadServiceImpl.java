@@ -72,6 +72,8 @@ public class LeadReadServiceImpl implements LeadReadService {
                 .leadPurposes(codeMasterService.getAllCodeValuesByCodeKey(
                         SystemControlledMasterCodes.LEAD_PURPOSE_MASTER, true
                 ))
+                .priorities(codeMasterService.getAllCodeValuesByCodeKey(
+                        SystemControlledMasterCodes.LEAD_PRIORITY_MASTER, true))
                 .build();
     }
 

@@ -25,5 +25,7 @@ public final class SystemControlledMasterCodes {
     
     public static final String MARKETING_SOURCE_MASTER = "MARKETING_SOURCE_MASTER";
     public static final String MARKETING_CHANNEL_MASTER = "MARKETING_CHANNEL_MASTER";
+
+    public static final String LEAD_PRIORITY_MASTER = "LEAD_PRIORITY_MASTER";
 }
 
