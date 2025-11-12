@@ -1,6 +1,5 @@
 package com.nivasafinance.features.lead.entity;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.nivasafinance.common.audit.AuditableEntity;
 import com.nivasafinance.common.dto.AddressData;
 import com.nivasafinance.common.dto.GeoData;
@@ -228,9 +227,7 @@ public class Lead extends AuditableEntity {
     public static class OtherDetails {
         private PropertyDetails propertyDetails;
         private String priority;
-        @JsonFormat(pattern = "HH:mm:ss")
         private LocalTime preferredCallStartTime;
-        @JsonFormat(pattern = "HH:mm:ss")
         private LocalTime preferredCallEndTime;
     }
 
@@ -248,7 +245,6 @@ public class Lead extends AuditableEntity {
     @AllArgsConstructor
     @Builder
     public static class OnHoldDetails {
-        @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss")
         private LocalDateTime onHoldMovementDate;
         private String onHoldBy;
     }
@@ -258,7 +254,6 @@ public class Lead extends AuditableEntity {
     @AllArgsConstructor
     @Builder
     public static class RejectionDetails {
-        @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss")
         private LocalDateTime rejectionDate;
         private String rejectedBy;
     }
@@ -268,7 +263,6 @@ public class Lead extends AuditableEntity {
     @AllArgsConstructor
     @Builder
     public static class WithdrawnDetails {
-        @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss")
         private LocalDateTime withdrawnDate;
         private String withdrawnBy;
     }
