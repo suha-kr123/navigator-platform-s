@@ -88,64 +88,49 @@ public class LeadRepositoryWrapper {
                              THEN l.reasons ->> 'withdrawn'
                          ELSE NULL
                          END as reasonCode,
-                     -- Primary person name priority: applicant -> co-applicant -> contact
-                     COALESCE(
-                         applicant_person.display_name,
-                         co_applicant_person.display_name,
-                         contact_person.display_name
-                     ) as primaryPersonName,
-                     -- Primary person number priority: applicant -> co-applicant -> contact
-                     -- Extract first primary number or first number from mobile_numbers JSONB array
-                     COALESCE(
-                         -- Applicant person mobile number (first primary or first number)
-                         (
-                             SELECT mn->>'number'
-                             FROM jsonb_array_elements(applicant_person.mobile_numbers) mn
-                             WHERE (mn->>'isPrimary')::boolean = true
-                             LIMIT 1
-                         ),
-                         -- Co-applicant person mobile number
-                         (
-                             SELECT mn->>'number'
-                             FROM jsonb_array_elements(co_applicant_person.mobile_numbers) mn
-                             WHERE (mn->>'isPrimary')::boolean = true
-                             LIMIT 1
-                         ),
-                         -- Contact person mobile number
-                         (
-                             SELECT mn->>'number'
-                             FROM jsonb_array_elements(contact_person.mobile_numbers) mn
-                             WHERE (mn->>'isPrimary')::boolean = true
-                             LIMIT 1
-                         )
-                     ) as primaryPersonNumber,
+                    -- Primary person name priority: decision maker contact -> first contact
+                    COALESCE(
+                        decision_maker_person.display_name,
+                        fallback_contact_person.display_name
+                    ) as primaryPersonName,
+                    -- Primary person number priority: decision maker contact -> first contact
+                    -- Extract first primary number from mobile_numbers JSONB array
+                    COALESCE(
+                        (
+                            SELECT mn->>'number'
+                            FROM jsonb_array_elements(COALESCE(decision_maker_person.mobile_numbers, '[]'::jsonb)) mn
+                            WHERE (mn->>'isPrimary')::boolean = true
+                            LIMIT 1
+                        ),
+                        (
+                            SELECT mn->>'number'
+                            FROM jsonb_array_elements(COALESCE(fallback_contact_person.mobile_numbers, '[]'::jsonb)) mn
+                            WHERE (mn->>'isPrimary')::boolean = true
+                            LIMIT 1
+                        )
+                    ) as primaryPersonNumber,
                      o.name as officeName
                  FROM n_lead l
-                 -- Left join with applicant -> person (for primary person name/number)
-                 LEFT JOIN n_applicant applicant ON
-                     l.applicant = applicant.id
-                 LEFT JOIN n_person applicant_person ON
-                     applicant.person_id = applicant_person.id
-                 -- Left join with first co-applicant -> person
-                 LEFT JOIN LATERAL (
-                     SELECT (co_app)::bigint as applicant_id
-                     FROM jsonb_array_elements(l.co_applicants) AS co_app
-                     LIMIT 1
-                 ) first_co_applicant ON true
-                 LEFT JOIN n_applicant co_applicant ON
-                     first_co_applicant.applicant_id = co_applicant.id
-                 LEFT JOIN n_person co_applicant_person ON
-                     co_applicant.person_id = co_applicant_person.id
-                 -- Left join with first contact -> person
-                 LEFT JOIN LATERAL (
-                     SELECT (cont)::bigint as contact_id
-                     FROM jsonb_array_elements(l.contacts) AS cont
-                     LIMIT 1
-                 ) first_contact ON true
-                 LEFT JOIN n_contact contact ON
-                     first_contact.contact_id = contact.id
-                 LEFT JOIN n_person contact_person ON
-                     contact.person_id = contact_person.id
+                -- Left join with decision maker contact -> person
+                LEFT JOIN LATERAL (
+                    SELECT c.id as contact_id, c.person_id
+                    FROM jsonb_array_elements(COALESCE(l.contacts, '[]'::jsonb)) AS cont
+                    JOIN n_contact c ON c.id = (cont)::bigint
+                    WHERE c.decision_maker = true
+                    LIMIT 1
+                ) decision_maker_contact ON true
+                LEFT JOIN n_person decision_maker_person ON
+                    decision_maker_contact.person_id = decision_maker_person.id
+                -- Left join with first contact -> person (fallback)
+                LEFT JOIN LATERAL (
+                    SELECT c.id as contact_id, c.person_id
+                    FROM jsonb_array_elements(COALESCE(l.contacts, '[]'::jsonb)) AS cont
+                    JOIN n_contact c ON c.id = (cont)::bigint
+                    ORDER BY cont
+                    LIMIT 1
+                ) fallback_contact ON true
+                LEFT JOIN n_person fallback_contact_person ON
+                    fallback_contact.person_id = fallback_contact_person.id
                  LEFT JOIN n_office o ON o.key = l.office_key
                  WHERE l.lead_identifier = ?
                     \s""";

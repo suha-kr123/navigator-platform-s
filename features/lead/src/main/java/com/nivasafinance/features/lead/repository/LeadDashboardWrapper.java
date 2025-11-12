@@ -76,26 +76,19 @@ public class LeadDashboardWrapper {
                                      l.requested_amount                          AS requested_amount,
                                      prod.name                                   AS product_name,
                                      COALESCE(
-                                         applicant_person.display_name,
-                                         co_applicant_person.display_name,
-                                         contact_person.display_name
+                                         decision_maker_person.display_name,
+                                         fallback_contact_person.display_name
                                      )                                           AS primary_person_name,
                                      COALESCE(
                                          (
                                              SELECT mn->>'number'
-                                             FROM jsonb_array_elements(COALESCE(applicant_person.mobile_numbers, '[]'::jsonb)) mn
+                                             FROM jsonb_array_elements(COALESCE(decision_maker_person.mobile_numbers, '[]'::jsonb)) mn
                                              WHERE (mn->>'isPrimary')::boolean = true
                                              LIMIT 1
                                          ),
                                          (
                                              SELECT mn->>'number'
-                                             FROM jsonb_array_elements(COALESCE(co_applicant_person.mobile_numbers, '[]'::jsonb)) mn
-                                             WHERE (mn->>'isPrimary')::boolean = true
-                                             LIMIT 1
-                                         ),
-                                         (
-                                             SELECT mn->>'number'
-                                             FROM jsonb_array_elements(COALESCE(contact_person.mobile_numbers, '[]'::jsonb)) mn
+                                             FROM jsonb_array_elements(COALESCE(fallback_contact_person.mobile_numbers, '[]'::jsonb)) mn
                                              WHERE (mn->>'isPrimary')::boolean = true
                                              LIMIT 1
                                          )
@@ -227,22 +220,22 @@ public class LeadDashboardWrapper {
                 LEFT JOIN n_office o ON o.key = l.office_key
                 LEFT JOIN n_user lead_owner_user ON lead_owner_user.username = l.owner
                 LEFT JOIN n_person lead_owner_person ON lead_owner_person.id = lead_owner_user.person_id
-                LEFT JOIN n_applicant applicant ON l.applicant = applicant.id
-                LEFT JOIN n_person applicant_person ON applicant.person_id = applicant_person.id
                 LEFT JOIN LATERAL (
-                    SELECT (co_app)::bigint as applicant_id
-                    FROM jsonb_array_elements(COALESCE(l.co_applicants, '[]'::jsonb)) AS co_app
-                    LIMIT 1
-                ) first_co_applicant ON true
-                LEFT JOIN n_applicant co_applicant ON first_co_applicant.applicant_id = co_applicant.id
-                LEFT JOIN n_person co_applicant_person ON co_applicant.person_id = co_applicant_person.id
-                LEFT JOIN LATERAL (
-                    SELECT (cont)::bigint as contact_id
+                    SELECT c.id as contact_id, c.person_id
                     FROM jsonb_array_elements(COALESCE(l.contacts, '[]'::jsonb)) AS cont
+                    JOIN n_contact c ON c.id = (cont)::bigint
+                    WHERE c.decision_maker = true
                     LIMIT 1
-                ) first_contact ON true
-                LEFT JOIN n_contact contact ON first_contact.contact_id = contact.id
-                LEFT JOIN n_person contact_person ON contact.person_id = contact_person.id
+                ) decision_maker_contact ON true
+                LEFT JOIN n_person decision_maker_person ON decision_maker_contact.person_id = decision_maker_person.id
+                LEFT JOIN LATERAL (
+                    SELECT c.id as contact_id, c.person_id
+                    FROM jsonb_array_elements(COALESCE(l.contacts, '[]'::jsonb)) AS cont
+                    JOIN n_contact c ON c.id = (cont)::bigint
+                    ORDER BY cont
+                    LIMIT 1
+                ) fallback_contact ON true
+                LEFT JOIN n_person fallback_contact_person ON fallback_contact.person_id = fallback_contact_person.id
                 LEFT JOIN LATERAL (
                     SELECT
                         n.content
