@@ -30,6 +30,7 @@ import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -401,6 +402,16 @@ public class LeadWriteServiceImpl implements LeadWriteService {
             lead.setReasons(reasons);
         }
 
+        Lead.RejectionDetails rejectionDetails = lead.getRejectionDetails();
+        if(rejectionDetails == null) {
+            rejectionDetails = new Lead.RejectionDetails();
+        }
+
+        rejectionDetails.setRejectionDate(LocalDateTime.now());
+        rejectionDetails.setRejectedBy(UserContext.getUsername());
+
+        lead.setRejectionDetails(rejectionDetails);
+
         leadRepositoryWrapper.saveWithException(lead);
     }
 
@@ -425,6 +436,16 @@ public class LeadWriteServiceImpl implements LeadWriteService {
             reasons.setWithdrawn(request.getReasonCode());
             lead.setReasons(reasons);
         }
+
+        Lead.WithdrawnDetails withdrawnDetails = lead.getWithdrawnDetails();
+        if(withdrawnDetails == null) {
+            withdrawnDetails = new Lead.WithdrawnDetails();
+        }
+
+        withdrawnDetails.setWithdrawnDate(LocalDateTime.now());
+        withdrawnDetails.setWithdrawnBy(UserContext.getUsername());
+
+        lead.setWithdrawnDetails(withdrawnDetails);
 
         leadRepositoryWrapper.saveWithException(lead);
     }

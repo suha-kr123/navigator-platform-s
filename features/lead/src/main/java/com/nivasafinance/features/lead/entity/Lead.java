@@ -15,6 +15,7 @@ import org.hibernate.annotations.Type;
 import org.hibernate.type.SqlTypes;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
@@ -129,6 +130,11 @@ public class Lead extends AuditableEntity {
     @Column(name = "rejection_details", columnDefinition = "jsonb")
     private RejectionDetails rejectionDetails;
 
+    @Type(JsonType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "withdrawn_details", columnDefinition = "jsonb")
+    private WithdrawnDetails withdrawnDetails;
+
     // Nested data classes for JSONB fields
 
     @Data
@@ -242,7 +248,8 @@ public class Lead extends AuditableEntity {
     @AllArgsConstructor
     @Builder
     public static class OnHoldDetails {
-        private LocalDate onHoldMovementDate;
+        @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss")
+        private LocalDateTime onHoldMovementDate;
         private String onHoldBy;
     }
 
@@ -251,7 +258,18 @@ public class Lead extends AuditableEntity {
     @AllArgsConstructor
     @Builder
     public static class RejectionDetails {
-        private LocalDate rejectionDate;
+        @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss")
+        private LocalDateTime rejectionDate;
         private String rejectedBy;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class WithdrawnDetails {
+        @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss")
+        private LocalDateTime withdrawnDate;
+        private String withdrawnBy;
     }
 }
