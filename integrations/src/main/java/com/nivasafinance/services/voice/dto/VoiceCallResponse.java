@@ -8,12 +8,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class VoiceCallResponse {
-    private String callSid;
-    private String status;
-    private String fromNumber;
-    private String toNumber;
-    private Integer duration;
-    private String recordingUrl;
-    private String errorMessage;
+    private String callId;
+    private VoiceStatus status;
 }
 

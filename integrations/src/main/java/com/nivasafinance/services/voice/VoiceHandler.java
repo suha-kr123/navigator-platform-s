@@ -3,7 +3,6 @@ package com.nivasafinance.services.voice;
 import com.nivasafinance.integrations.framework.ThirdPartyHandler;
 import com.nivasafinance.integrations.framework.config.BusinessContext;
 import com.nivasafinance.integrations.framework.config.ThirdPartyServiceList;
-import com.nivasafinance.integrations.framework.core.exception.VoiceHandlerException;
 import com.nivasafinance.integrations.framework.runner.ServiceRunner;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
