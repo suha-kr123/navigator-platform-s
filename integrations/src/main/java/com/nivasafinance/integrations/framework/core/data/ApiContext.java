@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ApiContext {
     private String providerName;
-    private String providerConfigId;
-    private String apiPurpose;
+    private Long providerConfigId;
 }
 

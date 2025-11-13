@@ -25,9 +25,9 @@ public class ThirdPartyServiceConfigReadService {
         var serviceEntity = thirdPartyServiceConfigRepository.findByServiceAndIsActiveTrue(service.getServiceName())
                 .orElseThrow(() -> new ServiceConfigurationException("Error fetching " + service));
 
-        var primaryConfig = thirdPartyProviderConfigReadService.getProviderConfigById(serviceEntity.getPrimaryConfigKey());
-        var fallbackConfig = serviceEntity.getFallbackConfigKey() != null
-                ? thirdPartyProviderConfigReadService.getProviderConfigById(serviceEntity.getFallbackConfigKey())
+        var primaryConfig = thirdPartyProviderConfigReadService.getProviderConfigById(serviceEntity.getPrimaryConfigId());
+        var fallbackConfig = serviceEntity.getFallbackConfigId() != null
+                ? thirdPartyProviderConfigReadService.getProviderConfigById(serviceEntity.getFallbackConfigId())
                 : null;
         
         return new RunConfig(primaryConfig, fallbackConfig, serviceEntity.getRetryCount());

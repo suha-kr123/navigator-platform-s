@@ -1,4 +1,4 @@
-package com.nivasafinance.integrations.framework.core.exception;
+package com.nivasafinance.services.voice;
 
 import java.io.Serial;
 
@@ -9,6 +9,10 @@ public class VoiceHandlerException extends RuntimeException {
 
     public VoiceHandlerException(String message) {
         super(message);
+    }
+
+    public VoiceHandlerException(String message, Throwable cause) {
+        super(message, cause);
     }
 }
 

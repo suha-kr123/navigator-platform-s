@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class BusinessContext {
     private String entityName;
-    private String entityId;
+    private Long entityId;
     private String businessPurpose;
 }
 

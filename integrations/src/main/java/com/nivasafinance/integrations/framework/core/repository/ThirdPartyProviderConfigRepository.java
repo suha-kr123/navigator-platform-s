@@ -4,9 +4,7 @@ import com.nivasafinance.integrations.framework.core.entity.ThirdPartyProviderCo
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.UUID;
-
 @Repository
-public interface ThirdPartyProviderConfigRepository extends JpaRepository<ThirdPartyProviderConfig, UUID> {
+public interface ThirdPartyProviderConfigRepository extends JpaRepository<ThirdPartyProviderConfig, Long> {
 }
 

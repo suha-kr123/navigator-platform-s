@@ -3,6 +3,7 @@ package com.nivasafinance.integrations.framework.core;
 import com.nivasafinance.integrations.framework.core.data.IntegrationResponse;
 import com.nivasafinance.integrations.framework.core.data.IntegrationRestRequest;
 import com.nivasafinance.integrations.framework.core.logger.ThirdPartyRequestResponseLogger;
+import lombok.Data;
 import org.apache.commons.lang3.time.StopWatch;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -13,7 +14,6 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Base64;
-import java.util.UUID;
 
 @Service
 public class NavigatorRestService {
@@ -35,7 +35,7 @@ public class NavigatorRestService {
 
     public <T> IntegrationResponse doRestRequest(IntegrationRestRequest<T> request, RestTemplate restTemplate) {
         String requestBody = request.getRequestBody() != null ? request.getRequestBody().toString() : null;
-        UUID requestId = thirdPartyRequestResponseLogger.registerRequest(
+        Long requestId = thirdPartyRequestResponseLogger.registerRequest(
                 request.getBusinessContext(),
                 request.getApiContext(),
                 request.getMethod(),
@@ -125,43 +125,16 @@ public class NavigatorRestService {
         return integrationResponse;
     }
 
+    @Data
     public static class RegisterResponseBody {
-        private UUID requestLogId;
+        private Long requestLogId;
         private final StopWatch stopWatch;
         private String responseString;
         private int httpStatusCode = HttpStatus.OK.value();
 
-        public RegisterResponseBody(UUID requestLogId, StopWatch stopWatch) {
+        public RegisterResponseBody(Long requestLogId, StopWatch stopWatch) {
             this.requestLogId = requestLogId;
             this.stopWatch = stopWatch;
-        }
-
-        public UUID getRequestLogId() {
-            return requestLogId;
-        }
-
-        public void setRequestLogId(UUID requestLogId) {
-            this.requestLogId = requestLogId;
-        }
-
-        public StopWatch getStopWatch() {
-            return stopWatch;
-        }
-
-        public String getResponseString() {
-            return responseString;
-        }
-
-        public void setResponseString(String responseString) {
-            this.responseString = responseString;
-        }
-
-        public int getHttpStatusCode() {
-            return httpStatusCode;
-        }
-
-        public void setHttpStatusCode(int httpStatusCode) {
-            this.httpStatusCode = httpStatusCode;
         }
     }
 }

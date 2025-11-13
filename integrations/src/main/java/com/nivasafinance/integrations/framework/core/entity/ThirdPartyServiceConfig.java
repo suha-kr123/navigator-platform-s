@@ -1,22 +1,14 @@
 package com.nivasafinance.integrations.framework.core.entity;
 
 import com.nivasafinance.common.audit.AuditableEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
-import java.util.UUID;
-
 @Entity
-@Table(name = "f_third_party_service_config")
-@org.javers.core.metamodel.annotation.Entity
+@Table(name = "n_third_party_service_config")
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
@@ -24,8 +16,8 @@ import java.util.UUID;
 public class ThirdPartyServiceConfig extends AuditableEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @Column(name = "name")
     private String name;
@@ -33,11 +25,11 @@ public class ThirdPartyServiceConfig extends AuditableEntity {
     @Column(name = "service")
     private String service;
 
-    @Column(name = "primary_config_key")
-    private UUID primaryConfigKey;
+    @Column(name = "primary_config" , nullable = false)
+    private Long primaryConfigId;
 
-    @Column(name = "fallback_config_key")
-    private UUID fallbackConfigKey;
+    @Column(name = "fallback_config")
+    private Long fallbackConfigId;
 
     @Column(name = "retry_count")
     private Integer retryCount;

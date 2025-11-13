@@ -8,8 +8,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 
-import java.util.UUID;
-
 @Service
 public class ThirdPartyRequestResponseLoggerImpl implements ThirdPartyRequestResponseLogger {
 
@@ -21,28 +19,28 @@ public class ThirdPartyRequestResponseLoggerImpl implements ThirdPartyRequestRes
     }
 
     @Override
-    public UUID registerRequest(
+    public Long registerRequest(
             BusinessContext businessContext,
             ApiContext apiContext,
             HttpMethod requestMethod,
             String url,
             String requestBody) {
         ThirdPartyResponseLog logEntry = new ThirdPartyResponseLog();
-        logEntry.setEntityType(1); // Default entity type
+        logEntry.setEntityType(businessContext.getEntityName()); // Default entity type
         logEntry.setEntityId(businessContext.getEntityId());
         logEntry.setRequestMethod(requestMethod.toString());
         logEntry.setUrl(url);
         logEntry.setRequest(requestBody);
         logEntry.setBusinessPurpose(businessContext.getBusinessPurpose());
-        logEntry.setBusinessEntityName(businessContext.getEntityName());
-        logEntry.setApiPurpose(apiContext.getApiPurpose());
+        logEntry.setProviderName(apiContext.getProviderName());
+        logEntry.setProviderRefId(apiContext.getProviderConfigId().toString());
 
         ThirdPartyResponseLog savedLog = thirdPartyResponseLogRepository.save(logEntry);
-        return savedLog.getId() != null ? savedLog.getId() : UUID.randomUUID();
+        return savedLog.getId();
     }
 
     @Override
-    public UUID registerThirdPartyRequest(
+    public Long registerThirdPartyRequest(
             BusinessContext businessContext,
             ApiContext apiContext,
             HttpMethod requestMethod,
@@ -54,7 +52,7 @@ public class ThirdPartyRequestResponseLoggerImpl implements ThirdPartyRequestRes
 
     @Override
     public void registerResponse(
-            UUID thirdPartyRequestId,
+            Long thirdPartyRequestId,
             String responseBody,
             long responseTimeInMs,
             int requestStatus) {

@@ -1,5 +1,8 @@
 package com.nivasafinance.integrations.framework.config;
 
+import lombok.Getter;
+
+@Getter
 public enum ThirdPartyServiceList {
     VOICE("voice");
 
@@ -9,7 +12,4 @@ public enum ThirdPartyServiceList {
         this.serviceName = serviceName;
     }
 
-    public String getServiceName() {
-        return serviceName;
-    }
 }

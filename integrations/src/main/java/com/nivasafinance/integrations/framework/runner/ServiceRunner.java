@@ -26,8 +26,8 @@ public class ServiceRunner<S, A> {
             RunConfig runConfig,
             BusinessContext businessContext) throws NavigatorIntegrationClientException, NavigatorIntegrationServerException {
         NavigatorIntegrationServerException lastServerException = null;
-
-        for (int i = 0; i < retries; i++) {
+        int retries = this.retries;
+        do {
             try {
                 Object result = tryPrimaryService(methodName, argument, runConfig, businessContext);
                 if (result != null) {
@@ -36,7 +36,8 @@ public class ServiceRunner<S, A> {
             } catch (NavigatorIntegrationServerException e) {
                 lastServerException = e;
             }
-        }
+            retries--;
+        } while (retries > 0 && lastServerException != null);
 
         return tryFallbackService(methodName, argument, runConfig, businessContext, lastServerException);
     }

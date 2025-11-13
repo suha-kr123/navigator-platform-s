@@ -8,7 +8,7 @@ public abstract class ThirdPartyHandler {
 
     public abstract ThirdPartyServiceList getKey();
 
-    public void setupConfig(RunConfig runConfig) {
+    protected void setupConfig(RunConfig runConfig) {
         this.runConfig = runConfig;
     }
 }

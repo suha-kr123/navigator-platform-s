@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 @Service
 public class ThirdPartyProviderConfigReadService {
@@ -24,7 +23,7 @@ public class ThirdPartyProviderConfigReadService {
         this.thirdPartyProviderConfigRepository = thirdPartyProviderConfigRepository;
     }
 
-    public ThirdPartyConfig getProviderConfigById(UUID id) {
+    public ThirdPartyConfig getProviderConfigById(Long id) {
         var configEntity = thirdPartyProviderConfigRepository.findById(id)
                 .orElseThrow(() -> new ServiceConfigurationException("Config not found: " + id));
         

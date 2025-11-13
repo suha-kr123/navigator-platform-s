@@ -4,11 +4,10 @@ import com.nivasafinance.integrations.framework.config.BusinessContext;
 import com.nivasafinance.integrations.framework.core.data.ApiContext;
 import org.springframework.http.HttpMethod;
 
-import java.util.UUID;
 
 public interface ThirdPartyRequestResponseLogger {
 
-    UUID registerRequest(
+    Long registerRequest(
             BusinessContext businessContext,
             ApiContext apiContext,
             HttpMethod requestMethod,
@@ -16,7 +15,7 @@ public interface ThirdPartyRequestResponseLogger {
             String requestBody
     );
 
-    UUID registerThirdPartyRequest(
+    Long registerThirdPartyRequest(
             BusinessContext businessContext,
             ApiContext apiContext,
             HttpMethod requestMethod,
@@ -25,7 +24,7 @@ public interface ThirdPartyRequestResponseLogger {
     );
 
     void registerResponse(
-            UUID thirdPartyRequestId,
+            Long thirdPartyRequestId,
             String responseBody,
             long responseTimeInMs,
             int requestStatus

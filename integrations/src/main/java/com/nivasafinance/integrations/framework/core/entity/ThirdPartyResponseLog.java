@@ -2,22 +2,15 @@ package com.nivasafinance.integrations.framework.core.entity;
 
 import com.nivasafinance.common.annotations.NoArg;
 import com.nivasafinance.common.audit.AuditableEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.javers.core.metamodel.annotation.TypeName;
 
-import java.util.UUID;
-
 @Entity
-@Table(name = "third_party_response_log")
+@Table(name = "n_third_party_response_log")
 @TypeName("third_party_response_log")
 @NoArg
 @NoArgsConstructor
@@ -27,14 +20,14 @@ import java.util.UUID;
 public class ThirdPartyResponseLog extends AuditableEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @Column(name = "entity_type", length = 3, nullable = false)
-    private Integer entityType;
+    private String entityType;
 
     @Column(name = "entity_id", length = 20, nullable = true)
-    private String entityId;
+    private Long entityId;
 
     @Column(name = "request_method", length = 16, nullable = false)
     private String requestMethod;
@@ -57,16 +50,10 @@ public class ThirdPartyResponseLog extends AuditableEntity {
     @Column(name = "provider_name", length = 50)
     private String providerName;
 
-    @Column(name = "provider_config_id", length = 50)
+    @Column(name = "provider_ref_id", length = 50)
     private String providerRefId;
 
     @Column(name = "business_purpose")
     private String businessPurpose;
-
-    @Column(name = "business_entity")
-    private String businessEntityName;
-
-    @Column(name = "api_purpose")
-    private String apiPurpose;
 }
 
