@@ -22,4 +22,5 @@ include("features:stage")
 include("features:task")
 include("features:staff")
 include("integrations")
+include("features:call")
 
