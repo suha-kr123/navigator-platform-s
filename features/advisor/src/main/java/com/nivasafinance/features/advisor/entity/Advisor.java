@@ -1,57 +1,82 @@
 package com.nivasafinance.features.advisor.entity;
 
 import com.nivasafinance.common.audit.AuditableEntity;
+import com.nivasafinance.features.advisor.dto.AdvisorRemarks;
+import com.nivasafinance.features.advisor.dto.BankDetails;
+import com.nivasafinance.features.advisor.dto.OtherDetails;
+import com.nivasafinance.features.advisor.dto.QualificationDetails;
 import com.nivasafinance.features.advisor.enums.AdvisorStatus;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import jakarta.persistence.*;
+import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.Type;
 import org.hibernate.type.SqlTypes;
-import org.javers.core.metamodel.annotation.TypeName;
 
-import java.util.Map;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
-@TypeName("advisor")
-@Table(name = "advisor")
+@Table(name = "n_advisor")
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
-@EqualsAndHashCode(callSuper = true)
 public class Advisor extends AuditableEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    @Column(name = "person_id")
-    private UUID personId;
+    @Column(name = "identifier", nullable = false, unique = true)
+    private UUID identifier;
 
-    @Column(name = "advisor_code")
-    private String advisorCode;
+    @Column(name = "person_id", nullable = false)
+    private Long personId;
 
+    @Column(name = "status", nullable = false, length = 50)
     @Enumerated(EnumType.STRING)
-    @Column(name = "status")
     private AdvisorStatus status;
-
-    @Column(name = "rejection_reason_key", length = 50)
-    private String rejectionReasonKey;
 
     @Type(JsonType.class)
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "data_ext", columnDefinition = "jsonb")
-    private Map<String, Object> extData;
+    @Column(name = "remarks", columnDefinition = "jsonb")
+    private AdvisorRemarks remarks;
+
+    @Type(JsonType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "bank_details", columnDefinition = "jsonb")
+    private List<BankDetails> bankDetails;
+
+    @Type(JsonType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "qualification_details", columnDefinition = "jsonb")
+    private QualificationDetails qualificationDetails;
+
+    @Type(JsonType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "other_details", columnDefinition = "jsonb")
+    private OtherDetails otherDetails;
+
+    @Column(name = "source_channel_id")
+    private Long sourceChannelId;
+
+    @Column(name = "office_key", length = 100)
+    private String officeKey;
+
+    @Type(JsonType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "rejection_details", columnDefinition = "jsonb")
+    private RejectionDetails rejectionDetails;
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class RejectionDetails {
+        private LocalDateTime rejectionDate;
+        private String rejectedBy;
+    }
 }
 

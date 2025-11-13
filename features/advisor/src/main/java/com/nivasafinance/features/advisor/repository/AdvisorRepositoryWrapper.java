@@ -49,6 +49,20 @@ public class AdvisorRepositoryWrapper {
         }
     }
 
+    public Advisor findByIdentifierWithException(UUID identifier) {
+        try {
+            return advisorRepository.findByIdentifier(identifier).orElseThrow(() ->
+                    AdvisorExceptionFactory.notFound(identifier, messageSource)
+            );
+        } catch (AdvisorNotFoundException e) {
+            throw e;
+        } catch (DataAccessException e) {
+            AdvisorOperationException exception = AdvisorExceptionFactory.retrieveEntityFailed(messageSource);
+            exception.initCause(e);
+            throw exception;
+        }
+    }
+
     public Page<Advisor> findAllWithException(Pageable pageable) {
         try {
             return advisorRepository.findAll(pageable);

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1730788000000_01__create_advisor_table" author="system">
+        <createTable tableName="n_advisor">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            
+            <column name="identifier" type="UUID">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            
+            <column name="person_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            
+            <column name="status" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            
+            <column name="remarks" type="JSONB"/>
+            
+            <column name="bank_details" type="JSONB"/>
+            
+            <column name="qualification_details" type="JSONB"/>
+            
+            <column name="other_details" type="JSONB"/>
+            
+            <column name="source_channel_id" type="BIGINT"/>
+            
+            <column name="office_key" type="VARCHAR(100)"/>
+            
+            <column name="rejection_details" type="JSONB"/>
+            
+            <column name="created_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            
+            <column name="created_by" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            
+            <column name="updated_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            
+            <column name="updated_by" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            
+            <column name="version" type="BIGINT" defaultValue="0">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex indexName="idx_n_advisor_identifier" tableName="n_advisor">
+            <column name="identifier"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>
+
