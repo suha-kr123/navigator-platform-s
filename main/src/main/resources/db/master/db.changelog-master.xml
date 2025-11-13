@@ -22,6 +22,8 @@
     <include file="db/changelog/stage/db.changelog-stage.xml"/>
     <include file="db/changelog/task/db.changelog-task.xml"/>
     <include file="db/changelog/staff/db.changelog-staff.xml"/>
+    <include file="db/changelog/call/db.changelog-call.xml"/>
+    <include file="db/changelog/integrations/db.changelog-integrations.xml"/>
 
     <!-- Common module migrations -->
     <include file="/db/changelog/tables/V1759332511000_33__create_api_audit_log_table.xml"/>

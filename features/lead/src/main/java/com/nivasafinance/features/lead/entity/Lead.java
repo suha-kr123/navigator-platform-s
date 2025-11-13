@@ -134,6 +134,11 @@ public class Lead extends AuditableEntity {
     @Column(name = "withdrawn_details", columnDefinition = "jsonb")
     private WithdrawnDetails withdrawnDetails;
 
+    @Type(JsonType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "call_logs", columnDefinition = "jsonb")
+    private List<CallLogDetails> callLogDetails;
+
     // Nested data classes for JSONB fields
 
     @Data
@@ -266,4 +271,14 @@ public class Lead extends AuditableEntity {
         private LocalDateTime withdrawnDate;
         private String withdrawnBy;
     }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class CallLogDetails {
+        private Long callLogId;
+        private UUID callLogIdentifier;
+    }
+
 }
