@@ -28,5 +28,7 @@ public class ApprovedDetails {
     private LocalDate sanctionExpiry;
     
     private BigDecimal insuranceFees;
+
+    private BigDecimal otherFees;
 }
 
