@@ -1,9 +1,12 @@
 package com.nivasafinance.features.lead.controller;
 
+import com.nivasafinance.common.base.model.PaginatedResponse;
+import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.common.constants.ApiConstants;
-import com.nivasafinance.features.call.dto.InitiateCallResponse;
 import com.nivasafinance.features.lead.dto.CreateLeadCallRequest;
 import com.nivasafinance.features.lead.dto.CreateLeadCallResponse;
+import com.nivasafinance.features.lead.dto.LeadCallLogResponse;
+import com.nivasafinance.features.lead.service.LeadCallReadService;
 import com.nivasafinance.features.lead.service.LeadCallWriteService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -19,6 +22,7 @@ import java.util.UUID;
 public class LeadCallController {
 
     private final LeadCallWriteService leadCallWriteService;
+    private final LeadCallReadService leadCallReadService;
 
     @PostMapping
     public ResponseEntity<CreateLeadCallResponse> callLeadContact(
@@ -27,6 +31,15 @@ public class LeadCallController {
     ) {
         CreateLeadCallResponse response = leadCallWriteService.callContact(leadId, request);
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
+    }
+
+    @GetMapping("/logs")
+    public ResponseEntity<PaginatedResponse<LeadCallLogResponse>> getCallLogs(
+            @PathVariable UUID leadId,
+            @Valid PaginationRequest paginationRequest
+    ) {
+        PaginatedResponse<LeadCallLogResponse> response = leadCallReadService.getCallLogs(leadId, paginationRequest);
+        return ResponseEntity.ok(response);
     }
 }
 
