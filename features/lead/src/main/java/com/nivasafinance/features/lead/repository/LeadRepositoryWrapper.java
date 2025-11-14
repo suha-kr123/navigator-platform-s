@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -95,6 +96,8 @@ public class LeadRepositoryWrapper {
                     advisor_person.display_name as advisor_name,
                     advisor_primary_number.number as advisor_number,
                     latest_note.content as recent_note,
+                    latest_note.created_by as recent_note_created_by,
+                    latest_note.created_at as recent_note_created_at,
                     latest_lender.lender_identifier::text as lender_identifier,
                     lender.name as lender_name,
                     latest_lender.status as lender_status,
@@ -168,7 +171,9 @@ public class LeadRepositoryWrapper {
                     LIMIT 1
                 ) advisor_primary_number ON true
                 LEFT JOIN LATERAL (
-                    SELECT n.content
+                    SELECT n.content,
+                           n.created_at,
+                           n.created_by
                     FROM jsonb_array_elements_text(COALESCE(l.notes, '[]'::jsonb)) note_id
                     JOIN n_note n ON n.id = note_id::bigint
                     ORDER BY n.created_at DESC
@@ -259,6 +264,8 @@ public class LeadRepositoryWrapper {
                 .proposedRoi(rs.getBigDecimal("proposed_roi"))
                 .eligibleLoanAmount(rs.getBigDecimal("eligible_loan_amount"))
                 .recentNote(rs.getString("recent_note"))
+                .noteCreatedBy(rs.getString("recent_note_created_by"))
+                .noteCreatedAt(getLocalDateTime(rs, "recent_note_created_at"))
                 .advisorIdentifier(rs.getString("advisor_identifier"))
                 .advisorName(rs.getString("advisor_name"))
                 .advisorNumber(rs.getString("advisor_number"))
@@ -356,6 +363,10 @@ public class LeadRepositoryWrapper {
         }
 
         return leadResponse;
+    }
+
+    private LocalDateTime getLocalDateTime(ResultSet rs, String column) throws SQLException {
+        return rs.getTimestamp(column) != null ? rs.getTimestamp(column).toLocalDateTime() : null;
     }
 
     private LocalDate getLocalDate(ResultSet rs, String column) throws SQLException {

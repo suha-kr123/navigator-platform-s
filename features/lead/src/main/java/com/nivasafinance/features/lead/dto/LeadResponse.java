@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.UUID;
 
@@ -46,6 +47,8 @@ public class LeadResponse {
     private String advisorName;
     private String advisorNumber;
     private String recentNote;
+    private String noteCreatedBy;
+    private LocalDateTime noteCreatedAt;
     private String partnerIdentifier;
     private String partnerName;
     private String partnerStatus;
