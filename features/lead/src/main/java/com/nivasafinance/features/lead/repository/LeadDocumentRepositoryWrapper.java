@@ -8,6 +8,8 @@ import com.nivasafinance.common.base.model.PaginationInfo;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.features.lead.dto.LeadDocumentResponse;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
+import com.nivasafinance.features.master.codemaster.dto.MasterCodeResponse;
+import com.nivasafinance.features.master.codemaster.service.CodeMasterService;
 import com.nivasafinance.features.master.codemaster.service.CodeValueMasterService;
 import lombok.AllArgsConstructor;
 import org.springframework.dao.DataAccessException;
@@ -20,6 +22,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -27,6 +30,7 @@ public class LeadDocumentRepositoryWrapper {
 
     private final JdbcTemplate jdbcTemplate;
     private final CodeValueMasterService codeValueMasterService;
+    private final CodeMasterService codeMasterService;
     private final ObjectMapper objectMapper;
 
     private final String sqlQueryForLeadDocuments = """
@@ -48,6 +52,7 @@ public class LeadDocumentRepositoryWrapper {
      * Reusable across multiple query methods.
      */
     private record LeadDocumentRowMapper(CodeValueMasterService codeValueMasterService,
+                                         CodeMasterService codeMasterService,
                                          ObjectMapper objectMapper) implements RowMapper<LeadDocumentResponse> {
 
         @Override
@@ -66,7 +71,13 @@ public class LeadDocumentRepositoryWrapper {
                     // Parse JSONB array to List<String> using Jackson
                     List<String> tags = objectMapper.readValue(tagsJson, new TypeReference<>() {});
                     List<CodeValueResponse> tagsCodes = codeValueMasterService.getByKeys(tags);
+                    List<String> masterCodeKeys = tagsCodes.stream()
+                            .map(CodeValueResponse::getCodeKey)
+                            .distinct()
+                            .toList();
+                    List<MasterCodeResponse> categories = codeMasterService.getMasterCodesByKeys(masterCodeKeys);
                     response.setTags(tagsCodes);
+                    response.setCategories(categories);
                 } catch (JsonProcessingException e) {
                     throw new RuntimeException("Failed to parse tags JSONB array: " + tagsJson, e);
                 }
@@ -110,7 +121,7 @@ public class LeadDocumentRepositoryWrapper {
             
             // Get paginated data
             List<LeadDocumentResponse> documents = jdbcTemplate.query(
-                    sql, new LeadDocumentRowMapper(codeValueMasterService, objectMapper), 
+                    sql, new LeadDocumentRowMapper(codeValueMasterService,codeMasterService, objectMapper),
                     leadIdentifier, limit, offset);
             
             // Calculate pagination info
@@ -136,7 +147,7 @@ public class LeadDocumentRepositoryWrapper {
         String sql = sqlQueryForLeadDocuments + " WHERE l.lead_identifier = ? AND d.identifier = ?";
 
         try {
-            return jdbcTemplate.queryForObject(sql, new LeadDocumentRowMapper(codeValueMasterService, objectMapper),
+            return jdbcTemplate.queryForObject(sql, new LeadDocumentRowMapper(codeValueMasterService,codeMasterService, objectMapper),
                     leadIdentifier, documentIdentifier);
         } catch (EmptyResultDataAccessException e) {
             throw new RuntimeException("Document not found for lead: " + leadIdentifier +
