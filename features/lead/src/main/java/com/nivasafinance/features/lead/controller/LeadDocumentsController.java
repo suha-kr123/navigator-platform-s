@@ -7,6 +7,7 @@ import com.nivasafinance.features.lead.dto.HouseFrontPhotoRequest;
 import com.nivasafinance.features.lead.dto.LeadDocumentCreateRequest;
 import com.nivasafinance.features.lead.dto.LeadDocumentCreateResponse;
 import com.nivasafinance.features.lead.dto.LeadDocumentResponse;
+import com.nivasafinance.features.lead.dto.LeadDocumentUpdateRequest;
 import com.nivasafinance.features.lead.service.LeadDocumentReadService;
 import com.nivasafinance.features.lead.service.LeadDocumentWriteService;
 import jakarta.validation.Valid;
@@ -63,6 +64,15 @@ public class LeadDocumentsController {
             @PathVariable UUID documentId) {
         LeadDocumentResponse document = leadDocumentReadService.getLeadDocumentById(leadId, documentId);
         return ResponseEntity.ok(document);
+    }
+
+    @PutMapping("/{documentId}")
+    public ResponseEntity<Void> updateLeadDocument(
+            @PathVariable UUID leadId,
+            @PathVariable UUID documentId,
+            @Valid @RequestBody LeadDocumentUpdateRequest request) {
+        leadDocumentWriteService.updateLeadDocument(leadId, documentId, request);
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{documentId}")

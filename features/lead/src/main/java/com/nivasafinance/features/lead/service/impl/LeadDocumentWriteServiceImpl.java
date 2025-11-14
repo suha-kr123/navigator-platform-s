@@ -9,6 +9,7 @@ import com.nivasafinance.features.document.service.DocumentWriteService;
 import com.nivasafinance.features.lead.dto.HouseFrontPhotoRequest;
 import com.nivasafinance.features.lead.dto.LeadDocumentCreateRequest;
 import com.nivasafinance.features.lead.dto.LeadDocumentCreateResponse;
+import com.nivasafinance.features.lead.dto.LeadDocumentUpdateRequest;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadDocumentWriteService;
@@ -158,6 +159,32 @@ public class LeadDocumentWriteServiceImpl implements LeadDocumentWriteService {
 
         // Delete the document
         documentWriteService.deleteDocumentById(documentIdentifier);
+    }
+
+    @Override
+    public void updateLeadDocument(UUID leadIdentifier, UUID documentIdentifier, LeadDocumentUpdateRequest request) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        DocumentResponse document = documentReadService.getDocumentByIdentifier(documentIdentifier);
+
+        List<String> tags = request.getTags();
+        if (tags != null && !tags.isEmpty()) {
+            codeValueMasterService.getByKeys(tags); // validate tags
+        }
+
+        List<Lead.DocumentDetail> documentDetails = lead.getDocumentDetails();
+        if (documentDetails == null || documentDetails.isEmpty()) {
+            throw new BadRequestException("Lead does not have any documents to update");
+        }
+
+        Lead.DocumentDetail documentDetail = lead.getDocumentDetails()
+                .stream()
+                .filter(detail -> detail.getId().equals(document.getId()))
+                .findFirst()
+                .orElseThrow(() -> new BadRequestException("Document not found for lead: " + leadIdentifier));
+
+        documentDetail.setTag(tags);
+
+        leadRepositoryWrapper.saveWithException(lead);
     }
 }
 
