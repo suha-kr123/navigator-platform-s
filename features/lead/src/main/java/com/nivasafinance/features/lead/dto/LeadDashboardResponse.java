@@ -2,7 +2,6 @@ package com.nivasafinance.features.lead.dto;
 
 import com.nivasafinance.features.lead.enums.LeadStatus;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
-import com.nivasafinance.features.notes.dto.NotesResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -30,7 +29,8 @@ public class LeadDashboardResponse {
     private LocalDateTime leadCreatedAt;
     private LocalDateTime lastActivityDate;
     private String lastActivityBy;
-    private String advisor; //todo advisor
+    private String advisorName;
+    private String advisorNumber;
     private String leadOwner;
     private LocalTime preferredCallStartTime;
     private LocalTime preferredCallEndTime;

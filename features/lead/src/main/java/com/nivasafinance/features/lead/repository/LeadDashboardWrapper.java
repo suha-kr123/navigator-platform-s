@@ -106,6 +106,8 @@ public class LeadDashboardWrapper {
                                      l.updated_at                   AS last_activity_at,
                                      l.updated_by                   AS last_activity_by,
                                      lead_owner_person.display_name              AS lead_owner_name,
+                                     advisor_person.display_name                 AS advisor_name,
+                                     advisor_primary_number.number               AS advisor_number,
                                      latest_note.content                         AS note_content,
                                      (l.other_details->>'preferredCallStartTime')::time AS preferred_call_start_time,
                                      (l.other_details->>'preferredCallEndTime')::time   AS preferred_call_end_time,
@@ -247,6 +249,21 @@ public class LeadDashboardWrapper {
                 ) fallback_contact ON true
                 LEFT JOIN n_person fallback_contact_person ON fallback_contact.person_id = fallback_contact_person.id
                 LEFT JOIN LATERAL (
+                    SELECT alm.advisor_id
+                    FROM n_advisor_lead_mapping alm
+                    WHERE alm.lead_id = l.id
+                    ORDER BY alm.updated_at DESC
+                    LIMIT 1
+                ) advisor_mapping ON true
+                LEFT JOIN n_advisor advisor ON advisor_mapping.advisor_id = advisor.id
+                LEFT JOIN n_person advisor_person ON advisor.person_id = advisor_person.id
+                LEFT JOIN LATERAL (
+                    SELECT mn->>'number' as number
+                    FROM jsonb_array_elements(COALESCE(advisor_person.mobile_numbers, '[]'::jsonb)) mn
+                    WHERE (mn->>'isPrimary')::boolean = true
+                    LIMIT 1
+                ) advisor_primary_number ON true
+                LEFT JOIN LATERAL (
                     SELECT
                         n.content
                     FROM jsonb_array_elements_text(COALESCE(l.notes, '[]'::jsonb)) note_id
@@ -321,8 +338,9 @@ public class LeadDashboardWrapper {
                     .leadCreatedAt(getLocalDateTime(rs, "lead_created_at"))
                     .lastActivityDate(getLocalDateTime(rs, "last_activity_at"))
                     .lastActivityBy(rs.getString("last_activity_by"))
-                    .recentNote(rs.getString("note_content"))
-                    //todo add advisor
+                    .recentNote(rs.getString("recent_note"))
+                    .advisorName(rs.getString("advisor_name"))
+                    .advisorNumber(rs.getString("advisor_number"))
                     .leadOwner(rs.getString("lead_owner_name"))
                     .preferredCallStartTime(getLocalTime(rs, "preferred_call_start_time"))
                     .preferredCallEndTime(getLocalTime(rs, "preferred_call_end_time"))
