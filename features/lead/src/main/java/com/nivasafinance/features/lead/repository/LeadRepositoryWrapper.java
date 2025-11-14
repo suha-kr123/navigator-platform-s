@@ -85,6 +85,21 @@ public class LeadRepositoryWrapper {
                     (l.other_details->>'preferredCallStartTime')::time as preferred_call_start_time,
                     (l.other_details->>'preferredCallEndTime')::time as preferred_call_end_time,
                     l.other_details->>'priority' as priority_key,
+                    (l.proposed_details->>'proposedLoanAmount')::numeric as proposed_amount,
+                    (l.proposed_details->>'roi')::numeric as proposed_roi,
+                    (l.credit_rating_details->>'eligibleLoanAmount')::numeric as eligible_loan_amount,
+                    l.credit_rating_details->>'bureauRating' as bureau_rating_key,
+                    l.credit_rating_details->>'customerProfiles' as customer_profiles_key,
+                    l.credit_rating_details->>'monthlyFamilyIncome' as monthly_family_income_key,
+                    advisor.identifier::text as advisor_identifier,
+                    advisor_person.display_name as advisor_name,
+                    advisor_primary_number.number as advisor_number,
+                    latest_note.content as recent_note,
+                    latest_lender.lender_identifier::text as lender_identifier,
+                    lender.name as lender_name,
+                    latest_lender.status as lender_status,
+                    latest_lender.stage as lender_stage_key,
+                    lender_office.name as lender_office_name,
                      CASE
                          WHEN l.status = 'REJECTED' AND l.reasons ->> 'reject' IS NOT NULL
                              THEN l.reasons ->> 'reject'
@@ -137,6 +152,42 @@ public class LeadRepositoryWrapper {
                 ) fallback_contact ON true
                 LEFT JOIN n_person fallback_contact_person ON
                     fallback_contact.person_id = fallback_contact_person.id
+                LEFT JOIN LATERAL (
+                    SELECT alm.advisor_id
+                    FROM n_advisor_lead_mapping alm
+                    WHERE alm.lead_id = l.id
+                    ORDER BY alm.updated_at DESC
+                    LIMIT 1
+                ) advisor_mapping ON true
+                LEFT JOIN n_advisor advisor ON advisor_mapping.advisor_id = advisor.id
+                LEFT JOIN n_person advisor_person ON advisor.person_id = advisor_person.id
+                LEFT JOIN LATERAL (
+                    SELECT mn->>'number' as number
+                    FROM jsonb_array_elements(COALESCE(advisor_person.mobile_numbers, '[]'::jsonb)) mn
+                    WHERE (mn->>'isPrimary')::boolean = true
+                    LIMIT 1
+                ) advisor_primary_number ON true
+                LEFT JOIN LATERAL (
+                    SELECT n.content
+                    FROM jsonb_array_elements_text(COALESCE(l.notes, '[]'::jsonb)) note_id
+                    JOIN n_note n ON n.id = note_id::bigint
+                    ORDER BY n.created_at DESC
+                    LIMIT 1
+                ) latest_note ON true
+                LEFT JOIN LATERAL (
+                    SELECT ll.lender_identifier,
+                           ll.lender_key,
+                           ll.lender_office_key,
+                           ll.status,
+                           ll.stage
+                    FROM n_lead_lender ll
+                    WHERE ll.lead_id = l.id
+                      AND ll.status IN ('SELECTED','SUBMITTED')
+                    ORDER BY ll.updated_at DESC
+                    LIMIT 1
+                ) latest_lender ON true
+                LEFT JOIN n_lender lender ON lender.key = latest_lender.lender_key
+                LEFT JOIN n_lender_office lender_office ON lender_office.key = latest_lender.lender_office_key
                  LEFT JOIN n_office o ON o.key = l.office_key
                  WHERE l.lead_identifier = ?
                     \s""";
@@ -204,6 +255,17 @@ public class LeadRepositoryWrapper {
                 .primaryPersonNumber(rs.getString("primaryPersonNumber"))
                 .officeName(rs.getString("officeName"))
                 .reasonCode(rs.getString("reasonCode"))
+                .proposedAmount(rs.getBigDecimal("proposed_amount"))
+                .proposedRoi(rs.getBigDecimal("proposed_roi"))
+                .eligibleLoanAmount(rs.getBigDecimal("eligible_loan_amount"))
+                .recentNote(rs.getString("recent_note"))
+                .advisorIdentifier(rs.getString("advisor_identifier"))
+                .advisorName(rs.getString("advisor_name"))
+                .advisorNumber(rs.getString("advisor_number"))
+                .lenderIdentifier(rs.getString("lender_identifier"))
+                .lenderName(rs.getString("lender_name"))
+                .lenderStatus(rs.getString("lender_status"))
+                .lenderOfficeName(rs.getString("lender_office_name"))
                 .preferredCallStartTime(getLocalTime(rs, "preferred_call_start_time"))
                 .preferredCallEndTime(getLocalTime(rs, "preferred_call_end_time"));
 
@@ -255,6 +317,42 @@ public class LeadRepositoryWrapper {
                     SystemControlledMasterCodes.LEAD_PRIORITY_MASTER
             );
             leadResponse.setPriority(priority);
+        }
+
+        String bureauRatingKey = rs.getString("bureau_rating_key");
+        if (bureauRatingKey != null) {
+            CodeValueResponse bureauRating = codeValueMasterService.getCodeValueByKeyAndCodeKey(
+                    bureauRatingKey,
+                    SystemControlledMasterCodes.LEAD_BUREAU_RATING_MASTER
+            );
+            leadResponse.setBureauRating(bureauRating);
+        }
+
+        String customerProfilesKey = rs.getString("customer_profiles_key");
+        if (customerProfilesKey != null) {
+            CodeValueResponse customerProfile = codeValueMasterService.getCodeValueByKeyAndCodeKey(
+                    customerProfilesKey,
+                    SystemControlledMasterCodes.LEAD_CUSTOMER_PROFILE_MASTER
+            );
+            leadResponse.setCustomerProfiles(customerProfile);
+        }
+
+        String monthlyFamilyIncomeKey = rs.getString("monthly_family_income_key");
+        if (monthlyFamilyIncomeKey != null) {
+            CodeValueResponse monthlyIncome = codeValueMasterService.getCodeValueByKeyAndCodeKey(
+                    monthlyFamilyIncomeKey,
+                    SystemControlledMasterCodes.LEAD_MONTHLY_INCOME_MASTER
+            );
+            leadResponse.setMonthlyFamilyIncome(monthlyIncome);
+        }
+
+        String lenderStageKey = rs.getString("lender_stage_key");
+        if (lenderStageKey != null) {
+            CodeValueResponse lenderStage = codeValueMasterService.getCodeValueByKeyAndCodeKey(
+                    lenderStageKey,
+                    SystemControlledMasterCodes.LENDER_STAGE_MASTER
+            );
+            leadResponse.setLenderStage(lenderStage);
         }
 
         return leadResponse;
