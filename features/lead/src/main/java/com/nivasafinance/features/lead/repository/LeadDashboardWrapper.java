@@ -338,7 +338,7 @@ public class LeadDashboardWrapper {
                     .leadCreatedAt(getLocalDateTime(rs, "lead_created_at"))
                     .lastActivityDate(getLocalDateTime(rs, "last_activity_at"))
                     .lastActivityBy(rs.getString("last_activity_by"))
-                    .recentNote(rs.getString("recent_note"))
+                    .recentNote(rs.getString("note_content"))
                     .advisorName(rs.getString("advisor_name"))
                     .advisorNumber(rs.getString("advisor_number"))
                     .leadOwner(rs.getString("lead_owner_name"))
