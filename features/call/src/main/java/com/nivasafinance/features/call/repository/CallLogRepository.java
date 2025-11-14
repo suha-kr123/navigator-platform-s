@@ -12,5 +12,6 @@ import java.util.UUID;
 @JaversSpringDataAuditable
 public interface CallLogRepository extends JpaRepository<CallLog, Long> {
     Optional<CallLog> findByIdentifier(UUID identifier);
+    Optional<CallLog> findByProviderId(String providerId);
 }
 

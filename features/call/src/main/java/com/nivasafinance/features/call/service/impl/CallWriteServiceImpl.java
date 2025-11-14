@@ -3,6 +3,7 @@ package com.nivasafinance.features.call.service.impl;
 import com.nivasafinance.common.context.UserContext;
 import com.nivasafinance.features.call.dto.InitiateCallRequest;
 import com.nivasafinance.features.call.dto.InitiateCallResponse;
+import com.nivasafinance.features.call.dto.UpdateCallLog;
 import com.nivasafinance.features.call.entity.CallLog;
 import com.nivasafinance.features.call.entity.RoleCallConfigs;
 import com.nivasafinance.features.call.enums.CallDirection;
@@ -61,6 +62,15 @@ public class CallWriteServiceImpl implements CallWriteService {
                 .identifier(savedCallLog.getIdentifier())
                 .status(savedCallLog.getStatus())
                 .build();
+    }
+
+    @Override
+    public void updateCallLogByProviderId(String providerId, UpdateCallLog updateCallLog) {
+        CallLog callLog = callLogRepositoryWrapper.findByProviderIdWithException(providerId);
+        callLog.setStatus(updateCallLog.getStatus());
+        callLog.setRecordingDetails(updateCallLog.getRecordingDetails());
+        callLog.setCompletionDetails(updateCallLog.getCompletionDetails());
+        callLogRepositoryWrapper.saveWithException(callLog);
     }
 
     private CallLog buildCallLog(InitiateCallRequest request, RoleCallConfigs roleCallConfigs, VoiceCallResponse voiceCallResponse) {

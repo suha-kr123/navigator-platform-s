@@ -55,6 +55,17 @@ public class CallLogRepositoryWrapper {
         }
     }
 
+    public CallLog findByProviderIdWithException(String providerId) {
+        try {
+            return callLogRepository.findByProviderId(providerId).orElseThrow(() ->
+                    CallLogExceptionFactory.notFoundByProviderId(providerId, messageSource));
+        } catch (CallLogNotFoundException e) {
+            throw e;
+        } catch (DataAccessException e) {
+            throw CallLogExceptionFactory.retrieveByProviderIdFailed(providerId, messageSource);
+        }
+    }
+
     public List<CallLog> findByIdsWithException(List<Long> ids) {
         try {
             return callLogRepository.findAllById(ids);

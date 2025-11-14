@@ -24,6 +24,10 @@ public final class CallLogExceptionFactory {
         return new CallLogOperationException("error.call.log.retrieve.by.identifier.failed", new Object[]{identifier}, messageSource);
     }
 
+    public static CallLogOperationException retrieveByProviderIdFailed(String providerId, MessageSource messageSource) {
+        return new CallLogOperationException("error.call.log.retrieve.by.provider.id.failed", new Object[]{providerId}, messageSource);
+    }
+
     public static CallLogOperationException retrieveByIdsFailed(List<Long> ids, MessageSource messageSource) {
         return new CallLogOperationException(
                 "error.call.log.retrieve.by.ids.failed",
@@ -45,6 +49,15 @@ public final class CallLogExceptionFactory {
         String message = ExceptionUtils.createLocalizedMessage(
                 "error.call.log.not.found.by.identifier",
                 new Object[]{identifier},
+                messageSource
+        );
+        return new CallLogNotFoundException(message);
+    }
+
+    public static CallLogNotFoundException notFoundByProviderId(String providerId, MessageSource messageSource) {
+        String message = ExceptionUtils.createLocalizedMessage(
+                "error.call.log.not.found.by.provider.id",
+                new Object[]{providerId},
                 messageSource
         );
         return new CallLogNotFoundException(message);
