@@ -15,6 +15,7 @@ import java.util.UUID;
 public class CodeValueResponse {
     private UUID id;
     private String key;
+    private String codeKey;
     private String value;
     private String description;
     private Boolean isActive;
@@ -23,6 +24,7 @@ public class CodeValueResponse {
         return CodeValueResponse.builder()
                 .id(masterCodeValue.getId())
                 .key(masterCodeValue.getKey())
+                .codeKey(masterCodeValue.getCodeKey())
                 .value(masterCodeValue.getValue() != null && masterCodeValue.getValue().getDefaultValue() != null
                         ? masterCodeValue.getValue().getDefaultValue() : "")
                 .description(masterCodeValue.getDescription() != null && masterCodeValue.getDescription().getDefaultValue() != null
