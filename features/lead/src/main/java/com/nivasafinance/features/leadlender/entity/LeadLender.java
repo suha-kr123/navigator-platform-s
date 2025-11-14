@@ -3,6 +3,7 @@ package com.nivasafinance.features.leadlender.entity;
 import com.nivasafinance.common.audit.AuditableEntity;
 import com.nivasafinance.features.leadlender.dto.ApprovedDetails;
 import com.nivasafinance.features.leadlender.dto.LoginDetails;
+import com.nivasafinance.features.leadlender.dto.RejectionDetails;
 import com.nivasafinance.features.leadlender.dto.RmDetails;
 import com.nivasafinance.features.leadlender.enums.LeadLenderStatus;
 import jakarta.persistence.Column;
@@ -65,6 +66,7 @@ public class LeadLender extends AuditableEntity {
     @Column(name = "stage", length = 100)
     private String stage;
 
-    @Column(name = "remarks", length = 100)
-    private String remarks;
+    @Column(name = "rejection_details", columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
+    private RejectionDetails rejectionDetails;
 }
