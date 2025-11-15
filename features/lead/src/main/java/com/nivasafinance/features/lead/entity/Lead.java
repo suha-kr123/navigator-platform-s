@@ -79,7 +79,7 @@ public class Lead extends AuditableEntity {
     @Type(JsonType.class)
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "preliminary_details", columnDefinition = "jsonb")
-    private Map<String, String> preliminaryDetails;
+    private PreliminaryDetails preliminaryDetails;
 
     @Type(JsonType.class)
     @JdbcTypeCode(SqlTypes.JSON)
@@ -230,6 +230,7 @@ public class Lead extends AuditableEntity {
     @AllArgsConstructor
     @Builder
     public static class OtherDetails {
+        private Long noOfCallLogs;
         private PropertyDetails propertyDetails;
         private String priority;
         private LocalTime preferredCallStartTime;
@@ -279,6 +280,16 @@ public class Lead extends AuditableEntity {
     public static class CallLogDetails {
         private Long callLogId;
         private UUID callLogIdentifier;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class PreliminaryDetails {
+        private Boolean isWhatsAppDIYFormCompleted;
+        private Map<String, String> whatsAppDIYForm;
+        private BigDecimal monthlyFamilyIncome;
     }
 
 }

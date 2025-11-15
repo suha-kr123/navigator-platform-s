@@ -85,8 +85,14 @@ public class LeadReadServiceImpl implements LeadReadService {
     @Override
     public PreliminaryDetailsResponse getPreliminaryDetails(UUID leadIdentifier) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        Lead.PreliminaryDetails preliminaryDetails = lead.getPreliminaryDetails();
+        if (preliminaryDetails == null) {
+            return PreliminaryDetailsResponse.builder().build();
+        }
         return PreliminaryDetailsResponse.builder()
-                .preliminaryDetails(lead.getPreliminaryDetails())
+                .whatsAppFormDetails(preliminaryDetails.getWhatsAppDIYForm())
+                .isWhatsAppDIYFormCompleted(preliminaryDetails.getIsWhatsAppDIYFormCompleted())
+                .monthlyFamilyIncome(preliminaryDetails.getMonthlyFamilyIncome())
                 .build();
     }
 

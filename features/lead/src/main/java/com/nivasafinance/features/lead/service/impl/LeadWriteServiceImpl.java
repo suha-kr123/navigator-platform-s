@@ -147,7 +147,15 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     @Transactional
     public void updatePreliminaryDetails(UUID leadIdentifier, UpdatePreliminaryDetailsRequest request) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
-        lead.setPreliminaryDetails(request.getPreliminaryDetails());
+        Lead.PreliminaryDetails preliminaryDetails = lead.getPreliminaryDetails();
+        if (preliminaryDetails == null) {
+            preliminaryDetails = new Lead.PreliminaryDetails();
+        }
+        if(request.getWhatsAppFormDetails() != null) {
+            preliminaryDetails.setWhatsAppDIYForm(request.getWhatsAppFormDetails());
+        }
+        preliminaryDetails.setIsWhatsAppDIYFormCompleted(request.getIsWhatsAppDIYFormCompleted());
+        preliminaryDetails.setMonthlyFamilyIncome(request.getMonthlyFamilyIncome());
         leadRepositoryWrapper.saveWithException(lead);
     }
 
