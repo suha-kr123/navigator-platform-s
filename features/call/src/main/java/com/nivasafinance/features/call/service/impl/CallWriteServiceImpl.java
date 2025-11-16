@@ -42,12 +42,10 @@ public class CallWriteServiceImpl implements CallWriteService {
             throw new IllegalStateException("No authenticated user found in context");
         }
 
-        List<String> roles = userRoleService.getRolesByUsername(username);
-        if (roles.isEmpty()) {
-            throw new IllegalStateException("No roles found for user: " + username);
+        String primaryRole = userRoleService.getPrimaryRoleForUsername(username);
+        if (primaryRole == null || primaryRole.isBlank()) {
+            throw new IllegalStateException("Primary Role not found for user : " + username);
         }
-
-        String primaryRole = roles.getFirst();
         RoleCallConfigs roleCallConfigs = roleCallConfigsRepositoryWrapper.findByRoleWithException(primaryRole);
         VoiceHandler handler = thirdPartyserviceFactory.getHandler(ThirdPartyServiceList.VOICE);
         VoiceCallResponse voiceCallResponse = handler.makeCall(

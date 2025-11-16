@@ -9,5 +9,6 @@ import java.util.Optional;
 @Repository
 public interface UserRoleMappingRepository extends JpaRepository<UserRoleMapping, Long> {
     Optional<UserRoleMapping> findByUsername(String username);
+    Optional<UserRoleMapping> findByUsernameAndIsPrimary(String username, Boolean isPrimary);
 }
 
