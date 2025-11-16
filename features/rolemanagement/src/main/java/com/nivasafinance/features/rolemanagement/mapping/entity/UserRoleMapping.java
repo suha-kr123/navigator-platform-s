@@ -29,5 +29,8 @@ public class UserRoleMapping extends AuditableEntity {
     
     @Column(name = "role", nullable = false)
     private String role;
+    
+    @Column(name = "is_primary", columnDefinition = "boolean", nullable = false)
+    private Boolean isPrimary;
 }
 
