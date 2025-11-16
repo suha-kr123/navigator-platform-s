@@ -17,10 +17,8 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.Type;
 import org.hibernate.type.SqlTypes;
 
-import java.util.UUID;
-
 @Entity
-@Table(name = "master_code_value")
+@Table(name = "n_master_code_value")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -28,9 +26,8 @@ import java.util.UUID;
 public class MasterCodeValue extends AuditableEntity {
     
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(columnDefinition = "UUID")
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
     
     @Column(name = "key", nullable = false, length = 100)
     private String key;

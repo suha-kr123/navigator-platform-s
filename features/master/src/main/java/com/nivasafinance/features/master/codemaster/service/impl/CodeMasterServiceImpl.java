@@ -3,7 +3,6 @@ package com.nivasafinance.features.master.codemaster.service.impl;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import com.nivasafinance.features.master.codemaster.dto.MasterCodeResponse;
 import com.nivasafinance.features.master.codemaster.dto.MasterCodeWithValuesResponse;
-import com.nivasafinance.features.master.codemaster.entity.MasterCode;
 import com.nivasafinance.features.master.codemaster.entity.MasterCodeValue;
 import com.nivasafinance.features.master.codemaster.repository.MasterCodeRepositoryWrapper;
 import com.nivasafinance.features.master.codemaster.repository.MasterCodeValueRepositoryWrapper;

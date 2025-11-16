@@ -6,14 +6,12 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.UUID;
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class CodeValueResponse {
-    private UUID id;
+    private Long id;
     private String key;
     private String codeKey;
     private String value;

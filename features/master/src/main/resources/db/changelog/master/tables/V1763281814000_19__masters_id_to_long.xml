@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1763281814000_71" author="system" context="default">
+        
+        <!-- Step 1: Rename tables to add n_ prefix -->
+        <renameTable oldTableName="master_code" newTableName="n_master_code"/>
+        <renameTable oldTableName="master_code_value" newTableName="n_master_code_value"/>
+        <renameTable oldTableName="master_pincode" newTableName="n_master_pincode"/>
+        
+    </changeSet>
+
+    <changeSet id="V1763281814000_72" author="system" context="default">
+        
+        <!-- Migration for n_master_code table: UUID to BIGINT -->
+        <!-- Step 1: Add temporary BIGINT id column -->
+        <addColumn tableName="n_master_code">
+            <column name="id_new" type="bigint"/>
+        </addColumn>
+        
+        <!-- Step 2: Populate new id column with sequential values -->
+        <sql>
+            UPDATE n_master_code
+            SET id_new = subquery.row_num
+            FROM (
+                SELECT id, ROW_NUMBER() OVER (ORDER BY created_at, id) as row_num
+                FROM n_master_code
+            ) AS subquery
+            WHERE n_master_code.id = subquery.id;
+        </sql>
+        
+        <!-- Step 3: Add temporary BIGINT parent_id column -->
+        <addColumn tableName="n_master_code">
+            <column name="parent_id_new" type="bigint"/>
+        </addColumn>
+        
+        <!-- Step 4: Update parent_id_new to reference new IDs -->
+        <sql>
+            UPDATE n_master_code mc1
+            SET parent_id_new = mc2.id_new
+            FROM n_master_code mc2
+            WHERE mc1.parent_id = mc2.id;
+        </sql>
+        
+        <!-- Step 5: Drop primary key constraint -->
+        <dropPrimaryKey tableName="n_master_code" constraintName="master_code_pkey"/>
+        
+        <!-- Step 6: Drop old UUID columns -->
+        <dropColumn tableName="n_master_code" columnName="id"/>
+        <dropColumn tableName="n_master_code" columnName="parent_id"/>
+        
+        <!-- Step 7: Rename new columns -->
+        <renameColumn tableName="n_master_code" oldColumnName="id_new" newColumnName="id" columnDataType="bigint"/>
+        <renameColumn tableName="n_master_code" oldColumnName="parent_id_new" newColumnName="parent_id" columnDataType="bigint"/>
+        
+        <!-- Step 8: Set NOT NULL and recreate primary key -->
+        <addNotNullConstraint tableName="n_master_code" columnName="id" columnDataType="bigint"/>
+        <addPrimaryKey tableName="n_master_code" columnNames="id" constraintName="n_master_code_pkey"/>
+        
+        <!-- Step 9: Create sequence for IDENTITY generation -->
+        <createSequence sequenceName="n_master_code_id_seq" startValue="1" incrementBy="1"/>
+        
+        <!-- Step 10: Set default value for id column using sequence -->
+        <sql>
+            ALTER TABLE n_master_code ALTER COLUMN id SET DEFAULT nextval('n_master_code_id_seq');
+            SELECT setval('n_master_code_id_seq', COALESCE((SELECT MAX(id) FROM n_master_code), 1), true);
+        </sql>
+        
+    </changeSet>
+
+    <changeSet id="V1763281814000_73" author="system" context="default">
+        
+        <!-- Migration for n_master_code_value table: UUID to BIGINT -->
+        <!-- Step 1: Add temporary BIGINT id column -->
+        <addColumn tableName="n_master_code_value">
+            <column name="id_new" type="bigint"/>
+        </addColumn>
+        
+        <!-- Step 2: Populate new id column with sequential values -->
+        <sql>
+            UPDATE n_master_code_value
+            SET id_new = subquery.row_num
+            FROM (
+                SELECT id, ROW_NUMBER() OVER (ORDER BY created_at, id) as row_num
+                FROM n_master_code_value
+            ) AS subquery
+            WHERE n_master_code_value.id = subquery.id;
+        </sql>
+        
+        <!-- Step 3: Drop primary key constraint -->
+        <dropPrimaryKey tableName="n_master_code_value" constraintName="master_code_value_pkey"/>
+        
+        <!-- Step 4: Drop old UUID column -->
+        <dropColumn tableName="n_master_code_value" columnName="id"/>
+        
+        <!-- Step 5: Rename new column -->
+        <renameColumn tableName="n_master_code_value" oldColumnName="id_new" newColumnName="id" columnDataType="bigint"/>
+        
+        <!-- Step 6: Set NOT NULL and recreate primary key -->
+        <addNotNullConstraint tableName="n_master_code_value" columnName="id" columnDataType="bigint"/>
+        <addPrimaryKey tableName="n_master_code_value" columnNames="id" constraintName="n_master_code_value_pkey"/>
+        
+        <!-- Step 7: Create sequence for IDENTITY generation -->
+        <createSequence sequenceName="n_master_code_value_id_seq" startValue="1" incrementBy="1"/>
+        
+        <!-- Step 8: Set default value for id column using sequence -->
+        <sql>
+            ALTER TABLE n_master_code_value ALTER COLUMN id SET DEFAULT nextval('n_master_code_value_id_seq');
+            SELECT setval('n_master_code_value_id_seq', COALESCE((SELECT MAX(id) FROM n_master_code_value), 1), true);
+        </sql>
+        
+    </changeSet>
+
+    <changeSet id="V1763281814000_74" author="system" context="default">
+        
+        <!-- Migration for n_master_pincode table: UUID to BIGINT -->
+        <!-- Step 1: Add temporary BIGINT id column -->
+        <addColumn tableName="n_master_pincode">
+            <column name="id_new" type="bigint"/>
+        </addColumn>
+        
+        <!-- Step 2: Populate new id column with sequential values -->
+        <sql>
+            UPDATE n_master_pincode
+            SET id_new = subquery.row_num
+            FROM (
+                SELECT id, ROW_NUMBER() OVER (ORDER BY created_at, id) as row_num
+                FROM n_master_pincode
+            ) AS subquery
+            WHERE n_master_pincode.id = subquery.id;
+        </sql>
+        
+        <!-- Step 3: Drop primary key constraint -->
+        <dropPrimaryKey tableName="n_master_pincode" constraintName="master_pincode_pkey"/>
+        
+        <!-- Step 4: Drop old UUID column -->
+        <dropColumn tableName="n_master_pincode" columnName="id"/>
+        
+        <!-- Step 5: Rename new column -->
+        <renameColumn tableName="n_master_pincode" oldColumnName="id_new" newColumnName="id" columnDataType="bigint"/>
+        
+        <!-- Step 6: Set NOT NULL and recreate primary key -->
+        <addNotNullConstraint tableName="n_master_pincode" columnName="id" columnDataType="bigint"/>
+        <addPrimaryKey tableName="n_master_pincode" columnNames="id" constraintName="n_master_pincode_pkey"/>
+        
+        <!-- Step 7: Create sequence for IDENTITY generation -->
+        <createSequence sequenceName="n_master_pincode_id_seq" startValue="1" incrementBy="1"/>
+        
+        <!-- Step 8: Set default value for id column using sequence -->
+        <sql>
+            ALTER TABLE n_master_pincode ALTER COLUMN id SET DEFAULT nextval('n_master_pincode_id_seq');
+            SELECT setval('n_master_pincode_id_seq', COALESCE((SELECT MAX(id) FROM n_master_pincode), 1), true);
+        </sql>
+        
+    </changeSet>
+
+</databaseChangeLog>

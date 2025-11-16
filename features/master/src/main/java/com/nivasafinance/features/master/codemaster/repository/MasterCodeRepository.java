@@ -6,11 +6,10 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 @Repository
-public interface MasterCodeRepository extends JpaRepository<MasterCode, UUID> {
+public interface MasterCodeRepository extends JpaRepository<MasterCode, Long> {
     Optional<MasterCode> findByKey(String key);
-    List<MasterCode> findByParentId(UUID parentId);
+    List<MasterCode> findByParentId(Long parentId);
 }
 
