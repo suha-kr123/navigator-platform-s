@@ -4,9 +4,7 @@ import com.nivasafinance.features.rolemanagement.permissiongroup.entity.Permissi
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.UUID;
-
 @Repository
-public interface PermissionGroupRepository extends JpaRepository<PermissionGroup, UUID> {
+public interface PermissionGroupRepository extends JpaRepository<PermissionGroup, Long> {
 }
 

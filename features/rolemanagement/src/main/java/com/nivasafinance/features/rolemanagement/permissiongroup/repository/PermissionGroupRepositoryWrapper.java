@@ -7,7 +7,6 @@ import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -20,11 +19,11 @@ public class PermissionGroupRepositoryWrapper {
         return repository.findAll();
     }
     
-    public PermissionGroup findById(UUID id) {
+    public PermissionGroup findById(Long id) {
         return repository.findById(id).orElse(null);
     }
     
-    public PermissionGroup findByIdWithException(UUID id) {
+    public PermissionGroup findByIdWithException(Long id) {
         PermissionGroup group = findById(id);
         if (group == null) {
             throw RoleManagementExceptionFactory.notFound("permission.group", id, messageSource);

@@ -12,10 +12,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
-import java.util.UUID;
-
 @Entity
-@Table(name = "roles")
+@Table(name = "n_roles")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -23,9 +21,8 @@ import java.util.UUID;
 public class Role extends AuditableEntity {
     
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(columnDefinition = "UUID")
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
     
     @Column(name = "name", nullable = false, unique = true)
     private String name;

@@ -4,13 +4,11 @@ import com.nivasafinance.features.rolemanagement.mapping.repository.RolePermissi
 import com.nivasafinance.features.rolemanagement.permissiongroup.dto.PermissionGroupResponse;
 import com.nivasafinance.features.rolemanagement.permissiongroup.repository.PermissionGroupRepositoryWrapper;
 import com.nivasafinance.features.rolemanagement.permissiongroup.service.PermissionGroupReadService;
-import com.nivasafinance.features.rolemanagement.role.repository.RoleRepositoryWrapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -19,7 +17,6 @@ public class PermissionGroupServiceImpl implements PermissionGroupReadService {
     
     private final PermissionGroupRepositoryWrapper permissionGroupRepositoryWrapper;
     private final RolePermissionGroupMappingRepositoryWrapper rolePermissionGroupMappingRepositoryWrapper;
-    private final RoleRepositoryWrapper roleRepositoryWrapper;
     
     @Override
     public List<PermissionGroupResponse> getPermissionGroupsbyRoles(List<String> roleName) {
@@ -27,20 +24,10 @@ public class PermissionGroupServiceImpl implements PermissionGroupReadService {
             return new ArrayList<>();
         }
         
-        List<com.nivasafinance.features.rolemanagement.role.entity.Role> roles = roleRepositoryWrapper.findByNameIn(roleName);
-        if (roles.isEmpty()) {
-            return new ArrayList<>();
-        }
-        
-        List<UUID> roleIds = roles.stream()
-                .map(com.nivasafinance.features.rolemanagement.role.entity.Role::getId)
-                .filter(id -> id != null)
-                .collect(Collectors.toList());
-        
         List<com.nivasafinance.features.rolemanagement.mapping.entity.RolePermissionGroupMapping> rolePermissionGroupMappings = 
-                rolePermissionGroupMappingRepositoryWrapper.findByRoleIdIn(roleIds);
+                rolePermissionGroupMappingRepositoryWrapper.findByRoleIn(roleName);
         
-        List<UUID> permissionGroupIds = rolePermissionGroupMappings.stream()
+        List<Long> permissionGroupIds = rolePermissionGroupMappings.stream()
                 .map(com.nivasafinance.features.rolemanagement.mapping.entity.RolePermissionGroupMapping::getPermissionGroupId)
                 .distinct()
                 .collect(Collectors.toList());
@@ -57,7 +44,7 @@ public class PermissionGroupServiceImpl implements PermissionGroupReadService {
         
         return permissionGroups.stream()
                 .map(group -> PermissionGroupResponse.builder()
-                        .id(group.getId() != null ? group.getId() : UUID.randomUUID())
+                        .id(group.getId())
                         .name(group.getName())
                         .build())
                 .collect(Collectors.toList());

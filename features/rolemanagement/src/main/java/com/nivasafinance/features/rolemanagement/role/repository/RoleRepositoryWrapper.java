@@ -7,7 +7,6 @@ import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -20,11 +19,11 @@ public class RoleRepositoryWrapper {
         return roleRepository.findByNameIn(names);
     }
     
-    public Role findById(UUID id) {
+    public Role findById(Long id) {
         return roleRepository.findById(id).orElse(null);
     }
     
-    public Role findByIdWithException(UUID id) {
+    public Role findByIdWithException(Long id) {
         Role role = findById(id);
         if (role == null) {
             throw RoleManagementExceptionFactory.notFound("role", id, messageSource);
