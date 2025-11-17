@@ -121,10 +121,10 @@ public class LeadDashboardWrapper {
                                      l.other_details->>'priority'                       AS priority_key,
                                      partners.partner_names                             AS partners,
                                      l.substatus                                        AS substatus,
-                                     0 AS number_of_calls,
-                                     null                          AS last_call_direction,
-                                     null                             AS last_call_status,
-                                     null                         AS last_call_date,
+                                     COALESCE(jsonb_array_length(COALESCE(l.call_logs, '[]'::jsonb)), 0) AS number_of_calls,
+                                     latest_call.direction                              AS last_call_direction,
+                                     latest_call.status                                 AS last_call_status,
+                                     latest_call.created_at                             AS last_call_date,
                                      l.reasons->>'onhold'                               AS onhold_reason_key,
                                      (l.onhold_details->>'onHoldMovementDate')::timestamp AS onhold_date,
                                      o.code                                             AS office_code,
@@ -327,6 +327,7 @@ public class LeadDashboardWrapper {
                     WHERE lead_lender.lead_id = l.id
                       AND lead_lender.status IN ('SELECTED', 'SUBMITTED')
                 ) partners ON true
+                LEFT JOIN n_call_log latest_call ON latest_call.id = (l.other_details->>'lastCallId')::bigint
                 LEFT JOIN n_sourcing_channel_details sourcing_channel ON sourcing_channel.id = l.sourcing_channel_id
                 """;
     }
