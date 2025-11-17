@@ -5,9 +5,12 @@ import com.nivasafinance.common.enums.SystemEntities;
 import com.nivasafinance.common.exception.BadRequestException;
 import com.nivasafinance.features.call.dto.InitiateCallRequest;
 import com.nivasafinance.features.call.dto.InitiateCallResponse;
+import com.nivasafinance.features.call.dto.UpdateCallLog;
+import com.nivasafinance.features.call.entity.CallLog;
 import com.nivasafinance.features.call.service.CallWriteService;
 import com.nivasafinance.features.lead.dto.CreateLeadCallRequest;
 import com.nivasafinance.features.lead.dto.CreateLeadCallResponse;
+import com.nivasafinance.features.lead.dto.LeadUpdateCallLog;
 import com.nivasafinance.features.lead.entity.Contact;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.repository.ContactRepositoryWrapper;
@@ -23,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -65,6 +69,33 @@ public class LeadCallWriteServiceImpl implements LeadCallWriteService {
         callLogs.add(new Lead.CallLogDetails(response.getId(), response.getIdentifier()));
         lead.setCallLogDetails(callLogs);
         return new CreateLeadCallResponse(response.getIdentifier(), response.getStatus());
+    }
+
+    @Override
+    public void updateCallLog(UUID leadIdentifier, String externalId, LeadUpdateCallLog request) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        UpdateCallLog updateCallLog = new UpdateCallLog();
+        updateCallLog.setStatus(request.getStatus());
+        if (request.getRecordingDetails() != null) {
+            updateCallLog.setRecordingDetails(
+                    CallLog.RecordingDetails.builder().url(request.getRecordingDetails().getUrl()).build()
+            );
+        }
+        if (request.getCompletionDetails() != null) {
+            CallLog.CompletionDetails completionDetails = CallLog.CompletionDetails.builder()
+                    .duration(request.getCompletionDetails().getDuration())
+                    .startTime(request.getCompletionDetails().getStartTime())
+                    .endTime(request.getCompletionDetails().getEndTime())
+                    .build();
+            if (request.getCompletionDetails().getLegs() != null) {
+                List<CallLog.CompletionLeg> legs = new ArrayList<>();
+                for (LeadUpdateCallLog.CompletionLeg leadLeg : request.getCompletionDetails().getLegs()) {
+                    legs.add(CallLog.CompletionLeg.builder().duration(leadLeg.getDuration()).status(leadLeg.getStatus()).build());
+                }
+                completionDetails.setLegs(legs);
+            }
+        }
+        callWriteService.updateCallLogByProviderId(externalId, updateCallLog);
     }
 
     private void validateContactBelongsToLead(Lead lead, Long contactId) {

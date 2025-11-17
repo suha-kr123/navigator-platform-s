@@ -6,6 +6,7 @@ import com.nivasafinance.common.constants.ApiConstants;
 import com.nivasafinance.features.lead.dto.CreateLeadCallRequest;
 import com.nivasafinance.features.lead.dto.CreateLeadCallResponse;
 import com.nivasafinance.features.lead.dto.LeadCallLogResponse;
+import com.nivasafinance.features.lead.dto.LeadUpdateCallLog;
 import com.nivasafinance.features.lead.service.LeadCallReadService;
 import com.nivasafinance.features.lead.service.LeadCallWriteService;
 import jakarta.validation.Valid;
@@ -40,6 +41,16 @@ public class LeadCallController {
     ) {
         PaginatedResponse<LeadCallLogResponse> response = leadCallReadService.getCallLogs(leadId, paginationRequest);
         return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/external/{externalId}")
+    public ResponseEntity<Void> updateCallLogByProviderId(
+            @PathVariable UUID leadId,
+            @PathVariable String externalId,
+            @Valid @RequestBody LeadUpdateCallLog request
+    ) {
+        leadCallWriteService.updateCallLog(leadId, externalId, request);
+        return ResponseEntity.noContent().build();
     }
 }
 
