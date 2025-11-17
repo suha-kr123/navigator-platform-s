@@ -1,6 +1,9 @@
 package com.nivasafinance.features.leadlender.service.impl;
 
 import com.nivasafinance.common.context.UserContext;
+import com.nivasafinance.features.lead.dto.LeadBasicResponse;
+import com.nivasafinance.features.lead.dto.LeadResponse;
+import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadReadService;
 import com.nivasafinance.features.lead.service.LeadWriteService;
@@ -106,7 +109,7 @@ public class LeadLenderWriteServiceImpl implements LeadLenderWriteService {
     @Transactional
     public void rejectLeadLender(UUID leadIdentifier, UUID lenderIdentifier, RejectLeadLenderRequest request) {
         // Validate that lead exists and get internal ID
-        var lead = leadReadService.getLeadBasicByIdentifier(leadIdentifier);
+        LeadBasicResponse lead = leadReadService.getLeadBasicByIdentifier(leadIdentifier);
 
         LeadLender existingEntity = leadLenderRepositoryWrapper.findByLenderIdentifierWithException(lenderIdentifier);
 
@@ -135,6 +138,8 @@ public class LeadLenderWriteServiceImpl implements LeadLenderWriteService {
         rejectionDetails.setRejectedBy(UserContext.getUsername());
         rejectionDetails.setRejectionDate(LocalDateTime.now());
         rejectionDetails.setRejectionReason(request.getRemarks());
+
+        existingEntity.setRejectionDetails(rejectionDetails);
 
         leadLenderRepositoryWrapper.saveWithException(existingEntity);
         leadWriteService.touchLead(leadIdentifier);
