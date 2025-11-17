@@ -84,7 +84,7 @@ public class LeadLenderReadServiceImpl implements LeadLenderReadService {
 
         CodeValueResponse stageResponse = null;
         if (leadLender.getStage() != null) {
-            stageResponse = codeValueMasterService.getByKey(leadLender.getLenderKey());
+            stageResponse = codeValueMasterService.getByKey(leadLender.getStage());
         }
 
         CodeValueResponse rejectionReason = null;
