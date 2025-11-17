@@ -156,6 +156,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         }
         preliminaryDetails.setIsWhatsAppDIYFormCompleted(request.getIsWhatsAppDIYFormCompleted());
         preliminaryDetails.setMonthlyFamilyIncome(request.getMonthlyFamilyIncome());
+        lead.setPreliminaryDetails(preliminaryDetails);
         leadRepositoryWrapper.saveWithException(lead);
     }
 
