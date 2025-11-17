@@ -3,11 +3,15 @@ package com.nivasafinance.features.lead.service.impl;
 import com.nivasafinance.common.context.UserContext;
 import com.nivasafinance.common.enums.SystemEntities;
 import com.nivasafinance.common.exception.BadRequestException;
+import com.nivasafinance.features.call.dto.CreateCallLogResponse;
 import com.nivasafinance.features.call.dto.InitiateCallRequest;
 import com.nivasafinance.features.call.dto.InitiateCallResponse;
 import com.nivasafinance.features.call.dto.UpdateCallLog;
 import com.nivasafinance.features.call.entity.CallLog;
+import com.nivasafinance.features.call.enums.CallSource;
 import com.nivasafinance.features.call.service.CallWriteService;
+import com.nivasafinance.features.lead.dto.CreateExternalCallLogRequest;
+import com.nivasafinance.features.lead.dto.CreateExternalCallLogResponse;
 import com.nivasafinance.features.lead.dto.CreateLeadCallRequest;
 import com.nivasafinance.features.lead.dto.CreateLeadCallResponse;
 import com.nivasafinance.features.lead.dto.LeadUpdateCallLog;
@@ -96,6 +100,47 @@ public class LeadCallWriteServiceImpl implements LeadCallWriteService {
             }
         }
         callWriteService.updateCallLogByProviderId(externalId, updateCallLog);
+    }
+
+    @Override
+    @Transactional
+    public CreateExternalCallLogResponse createExternalCallLog(UUID leadIdentifier, CreateExternalCallLogRequest request) {
+        // Validate lead exists
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+
+        // Create new CallLog entity
+        CallLog callLog = new CallLog();
+        callLog.setProvider(request.getProvider());
+        callLog.setProviderId(request.getProviderId());
+        callLog.setCallerId(request.getCallerId());
+        callLog.setFromNumber(request.getFromNumber());
+        callLog.setToNumber(request.getToNumber());
+        callLog.setDirection(request.getDirection());
+        callLog.setSource(CallSource.API);
+        callLog.setStatus(request.getStatus());
+        if (request.getCreatedAt() != null) {
+            callLog.setCreatedAt(request.getCreatedAt());
+        }
+        callLog.setRecordingDetails(request.getRecordingDetails());
+        callLog.setCompletionDetails(request.getCompletionDetails());
+
+        // Save call log (duplicate check is done in CallWriteService.createCallLog)
+        CreateCallLogResponse savedCallLog = callWriteService.createCallLog(callLog);
+
+        // Link call log to lead
+        List<Lead.CallLogDetails> callLogs = lead.getCallLogDetails();
+        if (callLogs == null) {
+            callLogs = new ArrayList<>();
+        }
+        callLogs.add(new Lead.CallLogDetails(savedCallLog.getId(), savedCallLog.getIdentifier()));
+        lead.setCallLogDetails(callLogs);
+        leadRepositoryWrapper.saveWithException(lead);
+
+        // Return response
+        return CreateExternalCallLogResponse.builder()
+                .identifier(savedCallLog.getIdentifier())
+                .status(savedCallLog.getStatus())
+                .build();
     }
 
     private void validateContactBelongsToLead(Lead lead, Long contactId) {

@@ -2,12 +2,14 @@ package com.nivasafinance.features.call.service.impl;
 
 import com.nivasafinance.features.call.dto.CallLogResponse;
 import com.nivasafinance.features.call.entity.CallLog;
+import com.nivasafinance.features.call.repository.CallLogRepository;
 import com.nivasafinance.features.call.repository.CallLogRepositoryWrapper;
 import com.nivasafinance.features.call.service.CallReadService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -16,6 +18,7 @@ import java.util.stream.Collectors;
 public class CallReadServiceImpl implements CallReadService {
 
     private final CallLogRepositoryWrapper callLogRepositoryWrapper;
+    private final CallLogRepository callLogRepository;
 
     @Override
     public CallLogResponse getCallLogByIdentifier(UUID callLogIdentifier) {
@@ -29,5 +32,11 @@ public class CallReadServiceImpl implements CallReadService {
         return callLogs.stream()
                 .map(CallLogResponse::toCallLogResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public Optional<CallLogResponse> getCallLogByProviderId(String providerId) {
+        return callLogRepository.findByProviderId(providerId)
+                .map(CallLogResponse::toCallLogResponse);
     }
 }

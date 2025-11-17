@@ -1,6 +1,8 @@
 package com.nivasafinance.features.call.service.impl;
 
 import com.nivasafinance.common.context.UserContext;
+import com.nivasafinance.common.exception.BadRequestException;
+import com.nivasafinance.features.call.dto.CreateCallLogResponse;
 import com.nivasafinance.features.call.dto.InitiateCallRequest;
 import com.nivasafinance.features.call.dto.InitiateCallResponse;
 import com.nivasafinance.features.call.dto.UpdateCallLog;
@@ -12,6 +14,7 @@ import com.nivasafinance.features.call.enums.CallSource;
 import com.nivasafinance.features.call.enums.CallStatus;
 import com.nivasafinance.features.call.repository.CallLogRepositoryWrapper;
 import com.nivasafinance.features.call.repository.RoleCallConfigsRepositoryWrapper;
+import com.nivasafinance.features.call.service.CallReadService;
 import com.nivasafinance.features.call.service.CallWriteService;
 import com.nivasafinance.features.rolemanagement.role.service.UserRoleService;
 import com.nivasafinance.integrations.framework.ServiceFactory;
@@ -24,13 +27,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import java.util.List;
-
 @Service
 @RequiredArgsConstructor
 public class CallWriteServiceImpl implements CallWriteService {
 
     private final CallLogRepositoryWrapper callLogRepositoryWrapper;
+    private final CallReadService callReadService;
     private final RoleCallConfigsRepositoryWrapper roleCallConfigsRepositoryWrapper;
     private final UserRoleService userRoleService;
     private final ServiceFactory<VoiceHandler> thirdPartyserviceFactory;
@@ -64,11 +66,31 @@ public class CallWriteServiceImpl implements CallWriteService {
 
     @Override
     public void updateCallLogByProviderId(String providerId, UpdateCallLog updateCallLog) {
+        // Check if call log with same providerId already exists
+        callReadService.getCallLogByProviderId(providerId)
+                .orElseThrow(() -> new BadRequestException("Call log with provider ID " + providerId + " does not exist"));
+        
         CallLog callLog = callLogRepositoryWrapper.findByProviderIdWithException(providerId);
         callLog.setStatus(updateCallLog.getStatus());
         callLog.setRecordingDetails(updateCallLog.getRecordingDetails());
         callLog.setCompletionDetails(updateCallLog.getCompletionDetails());
         callLogRepositoryWrapper.saveWithException(callLog);
+    }
+
+    @Override
+    public CreateCallLogResponse createCallLog(CallLog callLog) {
+        // Check if call log with same providerId already exists
+        callReadService.getCallLogByProviderId(callLog.getProviderId())
+                .ifPresent(existingCallLog -> {
+                    throw new BadRequestException("Call log with provider ID " + callLog.getProviderId() + " already exists");
+                });
+        
+        CallLog savedCallLog = callLogRepositoryWrapper.saveWithException(callLog);
+        return CreateCallLogResponse.builder()
+                .id(savedCallLog.getId())
+                .identifier(savedCallLog.getIdentifier())
+                .status(savedCallLog.getStatus())
+                .build();
     }
 
     private CallLog buildCallLog(InitiateCallRequest request, RoleCallConfigs roleCallConfigs, VoiceCallResponse voiceCallResponse) {

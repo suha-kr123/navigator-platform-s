@@ -3,6 +3,8 @@ package com.nivasafinance.features.lead.controller;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.common.constants.ApiConstants;
+import com.nivasafinance.features.lead.dto.CreateExternalCallLogRequest;
+import com.nivasafinance.features.lead.dto.CreateExternalCallLogResponse;
 import com.nivasafinance.features.lead.dto.CreateLeadCallRequest;
 import com.nivasafinance.features.lead.dto.CreateLeadCallResponse;
 import com.nivasafinance.features.lead.dto.LeadCallLogResponse;
@@ -51,6 +53,15 @@ public class LeadCallController {
     ) {
         leadCallWriteService.updateCallLog(leadId, externalId, request);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/log/external")
+    public ResponseEntity<CreateExternalCallLogResponse> createExternalCallLog(
+            @PathVariable UUID leadId,
+            @Valid @RequestBody CreateExternalCallLogRequest request
+    ) {
+        CreateExternalCallLogResponse response = leadCallWriteService.createExternalCallLog(leadId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }
 
