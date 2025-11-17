@@ -14,6 +14,8 @@ public class RejectionDetails {
     private String rejectedBy;
 
     private String rejectionReason;
+
+    private String remarks;
     
     private LocalDateTime rejectionDate;
 }

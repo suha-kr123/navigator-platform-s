@@ -24,5 +24,6 @@ public class LeadLenderResponse {
     private RmDetails relationshipManager;
     private ApprovedDetails approvedDetails;
     private CodeValueResponse stage;
-    private CodeValueResponse remarks;
+    private CodeValueResponse rejectionReason;
+    private String rejectionRemarks;
 }

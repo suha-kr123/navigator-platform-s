@@ -10,6 +10,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class RejectLeadLenderRequest {
     
-    @NotNull(message = "Remarks is required")
+    @NotNull(message = "Reject reason is required")
+    private String rejectReason;
+
     private String remarks;
 }

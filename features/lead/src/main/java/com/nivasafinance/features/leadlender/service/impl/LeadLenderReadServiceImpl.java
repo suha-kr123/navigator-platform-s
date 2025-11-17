@@ -93,6 +93,11 @@ public class LeadLenderReadServiceImpl implements LeadLenderReadService {
             rejectionReason = codeValueMasterService.getByKey(key);
         }
 
+        String rejectionRemarks = null;
+        if (leadLender.getRejectionDetails() != null && leadLender.getRejectionDetails().getRemarks() != null) {
+            rejectionRemarks = leadLender.getRejectionDetails().getRemarks();
+        }
+
         return new LeadLenderResponse(
                 leadLender.getLenderIdentifier(),
                 lead.getLeadIdentifier(), // Use external UUID identifier
@@ -103,7 +108,8 @@ public class LeadLenderReadServiceImpl implements LeadLenderReadService {
                 leadLender.getRmDetails(),
                 leadLender.getApprovedDetails(),
                 stageResponse,
-                rejectionReason
+                rejectionReason,
+                rejectionRemarks
         );
     }
 }
