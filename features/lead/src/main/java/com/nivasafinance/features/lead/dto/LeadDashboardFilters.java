@@ -21,12 +21,12 @@ public class LeadDashboardFilters {
     LocalDateTime leadCreatedTo;
     List<String> lastUpdatedBy;
     List<String> status;
+    List<String> substatus;
     BigDecimal minAmount;
     BigDecimal maxAmount;
     List<String> branch;
-
-    //@Builder.Default
-    //Boolean leadThroughAdvisors = false;
+    String lastCallDirection;
+    String lastCallStatus;
 
 
     //TODO : advisors, stages, subStages, add next task filter

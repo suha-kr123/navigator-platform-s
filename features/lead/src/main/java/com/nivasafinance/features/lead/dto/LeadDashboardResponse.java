@@ -1,6 +1,7 @@
 package com.nivasafinance.features.lead.dto;
 
 import com.nivasafinance.features.lead.enums.LeadStatus;
+import com.nivasafinance.features.lead.enums.LeadSubStatus;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,6 +26,7 @@ public class LeadDashboardResponse {
     private String officeName;
     private String ownerUsername;
     private LeadStatus status;
+    private LeadSubStatus subStatus;
     private String recentNote;
     private LocalDateTime leadCreatedAt;
     private LocalDateTime lastActivityDate;
@@ -36,6 +38,15 @@ public class LeadDashboardResponse {
     private LocalTime preferredCallEndTime;
     private CodeValueResponse priority;
     private String partners;
+    private Long numberOfCalls;
+    private String lastCallDirection;
+    private String lastCallStatus;
+    private LocalDateTime lastCallDate;
+    private CodeValueResponse onHoldReason;
+    private LocalDateTime onHoldDate;
+    private String office;
+    private CodeValueResponse sourcingChannel;
+
 
     //TODO :: to add stage, substage, next task data, stageOwner, stageTat
 }

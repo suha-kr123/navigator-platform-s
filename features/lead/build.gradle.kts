@@ -19,6 +19,8 @@ dependencies {
     implementation(project(":features:stage"))
     implementation(project(":features:task"))
     implementation(project(":features:call"))
+    implementation(project(":features:staff"))
+    implementation(project(":features:offices"))
     implementation(project(":features:usermanagement"))
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
 }

@@ -6,9 +6,14 @@ import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.features.lead.dto.LeadDashboardFilters;
 import com.nivasafinance.features.lead.dto.LeadDashboardResponse;
 import com.nivasafinance.features.lead.enums.LeadStatus;
+import com.nivasafinance.features.lead.enums.LeadSubStatus;
 import com.nivasafinance.features.master.codemaster.SystemControlledMasterCodes;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import com.nivasafinance.features.master.codemaster.service.CodeValueMasterService;
+import com.nivasafinance.features.offices.dto.OfficeResponse;
+import com.nivasafinance.features.offices.service.OfficeReadService;
+import com.nivasafinance.features.staff.service.StaffReadService;
+import lombok.AllArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
@@ -26,8 +31,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
+@AllArgsConstructor
 public class LeadDashboardWrapper {
 
     private static final Map<String, String> SORTABLE_COLUMNS;
@@ -40,11 +47,8 @@ public class LeadDashboardWrapper {
 
     private final JdbcTemplate jdbcTemplate;
     private final CodeValueMasterService codeValueMasterService;
-
-    public LeadDashboardWrapper(JdbcTemplate jdbcTemplate, CodeValueMasterService codeValueMasterService) {
-        this.jdbcTemplate = jdbcTemplate;
-        this.codeValueMasterService = codeValueMasterService;
-    }
+    private final StaffReadService staffReadService;
+    private final OfficeReadService officeReadService;
 
     public PaginatedResponse<LeadDashboardResponse> findLeadDashboard(
             PaginationRequest paginationRequest,
@@ -53,22 +57,25 @@ public class LeadDashboardWrapper {
         PaginationRequest effectivePagination = paginationRequest != null ? paginationRequest : new PaginationRequest();
         LeadDashboardFilters effectiveFilters = filters != null ? filters : new LeadDashboardFilters();
 
+        String currentUserOfficeKey = staffReadService.getCurrentStaff().getOfficeKey();
+        String currentUserOfficeCode = officeReadService.getOfficeByKey(currentUserOfficeKey).getCode();
+
         List<Object> queryParams = new ArrayList<>();
         StringBuilder whereClause = new StringBuilder(" WHERE 1=1 ");
 
+        // Always apply office hierarchy filter first
+        appendOfficeHierarchyFilter(currentUserOfficeCode, whereClause, queryParams);
+
         appendOwnerFilter(effectiveFilters, whereClause, queryParams);
         appendStatusFilter(effectiveFilters, whereClause, queryParams);
-        appendBranchFilter(effectiveFilters, whereClause, queryParams);
+        appendSubstatusFilter(effectiveFilters, whereClause, queryParams);
+        appendBranchFilter(effectiveFilters, currentUserOfficeCode, whereClause, queryParams);
         appendAmountFilter(effectiveFilters, whereClause, queryParams);
         appendLeadCreatedDateFilter(effectiveFilters, whereClause, queryParams);
         appendActivityDateFilter(effectiveFilters, whereClause, queryParams);
         appendActivityUpdatedByFilter(effectiveFilters, whereClause, queryParams);
 
         String fromClause = baseFromClause();
-
-        /*if (Boolean.TRUE.equals(effectiveFilters.getLeadThroughAdvisors())) {
-            whereClause.append(" AND advisor_mapping.advisor_id IS NOT NULL ");
-        }*/ //todo handle advisor
 
         String sortColumn = resolveSortColumn(effectivePagination.getSortBy());
         String sortDirection = resolveSortDirection(effectivePagination.getSortDirection());
@@ -112,7 +119,16 @@ public class LeadDashboardWrapper {
                                      (l.other_details->>'preferredCallStartTime')::time AS preferred_call_start_time,
                                      (l.other_details->>'preferredCallEndTime')::time   AS preferred_call_end_time,
                                      l.other_details->>'priority'                       AS priority_key,
-                                     partners.partner_names                             AS partners
+                                     partners.partner_names                             AS partners,
+                                     l.substatus                                        AS substatus,
+                                     0 AS number_of_calls,
+                                     null                          AS last_call_direction,
+                                     null                             AS last_call_status,
+                                     null                         AS last_call_date,
+                                     l.reasons->>'onhold'                               AS onhold_reason_key,
+                                     (l.onhold_details->>'onHoldMovementDate')::timestamp AS onhold_date,
+                                     o.code                                             AS office_code,
+                                     sourcing_channel.sourcing_channel_name             AS sourcing_channel_name
                                  """ + fromClause + whereClause +
                          " ORDER BY " + sortColumn + " " + sortDirection +
                          " LIMIT ? OFFSET ?";
@@ -145,8 +161,18 @@ public class LeadDashboardWrapper {
 
     private void appendOwnerFilter(LeadDashboardFilters filters, StringBuilder whereClause, List<Object> params) {
         if (!CollectionUtils.isEmpty(filters.getLeadOwner())) {
-            whereClause.append(" AND l.owner IN (").append(createPlaceholders(filters.getLeadOwner().size())).append(") ");
-            params.addAll(filters.getLeadOwner());
+            List<String> owners = new ArrayList<>(filters.getLeadOwner());
+            boolean includeUnassigned = owners.remove("UNASSIGNED");
+
+            if (!owners.isEmpty() && includeUnassigned) {
+                whereClause.append(" AND (l.owner IN (").append(createPlaceholders(owners.size())).append(") OR l.owner IS NULL) ");
+                params.addAll(owners);
+            } else if (!owners.isEmpty()) {
+                whereClause.append(" AND l.owner IN (").append(createPlaceholders(owners.size())).append(") ");
+                params.addAll(owners);
+            } else if (includeUnassigned) {
+                whereClause.append(" AND l.owner IS NULL ");
+            }
         }
     }
 
@@ -164,10 +190,33 @@ public class LeadDashboardWrapper {
         }
     }
 
-    private void appendBranchFilter(LeadDashboardFilters filters, StringBuilder whereClause, List<Object> params) {
+    private void appendOfficeHierarchyFilter(String currentOfficeCode, StringBuilder whereClause, List<Object> params) {
+        whereClause.append(" AND o.code LIKE ? ");
+        params.add(currentOfficeCode + "%");
+    }
+
+    private void appendSubstatusFilter(LeadDashboardFilters filters, StringBuilder whereClause, List<Object> params) {
+        if (!CollectionUtils.isEmpty(filters.getSubstatus())) {
+            List<String> normalizedSubstatuses = filters.getSubstatus()
+                    .stream()
+                    .filter(Objects::nonNull)
+                    .map(substatus -> substatus.toUpperCase(Locale.ROOT))
+                    .toList();
+            if (!normalizedSubstatuses.isEmpty()) {
+                whereClause.append(" AND l.substatus IN (").append(createPlaceholders(normalizedSubstatuses.size())).append(") ");
+                params.addAll(normalizedSubstatuses);
+            }
+        }
+    }
+
+    private void appendBranchFilter(LeadDashboardFilters filters, String currentOfficeCode, StringBuilder whereClause, List<Object> params) {
         if (!CollectionUtils.isEmpty(filters.getBranch())) {
-            whereClause.append(" AND l.office_key IN (").append(createPlaceholders(filters.getBranch().size())).append(") ");
-            params.addAll(filters.getBranch());
+            // Validate branch offices are within hierarchy
+            List<String> validatedBranches = officeReadService.getOfficeByKeys(filters.getBranch()).stream().filter(branch -> branch.getCode().startsWith(currentOfficeCode)).map(OfficeResponse::getKey).toList();
+            if (!validatedBranches.isEmpty()) {
+                whereClause.append(" AND l.office_key IN (").append(createPlaceholders(validatedBranches.size())).append(") ");
+                params.addAll(validatedBranches);
+            }
         }
     }
 
@@ -278,6 +327,7 @@ public class LeadDashboardWrapper {
                     WHERE lead_lender.lead_id = l.id
                       AND lead_lender.status IN ('SELECTED', 'SUBMITTED')
                 ) partners ON true
+                LEFT JOIN n_sourcing_channel_details sourcing_channel ON sourcing_channel.id = l.sourcing_channel_id
                 """;
     }
 
@@ -344,7 +394,12 @@ public class LeadDashboardWrapper {
                     .leadOwner(rs.getString("lead_owner_name"))
                     .preferredCallStartTime(getLocalTime(rs, "preferred_call_start_time"))
                     .preferredCallEndTime(getLocalTime(rs, "preferred_call_end_time"))
-                    .partners(rs.getString("partners"));
+                    .partners(rs.getString("partners"))
+                    .numberOfCalls(rs.getLong("number_of_calls"))
+                    .lastCallDirection(rs.getString("last_call_direction"))
+                    .lastCallStatus(rs.getString("last_call_status"))
+                    .lastCallDate(getLocalDateTime(rs, "last_call_date"))
+                    .office(rs.getString("office_code"));
 
             String status = rs.getString("lead_status");
             if (status != null) {
@@ -355,13 +410,40 @@ public class LeadDashboardWrapper {
                 }
             }
 
+            String substatus = rs.getString("substatus");
+            if (substatus != null) {
+                try {
+                    builder.subStatus(LeadSubStatus.valueOf(substatus));
+                } catch (IllegalArgumentException ex) {
+                    // ignore invalid substatus values
+                }
+            }
+
             String priorityKey = rs.getString("priority_key");
             if (priorityKey != null) {
-                CodeValueResponse priority = codeValueMasterService.getCodeValueByKeyAndCodeKey(
-                        priorityKey,
-                        SystemControlledMasterCodes.LEAD_PRIORITY_MASTER
-                );
+                CodeValueResponse priority = codeValueMasterService.getByKey(priorityKey);
                 builder.priority(priority);
+            }
+
+            String onHoldReasonKey = rs.getString("onhold_reason_key");
+            if (onHoldReasonKey != null) {
+                CodeValueResponse onHoldReason = codeValueMasterService.getByKey(onHoldReasonKey);
+                builder.onHoldReason(onHoldReason);
+            }
+
+            LocalDateTime onHoldDate = getLocalDateTime(rs, "onhold_date");
+            if (onHoldDate != null) {
+                builder.onHoldDate(onHoldDate);
+            }
+
+            String sourcingChannelName = rs.getString("sourcing_channel_name");
+            if (sourcingChannelName != null) {
+                try {
+                    CodeValueResponse sourcingChannel = codeValueMasterService.getByKey(sourcingChannelName);
+                    builder.sourcingChannel(sourcingChannel);
+                } catch (Exception e) {
+                    // ignore if sourcing channel not found
+                }
             }
 
             return builder.build();
