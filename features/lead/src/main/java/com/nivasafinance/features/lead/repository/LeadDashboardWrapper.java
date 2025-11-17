@@ -92,20 +92,10 @@ public class LeadDashboardWrapper {
                                          decision_maker_person.display_name,
                                          fallback_contact_person.display_name
                                      )                                           AS primary_person_name,
-                                     COALESCE(
-                                         (
-                                             SELECT mn->>'number'
-                                             FROM jsonb_array_elements(COALESCE(decision_maker_person.mobile_numbers, '[]'::jsonb)) mn
-                                             WHERE (mn->>'isPrimary')::boolean = true
-                                             LIMIT 1
-                                         ),
-                                         (
-                                             SELECT mn->>'number'
-                                             FROM jsonb_array_elements(COALESCE(fallback_contact_person.mobile_numbers, '[]'::jsonb)) mn
-                                             WHERE (mn->>'isPrimary')::boolean = true
-                                             LIMIT 1
-                                         )
-                                     )                                           AS primary_person_number,
+                                    COALESCE(
+                                        (jsonb_path_query_first(COALESCE(decision_maker_person.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
+                                        (jsonb_path_query_first(COALESCE(fallback_contact_person.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number')
+                                    )                                           AS primary_person_number,
                                      o.name                                      AS office_name,
                                      l.owner                                     AS owner_username,
                                      l.status                                    AS lead_status,
@@ -114,7 +104,7 @@ public class LeadDashboardWrapper {
                                      l.updated_by                   AS last_activity_by,
                                      lead_owner_person.display_name              AS lead_owner_name,
                                      advisor_person.display_name                 AS advisor_name,
-                                     advisor_primary_number.number               AS advisor_number,
+                                     (jsonb_path_query_first(COALESCE(advisor_person.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') AS advisor_number,
                                      latest_note.content                         AS note_content,
                                      (l.other_details->>'preferredCallStartTime')::time AS preferred_call_start_time,
                                      (l.other_details->>'preferredCallEndTime')::time   AS preferred_call_end_time,
@@ -297,21 +287,9 @@ public class LeadDashboardWrapper {
                     LIMIT 1
                 ) fallback_contact ON true
                 LEFT JOIN n_person fallback_contact_person ON fallback_contact.person_id = fallback_contact_person.id
-                LEFT JOIN LATERAL (
-                    SELECT alm.advisor_id
-                    FROM n_advisor_lead_mapping alm
-                    WHERE alm.lead_id = l.id
-                    ORDER BY alm.updated_at DESC
-                    LIMIT 1
-                ) advisor_mapping ON true
-                LEFT JOIN n_advisor advisor ON advisor_mapping.advisor_id = advisor.id
+                LEFT JOIN n_advisor_lead_mapping alm ON alm.lead_id = l.id
+                LEFT JOIN n_advisor advisor ON advisor.id = alm.advisor_id
                 LEFT JOIN n_person advisor_person ON advisor.person_id = advisor_person.id
-                LEFT JOIN LATERAL (
-                    SELECT mn->>'number' as number
-                    FROM jsonb_array_elements(COALESCE(advisor_person.mobile_numbers, '[]'::jsonb)) mn
-                    WHERE (mn->>'isPrimary')::boolean = true
-                    LIMIT 1
-                ) advisor_primary_number ON true
                 LEFT JOIN LATERAL (
                     SELECT
                         n.content
