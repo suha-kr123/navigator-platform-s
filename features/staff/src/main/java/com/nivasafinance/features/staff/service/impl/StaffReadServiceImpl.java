@@ -2,6 +2,7 @@ package com.nivasafinance.features.staff.service.impl;
 
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
+import com.nivasafinance.common.context.UserContext;
 import com.nivasafinance.features.person.dto.PersonResponse;
 import com.nivasafinance.features.person.service.PersonReadService;
 import com.nivasafinance.features.staff.dto.StaffResponse;
@@ -12,6 +13,7 @@ import com.nivasafinance.features.usermanagement.dto.UserResponse;
 import com.nivasafinance.features.usermanagement.entity.User;
 import com.nivasafinance.features.usermanagement.repository.UserRepositoryWrapper;
 import com.nivasafinance.features.offices.service.OfficeReadService;
+import com.nivasafinance.features.usermanagement.service.UserReadService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,8 +28,7 @@ import java.util.stream.Collectors;
 public class StaffReadServiceImpl implements StaffReadService {
 
     private final StaffRepositoryWrapper staffRepositoryWrapper;
-    private final UserRepositoryWrapper userRepositoryWrapper;
-    private final PersonReadService personReadService;
+    private final UserReadService userReadService;
     private final OfficeReadService officeReadService;
 
     @Override
@@ -39,25 +40,26 @@ public class StaffReadServiceImpl implements StaffReadService {
         PaginatedResponse<Staff> paginatedStaff = staffRepositoryWrapper.findStaff(officeKey, nameQuery, paginationRequest);
 
         List<StaffResponse> content = paginatedStaff.getContent().stream()
-                .map(staff -> mapToResponse(staff, userRepositoryWrapper.findByIdWithException(staff.getUserId())))
+                .map(staff -> mapToResponse(staff, userReadService.getUserById(staff.getUserId())))
                 .collect(Collectors.toList());
 
         return new PaginatedResponse<>(content, paginatedStaff.getPagination());
     }
 
-    private StaffResponse mapToResponse(Staff staff, User user) {
-        PersonResponse personResponse = null;
-        if (user.getPerson() != null) {
-            personResponse = personReadService.getPersonById(user.getPerson().getId());
+    @Override
+    public StaffResponse getCurrentStaff() {
+        String currentUsername = UserContext.getUsername();
+
+        if (!StringUtils.hasText(currentUsername)) {
+            throw new IllegalStateException("No current user");
         }
 
-        UserResponse userResponse = UserResponse.builder()
-                .id(user.getId())
-                .personResponse(personResponse)
-                .username(user.getUsername())
-                .status(user.getStatus())
-                .build();
+        UserResponse user = userReadService.getUserByUsername(currentUsername);
+        Staff staff = staffRepositoryWrapper.findByUserIdWithException(user.getId());
+        return mapToResponse(staff, user);
+    }
 
+    private StaffResponse mapToResponse(Staff staff, UserResponse userResponse) {
         return StaffResponse.builder()
                 .id(staff.getId())
                 .identifier(staff.getIdentifier())
