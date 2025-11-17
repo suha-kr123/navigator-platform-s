@@ -230,7 +230,7 @@ public class Lead extends AuditableEntity {
     @AllArgsConstructor
     @Builder
     public static class OtherDetails {
-        private Long noOfCallLogs;
+        private Long lastCallId;
         private PropertyDetails propertyDetails;
         private String priority;
         private LocalTime preferredCallStartTime;

@@ -35,6 +35,11 @@ public class CallReadServiceImpl implements CallReadService {
     }
 
     @Override
+    public CallLogResponse getCallLogByID(Long callLogID) {
+        return CallLogResponse.toCallLogResponse(callLogRepositoryWrapper.findByIdWithException(callLogID));
+    }
+
+    @Override
     public Optional<CallLogResponse> getCallLogByProviderId(String providerId) {
         return callLogRepository.findByProviderId(providerId)
                 .map(CallLogResponse::toCallLogResponse);

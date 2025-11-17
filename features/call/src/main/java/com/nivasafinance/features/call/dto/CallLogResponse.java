@@ -10,6 +10,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
@@ -27,6 +28,7 @@ public class CallLogResponse {
     private CallDirection direction;
     private CallSource source;
     private CallStatus status;
+    private LocalDateTime createdAt;
     private CallLog.RecordingDetails recordingDetails;
     private CallLog.CompletionDetails completionDetails;
 
@@ -42,6 +44,7 @@ public class CallLogResponse {
                 .direction(callLog.getDirection())
                 .source(callLog.getSource())
                 .status(callLog.getStatus())
+                .createdAt(callLog.getCreatedAt())
                 .recordingDetails(callLog.getRecordingDetails())
                 .completionDetails(callLog.getCompletionDetails())
                 .build();

@@ -3,12 +3,14 @@ package com.nivasafinance.features.lead.service.impl;
 import com.nivasafinance.common.context.UserContext;
 import com.nivasafinance.common.enums.SystemEntities;
 import com.nivasafinance.common.exception.BadRequestException;
+import com.nivasafinance.features.call.dto.CallLogResponse;
 import com.nivasafinance.features.call.dto.CreateCallLogResponse;
 import com.nivasafinance.features.call.dto.InitiateCallRequest;
 import com.nivasafinance.features.call.dto.InitiateCallResponse;
 import com.nivasafinance.features.call.dto.UpdateCallLog;
 import com.nivasafinance.features.call.entity.CallLog;
 import com.nivasafinance.features.call.enums.CallSource;
+import com.nivasafinance.features.call.service.CallReadService;
 import com.nivasafinance.features.call.service.CallWriteService;
 import com.nivasafinance.features.lead.dto.CreateExternalCallLogRequest;
 import com.nivasafinance.features.lead.dto.CreateExternalCallLogResponse;
@@ -44,6 +46,7 @@ public class LeadCallWriteServiceImpl implements LeadCallWriteService {
     private final ContactRepositoryWrapper contactRepositoryWrapper;
     private final PersonReadService personReadService;
     private final CallWriteService callWriteService;
+    private final CallReadService callReadService;
     private final UserReadService userReadService;
 
     @Override
@@ -72,6 +75,10 @@ public class LeadCallWriteServiceImpl implements LeadCallWriteService {
         }
         callLogs.add(new Lead.CallLogDetails(response.getId(), response.getIdentifier()));
         lead.setCallLogDetails(callLogs);
+        
+        // Update lastCallId based on latest createdAt
+        updateLastCallId(lead, response.getId());
+        
         return new CreateLeadCallResponse(response.getIdentifier(), response.getStatus());
     }
 
@@ -134,6 +141,10 @@ public class LeadCallWriteServiceImpl implements LeadCallWriteService {
         }
         callLogs.add(new Lead.CallLogDetails(savedCallLog.getId(), savedCallLog.getIdentifier()));
         lead.setCallLogDetails(callLogs);
+        
+        // Update lastCallId based on latest createdAt
+        updateLastCallId(lead, savedCallLog.getId());
+        
         leadRepositoryWrapper.saveWithException(lead);
 
         // Return response
@@ -141,6 +152,45 @@ public class LeadCallWriteServiceImpl implements LeadCallWriteService {
                 .identifier(savedCallLog.getIdentifier())
                 .status(savedCallLog.getStatus())
                 .build();
+    }
+
+    private void updateLastCallId(Lead lead, Long newCallLogId) {
+        Lead.OtherDetails otherDetails = lead.getOtherDetails();
+        if (otherDetails == null) {
+            otherDetails = new Lead.OtherDetails();
+        }
+
+        Long currentLastCallId = otherDetails.getLastCallId();
+
+        // If current is null, automatically use new
+        if (currentLastCallId == null) {
+            otherDetails.setLastCallId(newCallLogId);
+            lead.setOtherDetails(otherDetails);
+            return;
+        }
+
+        // If current and new are the same, no need to update
+        if (currentLastCallId.equals(newCallLogId)) {
+            return;
+        }
+
+        // Get both call logs to compare createdAt
+        CallLogResponse currentCallLog = callReadService.getCallLogByID(currentLastCallId);
+        CallLogResponse newCallLog = callReadService.getCallLogByID(newCallLogId);
+
+        // If either is null or doesn't have createdAt, use new one
+        if (currentCallLog == null || currentCallLog.getCreatedAt() == null ||
+            newCallLog == null || newCallLog.getCreatedAt() == null) {
+            otherDetails.setLastCallId(newCallLogId);
+            lead.setOtherDetails(otherDetails);
+            return;
+        }
+
+        // Compare createdAt dates - use the one with later date
+        if (newCallLog.getCreatedAt().isAfter(currentCallLog.getCreatedAt())) {
+            otherDetails.setLastCallId(newCallLogId);
+            lead.setOtherDetails(otherDetails);
+        }
     }
 
     private void validateContactBelongsToLead(Lead lead, Long contactId) {
