@@ -19,7 +19,7 @@ dependencies {
     implementation(project(":features:document"))
     implementation(project(":features:offices"))
     implementation(project(":features:notes"))
-    implementation(project(":features:notification-executor"))
+    implementation(project(":features:notifications"))
     implementation(project(":features:marketing"))
     implementation(project(":features:workflow"))
     implementation(project(":features:stage"))

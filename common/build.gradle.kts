@@ -11,6 +11,8 @@ dependencies {
     implementation(libs.auth0.jwt)
     implementation(libs.auth0.jwks)
     implementation(libs.javers.spring.boot.starter.sql)
+    implementation(platform("software.amazon.awssdk:bom:2.25.64"))
+    implementation("software.amazon.awssdk:sqs")
 }
 
 springBoot {

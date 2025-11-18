@@ -1,6 +1,9 @@
 package com.nivasafinance.features.lead.service.impl;
 
 import com.nivasafinance.common.context.UserContext;
+import com.nivasafinance.common.events.BusinessEvent;
+import com.nivasafinance.common.events.SystemEvent;
+import com.nivasafinance.common.events.payload.LeadCreationEventPayload;
 import com.nivasafinance.common.dto.AddressData;
 import com.nivasafinance.common.exception.BadRequestException;
 import com.nivasafinance.features.address.service.AddressDataService;
@@ -26,6 +29,7 @@ import com.nivasafinance.features.sourcechannel.dto.SourcingChannelResponse;
 import com.nivasafinance.features.sourcechannel.service.SourcingChannelWriteService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,6 +57,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     private final SourcingChannelWriteService sourcingChannelWriteService;
     private final ProductReadService productReadService;
     private final CodeValueMasterService codeValueMasterService;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
 
     @Override
@@ -93,8 +98,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
 
         Lead savedLead = leadRepositoryWrapper.saveWithException(lead);
 
-        // event publisher to start the workflow
-        // TODO: to be done by Disha S K after the business event is implemented
+        publishLeadCreatedEvent(savedLead, request);
 
         return new CreateLeadResponse(savedLead.getLeadIdentifier());
     }
@@ -135,6 +139,21 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         lead.setOtherDetails(otherDetails);
 
         leadRepositoryWrapper.saveWithException(lead);
+    }
+
+    private void publishLeadCreatedEvent(Lead lead, CreateLeadRequest request) {
+        String mobileNumber = request.getPhoneNumber() != null
+                ? request.getPhoneNumber().getMobileNumber()
+                : null;
+
+        LeadCreationEventPayload payload = LeadCreationEventPayload.builder()
+                .leadId(lead.getLeadIdentifier())
+                .mobileNumber(mobileNumber)
+                .build();
+
+        applicationEventPublisher.publishEvent(
+                new SystemEvent<>(BusinessEvent.LEAD_CREATED.toString(), payload)
+        );
     }
 
     @Override

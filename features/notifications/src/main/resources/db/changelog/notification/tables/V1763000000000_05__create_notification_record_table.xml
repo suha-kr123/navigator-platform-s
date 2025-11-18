@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1763000000000_05" author="system">
+        <createTable tableName="n_notification_record">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="notification_config_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="idempotency_key" type="VARCHAR(512)">
+                <constraints unique="true"/>
+            </column>
+            <column name="notification_payload" type="JSONB"/>
+            <column name="status" type="VARCHAR(50)" defaultValue="INITIATED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="VARCHAR(255)" defaultValue="system"/>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="NOW()"/>
+            <column name="updated_by" type="VARCHAR(255)"/>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="NOW()"/>
+            <column name="version" type="INT" defaultValueNumeric="1"/>
+        </createTable>
+        <addForeignKeyConstraint
+                baseTableName="n_notification_record"
+                baseColumnNames="notification_config_id"
+                referencedTableName="n_notification_config"
+                referencedColumnNames="id"
+                constraintName="fk_notification_record_config"
+                onDelete="RESTRICT"/>
+        <createIndex tableName="n_notification_record" indexName="idx_notification_record_status">
+            <column name="status"/>
+        </createIndex>
+        <rollback>
+            <dropTable tableName="n_notification_record"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
+
+
