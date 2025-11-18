@@ -8,6 +8,7 @@ import com.nivasafinance.features.lead.dto.CreateLeadResponse;
 import com.nivasafinance.features.lead.dto.CreateTrancheRequest;
 import com.nivasafinance.features.lead.dto.CreditDetailsResponse;
 import com.nivasafinance.features.lead.dto.DisbursementDetailsResponse;
+import com.nivasafinance.features.lead.dto.DropoffLeadRequest;
 import com.nivasafinance.features.lead.dto.LeadDashboardFilters;
 import com.nivasafinance.features.lead.dto.LeadDashboardResponse;
 import com.nivasafinance.features.lead.dto.LeadResponse;
@@ -231,6 +232,14 @@ public class LeadController {
     @PostMapping("/{leadId}/status/resume")
     public ResponseEntity<Void> resumeLead(@PathVariable UUID leadId) {
         leadWriteService.resumeLead(leadId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{leadId}/status/dropoff")
+    public ResponseEntity<Void> dropoffLead(
+            @PathVariable UUID leadId,
+            @Valid @RequestBody DropoffLeadRequest request) {
+        leadWriteService.dropoffLead(leadId, request);
         return ResponseEntity.noContent().build();
     }
 }

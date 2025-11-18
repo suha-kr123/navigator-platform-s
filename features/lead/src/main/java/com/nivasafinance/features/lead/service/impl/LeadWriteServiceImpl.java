@@ -525,11 +525,6 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     public void resumeLead(UUID leadIdentifier) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
 
-        // Validate lead is on hold
-        if (!LeadSubStatus.ONHOLD.equals(lead.getSubstatus())) {
-            throw new BadRequestException("Cannot resume lead, lead is not on hold");
-        }
-
         // Clear substatus to resume lead
         lead.setSubstatus(null);
 
@@ -539,6 +534,42 @@ public class LeadWriteServiceImpl implements LeadWriteService {
             reasons.setOnhold(null);
             lead.setReasons(reasons);
         }
+
+        leadRepositoryWrapper.saveWithException(lead);
+    }
+
+    @Override
+    @Transactional
+    public void dropoffLead(UUID leadIdentifier, DropoffLeadRequest request) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+
+        // Validate lead is not rejected or withdrawn
+        if (!LeadStatus.ACTIVE.equals(lead.getStatus())) {
+            throw new BadRequestException("Only Active Lead can be put on dropoff");
+        }
+
+        // Set substatus to DROPOFF (keep current status)
+        lead.setSubstatus(LeadSubStatus.DROPOFF);
+
+        // Store reason code if provided
+        if (request.getReasonCode() != null) {
+            Lead.ReasonDetails reasons = lead.getReasons();
+            if (reasons == null) {
+                reasons = new Lead.ReasonDetails();
+            }
+            reasons.setDropoff(request.getReasonCode());
+            lead.setReasons(reasons);
+        }
+
+        Lead.DropoffDetails dropoffDetails = lead.getDropoffDetails();
+        if (dropoffDetails == null) {
+            dropoffDetails = new Lead.DropoffDetails();
+        }
+
+        dropoffDetails.setDropoffDate(LocalDateTime.now());
+        dropoffDetails.setDropoffBy(UserContext.getUsername());
+
+        lead.setDropoffDetails(dropoffDetails);
 
         leadRepositoryWrapper.saveWithException(lead);
     }

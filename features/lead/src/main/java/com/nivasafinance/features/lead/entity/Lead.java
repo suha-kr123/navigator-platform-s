@@ -136,6 +136,11 @@ public class Lead extends AuditableEntity {
 
     @Type(JsonType.class)
     @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "dropoff_details", columnDefinition = "jsonb")
+    private DropoffDetails dropoffDetails;
+
+    @Type(JsonType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "call_logs", columnDefinition = "jsonb")
     private List<CallLogDetails> callLogDetails;
 
@@ -211,6 +216,7 @@ public class Lead extends AuditableEntity {
         private String reject;
         private String withdrawn;
         private String onhold;
+        private String dropoff;
     }
 
     @Data
@@ -272,6 +278,15 @@ public class Lead extends AuditableEntity {
     public static class WithdrawnDetails {
         private LocalDateTime withdrawnDate;
         private String withdrawnBy;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class DropoffDetails {
+        private LocalDateTime dropoffDate;
+        private String dropoffBy;
     }
 
     @Data
