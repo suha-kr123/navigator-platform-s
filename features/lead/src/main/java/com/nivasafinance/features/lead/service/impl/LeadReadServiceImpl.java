@@ -51,6 +51,8 @@ public class LeadReadServiceImpl implements LeadReadService {
                         SystemControlledMasterCodes.LEAD_WITHDRAWAL_REASON_MASTER, true))
                 .leadOnholdReasons(codeMasterService.getAllCodeValuesByCodeKey(
                         SystemControlledMasterCodes.LEAD_ONHOLD_REASON_MASTER, true))
+                .leadDropoffReasons(codeMasterService.getAllCodeValuesByCodeKey(
+                        SystemControlledMasterCodes.LEAD_DROPOFF_REASON_MASTER, true))
                 .occupationProfiles(codeMasterService.getAllCodeValuesByCodeKey(
                         SystemControlledMasterCodes.LEAD_OCCUPATION_PROFILE_MASTER, true))
                 .roofProfiles(codeMasterService.getAllCodeValuesByCodeKey(
