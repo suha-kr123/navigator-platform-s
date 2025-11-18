@@ -73,7 +73,7 @@ public class LeadCallWriteServiceImpl implements LeadCallWriteService {
         if (callLogs == null) {
             callLogs = new java.util.ArrayList<>();
         }
-        callLogs.add(new Lead.CallLogDetails(response.getId(), response.getIdentifier()));
+        callLogs.add(new Lead.CallLogDetails(response.getId(), contact.getId()));
         lead.setCallLogDetails(callLogs);
         
         // Update lastCallId based on latest createdAt
@@ -114,6 +114,11 @@ public class LeadCallWriteServiceImpl implements LeadCallWriteService {
     public CreateExternalCallLogResponse createExternalCallLog(UUID leadIdentifier, CreateExternalCallLogRequest request) {
         // Validate lead exists
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        Contact contact = contactRepositoryWrapper.findByIdentifierWithException(request.getContactIdentifier());
+        PersonResponse person = personReadService.getPersonById(contact.getPersonId());
+
+        validateContactBelongsToLead(lead, contact.getId());
+        validatePhoneBelongsToPerson(person, request.getToNumber());
 
         // Create new CallLog entity
         CallLog callLog = new CallLog();
@@ -139,7 +144,7 @@ public class LeadCallWriteServiceImpl implements LeadCallWriteService {
         if (callLogs == null) {
             callLogs = new ArrayList<>();
         }
-        callLogs.add(new Lead.CallLogDetails(savedCallLog.getId(), savedCallLog.getIdentifier()));
+        callLogs.add(new Lead.CallLogDetails(savedCallLog.getId(), contact.getId()));
         lead.setCallLogDetails(callLogs);
         
         // Update lastCallId based on latest createdAt

@@ -295,7 +295,7 @@ public class Lead extends AuditableEntity {
     @Builder
     public static class CallLogDetails {
         private Long callLogId;
-        private UUID callLogIdentifier;
+        private Long contactId;
     }
 
     @Data
