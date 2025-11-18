@@ -253,4 +253,9 @@ public class LeadReadServiceImpl implements LeadReadService {
             LeadDashboardFilters filters) {
         return leadDashboardWrapper.findLeadDashboard(paginationRequest, filters);
     }
+
+    @Override
+    public PaginatedResponse<LeadSearchResponse> searchLeads(PaginationRequest paginationRequest, LeadSearchRequest request) {
+        return leadRepositoryWrapper.searchLeadsByPhoneNumber(paginationRequest, request);
+    }
 }

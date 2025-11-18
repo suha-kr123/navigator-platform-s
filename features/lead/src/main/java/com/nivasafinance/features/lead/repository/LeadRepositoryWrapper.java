@@ -1,6 +1,11 @@
 package com.nivasafinance.features.lead.repository;
 
+import com.nivasafinance.common.base.model.PaginatedResponse;
+import com.nivasafinance.common.base.model.PaginationInfo;
+import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.features.lead.dto.LeadResponse;
+import com.nivasafinance.features.lead.dto.LeadSearchRequest;
+import com.nivasafinance.features.lead.dto.LeadSearchResponse;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.enums.LeadStatus;
 import com.nivasafinance.features.lead.enums.LeadSubStatus;
@@ -14,13 +19,17 @@ import org.springframework.context.MessageSource;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -327,5 +336,182 @@ public class LeadRepositoryWrapper {
 
     private LocalTime getLocalTime(ResultSet rs, String column) throws SQLException {
         return rs.getTime(column) != null ? rs.getTime(column).toLocalTime() : null;
+    }
+
+    /**
+     * Search leads by phone number.
+     * Finds persons with the given phone number, then finds contacts associated with those persons,
+     * and finally finds leads that contain those contacts.
+     *
+     * @param paginationRequest Pagination parameters
+     * @param request Search request containing mobile number
+     * @return PaginatedResponse containing LeadSearchResponse objects
+     */
+    public PaginatedResponse<LeadSearchResponse> searchLeadsByPhoneNumber(
+            PaginationRequest paginationRequest, LeadSearchRequest request) {
+        // Validate phone number
+        if (request == null || !StringUtils.hasText(request.getMobileNumber())) {
+            return new PaginatedResponse<>(Collections.emptyList(),
+                    buildPaginationInfo(paginationRequest, 0));
+        }
+
+        String mobileNumber = request.getMobileNumber().trim();
+
+        // Build SQL query to search leads by phone number
+        // Start with lead, join to contacts, then to person with matching phone number
+        String countSql = """
+            SELECT COUNT(DISTINCT l.id)
+            FROM n_lead l
+            JOIN LATERAL (
+                SELECT (contact_id)::bigint as id
+                FROM jsonb_array_elements_text(COALESCE(l.contacts, '[]'::jsonb)) AS contact_id
+            ) contact_ids ON true
+            JOIN n_contact matching_contact ON matching_contact.id = contact_ids.id
+            JOIN n_person matching_person ON matching_person.id = matching_contact.person_id
+            WHERE EXISTS (
+                SELECT 1 FROM jsonb_array_elements(COALESCE(matching_person.mobile_numbers, '[]'::jsonb)) AS m
+                WHERE m->>'number' = ?
+            )
+            """;
+
+        String dataSql = """
+            SELECT DISTINCT
+                l.lead_identifier,
+                l.requested_amount,
+                p.name as product_name,
+                primary_contact.identifier as primary_person_identifier,
+                primary_person.display_name as primary_person_name,
+                (jsonb_path_query_first(COALESCE(primary_person.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') AS primary_person_number,
+                matching_contact.identifier as contact_person_identifier,
+                matching_person.display_name as contact_person_name,
+                (jsonb_path_query_first(COALESCE(matching_person.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') AS contact_person_number,
+                l.status,
+                l.substatus,
+                l.created_at as lead_created_at,
+                l.updated_at as last_activity_date
+            FROM n_lead l
+            JOIN LATERAL (
+                SELECT (contact_id)::bigint as id
+                FROM jsonb_array_elements_text(COALESCE(l.contacts, '[]'::jsonb)) AS contact_id
+            ) contact_ids ON true
+            JOIN n_contact matching_contact ON matching_contact.id = contact_ids.id
+            JOIN n_person matching_person ON matching_person.id = matching_contact.person_id
+            LEFT JOIN n_contact primary_contact ON primary_contact.id = (l.other_details->>'primaryContactId')::bigint
+            LEFT JOIN n_person primary_person ON primary_contact.person_id = primary_person.id
+            LEFT JOIN n_product p ON p.code = l.product_code
+            WHERE EXISTS (
+                SELECT 1 FROM jsonb_array_elements(COALESCE(matching_person.mobile_numbers, '[]'::jsonb)) AS m
+                WHERE m->>'number' = ?
+            )
+            ORDER BY l.updated_at DESC
+            LIMIT ? OFFSET ?
+            """;
+
+        try {
+            // Get total count
+            Long totalCount = jdbcTemplate.queryForObject(countSql, Long.class, mobileNumber);
+            long total = totalCount != null ? totalCount : 0L;
+
+            // Get paginated data
+            List<LeadSearchResponse> results = jdbcTemplate.query(
+                    dataSql,
+                    new LeadSearchRowMapper(),
+                    mobileNumber,
+                    paginationRequest.getLimit(),
+                    paginationRequest.getOffset()
+            );
+
+            PaginationInfo paginationInfo = buildPaginationInfo(paginationRequest, total);
+            return new PaginatedResponse<>(results, paginationInfo);
+        } catch (EmptyResultDataAccessException e) {
+            return new PaginatedResponse<>(Collections.emptyList(),
+                    buildPaginationInfo(paginationRequest, 0));
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Failed to search leads by phone number", e);
+        }
+    }
+
+    private PaginationInfo buildPaginationInfo(PaginationRequest paginationRequest, long totalElements) {
+        int limit = paginationRequest.getLimit();
+        int offset = paginationRequest.getOffset();
+        int totalPages = limit == 0 ? 0 : (int) Math.ceil((double) totalElements / limit);
+        int currentPage = limit == 0 ? 0 : offset / limit;
+        boolean hasNext = offset + limit < totalElements;
+        boolean hasPrevious = offset > 0;
+
+        return PaginationInfo.builder()
+                .offset(offset)
+                .limit(limit)
+                .totalElements(totalElements)
+                .totalPages(totalPages)
+                .currentPage(currentPage)
+                .hasNext(hasNext)
+                .hasPrevious(hasPrevious)
+                .build();
+    }
+
+    private static class LeadSearchRowMapper implements RowMapper<LeadSearchResponse> {
+        @Override
+        public LeadSearchResponse mapRow(ResultSet rs, int rowNum) throws SQLException {
+            LeadSearchResponse.LeadSearchResponseBuilder builder = LeadSearchResponse.builder();
+
+            String leadIdentifierStr = rs.getString("lead_identifier");
+            if (leadIdentifierStr != null) {
+                builder.leadIdentifier(UUID.fromString(leadIdentifierStr));
+            }
+
+            builder.requestedAmount(rs.getBigDecimal("requested_amount"));
+
+            String primaryPersonIdentifierStr = rs.getString("primary_person_identifier");
+            if (primaryPersonIdentifierStr != null) {
+                builder.primaryPersonIdentifier(UUID.fromString(primaryPersonIdentifierStr));
+            }
+
+            builder.primaryPersonName(rs.getString("primary_person_name"));
+            builder.primaryPersonNumber(rs.getString("primary_person_number"));
+
+            String contactPersonIdentifierStr = rs.getString("contact_person_identifier");
+            if (contactPersonIdentifierStr != null) {
+                builder.contactPersonIdentifier(UUID.fromString(contactPersonIdentifierStr));
+            }
+
+            builder.contactPersonName(rs.getString("contact_person_name"));
+            builder.contactPersonNumber(rs.getString("contact_person_number"));
+
+            String status = rs.getString("status");
+            if (status != null) {
+                try {
+                    builder.status(LeadStatus.valueOf(status));
+                } catch (IllegalArgumentException ignored) {
+                    // Invalid status, leave as null
+                }
+            }
+
+            String subStatus = rs.getString("substatus");
+            if (subStatus != null) {
+                try {
+                    builder.subStatus(LeadSubStatus.valueOf(subStatus));
+                } catch (IllegalArgumentException ignored) {
+                    // Invalid substatus, leave as null
+                }
+            }
+
+            java.sql.Timestamp leadCreatedAt = rs.getTimestamp("lead_created_at");
+            if (leadCreatedAt != null) {
+                builder.leadCreatedAt(leadCreatedAt.toLocalDateTime());
+            }
+
+            java.sql.Timestamp lastActivityDate = rs.getTimestamp("last_activity_date");
+            if (lastActivityDate != null) {
+                builder.lastActivityDate(lastActivityDate.toLocalDateTime());
+            }
+
+            String productName = rs.getString("product_name");
+            if (productName != null) {
+                builder.productName(productName);
+            }
+
+            return builder.build();
+        }
     }
 }

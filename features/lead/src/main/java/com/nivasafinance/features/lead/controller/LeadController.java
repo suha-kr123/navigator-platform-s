@@ -3,32 +3,7 @@ package com.nivasafinance.features.lead.controller;
 import com.nivasafinance.common.constants.ApiConstants;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
-import com.nivasafinance.features.lead.dto.CreateLeadRequest;
-import com.nivasafinance.features.lead.dto.CreateLeadResponse;
-import com.nivasafinance.features.lead.dto.CreateTrancheRequest;
-import com.nivasafinance.features.lead.dto.CreditDetailsResponse;
-import com.nivasafinance.features.lead.dto.DisbursementDetailsResponse;
-import com.nivasafinance.features.lead.dto.DropoffLeadRequest;
-import com.nivasafinance.features.lead.dto.LeadDashboardFilters;
-import com.nivasafinance.features.lead.dto.LeadDashboardResponse;
-import com.nivasafinance.features.lead.dto.LeadResponse;
-import com.nivasafinance.features.lead.dto.LeadTemplateResponse;
-import com.nivasafinance.features.lead.dto.OnholdLeadRequest;
-import com.nivasafinance.features.lead.dto.PreliminaryDetailsResponse;
-import com.nivasafinance.features.lead.dto.PropertyDetailsResponse;
-import com.nivasafinance.features.lead.dto.ProposedDetailsResponse;
-import com.nivasafinance.features.lead.dto.RejectLeadRequest;
-import com.nivasafinance.features.lead.dto.SourcingDetailsResponse;
-import com.nivasafinance.features.lead.dto.TrancheResponse;
-import com.nivasafinance.features.lead.dto.UpdateCreditDetailsRequest;
-import com.nivasafinance.features.lead.dto.UpdateDisbursementDetailsRequest;
-import com.nivasafinance.features.lead.dto.UpdateLeadRequest;
-import com.nivasafinance.features.lead.dto.UpdatePreliminaryDetailsRequest;
-import com.nivasafinance.features.lead.dto.UpdatePropertyDetailsRequest;
-import com.nivasafinance.features.lead.dto.UpdateProposedDetailsRequest;
-import com.nivasafinance.features.lead.dto.UpdateSourcingDetailsRequest;
-import com.nivasafinance.features.lead.dto.UpdateTrancheRequest;
-import com.nivasafinance.features.lead.dto.WithdrawLeadRequest;
+import com.nivasafinance.features.lead.dto.*;
 import com.nivasafinance.features.lead.service.LeadReadService;
 import com.nivasafinance.features.lead.service.LeadWriteService;
 import jakarta.validation.Valid;
@@ -241,5 +216,15 @@ public class LeadController {
             @Valid @RequestBody DropoffLeadRequest request) {
         leadWriteService.dropoffLead(leadId, request);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<PaginatedResponse<LeadSearchResponse>> searchLeads(
+            @Valid PaginationRequest paginationRequest,
+            @Valid @RequestBody LeadSearchRequest searchRequest
+    ) {
+        PaginatedResponse<LeadSearchResponse> response =
+                leadReadService.searchLeads(paginationRequest, searchRequest);
+        return ResponseEntity.ok(response);
     }
 }
