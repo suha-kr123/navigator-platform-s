@@ -16,6 +16,7 @@ import com.nivasafinance.features.lead.exception.ActiveLeadAlreadyExistsExceptio
 import com.nivasafinance.features.lead.repository.ContactRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadWriteService;
+import com.nivasafinance.features.master.codemaster.SystemControlledMasterCodes;
 import com.nivasafinance.features.master.codemaster.service.CodeValueMasterService;
 import com.nivasafinance.features.master.products.service.ProductReadService;
 import com.nivasafinance.features.person.dto.PersonCreateRequest;
@@ -421,6 +422,8 @@ public class LeadWriteServiceImpl implements LeadWriteService {
 
         // Store reason code if provided
         if (request.getReasonCode() != null) {
+            //validate reason
+            codeValueMasterService.getCodeValueByKeyAndCodeKey(request.getReasonCode(), SystemControlledMasterCodes.LEAD_REJECT_REASON_MASTER);
             Lead.ReasonDetails reasons = lead.getReasons();
             if (reasons == null) {
                 reasons = new Lead.ReasonDetails();
@@ -456,6 +459,8 @@ public class LeadWriteServiceImpl implements LeadWriteService {
 
         // Store reason code if provided
         if (request.getReasonCode() != null) {
+            //validate reason
+            codeValueMasterService.getCodeValueByKeyAndCodeKey(request.getReasonCode(), SystemControlledMasterCodes.LEAD_WITHDRAWAL_REASON_MASTER);
             Lead.ReasonDetails reasons = lead.getReasons();
             if (reasons == null) {
                 reasons = new Lead.ReasonDetails();
@@ -509,6 +514,8 @@ public class LeadWriteServiceImpl implements LeadWriteService {
 
         // Store reason code if provided
         if (request.getReasonCode() != null) {
+            //validate reason
+            codeValueMasterService.getCodeValueByKeyAndCodeKey(request.getReasonCode(), SystemControlledMasterCodes.LEAD_DROPOFF_REASON_MASTER);
             Lead.ReasonDetails reasons = lead.getReasons();
             if (reasons == null) {
                 reasons = new Lead.ReasonDetails();
@@ -553,6 +560,8 @@ public class LeadWriteServiceImpl implements LeadWriteService {
 
         // Store reason code if provided
         if (request.getReasonCode() != null) {
+            //validate reason
+            codeValueMasterService.getCodeValueByKeyAndCodeKey(request.getReasonCode(), SystemControlledMasterCodes.LEAD_DROPOFF_REASON_MASTER);
             Lead.ReasonDetails reasons = lead.getReasons();
             if (reasons == null) {
                 reasons = new Lead.ReasonDetails();
