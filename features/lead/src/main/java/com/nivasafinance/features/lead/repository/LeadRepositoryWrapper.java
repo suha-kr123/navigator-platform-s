@@ -94,7 +94,7 @@ public class LeadRepositoryWrapper {
                     l.credit_rating_details->>'monthlyFamilyIncome' as monthly_family_income_key,
                     advisor.identifier::text as advisor_identifier,
                     advisor_person.display_name as advisor_name,
-                    advisor_primary_number.number as advisor_number,
+                    (jsonb_path_query_first(COALESCE(advisor_person.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') AS advisor_number,
                     latest_note.content as recent_note,
                     latest_note.created_by as recent_note_created_by,
                     latest_note.created_at as recent_note_created_at,
@@ -119,21 +119,9 @@ public class LeadRepositoryWrapper {
                 -- Left join with primary contact from other_details -> person
                 LEFT JOIN n_contact primary_contact ON primary_contact.id = (l.other_details->>'primaryContactId')::bigint
                 LEFT JOIN n_person primary_contact_person ON primary_contact.person_id = primary_contact_person.id
-                LEFT JOIN LATERAL (
-                    SELECT alm.advisor_id
-                    FROM n_advisor_lead_mapping alm
-                    WHERE alm.lead_id = l.id
-                    ORDER BY alm.updated_at DESC
-                    LIMIT 1
-                ) advisor_mapping ON true
-                LEFT JOIN n_advisor advisor ON advisor_mapping.advisor_id = advisor.id
+                LEFT JOIN n_advisor_lead_mapping alm ON alm.lead_id = l.id
+                LEFT JOIN n_advisor advisor ON advisor.id = alm.advisor_id
                 LEFT JOIN n_person advisor_person ON advisor.person_id = advisor_person.id
-                LEFT JOIN LATERAL (
-                    SELECT mn->>'number' as number
-                    FROM jsonb_array_elements(COALESCE(advisor_person.mobile_numbers, '[]'::jsonb)) mn
-                    WHERE (mn->>'isPrimary')::boolean = true
-                    LIMIT 1
-                ) advisor_primary_number ON true
                 LEFT JOIN LATERAL (
                     SELECT n.content,
                            n.created_at,
