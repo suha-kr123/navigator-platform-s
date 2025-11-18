@@ -9,7 +9,7 @@
         
         <!-- Add your database changes here -->
 
-        <insert tableName="master_code">
+        <insert tableName="n_master_code">
             <column name="parent_id" value="NULL"/>
             <column name="key" value="LEAD_DROPOFF_REASON_MASTER"/>
             <column name="name" value='{"default": "Dropoff Reason"}'/>
