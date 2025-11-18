@@ -15,6 +15,7 @@ import com.nivasafinance.features.lead.enums.LeadSubStatus;
 import com.nivasafinance.features.lead.exception.ActiveLeadAlreadyExistsException;
 import com.nivasafinance.features.lead.repository.ContactRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
+import com.nivasafinance.features.lead.service.LeadContactWriteService;
 import com.nivasafinance.features.lead.service.LeadWriteService;
 import com.nivasafinance.features.master.codemaster.SystemControlledMasterCodes;
 import com.nivasafinance.features.master.codemaster.service.CodeValueMasterService;
@@ -50,8 +51,6 @@ import static com.nivasafinance.features.master.codemaster.SystemControlledMaste
 public class LeadWriteServiceImpl implements LeadWriteService {
 
     private final LeadRepositoryWrapper leadRepositoryWrapper;
-    private final ContactRepositoryWrapper contactRepositoryWrapper;
-    private final PersonWriteService personWriteService;
     private final PersonRepositoryWrapper personRepositoryWrapper;
     private final MessageSource messageSource;
     private final AddressDataService addressDataService;
@@ -59,6 +58,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     private final ProductReadService productReadService;
     private final CodeValueMasterService codeValueMasterService;
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final LeadContactWriteService contactWriteService;
 
 
     @Override
@@ -72,16 +72,6 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         // Check if active lead already exists with this phone number
         checkForActiveLead(request);
 
-        PersonCreateRequest personCreateRequest = getPersonCreateRequest(request);
-
-        PersonCreateResponse personResponse = personWriteService.createPerson(personCreateRequest);
-
-        // Create contact
-        Contact contact = new Contact();
-        contact.setIdentifier(UUID.randomUUID());
-        contact.setPersonId(personResponse.getId());
-        Contact savedContact = contactRepositoryWrapper.saveWithException(contact);
-
         // Create lead
         Lead lead = new Lead();
         lead.setLeadIdentifier(UUID.randomUUID());
@@ -94,10 +84,21 @@ public class LeadWriteServiceImpl implements LeadWriteService {
             lead.setOfficeKey("HQ"); //always goes to HQ for now
         }
 
-        // Set contact to lead
-        lead.setContacts(List.of(savedContact.getId()));
-
         Lead savedLead = leadRepositoryWrapper.saveWithException(lead);
+
+        CreateLeadContactRequest contactPersonDetails = CreateLeadContactRequest
+                .builder()
+                .contactPersonDetails(LeadContactPersonDetails
+                        .builder()
+                        .mobileNumbers(List.of(MobileNumberDetails.builder()
+                                .number(request.getPhoneNumber().getMobileNumber())
+                                .isWhatsappAvailable(request.getPhoneNumber().isWhatsapp())
+                                .isPrimary(true)
+                                .build()))
+                        .build())
+                .build();
+
+        contactWriteService.createContact(savedLead.getLeadIdentifier(), contactPersonDetails);
 
         publishLeadCreatedEvent(savedLead, request);
 
