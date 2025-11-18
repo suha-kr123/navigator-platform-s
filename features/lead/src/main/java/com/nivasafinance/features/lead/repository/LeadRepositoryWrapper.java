@@ -14,6 +14,8 @@ import com.nivasafinance.features.master.codemaster.SystemControlledMasterCodes;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import com.nivasafinance.features.master.codemaster.service.CodeValueMasterService;
 import com.nivasafinance.features.master.products.service.ProductReadService;
+import com.nivasafinance.features.offices.service.OfficeReadService;
+import com.nivasafinance.features.staff.service.StaffReadService;
 import lombok.AllArgsConstructor;
 import org.springframework.context.MessageSource;
 import org.springframework.dao.DataAccessException;
@@ -42,6 +44,8 @@ public class LeadRepositoryWrapper {
     private final JdbcTemplate jdbcTemplate;
     private final CodeValueMasterService codeValueMasterService;
     private final ProductReadService productReadService;
+    private final StaffReadService staffReadService;
+    private final OfficeReadService officeReadService;
 
     public Lead saveWithException(Lead lead) {
         try {
@@ -356,12 +360,18 @@ public class LeadRepositoryWrapper {
         }
 
         String mobileNumber = request.getMobileNumber().trim();
+        
+        // Get current staff office and code for hierarchy filtering
+        String currentUserOfficeKey = staffReadService.getCurrentStaff().getOfficeKey();
+        String currentUserOfficeCode = officeReadService.getOfficeByKey(currentUserOfficeKey).getCode();
 
         // Build SQL query to search leads by phone number
         // Start with lead, join to contacts, then to person with matching phone number
+        // Apply office hierarchy filter to restrict to current staff's office hierarchy
         String countSql = """
             SELECT COUNT(DISTINCT l.id)
             FROM n_lead l
+            LEFT JOIN n_office o ON o.key = l.office_key
             JOIN LATERAL (
                 SELECT (contact_id)::bigint as id
                 FROM jsonb_array_elements_text(COALESCE(l.contacts, '[]'::jsonb)) AS contact_id
@@ -372,6 +382,7 @@ public class LeadRepositoryWrapper {
                 SELECT 1 FROM jsonb_array_elements(COALESCE(matching_person.mobile_numbers, '[]'::jsonb)) AS m
                 WHERE m->>'number' = ?
             )
+            AND o.code LIKE ?
             """;
 
         String dataSql = """
@@ -390,6 +401,7 @@ public class LeadRepositoryWrapper {
                 l.created_at as lead_created_at,
                 l.updated_at as last_activity_date
             FROM n_lead l
+            LEFT JOIN n_office o ON o.key = l.office_key
             JOIN LATERAL (
                 SELECT (contact_id)::bigint as id
                 FROM jsonb_array_elements_text(COALESCE(l.contacts, '[]'::jsonb)) AS contact_id
@@ -403,13 +415,16 @@ public class LeadRepositoryWrapper {
                 SELECT 1 FROM jsonb_array_elements(COALESCE(matching_person.mobile_numbers, '[]'::jsonb)) AS m
                 WHERE m->>'number' = ?
             )
+            AND o.code LIKE ?
             ORDER BY l.updated_at DESC
             LIMIT ? OFFSET ?
             """;
 
         try {
+            String officePattern = currentUserOfficeCode + "%";
+            
             // Get total count
-            Long totalCount = jdbcTemplate.queryForObject(countSql, Long.class, mobileNumber);
+            Long totalCount = jdbcTemplate.queryForObject(countSql, Long.class, mobileNumber, officePattern);
             long total = totalCount != null ? totalCount : 0L;
 
             // Get paginated data
@@ -417,6 +432,7 @@ public class LeadRepositoryWrapper {
                     dataSql,
                     new LeadSearchRowMapper(),
                     mobileNumber,
+                    officePattern,
                     paginationRequest.getLimit(),
                     paginationRequest.getOffset()
             );
