@@ -104,10 +104,10 @@ public class LeadRepositoryWrapper {
                     latest_lender.stage as lender_stage_key,
                     lender_office.name as lender_office_name,
                      CASE
+                         WHEN l.substatus = 'ONHOLD' AND l.reasons ->> 'onhold' IS NOT NULL
+                             THEN l.reasons ->> 'onhold'
                          WHEN l.status = 'REJECTED' AND l.reasons ->> 'reject' IS NOT NULL
                              THEN l.reasons ->> 'reject'
-                         WHEN l.status = 'ONHOLD' AND l.reasons ->> 'onhold' IS NOT NULL
-                             THEN l.reasons ->> 'onhold'
                          WHEN l.status = 'WITHDRAWN' AND l.reasons ->> 'withdrawn' IS NOT NULL
                              THEN l.reasons ->> 'withdrawn'
                          ELSE NULL
