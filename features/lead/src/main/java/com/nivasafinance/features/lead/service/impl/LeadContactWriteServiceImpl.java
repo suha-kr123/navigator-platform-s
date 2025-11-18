@@ -60,6 +60,9 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
         // Handle applicant type
         handleApplicantType(lead, savedContact, request.getApplicantType());
 
+        // Update primary contact ID
+        updatePrimaryContactId(lead);
+
         leadRepositoryWrapper.saveWithException(lead);
     }
 
@@ -94,6 +97,9 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
             handleApplicantType(lead, contact, request.getApplicantType());
         }
 
+        // Update primary contact ID
+        updatePrimaryContactId(lead);
+
         leadRepositoryWrapper.saveWithException(lead);
     }
 
@@ -115,6 +121,9 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
 
         // Remove contact from lead
         removeContactFromLead(lead, contact.getId());
+
+        // Update primary contact ID
+        updatePrimaryContactId(lead);
 
         // For now, we'll keep the person entity as it might be used elsewhere
 
@@ -261,6 +270,41 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
                 details.getDateOfBirth(),
                 details.getGender()
         );
+    }
+
+    private void updatePrimaryContactId(Lead lead) {
+        if (lead.getContacts() == null || lead.getContacts().isEmpty()) {
+            // No contacts, clear primary contact ID
+            if (lead.getOtherDetails() != null) {
+                lead.getOtherDetails().setPrimaryContactId(null);
+            }
+            return;
+        }
+
+        // Initialize OtherDetails if null
+        Lead.OtherDetails otherDetails = lead.getOtherDetails();
+        if (otherDetails == null) {
+            otherDetails = Lead.OtherDetails.builder().build();
+            lead.setOtherDetails(otherDetails);
+        }
+
+        // First, try to find decision maker
+        Long decisionMakerContactId = null;
+        for (Long contactId : lead.getContacts()) {
+            Contact contact = contactRepositoryWrapper.findByIdWithException(contactId);
+            if (Boolean.TRUE.equals(contact.getIsDecisionMaker())) {
+                decisionMakerContactId = contactId;
+                break;
+            }
+        }
+
+        // If decision maker exists, use it; otherwise use first contact
+        if (decisionMakerContactId != null) {
+            otherDetails.setPrimaryContactId(decisionMakerContactId);
+        } else {
+            // Pick first contact from the list
+            otherDetails.setPrimaryContactId(lead.getContacts().getLast());
+        }
     }
 }
 

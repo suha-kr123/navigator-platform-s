@@ -88,14 +88,8 @@ public class LeadDashboardWrapper {
                                      l.lead_identifier                           AS lead_identifier,
                                      l.requested_amount                          AS requested_amount,
                                      prod.name                                   AS product_name,
-                                     COALESCE(
-                                         decision_maker_person.display_name,
-                                         fallback_contact_person.display_name
-                                     )                                           AS primary_person_name,
-                                    COALESCE(
-                                        (jsonb_path_query_first(COALESCE(decision_maker_person.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
-                                        (jsonb_path_query_first(COALESCE(fallback_contact_person.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number')
-                                    )                                           AS primary_person_number,
+                                     primary_contact_person.display_name         AS primary_person_name,
+                                     (jsonb_path_query_first(COALESCE(primary_contact_person.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') AS primary_person_number,
                                      o.name                                      AS office_name,
                                      l.owner                                     AS owner_username,
                                      l.status                                    AS lead_status,
@@ -270,22 +264,8 @@ public class LeadDashboardWrapper {
                 LEFT JOIN n_office o ON o.key = l.office_key
                 LEFT JOIN n_user lead_owner_user ON lead_owner_user.username = l.owner
                 LEFT JOIN n_person lead_owner_person ON lead_owner_person.id = lead_owner_user.person_id
-                LEFT JOIN LATERAL (
-                    SELECT c.id as contact_id, c.person_id
-                    FROM jsonb_array_elements(COALESCE(l.contacts, '[]'::jsonb)) AS cont
-                    JOIN n_contact c ON c.id = (cont)::bigint
-                    WHERE c.decision_maker = true
-                    LIMIT 1
-                ) decision_maker_contact ON true
-                LEFT JOIN n_person decision_maker_person ON decision_maker_contact.person_id = decision_maker_person.id
-                LEFT JOIN LATERAL (
-                    SELECT c.id as contact_id, c.person_id
-                    FROM jsonb_array_elements(COALESCE(l.contacts, '[]'::jsonb)) AS cont
-                    JOIN n_contact c ON c.id = (cont)::bigint
-                    ORDER BY cont
-                    LIMIT 1
-                ) fallback_contact ON true
-                LEFT JOIN n_person fallback_contact_person ON fallback_contact.person_id = fallback_contact_person.id
+                LEFT JOIN n_contact primary_contact ON primary_contact.id = (l.other_details->>'primaryContactId')::bigint
+                LEFT JOIN n_person primary_contact_person ON primary_contact.person_id = primary_contact_person.id
                 LEFT JOIN n_advisor_lead_mapping alm ON alm.lead_id = l.id
                 LEFT JOIN n_advisor advisor ON advisor.id = alm.advisor_id
                 LEFT JOIN n_person advisor_person ON advisor.person_id = advisor_person.id

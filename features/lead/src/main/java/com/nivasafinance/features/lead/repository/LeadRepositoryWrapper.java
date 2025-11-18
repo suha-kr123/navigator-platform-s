@@ -112,49 +112,13 @@ public class LeadRepositoryWrapper {
                              THEN l.reasons ->> 'withdrawn'
                          ELSE NULL
                          END as reasonCode,
-                    -- Primary person name priority: decision maker contact -> first contact
-                    COALESCE(
-                        decision_maker_person.display_name,
-                        fallback_contact_person.display_name
-                    ) as primaryPersonName,
-                    -- Primary person number priority: decision maker contact -> first contact
-                    -- Extract first primary number from mobile_numbers JSONB array
-                    COALESCE(
-                        (
-                            SELECT mn->>'number'
-                            FROM jsonb_array_elements(COALESCE(decision_maker_person.mobile_numbers, '[]'::jsonb)) mn
-                            WHERE (mn->>'isPrimary')::boolean = true
-                            LIMIT 1
-                        ),
-                        (
-                            SELECT mn->>'number'
-                            FROM jsonb_array_elements(COALESCE(fallback_contact_person.mobile_numbers, '[]'::jsonb)) mn
-                            WHERE (mn->>'isPrimary')::boolean = true
-                            LIMIT 1
-                        )
-                    ) as primaryPersonNumber,
+                    primary_contact_person.display_name         AS primaryPersonName,
+                    (jsonb_path_query_first(COALESCE(primary_contact_person.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') AS primaryPersonNumber,
                      o.name as officeName
                  FROM n_lead l
-                -- Left join with decision maker contact -> person
-                LEFT JOIN LATERAL (
-                    SELECT c.id as contact_id, c.person_id
-                    FROM jsonb_array_elements(COALESCE(l.contacts, '[]'::jsonb)) AS cont
-                    JOIN n_contact c ON c.id = (cont)::bigint
-                    WHERE c.decision_maker = true
-                    LIMIT 1
-                ) decision_maker_contact ON true
-                LEFT JOIN n_person decision_maker_person ON
-                    decision_maker_contact.person_id = decision_maker_person.id
-                -- Left join with first contact -> person (fallback)
-                LEFT JOIN LATERAL (
-                    SELECT c.id as contact_id, c.person_id
-                    FROM jsonb_array_elements(COALESCE(l.contacts, '[]'::jsonb)) AS cont
-                    JOIN n_contact c ON c.id = (cont)::bigint
-                    ORDER BY cont
-                    LIMIT 1
-                ) fallback_contact ON true
-                LEFT JOIN n_person fallback_contact_person ON
-                    fallback_contact.person_id = fallback_contact_person.id
+                -- Left join with primary contact from other_details -> person
+                LEFT JOIN n_contact primary_contact ON primary_contact.id = (l.other_details->>'primaryContactId')::bigint
+                LEFT JOIN n_person primary_contact_person ON primary_contact.person_id = primary_contact_person.id
                 LEFT JOIN LATERAL (
                     SELECT alm.advisor_id
                     FROM n_advisor_lead_mapping alm
