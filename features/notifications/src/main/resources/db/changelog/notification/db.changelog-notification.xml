@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <include file="classpath:db/changelog/notification/tables/V1763000000000_01__create_data_provider_table.xml"/>
+    <include file="classpath:db/changelog/notification/tables/V1763000000000_02__create_notification_config_table.xml"/>
+    <include file="classpath:db/changelog/notification/tables/V1763000000000_03__create_notification_event_mapping_table.xml"/>
+    <include file="classpath:db/changelog/notification/tables/V1763000000000_04__create_notification_template_table.xml"/>
+    <include file="classpath:db/changelog/notification/tables/V1763000000000_05__create_notification_record_table.xml"/>
+    <include file="classpath:db/changelog/notification/tables/V1763000000000_06__create_notification_receipt_table.xml"/>
+
+</databaseChangeLog>
+
+

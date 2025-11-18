@@ -18,6 +18,7 @@
     <include file="db/changelog/usermanagement/db.changelog-usermanagement.xml"/>
     <include file="db/changelog/rolemanagement/db.changelog-rolemanagement.xml"/>
     <include file="db/changelog/marketing/db.changelog-marketing.xml"/>
+    <include file="db/changelog/notification/db.changelog-notification.xml"/>
     <include file="db/changelog/workflow/db.changelog-workflow.xml"/>
     <include file="db/changelog/stage/db.changelog-stage.xml"/>
     <include file="db/changelog/task/db.changelog-task.xml"/>
