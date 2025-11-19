@@ -105,6 +105,7 @@ public class LeadCallWriteServiceImpl implements LeadCallWriteService {
                 }
                 completionDetails.setLegs(legs);
             }
+            updateCallLog.setCompletionDetails(completionDetails);
         }
         callWriteService.updateCallLogByProviderId(externalId, updateCallLog);
     }
