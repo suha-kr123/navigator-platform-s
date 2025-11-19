@@ -1,14 +1,10 @@
 package com.nivasafinance.features.leadactivity.entity;
 
 import com.nivasafinance.common.audit.AuditableEntity;
+import com.nivasafinance.features.leadactivity.enums.ResourceAction;
+import com.nivasafinance.features.leadactivity.enums.ResourceEnum;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Index;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -40,11 +36,13 @@ public class LeadActivity extends AuditableEntity {
     @Column(name = "lead_id", nullable = false)
     private Long leadId;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "resource_type")
-    private String resourceType;
+    private ResourceEnum resourceType;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "resource_action")
-    private String resourceAction;
+    private ResourceAction resourceAction;
 
     @Column(name = "resource_id")
     private Long resourceId;
