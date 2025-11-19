@@ -1,5 +1,10 @@
 package com.nivasafinance.features.lead.service.impl;
 
+import com.nivasafinance.common.events.BusinessEvent;
+import com.nivasafinance.common.events.SystemEvent;
+import com.nivasafinance.common.events.payload.LeadDocumentCreationEventPayload;
+import com.nivasafinance.common.events.payload.LeadDocumentDeletionEventPayload;
+import com.nivasafinance.common.events.payload.LeadDocumentUpdationEventPayload;
 import com.nivasafinance.common.exception.BadRequestException;
 import com.nivasafinance.features.document.dto.DocumentCreateRequest;
 import com.nivasafinance.features.document.dto.DocumentCreateResponse;
@@ -16,6 +21,7 @@ import com.nivasafinance.features.lead.service.LeadDocumentWriteService;
 import com.nivasafinance.features.master.codemaster.SystemLeadDocumentsMaster;
 import com.nivasafinance.features.master.codemaster.service.CodeValueMasterService;
 import lombok.AllArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -36,6 +42,7 @@ public class LeadDocumentWriteServiceImpl implements LeadDocumentWriteService {
     private final DocumentReadService documentReadService;
     private final LeadRepositoryWrapper leadRepositoryWrapper;
     private final CodeValueMasterService codeValueMasterService;
+    private final ApplicationEventPublisher applicationEventPublisher;
     @Override
     public LeadDocumentCreateResponse createLeadDocument(UUID leadIdentifier, MultipartFile file, LeadDocumentCreateRequest request) {
         // Find the lead
@@ -69,6 +76,9 @@ public class LeadDocumentWriteServiceImpl implements LeadDocumentWriteService {
 
         // Save the lead
         leadRepositoryWrapper.saveWithException(lead);
+
+        // Publish event
+        publishLeadDocumentCreatedEvent(lead, documentResponse);
 
         // Return response with document identifier
         return LeadDocumentCreateResponse.builder()
@@ -134,6 +144,9 @@ public class LeadDocumentWriteServiceImpl implements LeadDocumentWriteService {
         // Save the lead
         leadRepositoryWrapper.saveWithException(lead);
 
+        // Publish event
+        publishLeadDocumentCreatedEvent(lead, documentResponse);
+
         // Return response with document identifier
         return LeadDocumentCreateResponse.builder()
                 .documentIdentifier(documentResponse.getIdentifier())
@@ -156,6 +169,9 @@ public class LeadDocumentWriteServiceImpl implements LeadDocumentWriteService {
             lead.setDocumentDetails(documentDetails);
             leadRepositoryWrapper.saveWithException(lead);
         }
+
+        // Publish event before deleting
+        publishLeadDocumentDeletedEvent(lead, document, documentIdentifier);
 
         // Delete the document
         documentWriteService.deleteDocumentById(documentIdentifier);
@@ -185,6 +201,45 @@ public class LeadDocumentWriteServiceImpl implements LeadDocumentWriteService {
         documentDetail.setTag(tags);
 
         leadRepositoryWrapper.saveWithException(lead);
+
+        // Publish event
+        publishLeadDocumentUpdatedEvent(lead, document, documentIdentifier);
+    }
+
+    private void publishLeadDocumentCreatedEvent(Lead lead, DocumentCreateResponse documentResponse) {
+        LeadDocumentCreationEventPayload payload = LeadDocumentCreationEventPayload.builder()
+                .leadId(lead.getId())
+                .documentId(documentResponse.getId())
+                .documentIdentifier(documentResponse.getIdentifier())
+                .build();
+
+        applicationEventPublisher.publishEvent(
+                new SystemEvent<>(BusinessEvent.LEAD_DOCUMENT_CREATED.toString(), payload)
+        );
+    }
+
+    private void publishLeadDocumentUpdatedEvent(Lead lead, DocumentResponse document, UUID documentIdentifier) {
+        LeadDocumentUpdationEventPayload payload = LeadDocumentUpdationEventPayload.builder()
+                .leadId(lead.getId())
+                .documentId(document.getId())
+                .documentIdentifier(documentIdentifier)
+                .build();
+
+        applicationEventPublisher.publishEvent(
+                new SystemEvent<>(BusinessEvent.LEAD_DOCUMENT_UPDATED.toString(), payload)
+        );
+    }
+
+    private void publishLeadDocumentDeletedEvent(Lead lead, DocumentResponse document, UUID documentIdentifier) {
+        LeadDocumentDeletionEventPayload payload = LeadDocumentDeletionEventPayload.builder()
+                .leadId(lead.getId())
+                .documentId(document.getId())
+                .documentIdentifier(documentIdentifier)
+                .build();
+
+        applicationEventPublisher.publishEvent(
+                new SystemEvent<>(BusinessEvent.LEAD_DOCUMENT_DELETED.toString(), payload)
+        );
     }
 }
 

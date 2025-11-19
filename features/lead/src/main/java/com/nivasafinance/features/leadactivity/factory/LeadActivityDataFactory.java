@@ -3,6 +3,9 @@ package com.nivasafinance.features.leadactivity.factory;
 import com.nivasafinance.common.context.UserContext;
 import com.nivasafinance.common.events.BusinessEvent;
 import com.nivasafinance.common.events.payload.LeadCreationEventPayload;
+import com.nivasafinance.common.events.payload.LeadDocumentCreationEventPayload;
+import com.nivasafinance.common.events.payload.LeadDocumentDeletionEventPayload;
+import com.nivasafinance.common.events.payload.LeadDocumentUpdationEventPayload;
 import com.nivasafinance.common.events.payload.LeadNoteCreationEventPayload;
 import com.nivasafinance.common.events.payload.LeadNoteDeletionEventPayload;
 import com.nivasafinance.common.events.payload.LeadNoteUpdationEventPayload;
@@ -40,6 +43,18 @@ public class LeadActivityDataFactory {
             }
             case LEAD_NOTE_DELETED -> {
                 CreateLeadActivityRequest request = createLeadNoteDeletedActivityRequest((LeadNoteDeletionEventPayload) payload);
+                writeService.createLeadActivity(request);
+            }
+            case LEAD_DOCUMENT_CREATED -> {
+                CreateLeadActivityRequest request = createLeadDocumentCreatedActivityRequest((LeadDocumentCreationEventPayload) payload);
+                writeService.createLeadActivity(request);
+            }
+            case LEAD_DOCUMENT_UPDATED -> {
+                CreateLeadActivityRequest request = createLeadDocumentUpdatedActivityRequest((LeadDocumentUpdationEventPayload) payload);
+                writeService.createLeadActivity(request);
+            }
+            case LEAD_DOCUMENT_DELETED -> {
+                CreateLeadActivityRequest request = createLeadDocumentDeletedActivityRequest((LeadDocumentDeletionEventPayload) payload);
                 writeService.createLeadActivity(request);
             }
             default ->{
@@ -96,6 +111,48 @@ public class LeadActivityDataFactory {
                 .resourceId(payload.getNoteId())
                 .description("Note deleted by " + UserContext.getUsername())
                 .resource(ResourceEnum.NOTES)
+                .action(ResourceAction.DELETE)
+                .metadata(metadata)
+                .build();
+    }
+
+    private CreateLeadActivityRequest createLeadDocumentCreatedActivityRequest(LeadDocumentCreationEventPayload payload){
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("documentIdentifier", payload.getDocumentIdentifier().toString());
+
+        return CreateLeadActivityRequest.builder()
+                .leadId(payload.getLeadId())
+                .resourceId(payload.getDocumentId())
+                .description("Document created by " + UserContext.getUsername())
+                .resource(ResourceEnum.DOCUMENTS)
+                .action(ResourceAction.CREATE)
+                .metadata(metadata)
+                .build();
+    }
+
+    private CreateLeadActivityRequest createLeadDocumentUpdatedActivityRequest(LeadDocumentUpdationEventPayload payload){
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("documentIdentifier", payload.getDocumentIdentifier().toString());
+
+        return CreateLeadActivityRequest.builder()
+                .leadId(payload.getLeadId())
+                .resourceId(payload.getDocumentId())
+                .description("Document updated by " + UserContext.getUsername())
+                .resource(ResourceEnum.DOCUMENTS)
+                .action(ResourceAction.UPDATE)
+                .metadata(metadata)
+                .build();
+    }
+
+    private CreateLeadActivityRequest createLeadDocumentDeletedActivityRequest(LeadDocumentDeletionEventPayload payload){
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("documentIdentifier", payload.getDocumentIdentifier().toString());
+
+        return CreateLeadActivityRequest.builder()
+                .leadId(payload.getLeadId())
+                .resourceId(payload.getDocumentId())
+                .description("Document deleted by " + UserContext.getUsername())
+                .resource(ResourceEnum.DOCUMENTS)
                 .action(ResourceAction.DELETE)
                 .metadata(metadata)
                 .build();
