@@ -4,4 +4,5 @@ public enum  ResourceEnum {
     LEAD,
     NOTES,
     DOCUMENTS,
+    CONTACT,
 }

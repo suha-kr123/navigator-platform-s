@@ -2,6 +2,9 @@ package com.nivasafinance.features.leadactivity.factory;
 
 import com.nivasafinance.common.context.UserContext;
 import com.nivasafinance.common.events.BusinessEvent;
+import com.nivasafinance.common.events.payload.LeadContactCreationEventPayload;
+import com.nivasafinance.common.events.payload.LeadContactDeletionEventPayload;
+import com.nivasafinance.common.events.payload.LeadContactUpdationEventPayload;
 import com.nivasafinance.common.events.payload.LeadCreationEventPayload;
 import com.nivasafinance.common.events.payload.LeadDocumentCreationEventPayload;
 import com.nivasafinance.common.events.payload.LeadDocumentDeletionEventPayload;
@@ -55,6 +58,18 @@ public class LeadActivityDataFactory {
             }
             case LEAD_DOCUMENT_DELETED -> {
                 CreateLeadActivityRequest request = createLeadDocumentDeletedActivityRequest((LeadDocumentDeletionEventPayload) payload);
+                writeService.createLeadActivity(request);
+            }
+            case LEAD_CONTACT_CREATED -> {
+                CreateLeadActivityRequest request = createLeadContactCreatedActivityRequest((LeadContactCreationEventPayload) payload);
+                writeService.createLeadActivity(request);
+            }
+            case LEAD_CONTACT_UPDATED -> {
+                CreateLeadActivityRequest request = createLeadContactUpdatedActivityRequest((LeadContactUpdationEventPayload) payload);
+                writeService.createLeadActivity(request);
+            }
+            case LEAD_CONTACT_DELETED -> {
+                CreateLeadActivityRequest request = createLeadContactDeletedActivityRequest((LeadContactDeletionEventPayload) payload);
                 writeService.createLeadActivity(request);
             }
             default ->{
@@ -153,6 +168,57 @@ public class LeadActivityDataFactory {
                 .resourceId(payload.getDocumentId())
                 .description("Document deleted by " + UserContext.getUsername())
                 .resource(ResourceEnum.DOCUMENTS)
+                .action(ResourceAction.DELETE)
+                .metadata(metadata)
+                .build();
+    }
+
+    private CreateLeadActivityRequest createLeadContactCreatedActivityRequest(LeadContactCreationEventPayload payload){
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("contactIdentifier", payload.getContactIdentifier().toString());
+        metadata.put("contactType", payload.getContactType());
+        metadata.put("isDecisionMaker", payload.getIsDecisionMaker());
+        metadata.put("isPropertyOwner", payload.getIsPropertyOwner());
+
+        return CreateLeadActivityRequest.builder()
+                .leadId(payload.getLeadId())
+                .resourceId(payload.getContactId())
+                .description("Contact created by " + UserContext.getUsername())
+                .resource(ResourceEnum.CONTACT)
+                .action(ResourceAction.CREATE)
+                .metadata(metadata)
+                .build();
+    }
+
+    private CreateLeadActivityRequest createLeadContactUpdatedActivityRequest(LeadContactUpdationEventPayload payload){
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("contactIdentifier", payload.getContactIdentifier().toString());
+        metadata.put("contactType", payload.getContactType());
+        metadata.put("isDecisionMaker", payload.getIsDecisionMaker());
+        metadata.put("isPropertyOwner", payload.getIsPropertyOwner());
+
+        return CreateLeadActivityRequest.builder()
+                .leadId(payload.getLeadId())
+                .resourceId(payload.getContactId())
+                .description("Contact updated by " + UserContext.getUsername())
+                .resource(ResourceEnum.CONTACT)
+                .action(ResourceAction.UPDATE)
+                .metadata(metadata)
+                .build();
+    }
+
+    private CreateLeadActivityRequest createLeadContactDeletedActivityRequest(LeadContactDeletionEventPayload payload){
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("contactIdentifier", payload.getContactIdentifier().toString());
+        metadata.put("contactType", payload.getContactType());
+        metadata.put("isDecisionMaker", payload.getIsDecisionMaker());
+        metadata.put("isPropertyOwner", payload.getIsPropertyOwner());
+
+        return CreateLeadActivityRequest.builder()
+                .leadId(payload.getLeadId())
+                .resourceId(payload.getContactId())
+                .description("Contact deleted by " + UserContext.getUsername())
+                .resource(ResourceEnum.CONTACT)
                 .action(ResourceAction.DELETE)
                 .metadata(metadata)
                 .build();

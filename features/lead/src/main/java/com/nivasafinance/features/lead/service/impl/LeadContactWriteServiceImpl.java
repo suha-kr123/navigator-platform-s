@@ -1,5 +1,10 @@
 package com.nivasafinance.features.lead.service.impl;
 
+import com.nivasafinance.common.events.BusinessEvent;
+import com.nivasafinance.common.events.SystemEvent;
+import com.nivasafinance.common.events.payload.LeadContactCreationEventPayload;
+import com.nivasafinance.common.events.payload.LeadContactDeletionEventPayload;
+import com.nivasafinance.common.events.payload.LeadContactUpdationEventPayload;
 import com.nivasafinance.features.lead.dto.LeadContactPersonDetails;
 import com.nivasafinance.features.lead.dto.CreateLeadContactRequest;
 import com.nivasafinance.features.lead.dto.UpdateLeadContactRequest;
@@ -16,6 +21,7 @@ import com.nivasafinance.features.person.dto.PersonCreateResponse;
 import com.nivasafinance.features.person.dto.PersonUpdateRequest;
 import com.nivasafinance.features.person.service.PersonWriteService;
 import lombok.AllArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +38,7 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
     private final ContactRepositoryWrapper contactRepositoryWrapper;
     private final ApplicantRepositoryWrapper applicantRepositoryWrapper;
     private final PersonWriteService personWriteService;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     @Transactional
@@ -64,6 +71,9 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
         updatePrimaryContactId(lead);
 
         leadRepositoryWrapper.saveWithException(lead);
+
+        // Publish event
+        publishLeadContactCreatedEvent(lead, savedContact, request.getApplicantType());
     }
 
     @Override
@@ -101,6 +111,9 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
         updatePrimaryContactId(lead);
 
         leadRepositoryWrapper.saveWithException(lead);
+
+        // Publish event
+        publishLeadContactUpdatedEvent(lead, contact, request.getApplicantType());
     }
 
     @Override
@@ -117,6 +130,10 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
 
         // Determine and remove applicant type
         LeadContactPersonType currentType = determineCurrentApplicantType(lead, contact);
+
+        // Publish event before removing
+        publishLeadContactDeletedEvent(lead, contact, currentType);
+
         removeApplicantType(lead, contact, currentType);
 
         // Remove contact from lead
@@ -305,6 +322,51 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
             // Pick first contact from the list
             otherDetails.setPrimaryContactId(lead.getContacts().getLast());
         }
+    }
+
+    private void publishLeadContactCreatedEvent(Lead lead, Contact contact, LeadContactPersonType contactType) {
+        LeadContactCreationEventPayload payload = LeadContactCreationEventPayload.builder()
+                .leadId(lead.getId())
+                .contactId(contact.getId())
+                .contactIdentifier(contact.getIdentifier())
+                .contactType(contactType != null ? contactType.name() : null)
+                .isDecisionMaker(contact.getIsDecisionMaker())
+                .isPropertyOwner(contact.getIsPropertyOwner())
+                .build();
+
+        applicationEventPublisher.publishEvent(
+                new SystemEvent<>(BusinessEvent.LEAD_CONTACT_CREATED.toString(), payload)
+        );
+    }
+
+    private void publishLeadContactUpdatedEvent(Lead lead, Contact contact, LeadContactPersonType contactType) {
+        LeadContactUpdationEventPayload payload = LeadContactUpdationEventPayload.builder()
+                .leadId(lead.getId())
+                .contactId(contact.getId())
+                .contactIdentifier(contact.getIdentifier())
+                .contactType(contactType != null ? contactType.name() : null)
+                .isDecisionMaker(contact.getIsDecisionMaker())
+                .isPropertyOwner(contact.getIsPropertyOwner())
+                .build();
+
+        applicationEventPublisher.publishEvent(
+                new SystemEvent<>(BusinessEvent.LEAD_CONTACT_UPDATED.toString(), payload)
+        );
+    }
+
+    private void publishLeadContactDeletedEvent(Lead lead, Contact contact, LeadContactPersonType contactType) {
+        LeadContactDeletionEventPayload payload = LeadContactDeletionEventPayload.builder()
+                .leadId(lead.getId())
+                .contactId(contact.getId())
+                .contactIdentifier(contact.getIdentifier())
+                .contactType(contactType != null ? contactType.name() : null)
+                .isDecisionMaker(contact.getIsDecisionMaker())
+                .isPropertyOwner(contact.getIsPropertyOwner())
+                .build();
+
+        applicationEventPublisher.publishEvent(
+                new SystemEvent<>(BusinessEvent.LEAD_CONTACT_DELETED.toString(), payload)
+        );
     }
 }
 
