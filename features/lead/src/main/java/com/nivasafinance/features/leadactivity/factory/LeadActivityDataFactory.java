@@ -14,6 +14,7 @@ import com.nivasafinance.common.events.payload.LeadNoteCreationEventPayload;
 import com.nivasafinance.common.events.payload.LeadNoteDeletionEventPayload;
 import com.nivasafinance.common.events.payload.LeadNoteUpdationEventPayload;
 import com.nivasafinance.common.events.payload.LeadStatusChangeEventPayload;
+import com.nivasafinance.common.events.payload.LeadUpdateEventPayload;
 import com.nivasafinance.features.leadactivity.dto.CreateLeadActivityRequest;
 import com.nivasafinance.features.leadactivity.enums.ResourceAction;
 import com.nivasafinance.features.leadactivity.enums.ResourceEnum;
@@ -38,6 +39,10 @@ public class LeadActivityDataFactory {
         switch (event){
             case LEAD_CREATED -> {
                 CreateLeadActivityRequest request = createLeadCreatedActivityRequest((LeadCreationEventPayload) payload);
+                writeService.createLeadActivity(request);
+            }
+            case LEAD_UPDATED -> {
+                CreateLeadActivityRequest request = createLeadUpdatedActivityRequest((LeadUpdateEventPayload) payload);
                 writeService.createLeadActivity(request);
             }
             case LEAD_NOTE_CREATED -> {
@@ -98,6 +103,16 @@ public class LeadActivityDataFactory {
                 .description("Lead created by " + UserContext.getUsername())
                 .resource(ResourceEnum.LEAD)
                 .action(ResourceAction.CREATE)
+                .build();
+    }
+
+    private CreateLeadActivityRequest createLeadUpdatedActivityRequest(LeadUpdateEventPayload payload){
+        return CreateLeadActivityRequest.builder()
+                .leadId(payload.getLeadId())
+                .resourceId(payload.getLeadId())
+                .description("Lead updated by " + UserContext.getUsername())
+                .resource(ResourceEnum.LEAD)
+                .action(ResourceAction.UPDATE)
                 .build();
     }
 

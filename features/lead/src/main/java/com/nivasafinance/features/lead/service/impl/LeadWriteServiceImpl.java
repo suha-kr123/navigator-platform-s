@@ -5,6 +5,7 @@ import com.nivasafinance.common.events.BusinessEvent;
 import com.nivasafinance.common.events.SystemEvent;
 import com.nivasafinance.common.events.payload.LeadCreationEventPayload;
 import com.nivasafinance.common.events.payload.LeadStatusChangeEventPayload;
+import com.nivasafinance.common.events.payload.LeadUpdateEventPayload;
 import com.nivasafinance.common.dto.AddressData;
 import com.nivasafinance.common.exception.BadRequestException;
 import com.nivasafinance.features.address.service.AddressDataService;
@@ -142,6 +143,9 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         lead.setOtherDetails(otherDetails);
 
         leadRepositoryWrapper.saveWithException(lead);
+
+        // Publish event
+        publishLeadUpdatedEvent(lead);
     }
 
     private void publishLeadCreatedEvent(Lead lead, CreateLeadRequest request) {
@@ -181,6 +185,9 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         preliminaryDetails.setMonthlyFamilyIncome(request.getMonthlyFamilyIncome());
         lead.setPreliminaryDetails(preliminaryDetails);
         leadRepositoryWrapper.saveWithException(lead);
+
+        // Publish event
+        publishLeadUpdatedEvent(lead);
     }
 
     @Override
@@ -210,6 +217,9 @@ public class LeadWriteServiceImpl implements LeadWriteService {
 
         lead.setCreditRatingDetails(creditDetails);
         leadRepositoryWrapper.saveWithException(lead);
+
+        // Publish event
+        publishLeadUpdatedEvent(lead);
     }
 
     @Override
@@ -230,6 +240,9 @@ public class LeadWriteServiceImpl implements LeadWriteService {
 
         lead.setProposedDetails(proposedDetails);
         leadRepositoryWrapper.saveWithException(lead);
+
+        // Publish event
+        publishLeadUpdatedEvent(lead);
     }
 
     @Override
@@ -255,6 +268,9 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         otherDetails.setPropertyDetails(propertyDetails);
         lead.setOtherDetails(otherDetails);
         leadRepositoryWrapper.saveWithException(lead);
+
+        // Publish event
+        publishLeadUpdatedEvent(lead);
     }
 
     private PersonCreateRequest getPersonCreateRequest(CreateLeadRequest request) {
@@ -305,6 +321,9 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         }
 
         leadRepositoryWrapper.saveWithException(lead);
+
+        // Publish event
+        publishLeadUpdatedEvent(lead);
     }
 
     @Override
@@ -334,6 +353,9 @@ public class LeadWriteServiceImpl implements LeadWriteService {
 
         lead.setDisbursementDetails(disbursementDetails);
         leadRepositoryWrapper.saveWithException(lead);
+
+        // Publish event
+        publishLeadUpdatedEvent(lead);
     }
 
     @Override
@@ -364,6 +386,9 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         disbursementDetails.setTranches(tranches);
         lead.setDisbursementDetails(disbursementDetails);
         leadRepositoryWrapper.saveWithException(lead);
+
+        // Publish event
+        publishLeadUpdatedEvent(lead);
     }
 
     @Override
@@ -388,6 +413,9 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         tranche.setDate(request.getDate());
 
         leadRepositoryWrapper.saveWithException(lead);
+
+        // Publish event
+        publishLeadUpdatedEvent(lead);
     }
 
     @Override
@@ -410,6 +438,9 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         }
 
         leadRepositoryWrapper.saveWithException(lead);
+
+        // Publish event
+        publishLeadUpdatedEvent(lead);
     }
 
     @Override
@@ -617,6 +648,17 @@ public class LeadWriteServiceImpl implements LeadWriteService {
 
         applicationEventPublisher.publishEvent(
                 new SystemEvent<>(event.toString(), payload)
+        );
+    }
+
+    private void publishLeadUpdatedEvent(Lead lead) {
+        LeadUpdateEventPayload payload = LeadUpdateEventPayload.builder()
+                .leadId(lead.getId())
+                .leadIdentifier(lead.getLeadIdentifier())
+                .build();
+
+        applicationEventPublisher.publishEvent(
+                new SystemEvent<>(BusinessEvent.LEAD_UPDATED.toString(), payload)
         );
     }
 
