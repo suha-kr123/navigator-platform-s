@@ -10,6 +10,10 @@ import com.nivasafinance.common.events.payload.LeadCreationEventPayload;
 import com.nivasafinance.common.events.payload.LeadDocumentCreationEventPayload;
 import com.nivasafinance.common.events.payload.LeadDocumentDeletionEventPayload;
 import com.nivasafinance.common.events.payload.LeadDocumentUpdationEventPayload;
+import com.nivasafinance.common.events.payload.LeadLenderCreationEventPayload;
+import com.nivasafinance.common.events.payload.LeadLenderRejectionEventPayload;
+import com.nivasafinance.common.events.payload.LeadLenderSubmissionEventPayload;
+import com.nivasafinance.common.events.payload.LeadLenderUpdationEventPayload;
 import com.nivasafinance.common.events.payload.LeadNoteCreationEventPayload;
 import com.nivasafinance.common.events.payload.LeadNoteDeletionEventPayload;
 import com.nivasafinance.common.events.payload.LeadNoteUpdationEventPayload;
@@ -83,6 +87,22 @@ public class LeadActivityDataFactory {
             }
             case LEAD_CALL_LOG_CREATED -> {
                 CreateLeadActivityRequest request = createLeadCallLogCreatedActivityRequest((LeadCallLogCreationEventPayload) payload);
+                writeService.createLeadActivity(request);
+            }
+            case LEAD_LENDER_CREATED -> {
+                CreateLeadActivityRequest request = createLeadLenderCreatedActivityRequest((LeadLenderCreationEventPayload) payload);
+                writeService.createLeadActivity(request);
+            }
+            case LEAD_LENDER_UPDATED -> {
+                CreateLeadActivityRequest request = createLeadLenderUpdatedActivityRequest((LeadLenderUpdationEventPayload) payload);
+                writeService.createLeadActivity(request);
+            }
+            case LEAD_LENDER_REJECTED -> {
+                CreateLeadActivityRequest request = createLeadLenderRejectedActivityRequest((LeadLenderRejectionEventPayload) payload);
+                writeService.createLeadActivity(request);
+            }
+            case LEAD_LENDER_SUBMITTED -> {
+                CreateLeadActivityRequest request = createLeadLenderSubmittedActivityRequest((LeadLenderSubmissionEventPayload) payload);
                 writeService.createLeadActivity(request);
             }
             case LEAD_REJECTED, LEAD_WITHDRAWN, LEAD_ON_HOLD, LEAD_RESUMED, LEAD_COMPLETED, LEAD_DROPOFF -> {
@@ -294,6 +314,65 @@ public class LeadActivityDataFactory {
             default -> "status changed";
         };
         return "Lead " + action + " by " + UserContext.getUsername();
+    }
+
+    private CreateLeadActivityRequest createLeadLenderCreatedActivityRequest(LeadLenderCreationEventPayload payload){
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("lenderIdentifier", payload.getLenderIdentifier().toString());
+
+        return CreateLeadActivityRequest.builder()
+                .leadId(payload.getLeadId())
+                .resourceId(payload.getLenderId())
+                .description("Lender created by " + UserContext.getUsername())
+                .resource(ResourceEnum.LENDER)
+                .action(ResourceAction.CREATE)
+                .metadata(metadata)
+                .build();
+    }
+
+    private CreateLeadActivityRequest createLeadLenderUpdatedActivityRequest(LeadLenderUpdationEventPayload payload){
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("lenderIdentifier", payload.getLenderIdentifier().toString());
+
+        return CreateLeadActivityRequest.builder()
+                .leadId(payload.getLeadId())
+                .resourceId(payload.getLenderId())
+                .description("Lender updated by " + UserContext.getUsername())
+                .resource(ResourceEnum.LENDER)
+                .action(ResourceAction.UPDATE)
+                .metadata(metadata)
+                .build();
+    }
+
+    private CreateLeadActivityRequest createLeadLenderRejectedActivityRequest(LeadLenderRejectionEventPayload payload){
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("lenderIdentifier", payload.getLenderIdentifier().toString());
+        if (payload.getRejectionReason() != null) {
+            metadata.put("rejectionReason", payload.getRejectionReason());
+        }
+
+        return CreateLeadActivityRequest.builder()
+                .leadId(payload.getLeadId())
+                .resourceId(payload.getLenderId())
+                .description("Lender rejected by " + UserContext.getUsername())
+                .resource(ResourceEnum.LENDER)
+                .action(ResourceAction.STATUS_CHANGE)
+                .metadata(metadata)
+                .build();
+    }
+
+    private CreateLeadActivityRequest createLeadLenderSubmittedActivityRequest(LeadLenderSubmissionEventPayload payload){
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("lenderIdentifier", payload.getLenderIdentifier().toString());
+
+        return CreateLeadActivityRequest.builder()
+                .leadId(payload.getLeadId())
+                .resourceId(payload.getLenderId())
+                .description("Lender submitted by " + UserContext.getUsername())
+                .resource(ResourceEnum.LENDER)
+                .action(ResourceAction.STATUS_CHANGE)
+                .metadata(metadata)
+                .build();
     }
 
 }

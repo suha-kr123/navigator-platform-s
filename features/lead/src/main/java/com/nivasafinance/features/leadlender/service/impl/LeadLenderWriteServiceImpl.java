@@ -1,6 +1,12 @@
 package com.nivasafinance.features.leadlender.service.impl;
 
 import com.nivasafinance.common.context.UserContext;
+import com.nivasafinance.common.events.BusinessEvent;
+import com.nivasafinance.common.events.SystemEvent;
+import com.nivasafinance.common.events.payload.LeadLenderCreationEventPayload;
+import com.nivasafinance.common.events.payload.LeadLenderRejectionEventPayload;
+import com.nivasafinance.common.events.payload.LeadLenderSubmissionEventPayload;
+import com.nivasafinance.common.events.payload.LeadLenderUpdationEventPayload;
 import com.nivasafinance.features.lead.dto.LeadBasicResponse;
 import com.nivasafinance.features.lead.dto.LeadResponse;
 import com.nivasafinance.features.lead.entity.Lead;
@@ -23,6 +29,7 @@ import com.nivasafinance.features.master.codemaster.service.CodeMasterService;
 import com.nivasafinance.features.master.codemaster.service.CodeValueMasterService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -39,6 +46,7 @@ public class LeadLenderWriteServiceImpl implements LeadLenderWriteService {
     private final LenderOfficeReadService lenderOfficeReadService;
     private final CodeMasterService codeMasterService;
     private final CodeValueMasterService codeValueMasterService;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     @Transactional
@@ -71,6 +79,10 @@ public class LeadLenderWriteServiceImpl implements LeadLenderWriteService {
 
         LeadLender savedLeadLender = leadLenderRepositoryWrapper.saveWithException(entity);
         leadWriteService.touchLead(leadIdentifier);
+
+        // Publish event
+        publishLeadLenderCreatedEvent(lead, savedLeadLender);
+
         return new CreateLeadLenderResponse(savedLeadLender.getLenderIdentifier());
     }
 
@@ -108,6 +120,9 @@ public class LeadLenderWriteServiceImpl implements LeadLenderWriteService {
 
         leadLenderRepositoryWrapper.saveWithException(existingEntity);
         leadWriteService.touchLead(leadIdentifier);
+
+        // Publish event
+        publishLeadLenderUpdatedEvent(lead, existingEntity);
     }
 
     @Override
@@ -153,6 +168,12 @@ public class LeadLenderWriteServiceImpl implements LeadLenderWriteService {
 
         leadLenderRepositoryWrapper.saveWithException(existingEntity);
         leadWriteService.touchLead(leadIdentifier);
+
+        // Publish event
+        String rejectionReason = existingEntity.getRejectionDetails() != null 
+                ? existingEntity.getRejectionDetails().getRejectionReason() 
+                : null;
+        publishLeadLenderRejectedEvent(lead, existingEntity, rejectionReason);
     }
 
     @Override
@@ -191,6 +212,58 @@ public class LeadLenderWriteServiceImpl implements LeadLenderWriteService {
 
         leadLenderRepositoryWrapper.saveWithException(existingEntity);
         leadWriteService.touchLead(leadIdentifier);
+
+        // Publish event
+        publishLeadLenderSubmittedEvent(lead, existingEntity);
+    }
+
+    private void publishLeadLenderCreatedEvent(LeadBasicResponse lead, LeadLender leadLender) {
+        LeadLenderCreationEventPayload payload = LeadLenderCreationEventPayload.builder()
+                .leadId(lead.getId())
+                .lenderId(leadLender.getId())
+                .lenderIdentifier(leadLender.getLenderIdentifier())
+                .build();
+
+        applicationEventPublisher.publishEvent(
+                new SystemEvent<>(BusinessEvent.LEAD_LENDER_CREATED.toString(), payload)
+        );
+    }
+
+    private void publishLeadLenderUpdatedEvent(LeadBasicResponse lead, LeadLender leadLender) {
+        LeadLenderUpdationEventPayload payload = LeadLenderUpdationEventPayload.builder()
+                .leadId(lead.getId())
+                .lenderId(leadLender.getId())
+                .lenderIdentifier(leadLender.getLenderIdentifier())
+                .build();
+
+        applicationEventPublisher.publishEvent(
+                new SystemEvent<>(BusinessEvent.LEAD_LENDER_UPDATED.toString(), payload)
+        );
+    }
+
+    private void publishLeadLenderRejectedEvent(LeadBasicResponse lead, LeadLender leadLender, String rejectionReason) {
+        LeadLenderRejectionEventPayload payload = LeadLenderRejectionEventPayload.builder()
+                .leadId(lead.getId())
+                .lenderId(leadLender.getId())
+                .lenderIdentifier(leadLender.getLenderIdentifier())
+                .rejectionReason(rejectionReason)
+                .build();
+
+        applicationEventPublisher.publishEvent(
+                new SystemEvent<>(BusinessEvent.LEAD_LENDER_REJECTED.toString(), payload)
+        );
+    }
+
+    private void publishLeadLenderSubmittedEvent(LeadBasicResponse lead, LeadLender leadLender) {
+        LeadLenderSubmissionEventPayload payload = LeadLenderSubmissionEventPayload.builder()
+                .leadId(lead.getId())
+                .lenderId(leadLender.getId())
+                .lenderIdentifier(leadLender.getLenderIdentifier())
+                .build();
+
+        applicationEventPublisher.publishEvent(
+                new SystemEvent<>(BusinessEvent.LEAD_LENDER_SUBMITTED.toString(), payload)
+        );
     }
 
     private void validateOfficeForLender(String officeKey, LeadLender existingEntity) {
