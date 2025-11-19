@@ -12,6 +12,8 @@ import java.util.UUID;
 @Builder
 public class LeadCreationEventPayload {
 
+    Long id;
+
     UUID leadId;
 
     String mobileNumber;

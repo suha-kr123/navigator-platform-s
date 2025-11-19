@@ -149,6 +149,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
                 : null;
 
         LeadCreationEventPayload payload = LeadCreationEventPayload.builder()
+                .id(lead.getId())
                 .leadId(lead.getLeadIdentifier())
                 .mobileNumber(mobileNumber)
                 .build();
