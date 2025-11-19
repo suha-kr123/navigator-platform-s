@@ -2,6 +2,9 @@ package com.nivasafinance.features.lead.service.impl;
 
 import com.nivasafinance.common.context.UserContext;
 import com.nivasafinance.common.enums.SystemEntities;
+import com.nivasafinance.common.events.BusinessEvent;
+import com.nivasafinance.common.events.SystemEvent;
+import com.nivasafinance.common.events.payload.LeadCallLogCreationEventPayload;
 import com.nivasafinance.common.exception.BadRequestException;
 import com.nivasafinance.features.call.dto.CallLogResponse;
 import com.nivasafinance.features.call.dto.CreateCallLogResponse;
@@ -28,6 +31,7 @@ import com.nivasafinance.features.person.service.PersonReadService;
 import com.nivasafinance.features.usermanagement.dto.UserResponse;
 import com.nivasafinance.features.usermanagement.service.UserReadService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -48,6 +52,7 @@ public class LeadCallWriteServiceImpl implements LeadCallWriteService {
     private final CallWriteService callWriteService;
     private final CallReadService callReadService;
     private final UserReadService userReadService;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     public CreateLeadCallResponse callContact(UUID leadIdentifier, CreateLeadCallRequest request) {
@@ -78,6 +83,11 @@ public class LeadCallWriteServiceImpl implements LeadCallWriteService {
         
         // Update lastCallId based on latest createdAt
         updateLastCallId(lead, response.getId());
+        
+        leadRepositoryWrapper.saveWithException(lead);
+        
+        // Publish event
+        publishLeadCallLogCreatedEvent(lead, response.getId(), response.getIdentifier(), contact);
         
         return new CreateLeadCallResponse(response.getIdentifier(), response.getStatus());
     }
@@ -153,6 +163,9 @@ public class LeadCallWriteServiceImpl implements LeadCallWriteService {
         
         leadRepositoryWrapper.saveWithException(lead);
 
+        // Publish event
+        publishLeadCallLogCreatedEvent(lead, savedCallLog.getId(), savedCallLog.getIdentifier(), contact);
+
         // Return response
         return CreateExternalCallLogResponse.builder()
                 .identifier(savedCallLog.getIdentifier())
@@ -227,6 +240,18 @@ public class LeadCallWriteServiceImpl implements LeadCallWriteService {
                 .findFirst()
                 .orElseThrow(() -> new BadRequestException("Current User Does not have primary mobile number"))
                 .getNumber();
+    }
+
+    private void publishLeadCallLogCreatedEvent(Lead lead, Long callLogId, UUID callLogIdentifier, Contact contact) {
+        LeadCallLogCreationEventPayload payload = LeadCallLogCreationEventPayload.builder()
+                .leadId(lead.getId())
+                .callLogId(callLogId)
+                .callLogIdentifier(callLogIdentifier)
+                .build();
+
+        applicationEventPublisher.publishEvent(
+                new SystemEvent<>(BusinessEvent.LEAD_CALL_LOG_CREATED.toString(), payload)
+        );
     }
 }
 

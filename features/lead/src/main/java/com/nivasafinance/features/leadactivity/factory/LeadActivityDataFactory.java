@@ -2,6 +2,7 @@ package com.nivasafinance.features.leadactivity.factory;
 
 import com.nivasafinance.common.context.UserContext;
 import com.nivasafinance.common.events.BusinessEvent;
+import com.nivasafinance.common.events.payload.LeadCallLogCreationEventPayload;
 import com.nivasafinance.common.events.payload.LeadContactCreationEventPayload;
 import com.nivasafinance.common.events.payload.LeadContactDeletionEventPayload;
 import com.nivasafinance.common.events.payload.LeadContactUpdationEventPayload;
@@ -70,6 +71,10 @@ public class LeadActivityDataFactory {
             }
             case LEAD_CONTACT_DELETED -> {
                 CreateLeadActivityRequest request = createLeadContactDeletedActivityRequest((LeadContactDeletionEventPayload) payload);
+                writeService.createLeadActivity(request);
+            }
+            case LEAD_CALL_LOG_CREATED -> {
+                CreateLeadActivityRequest request = createLeadCallLogCreatedActivityRequest((LeadCallLogCreationEventPayload) payload);
                 writeService.createLeadActivity(request);
             }
             default ->{
@@ -220,6 +225,20 @@ public class LeadActivityDataFactory {
                 .description("Contact deleted by " + UserContext.getUsername())
                 .resource(ResourceEnum.CONTACT)
                 .action(ResourceAction.DELETE)
+                .metadata(metadata)
+                .build();
+    }
+
+    private CreateLeadActivityRequest createLeadCallLogCreatedActivityRequest(LeadCallLogCreationEventPayload payload){
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("callLogIdentifier", payload.getCallLogIdentifier().toString());
+
+        return CreateLeadActivityRequest.builder()
+                .leadId(payload.getLeadId())
+                .resourceId(payload.getCallLogId())
+                .description("Call log created by " + UserContext.getUsername())
+                .resource(ResourceEnum.CALL_LOG)
+                .action(ResourceAction.CREATE)
                 .metadata(metadata)
                 .build();
     }

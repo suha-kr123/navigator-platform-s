@@ -5,4 +5,5 @@ public enum  ResourceEnum {
     NOTES,
     DOCUMENTS,
     CONTACT,
+    CALL_LOG,
 }
