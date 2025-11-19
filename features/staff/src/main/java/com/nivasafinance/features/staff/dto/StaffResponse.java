@@ -21,4 +21,5 @@ public class StaffResponse {
     private UserResponse userResponse;
 
     private String officeKey;
+    private String officeName;
 }

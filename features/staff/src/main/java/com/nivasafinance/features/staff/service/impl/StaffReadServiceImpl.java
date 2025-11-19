@@ -64,6 +64,7 @@ public class StaffReadServiceImpl implements StaffReadService {
                 .id(staff.getId())
                 .identifier(staff.getIdentifier())
                 .officeKey(staff.getOfficeKey())
+                .officeName(officeReadService.getOfficeByKey(staff.getOfficeKey()).getName())
                 .userResponse(userResponse)
                 .build();
     }
