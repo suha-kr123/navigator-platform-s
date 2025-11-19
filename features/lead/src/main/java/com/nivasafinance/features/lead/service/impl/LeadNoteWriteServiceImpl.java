@@ -1,5 +1,10 @@
 package com.nivasafinance.features.lead.service.impl;
 
+import com.nivasafinance.common.events.BusinessEvent;
+import com.nivasafinance.common.events.SystemEvent;
+import com.nivasafinance.common.events.payload.LeadNoteCreationEventPayload;
+import com.nivasafinance.common.events.payload.LeadNoteDeletionEventPayload;
+import com.nivasafinance.common.events.payload.LeadNoteUpdationEventPayload;
 import com.nivasafinance.features.lead.dto.LeadNoteCreateRequest;
 import com.nivasafinance.features.lead.dto.LeadNoteCreateResponse;
 import com.nivasafinance.features.lead.dto.LeadNoteUpdateRequest;
@@ -12,6 +17,7 @@ import com.nivasafinance.features.notes.dto.NotesUpdateRequest;
 import com.nivasafinance.features.notes.service.NotesReadService;
 import com.nivasafinance.features.notes.service.NotesWriteService;
 import lombok.AllArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +33,7 @@ public class LeadNoteWriteServiceImpl implements LeadNoteWriteService {
     private final NotesWriteService notesWriteService;
     private final NotesReadService notesReadService;
     private final LeadRepositoryWrapper leadRepositoryWrapper;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     public LeadNoteCreateResponse createLeadNote(UUID leadIdentifier, LeadNoteCreateRequest request) {
@@ -52,6 +59,9 @@ public class LeadNoteWriteServiceImpl implements LeadNoteWriteService {
 
         // Save the lead
         leadRepositoryWrapper.saveWithException(lead);
+
+        // Publish event
+        publishLeadNoteCreatedEvent(lead, notesResponse);
 
         // Return response with note identifier
         return LeadNoteCreateResponse.builder()
@@ -82,6 +92,9 @@ public class LeadNoteWriteServiceImpl implements LeadNoteWriteService {
 
         // Update the note
         notesWriteService.updateNote(noteIdentifier, notesUpdateRequest);
+
+        // Publish event
+        publishLeadNoteUpdatedEvent(lead, note, noteIdentifier);
     }
 
     @Override
@@ -106,8 +119,47 @@ public class LeadNoteWriteServiceImpl implements LeadNoteWriteService {
             leadRepositoryWrapper.saveWithException(lead);
         }
 
+        // Publish event before deleting
+        publishLeadNoteDeletedEvent(lead, note, noteIdentifier);
+
         // Delete the note
         notesWriteService.deleteNote(noteIdentifier);
+    }
+
+    private void publishLeadNoteCreatedEvent(Lead lead, NotesResponse notesResponse) {
+        LeadNoteCreationEventPayload payload = LeadNoteCreationEventPayload.builder()
+                .leadId(lead.getId())
+                .noteId(notesResponse.getId())
+                .noteIdentifier(notesResponse.getIdentifier())
+                .build();
+
+        applicationEventPublisher.publishEvent(
+                new SystemEvent<>(BusinessEvent.LEAD_NOTE_CREATED.toString(), payload)
+        );
+    }
+
+    private void publishLeadNoteUpdatedEvent(Lead lead, NotesResponse note, UUID noteIdentifier) {
+        LeadNoteUpdationEventPayload payload = LeadNoteUpdationEventPayload.builder()
+                .leadId(lead.getId())
+                .noteId(note.getId())
+                .noteIdentifier(noteIdentifier)
+                .build();
+
+        applicationEventPublisher.publishEvent(
+                new SystemEvent<>(BusinessEvent.LEAD_NOTE_UPDATED.toString(), payload)
+        );
+    }
+
+    private void publishLeadNoteDeletedEvent(Lead lead, NotesResponse note, UUID noteIdentifier) {
+        LeadNoteDeletionEventPayload payload = LeadNoteDeletionEventPayload.builder()
+                .leadId(lead.getId())
+                .noteId(note.getId())
+                .noteIdentifier(noteIdentifier)
+                .build();
+
+        applicationEventPublisher.publishEvent(
+                new SystemEvent<>(BusinessEvent.LEAD_NOTE_DELETED.toString(), payload)
+        );
     }
 }
 

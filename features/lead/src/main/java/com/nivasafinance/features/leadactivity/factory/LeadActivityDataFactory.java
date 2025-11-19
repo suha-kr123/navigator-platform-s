@@ -3,12 +3,18 @@ package com.nivasafinance.features.leadactivity.factory;
 import com.nivasafinance.common.context.UserContext;
 import com.nivasafinance.common.events.BusinessEvent;
 import com.nivasafinance.common.events.payload.LeadCreationEventPayload;
+import com.nivasafinance.common.events.payload.LeadNoteCreationEventPayload;
+import com.nivasafinance.common.events.payload.LeadNoteDeletionEventPayload;
+import com.nivasafinance.common.events.payload.LeadNoteUpdationEventPayload;
 import com.nivasafinance.features.leadactivity.dto.CreateLeadActivityRequest;
 import com.nivasafinance.features.leadactivity.enums.ResourceAction;
 import com.nivasafinance.features.leadactivity.enums.ResourceEnum;
 import com.nivasafinance.features.leadactivity.service.LeadActivityWriteService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Component
 @AllArgsConstructor
@@ -22,6 +28,18 @@ public class LeadActivityDataFactory {
         switch (event){
             case LEAD_CREATED -> {
                 CreateLeadActivityRequest request = createLeadCreatedActivityRequest((LeadCreationEventPayload) payload);
+                writeService.createLeadActivity(request);
+            }
+            case LEAD_NOTE_CREATED -> {
+                CreateLeadActivityRequest request = createLeadNoteCreatedActivityRequest((LeadNoteCreationEventPayload) payload);
+                writeService.createLeadActivity(request);
+            }
+            case LEAD_NOTE_UPDATED -> {
+                CreateLeadActivityRequest request = createLeadNoteUpdatedActivityRequest((LeadNoteUpdationEventPayload) payload);
+                writeService.createLeadActivity(request);
+            }
+            case LEAD_NOTE_DELETED -> {
+                CreateLeadActivityRequest request = createLeadNoteDeletedActivityRequest((LeadNoteDeletionEventPayload) payload);
                 writeService.createLeadActivity(request);
             }
             default ->{
@@ -38,6 +56,48 @@ public class LeadActivityDataFactory {
                 .description("Lead created by " + UserContext.getUsername())
                 .resource(ResourceEnum.LEAD)
                 .action(ResourceAction.CREATE)
+                .build();
+    }
+
+    private CreateLeadActivityRequest createLeadNoteCreatedActivityRequest(LeadNoteCreationEventPayload payload){
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("noteIdentifier", payload.getNoteIdentifier().toString());
+
+        return CreateLeadActivityRequest.builder()
+                .leadId(payload.getLeadId())
+                .resourceId(payload.getNoteId())
+                .description("Note created by " + UserContext.getUsername())
+                .resource(ResourceEnum.NOTES)
+                .action(ResourceAction.CREATE)
+                .metadata(metadata)
+                .build();
+    }
+
+    private CreateLeadActivityRequest createLeadNoteUpdatedActivityRequest(LeadNoteUpdationEventPayload payload){
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("noteIdentifier", payload.getNoteIdentifier().toString());
+
+        return CreateLeadActivityRequest.builder()
+                .leadId(payload.getLeadId())
+                .resourceId(payload.getNoteId())
+                .description("Note updated by " + UserContext.getUsername())
+                .resource(ResourceEnum.NOTES)
+                .action(ResourceAction.UPDATE)
+                .metadata(metadata)
+                .build();
+    }
+
+    private CreateLeadActivityRequest createLeadNoteDeletedActivityRequest(LeadNoteDeletionEventPayload payload){
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("noteIdentifier", payload.getNoteIdentifier().toString());
+
+        return CreateLeadActivityRequest.builder()
+                .leadId(payload.getLeadId())
+                .resourceId(payload.getNoteId())
+                .description("Note deleted by " + UserContext.getUsername())
+                .resource(ResourceEnum.NOTES)
+                .action(ResourceAction.DELETE)
+                .metadata(metadata)
                 .build();
     }
 
