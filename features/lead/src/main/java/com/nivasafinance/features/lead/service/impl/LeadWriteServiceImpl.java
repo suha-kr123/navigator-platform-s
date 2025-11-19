@@ -4,6 +4,7 @@ import com.nivasafinance.common.context.UserContext;
 import com.nivasafinance.common.events.BusinessEvent;
 import com.nivasafinance.common.events.SystemEvent;
 import com.nivasafinance.common.events.payload.LeadCreationEventPayload;
+import com.nivasafinance.common.events.payload.LeadStatusChangeEventPayload;
 import com.nivasafinance.common.dto.AddressData;
 import com.nivasafinance.common.exception.BadRequestException;
 import com.nivasafinance.features.address.service.AddressDataService;
@@ -446,6 +447,10 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         lead.setRejectionDetails(rejectionDetails);
 
         leadRepositoryWrapper.saveWithException(lead);
+
+        // Publish event
+        String reason = lead.getReasons() != null ? lead.getReasons().getReject() : null;
+        publishLeadStatusChangeEvent(lead, BusinessEvent.LEAD_REJECTED, reason);
     }
 
     @Override
@@ -483,6 +488,10 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         lead.setWithdrawnDetails(withdrawnDetails);
 
         leadRepositoryWrapper.saveWithException(lead);
+
+        // Publish event
+        String reason = lead.getReasons() != null ? lead.getReasons().getWithdrawn() : null;
+        publishLeadStatusChangeEvent(lead, BusinessEvent.LEAD_WITHDRAWN, reason);
     }
 
     @Override
@@ -499,6 +508,9 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         lead.setStatus(LeadStatus.COMPLETED);
 
         leadRepositoryWrapper.saveWithException(lead);
+
+        // Publish event
+        publishLeadStatusChangeEvent(lead, BusinessEvent.LEAD_COMPLETED, null);
     }
 
     @Override
@@ -527,6 +539,10 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         }
 
         leadRepositoryWrapper.saveWithException(lead);
+
+        // Publish event
+        String reason = lead.getReasons() != null ? lead.getReasons().getOnhold() : null;
+        publishLeadStatusChangeEvent(lead, BusinessEvent.LEAD_ON_HOLD, reason);
     }
 
     @Override
@@ -545,6 +561,9 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         }
 
         leadRepositoryWrapper.saveWithException(lead);
+
+        // Publish event
+        publishLeadStatusChangeEvent(lead, BusinessEvent.LEAD_RESUMED, null);
     }
 
     @Override
@@ -583,6 +602,22 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         lead.setDropoffDetails(dropoffDetails);
 
         leadRepositoryWrapper.saveWithException(lead);
+
+        // Publish event
+        String reason = lead.getReasons() != null ? lead.getReasons().getDropoff() : null;
+        publishLeadStatusChangeEvent(lead, BusinessEvent.LEAD_DROPOFF, reason);
+    }
+
+    private void publishLeadStatusChangeEvent(Lead lead, BusinessEvent event, String reason) {
+        LeadStatusChangeEventPayload payload = LeadStatusChangeEventPayload.builder()
+                .leadId(lead.getId())
+                .leadIdentifier(lead.getLeadIdentifier())
+                .reason(reason)
+                .build();
+
+        applicationEventPublisher.publishEvent(
+                new SystemEvent<>(event.toString(), payload)
+        );
     }
 
     private void checkForActiveLead(CreateLeadRequest request) {

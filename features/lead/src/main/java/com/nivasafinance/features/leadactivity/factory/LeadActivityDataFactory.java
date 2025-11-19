@@ -13,6 +13,7 @@ import com.nivasafinance.common.events.payload.LeadDocumentUpdationEventPayload;
 import com.nivasafinance.common.events.payload.LeadNoteCreationEventPayload;
 import com.nivasafinance.common.events.payload.LeadNoteDeletionEventPayload;
 import com.nivasafinance.common.events.payload.LeadNoteUpdationEventPayload;
+import com.nivasafinance.common.events.payload.LeadStatusChangeEventPayload;
 import com.nivasafinance.features.leadactivity.dto.CreateLeadActivityRequest;
 import com.nivasafinance.features.leadactivity.enums.ResourceAction;
 import com.nivasafinance.features.leadactivity.enums.ResourceEnum;
@@ -30,7 +31,9 @@ public class LeadActivityDataFactory {
 
     public <T> void recordEvent(String eventType, T payload ){
 
-        BusinessEvent event = BusinessEvent.valueOf(eventType);
+        // Handle special case where LEAD_COMPLETED has code "LEAD_DELETED"
+        String normalizedEventType = "LEAD_DELETED".equals(eventType) ? "LEAD_COMPLETED" : eventType;
+        BusinessEvent event = BusinessEvent.valueOf(normalizedEventType);
 
         switch (event){
             case LEAD_CREATED -> {
@@ -75,6 +78,10 @@ public class LeadActivityDataFactory {
             }
             case LEAD_CALL_LOG_CREATED -> {
                 CreateLeadActivityRequest request = createLeadCallLogCreatedActivityRequest((LeadCallLogCreationEventPayload) payload);
+                writeService.createLeadActivity(request);
+            }
+            case LEAD_REJECTED, LEAD_WITHDRAWN, LEAD_ON_HOLD, LEAD_RESUMED, LEAD_COMPLETED, LEAD_DROPOFF -> {
+                CreateLeadActivityRequest request = createLeadStatusChangeActivityRequest(event, (LeadStatusChangeEventPayload) payload);
                 writeService.createLeadActivity(request);
             }
             default ->{
@@ -241,6 +248,37 @@ public class LeadActivityDataFactory {
                 .action(ResourceAction.CREATE)
                 .metadata(metadata)
                 .build();
+    }
+
+    private CreateLeadActivityRequest createLeadStatusChangeActivityRequest(BusinessEvent event, LeadStatusChangeEventPayload payload){
+        Map<String, Object> metadata = new HashMap<>();
+        if (payload.getReason() != null) {
+            metadata.put("reason", payload.getReason());
+        }
+
+        String description = getStatusChangeDescription(event);
+
+        return CreateLeadActivityRequest.builder()
+                .leadId(payload.getLeadId())
+                .resourceId(payload.getLeadId())
+                .description(description)
+                .resource(ResourceEnum.LEAD)
+                .action(ResourceAction.STATUS_CHANGE)
+                .metadata(metadata)
+                .build();
+    }
+
+    private String getStatusChangeDescription(BusinessEvent event) {
+        String action = switch (event) {
+            case LEAD_REJECTED -> "rejected";
+            case LEAD_WITHDRAWN -> "withdrawn";
+            case LEAD_ON_HOLD -> "put on hold";
+            case LEAD_RESUMED -> "resumed";
+            case LEAD_COMPLETED -> "completed";
+            case LEAD_DROPOFF -> "put on dropoff";
+            default -> "status changed";
+        };
+        return "Lead " + action + " by " + UserContext.getUsername();
     }
 
 }
