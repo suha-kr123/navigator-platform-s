@@ -3,12 +3,14 @@ package com.nivasafinance.common.awssecretmanager.config;
 import com.nivasafinance.common.awssecretmanager.service.SecretManagerService;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
+@Profile("!dev")
 public class WatiConfig {
 
     private final SecretManagerService secretManagerService;
