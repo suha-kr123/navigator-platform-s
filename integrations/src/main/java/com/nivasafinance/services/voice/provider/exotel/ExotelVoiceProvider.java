@@ -115,6 +115,7 @@ public class ExotelVoiceProvider implements VoiceProvider {
         }
         payload.add("StatusCallback", exotelConfig.getWebhookUrl());
         payload.add("StatusCallbackEvents[0]", "terminal");
+        payload.add("StatusCallbackContentType", "application/json");
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
