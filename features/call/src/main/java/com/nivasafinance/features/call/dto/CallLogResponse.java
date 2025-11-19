@@ -29,6 +29,7 @@ public class CallLogResponse {
     private CallSource source;
     private CallStatus status;
     private LocalDateTime createdAt;
+    private String createdBy;
     private CallLog.RecordingDetails recordingDetails;
     private CallLog.CompletionDetails completionDetails;
 
@@ -44,6 +45,7 @@ public class CallLogResponse {
                 .direction(callLog.getDirection())
                 .source(callLog.getSource())
                 .status(callLog.getStatus())
+                .createdBy(callLog.getCreatedBy())
                 .createdAt(callLog.getCreatedAt())
                 .recordingDetails(callLog.getRecordingDetails())
                 .completionDetails(callLog.getCompletionDetails())
