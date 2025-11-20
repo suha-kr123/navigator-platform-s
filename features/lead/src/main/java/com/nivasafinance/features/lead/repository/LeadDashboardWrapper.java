@@ -74,6 +74,8 @@ public class LeadDashboardWrapper {
         appendLeadCreatedDateFilter(effectiveFilters, whereClause, queryParams);
         appendActivityDateFilter(effectiveFilters, whereClause, queryParams);
         appendActivityUpdatedByFilter(effectiveFilters, whereClause, queryParams);
+        appendLastCallDirectionFilter(effectiveFilters, whereClause, queryParams);
+        appendLastCallStatusFilter(effectiveFilters, whereClause, queryParams);
 
         String fromClause = baseFromClause();
 
@@ -254,6 +256,22 @@ public class LeadDashboardWrapper {
                     .append(createPlaceholders(filters.getLastUpdatedBy().size()))
                     .append(") ");
             params.addAll(filters.getLastUpdatedBy());
+        }
+    }
+
+    private void appendLastCallDirectionFilter(LeadDashboardFilters filters, StringBuilder whereClause, List<Object> params) {
+        if (filters.getLastCallDirection() != null && !filters.getLastCallDirection().trim().isEmpty()) {
+            String normalizedDirection = filters.getLastCallDirection().toUpperCase(Locale.ROOT);
+            whereClause.append(" AND latest_call.direction = ? ");
+            params.add(normalizedDirection);
+        }
+    }
+
+    private void appendLastCallStatusFilter(LeadDashboardFilters filters, StringBuilder whereClause, List<Object> params) {
+        if (filters.getLastCallStatus() != null && !filters.getLastCallStatus().trim().isEmpty()) {
+            String normalizedStatus = filters.getLastCallStatus().toUpperCase(Locale.ROOT);
+            whereClause.append(" AND latest_call.status = ? ");
+            params.add(normalizedStatus);
         }
     }
 
