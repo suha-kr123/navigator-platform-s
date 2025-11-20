@@ -218,7 +218,7 @@ public class LeadController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/search")
+    @PostMapping("/search")
     public ResponseEntity<PaginatedResponse<LeadSearchResponse>> searchLeads(
             @Valid PaginationRequest paginationRequest,
             @Valid @RequestBody LeadSearchRequest searchRequest
