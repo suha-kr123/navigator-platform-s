@@ -25,7 +25,13 @@ public final class SystemControlledMasterCodes {
     
     public static final String MARKETING_SOURCE_MASTER = "MARKETING_SOURCE_MASTER";
     public static final String MARKETING_CHANNEL_MASTER = "MARKETING_CHANNEL_MASTER";
-
     public static final String LEAD_PRIORITY_MASTER = "LEAD_PRIORITY_MASTER";
+    // Advisor specific masters
+    public static final String ADVISOR_REJECTION_REASON_MASTER = "ADVISOR_REJECTION_REASON_MASTER";
+    // Global masters (usable across modules)
+    public static final String OCCUPATION_TYPE_MASTER = "OCCUPATION_TYPE_MASTER";
+    public static final String OCCUPATION_MASTER = "OCCUPATION_MASTER";
+    public static final String QUALIFICATION_MASTER = "QUALIFICATION_MASTER";
+    public static final String BANK_NAME_MASTER = "BANK_NAME_MASTER";
 }
 

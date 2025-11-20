@@ -4,7 +4,10 @@ import org.springframework.context.MessageSource;
 
 import java.util.UUID;
 
-public class AdvisorExceptionFactory {
+public final class AdvisorExceptionFactory {
+
+    private AdvisorExceptionFactory() {
+    }
 
     public static AdvisorNotFoundException notFound(UUID id, MessageSource messageSource) {
         return new AdvisorNotFoundException(id, messageSource);
@@ -26,4 +29,3 @@ public class AdvisorExceptionFactory {
         return new AdvisorOperationException("error.advisor.operation.retrieve", messageSource);
     }
 }
-

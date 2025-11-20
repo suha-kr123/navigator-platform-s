@@ -1,6 +1,8 @@
 package com.nivasafinance.features.person.exception;
 
 import org.springframework.context.MessageSource;
+import com.nivasafinance.common.exception.BadRequestException;
+import com.nivasafinance.common.exception.ExceptionUtils;
 
 public class PersonExceptionFactory {
 
@@ -29,5 +31,13 @@ public class PersonExceptionFactory {
             MessageSource messageSource) {
         return new PersonPrimaryMobileAlreadyExistsException(mobileNumber, messageSource);
     }
+
+    public static BadRequestException addressTypeMandatory(MessageSource messageSource) {
+    return new BadRequestException(ExceptionUtils.createLocalizedMessage(
+            "error.person.address.type.mandatory",
+            null,
+            messageSource
+    ));
+}
 }
 
