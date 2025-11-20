@@ -1,6 +1,9 @@
 package com.nivasafinance.features.lead.controller;
 
 import com.nivasafinance.common.constants.ApiConstants;
+import com.nivasafinance.common.dto.AddressData;
+import com.nivasafinance.common.dto.AddressRequest;
+import com.nivasafinance.features.lead.dto.AddressIdentifierResponse;
 import com.nivasafinance.features.lead.dto.LeadContactResponse;
 import com.nivasafinance.features.lead.dto.CreateLeadContactRequest;
 import com.nivasafinance.features.lead.dto.UpdateLeadContactRequest;
@@ -61,5 +64,46 @@ public class LeadContactController {
         LeadContactResponse contact = leadContactReadService.getContactById(leadId, contactIdentifier);
         return ResponseEntity.ok(contact);
     }
+
+    // Address Endpoints
+
+    @PostMapping("/{contactIdentifier}/address")
+    public ResponseEntity<AddressIdentifierResponse> addAddress(
+            @PathVariable UUID contactIdentifier,
+            @Valid @RequestBody AddressRequest request) {
+        String addressId = leadContactWriteService.addAddress(contactIdentifier, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(new AddressIdentifierResponse(addressId));
+    }
+
+    @GetMapping("/{contactIdentifier}/addresses")
+    public ResponseEntity<List<AddressData>> getAddresses(@PathVariable UUID contactIdentifier) {
+        List<AddressData> addresses = leadContactReadService.getAddresses(contactIdentifier);
+        return ResponseEntity.ok(addresses);
+    }
+
+    @GetMapping("/{contactIdentifier}/address/{addressId}")
+    public ResponseEntity<AddressData> getAddress(
+            @PathVariable UUID contactIdentifier,
+            @PathVariable String addressId) {
+        AddressData address = leadContactReadService.getAddress(contactIdentifier, addressId);
+        return ResponseEntity.ok(address);
+    }
+
+    @PutMapping("/{contactIdentifier}/address/{addressId}")
+    public ResponseEntity<Void> updateAddress(
+            @PathVariable UUID contactIdentifier,
+            @PathVariable String addressId,
+            @Valid @RequestBody AddressRequest request) {
+        leadContactWriteService.updateAddress(contactIdentifier, addressId, request);
+        return ResponseEntity.noContent().build();
+    }
+
 }
+
+
+
+
+
+
+
 

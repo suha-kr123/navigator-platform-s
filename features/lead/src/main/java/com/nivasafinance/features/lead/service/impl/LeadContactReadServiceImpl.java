@@ -1,5 +1,6 @@
 package com.nivasafinance.features.lead.service.impl;
 
+import com.nivasafinance.common.dto.AddressData;
 import com.nivasafinance.features.lead.dto.LeadContactPersonDetails;
 import com.nivasafinance.features.lead.dto.LeadContactResponse;
 import com.nivasafinance.features.lead.entity.Applicant;
@@ -13,8 +14,10 @@ import com.nivasafinance.features.lead.service.LeadContactReadService;
 import com.nivasafinance.features.person.dto.PersonResponse;
 import com.nivasafinance.features.person.service.PersonReadService;
 import lombok.AllArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +32,7 @@ public class LeadContactReadServiceImpl implements LeadContactReadService {
     private final ContactRepositoryWrapper contactRepositoryWrapper;
     private final ApplicantRepositoryWrapper applicantRepositoryWrapper;
     private final PersonReadService personReadService;
+
 
     @Override
     public List<LeadContactResponse> getContacts(UUID leadId) {
@@ -116,5 +120,22 @@ public class LeadContactReadServiceImpl implements LeadContactReadService {
 
         throw new RuntimeException("Contact not found with identifier: " + contactIdentifier);
     }
+
+    @Override
+    public List<AddressData> getAddresses(UUID contactIdentifier) {
+        Contact contact = contactRepositoryWrapper.findByIdentifierWithException(contactIdentifier);
+        return personReadService.getAddresses(contact.getPersonId());
+    }
+
+    @Override
+    public AddressData getAddress(UUID contactIdentifier, String addressId) {
+        Contact contact = contactRepositoryWrapper.findByIdentifierWithException(contactIdentifier);
+        try {
+            return personReadService.getAddress(contact.getPersonId(), addressId);
+        } catch (ResponseStatusException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Address not found for contact");
+        }
+    }
+
 }
 

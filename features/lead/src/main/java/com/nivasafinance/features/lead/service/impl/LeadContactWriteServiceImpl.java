@@ -1,5 +1,7 @@
 package com.nivasafinance.features.lead.service.impl;
 
+import com.nivasafinance.common.dto.AddressData;
+import com.nivasafinance.common.dto.AddressRequest;
 import com.nivasafinance.common.events.BusinessEvent;
 import com.nivasafinance.common.events.SystemEvent;
 import com.nivasafinance.common.events.payload.LeadContactCreationEventPayload;
@@ -367,6 +369,18 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
         applicationEventPublisher.publishEvent(
                 new SystemEvent<>(BusinessEvent.LEAD_CONTACT_DELETED.toString(), payload)
         );
+    }
+
+    @Override
+    public String addAddress(UUID contactIdentifier, AddressRequest request) {
+        Contact contact = contactRepositoryWrapper.findByIdentifierWithException(contactIdentifier);
+        return personWriteService.addAddress(contact.getPersonId(), request);
+    }
+
+    @Override
+    public void updateAddress(UUID contactIdentifier, String addressId, AddressRequest request) {
+        Contact contact = contactRepositoryWrapper.findByIdentifierWithException(contactIdentifier);
+        personWriteService.updateAddress(contact.getPersonId(), addressId, request);
     }
 }
 
