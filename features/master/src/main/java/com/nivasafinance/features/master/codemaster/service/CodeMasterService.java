@@ -1,6 +1,7 @@
 package com.nivasafinance.features.master.codemaster.service;
 
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
+import com.nivasafinance.features.master.codemaster.dto.MasterCodeResponse;
 import com.nivasafinance.features.master.codemaster.dto.MasterCodeWithValuesResponse;
 
 import java.util.List;
@@ -13,5 +14,8 @@ public interface CodeMasterService {
             String parentCodeKey,
             Boolean onlyActive
     );
+
+    MasterCodeResponse getMasterCodeByKey(String key);
+    List<MasterCodeResponse> getMasterCodesByKeys(List<String> keys);
 }
 

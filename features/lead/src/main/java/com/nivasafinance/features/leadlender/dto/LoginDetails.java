@@ -16,5 +16,7 @@ public class LoginDetails {
     private LocalDate loginDate;
     
     private BigDecimal loginFees;
+
+    private String lenderRemarks;
 }
 

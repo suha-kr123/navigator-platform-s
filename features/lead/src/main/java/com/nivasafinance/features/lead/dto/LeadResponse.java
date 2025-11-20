@@ -1,6 +1,5 @@
 package com.nivasafinance.features.lead.dto;
 
-import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.enums.LeadStatus;
 import com.nivasafinance.features.lead.enums.LeadSubStatus;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
@@ -11,6 +10,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.UUID;
 
@@ -37,10 +37,26 @@ public class LeadResponse {
     private LocalTime preferredCallStartTime;
     private LocalTime preferredCallEndTime;
     private CodeValueResponse priority;
-
-    public static LeadResponse leadToResponse(Lead lead) {
-        LeadResponse.LeadResponseBuilder builder = LeadResponse.builder()
-                .leadIdentifier(lead.getLeadIdentifier());
-        return builder.build();
-    }
+    private BigDecimal proposedAmount;
+    private BigDecimal proposedRoi;
+    private CodeValueResponse bureauRating;
+    private CodeValueResponse customerProfiles;
+    private CodeValueResponse monthlyFamilyIncome;
+    private BigDecimal eligibleLoanAmount;
+    private String advisorIdentifier;
+    private String advisorName;
+    private String advisorNumber;
+    private String recentNote;
+    private String noteCreatedBy;
+    private LocalDateTime noteCreatedAt;
+    private String partnerIdentifier;
+    private String partnerName;
+    private String partnerStatus;
+    private CodeValueResponse partnerStage;
+    private String partnerOfficeName;
+    private String lenderIdentifier;
+    private String lenderName;
+    private String lenderStatus;
+    private CodeValueResponse lenderStage;
+    private String lenderOfficeName;
 }

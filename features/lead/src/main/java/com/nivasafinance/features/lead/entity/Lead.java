@@ -79,7 +79,7 @@ public class Lead extends AuditableEntity {
     @Type(JsonType.class)
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "preliminary_details", columnDefinition = "jsonb")
-    private Map<String, String> preliminaryDetails;
+    private PreliminaryDetails preliminaryDetails;
 
     @Type(JsonType.class)
     @JdbcTypeCode(SqlTypes.JSON)
@@ -133,6 +133,16 @@ public class Lead extends AuditableEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "withdrawn_details", columnDefinition = "jsonb")
     private WithdrawnDetails withdrawnDetails;
+
+    @Type(JsonType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "dropoff_details", columnDefinition = "jsonb")
+    private DropoffDetails dropoffDetails;
+
+    @Type(JsonType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "call_logs", columnDefinition = "jsonb")
+    private List<CallLogDetails> callLogDetails;
 
     // Nested data classes for JSONB fields
 
@@ -206,6 +216,7 @@ public class Lead extends AuditableEntity {
         private String reject;
         private String withdrawn;
         private String onhold;
+        private String dropoff;
     }
 
     @Data
@@ -225,6 +236,8 @@ public class Lead extends AuditableEntity {
     @AllArgsConstructor
     @Builder
     public static class OtherDetails {
+        private Long primaryContactId;
+        private Long lastCallId;
         private PropertyDetails propertyDetails;
         private String priority;
         private LocalTime preferredCallStartTime;
@@ -266,4 +279,33 @@ public class Lead extends AuditableEntity {
         private LocalDateTime withdrawnDate;
         private String withdrawnBy;
     }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class DropoffDetails {
+        private LocalDateTime dropoffDate;
+        private String dropoffBy;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class CallLogDetails {
+        private Long callLogId;
+        private Long contactId;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class PreliminaryDetails {
+        private Boolean isWhatsAppDIYFormCompleted;
+        private Map<String, String> whatsAppDIYForm;
+        private BigDecimal monthlyFamilyIncome;
+    }
+
 }

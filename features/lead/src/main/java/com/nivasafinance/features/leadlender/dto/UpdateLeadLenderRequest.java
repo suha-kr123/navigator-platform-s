@@ -22,6 +22,4 @@ public class UpdateLeadLenderRequest {
     private ApprovedDetails approvedDetails;
     
     private String stage;
-    
-    private String remarks;
 }

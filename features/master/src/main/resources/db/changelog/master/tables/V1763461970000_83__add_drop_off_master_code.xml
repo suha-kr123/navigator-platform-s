@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1763461970000_38" author="system" context="default">
+        
+        <!-- Add your database changes here -->
+
+        <insert tableName="n_master_code">
+            <column name="parent_id" value="NULL"/>
+            <column name="key" value="LEAD_DROPOFF_REASON_MASTER"/>
+            <column name="name" value='{"default": "Dropoff Reason"}'/>
+            <column name="description" value='{"default": "Dropoff Reason for a lead"}'/>
+            <column name="is_system_defined" valueBoolean="false"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" valueDate="2025-01-27 10:00:00"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+    </changeSet>
+
+</databaseChangeLog>

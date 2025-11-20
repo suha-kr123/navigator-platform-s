@@ -3,6 +3,7 @@ package com.nivasafinance.features.lead.service;
 import com.nivasafinance.features.lead.dto.HouseFrontPhotoRequest;
 import com.nivasafinance.features.lead.dto.LeadDocumentCreateRequest;
 import com.nivasafinance.features.lead.dto.LeadDocumentCreateResponse;
+import com.nivasafinance.features.lead.dto.LeadDocumentUpdateRequest;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;
@@ -36,5 +37,13 @@ public interface LeadDocumentWriteService {
      * @param documentIdentifier The document identifier
      */
     void deleteLeadDocument(UUID leadIdentifier, UUID documentIdentifier);
+
+    /**
+     * Updates tags associated with a lead document.
+     * @param leadIdentifier The lead identifier
+     * @param documentIdentifier The document identifier
+     * @param request The request containing tags that need to be updated
+     */
+    void updateLeadDocument(UUID leadIdentifier, UUID documentIdentifier, LeadDocumentUpdateRequest request);
 }
 

@@ -19,6 +19,8 @@ public class LeadTemplateResponse {
     private List<CodeValueResponse> leadWithdrawalReasons;
     
     private List<CodeValueResponse> leadOnholdReasons;
+
+    private List<CodeValueResponse> leadDropoffReasons;
     
     private List<CodeValueResponse> occupationProfiles;
     

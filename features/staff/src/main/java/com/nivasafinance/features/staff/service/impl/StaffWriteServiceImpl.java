@@ -14,11 +14,15 @@ import com.nivasafinance.features.usermanagement.dto.UserCreateRequest;
 import com.nivasafinance.features.usermanagement.service.UserReadService;
 import com.nivasafinance.features.usermanagement.service.UserWriteService;
 import com.nivasafinance.features.offices.service.OfficeReadService;
+import com.nivasafinance.features.rolemanagement.role.service.UserRoleService;
+import com.nivasafinance.features.staff.dto.StaffCreateRequest.Role;
+import com.nivasafinance.common.exception.ValidationException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -30,6 +34,7 @@ public class StaffWriteServiceImpl implements StaffWriteService {
     private final UserReadService userReadService;
     private final UserWriteService userWriteService;
     private final OfficeReadService officeReadService;
+    private final UserRoleService userRoleService;
     private final MessageSource messageSource;
 
     @Override
@@ -47,6 +52,17 @@ public class StaffWriteServiceImpl implements StaffWriteService {
                 .build();
 
         UserResponse createdUser = userWriteService.createUser(userCreateRequest);
+
+        if (request.getRoles() != null && !request.getRoles().isEmpty()) {
+            validateOnlyOnePrimaryRole(request.getRoles());
+            for (Role role : request.getRoles()) {
+                userRoleService.saveRolesForUsername(
+                        createdUser.getUsername(),
+                        role.getRolename(),
+                        role.getIsPrimary()
+                );
+            }
+        }
 
         Staff staff = new Staff();
         staff.setIdentifier(UUID.randomUUID());
@@ -69,6 +85,16 @@ public class StaffWriteServiceImpl implements StaffWriteService {
                 .officeKey(staff.getOfficeKey())
                 .userResponse(resolvedUser)
                 .build();
+    }
+
+    private void validateOnlyOnePrimaryRole(List<Role> roles) {
+        long primaryRoleCount = roles.stream()
+                .filter(role -> role.getIsPrimary() != null && role.getIsPrimary())
+                .count();
+        
+        if (primaryRoleCount > 1) {
+            throw new ValidationException("Only one role can be marked as primary");
+        }
     }
 }
 

@@ -15,7 +15,7 @@ public class CodeMasterExceptionFactory {
         return new CodeValueKeyNotFoundException(key, messageSource);
     }
     
-    public CodeMasterNotFoundException notFoundById(java.util.UUID id, MessageSource messageSource) {
+    public CodeMasterNotFoundException notFoundById(Long id, MessageSource messageSource) {
         return new CodeMasterNotFoundException("ID: " + id, messageSource);
     }
     

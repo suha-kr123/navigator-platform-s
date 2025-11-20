@@ -6,9 +6,9 @@
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
     <changeSet id="V1760000000000_21" author="system" context="default">
-        <!-- Create roles table -->
-        <createTable tableName="roles">
-            <column name="id" type="uuid" defaultValueComputed="gen_random_uuid()">
+        <!-- Create n_roles table -->
+        <createTable tableName="n_roles">
+            <column name="id" type="bigint" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
             <column name="name" type="varchar(100)">
@@ -21,9 +21,9 @@
             <column name="version" type="bigint" defaultValueNumeric="0"/>
         </createTable>
 
-        <!-- Create permissions table -->
-        <createTable tableName="permissions">
-            <column name="id" type="uuid" defaultValueComputed="gen_random_uuid()">
+        <!-- Create n_permissions table -->
+        <createTable tableName="n_permissions">
+            <column name="id" type="bigint" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
             <column name="name" type="varchar(100)">
@@ -39,9 +39,9 @@
             <column name="version" type="bigint" defaultValueNumeric="0"/>
         </createTable>
 
-        <!-- Create permission_group table -->
-        <createTable tableName="permission_group">
-            <column name="id" type="uuid" defaultValueComputed="gen_random_uuid()">
+        <!-- Create n_permission_group table -->
+        <createTable tableName="n_permission_group">
+            <column name="id" type="bigint" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
             <column name="name" type="varchar(100)">
@@ -54,15 +54,39 @@
             <column name="version" type="bigint" defaultValueNumeric="0"/>
         </createTable>
 
-        <!-- Create permission_group_mapping table -->
-        <createTable tableName="permission_group_mapping">
-            <column name="id" type="uuid" defaultValueComputed="gen_random_uuid()">
+        <!-- Create n_permission_group_mapping table -->
+        <createTable tableName="n_permission_group_mapping">
+            <column name="id" type="bigint" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="permission_id" type="uuid">
+            <column name="permission_id" type="bigint">
                 <constraints nullable="false"/>
             </column>
-            <column name="permission_group_id" type="uuid">
+            <column name="permission_group_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="varchar(255)"/>
+            <column name="created_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="updated_by" type="varchar(255)"/>
+            <column name="updated_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="version" type="bigint" defaultValueNumeric="0"/>
+        </createTable>
+        
+        <!-- Add unique constraint for n_permission_group_mapping -->
+        <addUniqueConstraint
+                tableName="n_permission_group_mapping"
+                columnNames="permission_id, permission_group_id"
+                constraintName="uk_n_permission_group_mapping_permission_group"/>
+
+        <!-- Create n_role_permission_group_mapping table -->
+        <createTable tableName="n_role_permission_group_mapping">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="role" type="varchar(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="permission_group_id" type="bigint">
                 <constraints nullable="false"/>
             </column>
             <column name="created_by" type="varchar(255)"/>
@@ -72,15 +96,15 @@
             <column name="version" type="bigint" defaultValueNumeric="0"/>
         </createTable>
 
-        <!-- Create role_permission_group_mapping table -->
-        <createTable tableName="role_permission_group_mapping">
-            <column name="id" type="uuid" defaultValueComputed="gen_random_uuid()">
+        <!-- Create n_role_permission_mapping table -->
+        <createTable tableName="n_role_permission_mapping">
+            <column name="id" type="bigint" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="role_id" type="uuid">
+            <column name="role" type="varchar(100)">
                 <constraints nullable="false"/>
             </column>
-            <column name="permission_group_id" type="uuid">
+            <column name="permission_id" type="bigint">
                 <constraints nullable="false"/>
             </column>
             <column name="created_by" type="varchar(255)"/>
@@ -90,33 +114,15 @@
             <column name="version" type="bigint" defaultValueNumeric="0"/>
         </createTable>
 
-        <!-- Create role_permission_mapping table -->
-        <createTable tableName="role_permission_mapping">
-            <column name="id" type="uuid" defaultValueComputed="gen_random_uuid()">
-                <constraints primaryKey="true" nullable="false"/>
-            </column>
-            <column name="role_id" type="uuid">
-                <constraints nullable="false"/>
-            </column>
-            <column name="permission_id" type="uuid">
-                <constraints nullable="false"/>
-            </column>
-            <column name="created_by" type="varchar(255)"/>
-            <column name="created_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP"/>
-            <column name="updated_by" type="varchar(255)"/>
-            <column name="updated_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP"/>
-            <column name="version" type="bigint" defaultValueNumeric="0"/>
-        </createTable>
-
-        <!-- Create user_role_mapping table -->
-        <createTable tableName="user_role_mapping">
-            <column name="id" type="uuid" defaultValueComputed="gen_random_uuid()">
+        <!-- Create n_user_role_mapping table -->
+        <createTable tableName="n_user_role_mapping">
+            <column name="id" type="bigint" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
             <column name="username" type="varchar(255)">
-                <constraints nullable="false" unique="true"/>
+                <constraints nullable="false"/>
             </column>
-            <column name="role" type="varchar(255)">
+            <column name="role" type="varchar(100)">
                 <constraints nullable="false"/>
             </column>
             <column name="created_by" type="varchar(255)"/>
@@ -125,64 +131,67 @@
             <column name="updated_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP"/>
             <column name="version" type="bigint" defaultValueNumeric="0"/>
         </createTable>
+        
+        <!-- Add unique constraint for n_user_role_mapping -->
+        <addUniqueConstraint
+                tableName="n_user_role_mapping"
+                columnNames="username, role"
+                constraintName="uk_n_user_role_mapping_username_role"/>
 
         <!-- Add foreign key constraints -->
         <addForeignKeyConstraint
-                baseTableName="permission_group_mapping"
+                baseTableName="n_permission_group_mapping"
                 baseColumnNames="permission_id"
-                constraintName="fk_permission_group_mapping_permission"
-                referencedTableName="permissions"
+                constraintName="fk_n_permission_group_mapping_permission"
+                referencedTableName="n_permissions"
                 referencedColumnNames="id"/>
 
         <addForeignKeyConstraint
-                baseTableName="permission_group_mapping"
+                baseTableName="n_permission_group_mapping"
                 baseColumnNames="permission_group_id"
-                constraintName="fk_permission_group_mapping_permission_group"
-                referencedTableName="permission_group"
+                constraintName="fk_n_permission_group_mapping_permission_group"
+                referencedTableName="n_permission_group"
                 referencedColumnNames="id"/>
 
         <addForeignKeyConstraint
-                baseTableName="role_permission_group_mapping"
-                baseColumnNames="role_id"
-                constraintName="fk_role_permission_group_mapping_role"
-                referencedTableName="roles"
-                referencedColumnNames="id"/>
-
-        <addForeignKeyConstraint
-                baseTableName="role_permission_group_mapping"
+                baseTableName="n_role_permission_group_mapping"
                 baseColumnNames="permission_group_id"
-                constraintName="fk_role_permission_group_mapping_permission_group"
-                referencedTableName="permission_group"
+                constraintName="fk_n_role_permission_group_mapping_permission_group"
+                referencedTableName="n_permission_group"
                 referencedColumnNames="id"/>
 
         <addForeignKeyConstraint
-                baseTableName="role_permission_mapping"
-                baseColumnNames="role_id"
-                constraintName="fk_role_permission_mapping_role"
-                referencedTableName="roles"
-                referencedColumnNames="id"/>
-
-        <addForeignKeyConstraint
-                baseTableName="role_permission_mapping"
+                baseTableName="n_role_permission_mapping"
                 baseColumnNames="permission_id"
-                constraintName="fk_role_permission_mapping_permission"
-                referencedTableName="permissions"
+                constraintName="fk_n_role_permission_mapping_permission"
+                referencedTableName="n_permissions"
                 referencedColumnNames="id"/>
+
+        <!-- Add unique constraints -->
+        <addUniqueConstraint
+                tableName="n_role_permission_group_mapping"
+                columnNames="role, permission_group_id"
+                constraintName="uk_n_role_permission_group_mapping_role_group"/>
+
+        <addUniqueConstraint
+                tableName="n_role_permission_mapping"
+                columnNames="role, permission_id"
+                constraintName="uk_n_role_permission_mapping_role_permission"/>
 
         <!-- Create indexes -->
-        <createIndex tableName="role_permission_group_mapping" indexName="idx_role_permission_group_mapping_role_id">
-            <column name="role_id"/>
+        <createIndex tableName="n_role_permission_group_mapping" indexName="idx_n_role_permission_group_mapping_role">
+            <column name="role"/>
         </createIndex>
 
-        <createIndex tableName="role_permission_group_mapping" indexName="idx_role_permission_group_mapping_group_id">
+        <createIndex tableName="n_role_permission_group_mapping" indexName="idx_n_role_permission_group_mapping_group_id">
             <column name="permission_group_id"/>
         </createIndex>
 
-        <createIndex tableName="role_permission_mapping" indexName="idx_role_permission_mapping_role_id">
-            <column name="role_id"/>
+        <createIndex tableName="n_role_permission_mapping" indexName="idx_n_role_permission_mapping_role">
+            <column name="role"/>
         </createIndex>
 
-        <createIndex tableName="role_permission_mapping" indexName="idx_role_permission_mapping_permission_id">
+        <createIndex tableName="n_role_permission_mapping" indexName="idx_n_role_permission_mapping_permission_id">
             <column name="permission_id"/>
         </createIndex>
     </changeSet>

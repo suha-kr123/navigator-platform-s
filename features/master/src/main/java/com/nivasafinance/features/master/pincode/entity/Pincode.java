@@ -12,10 +12,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
-import java.util.UUID;
-
 @Entity
-@Table(name = "master_pincode")
+@Table(name = "n_master_pincode")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -23,9 +21,8 @@ import java.util.UUID;
 public class Pincode extends AuditableEntity {
     
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(columnDefinition = "UUID")
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
     
     @Column(name = "pincode", nullable = false, length = 10)
     private String pincode;

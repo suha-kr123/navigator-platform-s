@@ -3,6 +3,8 @@ package com.nivasafinance.features.rolemanagement.permissionchecker.impl;
 import com.nivasafinance.features.rolemanagement.enums.ActionEnum;
 import com.nivasafinance.features.rolemanagement.enums.ModuleEnum;
 import com.nivasafinance.features.rolemanagement.enums.OperationsEnum;
+import com.nivasafinance.features.rolemanagement.enums.Role;
+import com.nivasafinance.features.rolemanagement.permission.dto.PermissionResponse;
 import com.nivasafinance.features.rolemanagement.permission.service.PermissionReadService;
 import com.nivasafinance.features.rolemanagement.permissionchecker.PermissionCheckerService;
 import com.nivasafinance.features.rolemanagement.role.service.UserRoleService;
@@ -24,8 +26,12 @@ public class PermissionCheckerServiceImpl implements PermissionCheckerService {
         if (roles.isEmpty()) {
             return false;
         }
+
+        if(roles.contains(Role.ADMIN.name())){ // ADMIN will have all permissions
+            return true;
+        }
         
-        List<com.nivasafinance.features.rolemanagement.permission.dto.PermissionResponse> permissions = 
+        List<PermissionResponse> permissions =
                 permissionReadService.getPermissionsByRoles(roles);
         
         return permissions.stream()

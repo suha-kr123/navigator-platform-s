@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1763294995000_77" author="system" context="default">
+        <insert tableName="n_user_role_mapping">
+            <column name="username" value="appuser"/>
+            <column name="role" value="ADMIN"/>
+            <column name="is_primary" value="true"/>
+        </insert>
+        
+    </changeSet>
+
+</databaseChangeLog>

@@ -4,6 +4,7 @@ import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationInfo;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.features.leadactivity.dto.LeadActivityResponse;
+import com.nivasafinance.features.leadactivity.entity.LeadActivity;
 import com.nivasafinance.features.leadactivity.enums.ResourceAction;
 import com.nivasafinance.features.leadactivity.enums.ResourceEnum;
 import lombok.AllArgsConstructor;
@@ -23,6 +24,7 @@ import java.util.UUID;
 public class LeadActivityRepositoryWrapper {
 
     private final JdbcTemplate jdbcTemplate;
+    private final LeadActivityRepository leadActivityRepository;
 
     private static final String BASE_SELECT_QUERY = """
             SELECT
@@ -42,6 +44,14 @@ public class LeadActivityRepositoryWrapper {
             """;
 
     private static final String BASE_COUNT_QUERY = "SELECT COUNT(*) FROM n_lead_activity WHERE lead_id = ?";
+
+    public LeadActivity saveWithException(LeadActivity leadActivity){
+        try {
+            return leadActivityRepository.save(leadActivity);
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Failed to Save lead Activity", e);
+        }
+    }
 
     public PaginatedResponse<LeadActivityResponse> findAllByLeadIdentifierWithException(
             Long leadId, PaginationRequest paginationRequest) {

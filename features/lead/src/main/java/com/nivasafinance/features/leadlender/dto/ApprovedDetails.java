@@ -16,6 +16,8 @@ public class ApprovedDetails {
     private BigDecimal approvedAmount;
     
     private BigDecimal roi;
+
+    private BigDecimal emi;
     
     private Integer tenureValue;
     
@@ -28,5 +30,7 @@ public class ApprovedDetails {
     private LocalDate sanctionExpiry;
     
     private BigDecimal insuranceFees;
+
+    private BigDecimal otherFees;
 }
 

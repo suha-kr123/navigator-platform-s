@@ -9,7 +9,6 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.UUID;
 
 @Service
 public class MasterCodeValueRepositoryWrapper {
@@ -34,7 +33,7 @@ public class MasterCodeValueRepositoryWrapper {
         }
     }
     
-    public MasterCodeValue findByIdWithException(UUID id) {
+    public MasterCodeValue findByIdWithException(Long id) {
         try {
             return masterCodeValueRepository.findById(id).orElseThrow(() ->
                     codeMasterExceptionFactory.notFoundById(id, messageSource));
@@ -90,7 +89,7 @@ public class MasterCodeValueRepositoryWrapper {
         }
     }
     
-    public void deleteByIdWithException(UUID id) {
+    public void deleteByIdWithException(Long id) {
         if (!masterCodeValueRepository.existsById(id)) {
             throw codeMasterExceptionFactory.notFoundById(id, messageSource);
         }

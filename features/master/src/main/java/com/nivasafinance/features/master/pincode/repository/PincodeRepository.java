@@ -6,11 +6,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.UUID;
 
 @Repository
 @JaversSpringDataAuditable
-public interface PincodeRepository extends JpaRepository<Pincode, UUID> {
+public interface PincodeRepository extends JpaRepository<Pincode, Long> {
     List<Pincode> findAllByPincode(String pincode);
 }
 

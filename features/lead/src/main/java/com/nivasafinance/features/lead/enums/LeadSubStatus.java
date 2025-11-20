@@ -6,6 +6,7 @@ import lombok.Getter;
 public enum LeadSubStatus {
 
     ONHOLD(1L, "ONHOLD", "ONHOLD"),
+    DROPOFF(2L, "DROP_OFF", "DROPOFF"),
     ;
 
     private final Long id;

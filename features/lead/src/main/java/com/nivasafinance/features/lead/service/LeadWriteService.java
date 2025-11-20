@@ -3,6 +3,7 @@ package com.nivasafinance.features.lead.service;
 import com.nivasafinance.features.lead.dto.CreateLeadRequest;
 import com.nivasafinance.features.lead.dto.CreateLeadResponse;
 import com.nivasafinance.features.lead.dto.CreateTrancheRequest;
+import com.nivasafinance.features.lead.dto.DropoffLeadRequest;
 import com.nivasafinance.features.lead.dto.OnholdLeadRequest;
 import com.nivasafinance.features.lead.dto.RejectLeadRequest;
 import com.nivasafinance.features.lead.dto.UpdateCreditDetailsRequest;
@@ -36,4 +37,5 @@ public interface LeadWriteService {
     void completeLead(UUID leadIdentifier);
     void onholdLead(UUID leadIdentifier, OnholdLeadRequest request);
     void resumeLead(UUID leadIdentifier);
+    void dropoffLead(UUID leadIdentifier, DropoffLeadRequest request);
 }

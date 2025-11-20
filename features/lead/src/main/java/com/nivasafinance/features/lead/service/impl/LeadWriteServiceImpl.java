@@ -1,6 +1,11 @@
 package com.nivasafinance.features.lead.service.impl;
 
 import com.nivasafinance.common.context.UserContext;
+import com.nivasafinance.common.events.BusinessEvent;
+import com.nivasafinance.common.events.SystemEvent;
+import com.nivasafinance.common.events.payload.LeadCreationEventPayload;
+import com.nivasafinance.common.events.payload.LeadStatusChangeEventPayload;
+import com.nivasafinance.common.events.payload.LeadUpdateEventPayload;
 import com.nivasafinance.common.dto.AddressData;
 import com.nivasafinance.common.exception.BadRequestException;
 import com.nivasafinance.features.address.service.AddressDataService;
@@ -12,7 +17,9 @@ import com.nivasafinance.features.lead.enums.LeadSubStatus;
 import com.nivasafinance.features.lead.exception.ActiveLeadAlreadyExistsException;
 import com.nivasafinance.features.lead.repository.ContactRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
+import com.nivasafinance.features.lead.service.LeadContactWriteService;
 import com.nivasafinance.features.lead.service.LeadWriteService;
+import com.nivasafinance.features.master.codemaster.SystemControlledMasterCodes;
 import com.nivasafinance.features.master.codemaster.service.CodeValueMasterService;
 import com.nivasafinance.features.master.products.service.ProductReadService;
 import com.nivasafinance.features.person.dto.PersonCreateRequest;
@@ -26,6 +33,7 @@ import com.nivasafinance.features.sourcechannel.dto.SourcingChannelResponse;
 import com.nivasafinance.features.sourcechannel.service.SourcingChannelWriteService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,14 +53,14 @@ import static com.nivasafinance.features.master.codemaster.SystemControlledMaste
 public class LeadWriteServiceImpl implements LeadWriteService {
 
     private final LeadRepositoryWrapper leadRepositoryWrapper;
-    private final ContactRepositoryWrapper contactRepositoryWrapper;
-    private final PersonWriteService personWriteService;
     private final PersonRepositoryWrapper personRepositoryWrapper;
     private final MessageSource messageSource;
     private final AddressDataService addressDataService;
     private final SourcingChannelWriteService sourcingChannelWriteService;
     private final ProductReadService productReadService;
     private final CodeValueMasterService codeValueMasterService;
+    private final ApplicationEventPublisher applicationEventPublisher;
+    private final LeadContactWriteService contactWriteService;
 
 
     @Override
@@ -66,16 +74,6 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         // Check if active lead already exists with this phone number
         checkForActiveLead(request);
 
-        PersonCreateRequest personCreateRequest = getPersonCreateRequest(request);
-
-        PersonCreateResponse personResponse = personWriteService.createPerson(personCreateRequest);
-
-        // Create contact
-        Contact contact = new Contact();
-        contact.setIdentifier(UUID.randomUUID());
-        contact.setPersonId(personResponse.getId());
-        Contact savedContact = contactRepositoryWrapper.saveWithException(contact);
-
         // Create lead
         Lead lead = new Lead();
         lead.setLeadIdentifier(UUID.randomUUID());
@@ -88,13 +86,23 @@ public class LeadWriteServiceImpl implements LeadWriteService {
             lead.setOfficeKey("HQ"); //always goes to HQ for now
         }
 
-        // Set contact to lead
-        lead.setContacts(List.of(savedContact.getId()));
-
         Lead savedLead = leadRepositoryWrapper.saveWithException(lead);
 
-        // event publisher to start the workflow
-        // TODO: to be done by Disha S K after the business event is implemented
+        CreateLeadContactRequest contactPersonDetails = CreateLeadContactRequest
+                .builder()
+                .contactPersonDetails(LeadContactPersonDetails
+                        .builder()
+                        .mobileNumbers(List.of(MobileNumberDetails.builder()
+                                .number(request.getPhoneNumber().getMobileNumber())
+                                .isWhatsappAvailable(request.getPhoneNumber().isWhatsapp())
+                                .isPrimary(true)
+                                .build()))
+                        .build())
+                .build();
+
+        contactWriteService.createContact(savedLead.getLeadIdentifier(), contactPersonDetails);
+
+        publishLeadCreatedEvent(savedLead, request);
 
         return new CreateLeadResponse(savedLead.getLeadIdentifier());
     }
@@ -135,6 +143,25 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         lead.setOtherDetails(otherDetails);
 
         leadRepositoryWrapper.saveWithException(lead);
+
+        // Publish event
+        publishLeadUpdatedEvent(lead);
+    }
+
+    private void publishLeadCreatedEvent(Lead lead, CreateLeadRequest request) {
+        String mobileNumber = request.getPhoneNumber() != null
+                ? request.getPhoneNumber().getMobileNumber()
+                : null;
+
+        LeadCreationEventPayload payload = LeadCreationEventPayload.builder()
+                .id(lead.getId())
+                .leadId(lead.getLeadIdentifier())
+                .mobileNumber(mobileNumber)
+                .build();
+
+        applicationEventPublisher.publishEvent(
+                new SystemEvent<>(BusinessEvent.LEAD_CREATED.toString(), payload)
+        );
     }
 
     @Override
@@ -147,8 +174,20 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     @Transactional
     public void updatePreliminaryDetails(UUID leadIdentifier, UpdatePreliminaryDetailsRequest request) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
-        lead.setPreliminaryDetails(request.getPreliminaryDetails());
+        Lead.PreliminaryDetails preliminaryDetails = lead.getPreliminaryDetails();
+        if (preliminaryDetails == null) {
+            preliminaryDetails = new Lead.PreliminaryDetails();
+        }
+        if(request.getWhatsAppFormDetails() != null) {
+            preliminaryDetails.setWhatsAppDIYForm(request.getWhatsAppFormDetails());
+        }
+        preliminaryDetails.setIsWhatsAppDIYFormCompleted(request.getIsWhatsAppDIYFormCompleted());
+        preliminaryDetails.setMonthlyFamilyIncome(request.getMonthlyFamilyIncome());
+        lead.setPreliminaryDetails(preliminaryDetails);
         leadRepositoryWrapper.saveWithException(lead);
+
+        // Publish event
+        publishLeadUpdatedEvent(lead);
     }
 
     @Override
@@ -178,6 +217,9 @@ public class LeadWriteServiceImpl implements LeadWriteService {
 
         lead.setCreditRatingDetails(creditDetails);
         leadRepositoryWrapper.saveWithException(lead);
+
+        // Publish event
+        publishLeadUpdatedEvent(lead);
     }
 
     @Override
@@ -198,6 +240,9 @@ public class LeadWriteServiceImpl implements LeadWriteService {
 
         lead.setProposedDetails(proposedDetails);
         leadRepositoryWrapper.saveWithException(lead);
+
+        // Publish event
+        publishLeadUpdatedEvent(lead);
     }
 
     @Override
@@ -223,6 +268,9 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         otherDetails.setPropertyDetails(propertyDetails);
         lead.setOtherDetails(otherDetails);
         leadRepositoryWrapper.saveWithException(lead);
+
+        // Publish event
+        publishLeadUpdatedEvent(lead);
     }
 
     private PersonCreateRequest getPersonCreateRequest(CreateLeadRequest request) {
@@ -273,6 +321,9 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         }
 
         leadRepositoryWrapper.saveWithException(lead);
+
+        // Publish event
+        publishLeadUpdatedEvent(lead);
     }
 
     @Override
@@ -302,6 +353,9 @@ public class LeadWriteServiceImpl implements LeadWriteService {
 
         lead.setDisbursementDetails(disbursementDetails);
         leadRepositoryWrapper.saveWithException(lead);
+
+        // Publish event
+        publishLeadUpdatedEvent(lead);
     }
 
     @Override
@@ -332,6 +386,9 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         disbursementDetails.setTranches(tranches);
         lead.setDisbursementDetails(disbursementDetails);
         leadRepositoryWrapper.saveWithException(lead);
+
+        // Publish event
+        publishLeadUpdatedEvent(lead);
     }
 
     @Override
@@ -356,6 +413,9 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         tranche.setDate(request.getDate());
 
         leadRepositoryWrapper.saveWithException(lead);
+
+        // Publish event
+        publishLeadUpdatedEvent(lead);
     }
 
     @Override
@@ -378,6 +438,9 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         }
 
         leadRepositoryWrapper.saveWithException(lead);
+
+        // Publish event
+        publishLeadUpdatedEvent(lead);
     }
 
     @Override
@@ -393,6 +456,8 @@ public class LeadWriteServiceImpl implements LeadWriteService {
 
         // Store reason code if provided
         if (request.getReasonCode() != null) {
+            //validate reason
+            codeValueMasterService.getCodeValueByKeyAndCodeKey(request.getReasonCode(), SystemControlledMasterCodes.LEAD_REJECT_REASON_MASTER);
             Lead.ReasonDetails reasons = lead.getReasons();
             if (reasons == null) {
                 reasons = new Lead.ReasonDetails();
@@ -413,6 +478,10 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         lead.setRejectionDetails(rejectionDetails);
 
         leadRepositoryWrapper.saveWithException(lead);
+
+        // Publish event
+        String reason = lead.getReasons() != null ? lead.getReasons().getReject() : null;
+        publishLeadStatusChangeEvent(lead, BusinessEvent.LEAD_REJECTED, reason);
     }
 
     @Override
@@ -428,6 +497,8 @@ public class LeadWriteServiceImpl implements LeadWriteService {
 
         // Store reason code if provided
         if (request.getReasonCode() != null) {
+            //validate reason
+            codeValueMasterService.getCodeValueByKeyAndCodeKey(request.getReasonCode(), SystemControlledMasterCodes.LEAD_WITHDRAWAL_REASON_MASTER);
             Lead.ReasonDetails reasons = lead.getReasons();
             if (reasons == null) {
                 reasons = new Lead.ReasonDetails();
@@ -448,6 +519,10 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         lead.setWithdrawnDetails(withdrawnDetails);
 
         leadRepositoryWrapper.saveWithException(lead);
+
+        // Publish event
+        String reason = lead.getReasons() != null ? lead.getReasons().getWithdrawn() : null;
+        publishLeadStatusChangeEvent(lead, BusinessEvent.LEAD_WITHDRAWN, reason);
     }
 
     @Override
@@ -464,6 +539,9 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         lead.setStatus(LeadStatus.COMPLETED);
 
         leadRepositoryWrapper.saveWithException(lead);
+
+        // Publish event
+        publishLeadStatusChangeEvent(lead, BusinessEvent.LEAD_COMPLETED, null);
     }
 
     @Override
@@ -481,6 +559,8 @@ public class LeadWriteServiceImpl implements LeadWriteService {
 
         // Store reason code if provided
         if (request.getReasonCode() != null) {
+            //validate reason
+            codeValueMasterService.getCodeValueByKeyAndCodeKey(request.getReasonCode(), SystemControlledMasterCodes.LEAD_DROPOFF_REASON_MASTER);
             Lead.ReasonDetails reasons = lead.getReasons();
             if (reasons == null) {
                 reasons = new Lead.ReasonDetails();
@@ -490,17 +570,16 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         }
 
         leadRepositoryWrapper.saveWithException(lead);
+
+        // Publish event
+        String reason = lead.getReasons() != null ? lead.getReasons().getOnhold() : null;
+        publishLeadStatusChangeEvent(lead, BusinessEvent.LEAD_ON_HOLD, reason);
     }
 
     @Override
     @Transactional
     public void resumeLead(UUID leadIdentifier) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
-
-        // Validate lead is on hold
-        if (!LeadSubStatus.ONHOLD.equals(lead.getSubstatus())) {
-            throw new BadRequestException("Cannot resume lead, lead is not on hold");
-        }
 
         // Clear substatus to resume lead
         lead.setSubstatus(null);
@@ -513,6 +592,74 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         }
 
         leadRepositoryWrapper.saveWithException(lead);
+
+        // Publish event
+        publishLeadStatusChangeEvent(lead, BusinessEvent.LEAD_RESUMED, null);
+    }
+
+    @Override
+    @Transactional
+    public void dropoffLead(UUID leadIdentifier, DropoffLeadRequest request) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+
+        // Validate lead is not rejected or withdrawn
+        if (!LeadStatus.ACTIVE.equals(lead.getStatus())) {
+            throw new BadRequestException("Only Active Lead can be put on dropoff");
+        }
+
+        // Set substatus to DROPOFF (keep current status)
+        lead.setSubstatus(LeadSubStatus.DROPOFF);
+
+        // Store reason code if provided
+        if (request.getReasonCode() != null) {
+            //validate reason
+            codeValueMasterService.getCodeValueByKeyAndCodeKey(request.getReasonCode(), SystemControlledMasterCodes.LEAD_DROPOFF_REASON_MASTER);
+            Lead.ReasonDetails reasons = lead.getReasons();
+            if (reasons == null) {
+                reasons = new Lead.ReasonDetails();
+            }
+            reasons.setDropoff(request.getReasonCode());
+            lead.setReasons(reasons);
+        }
+
+        Lead.DropoffDetails dropoffDetails = lead.getDropoffDetails();
+        if (dropoffDetails == null) {
+            dropoffDetails = new Lead.DropoffDetails();
+        }
+
+        dropoffDetails.setDropoffDate(LocalDateTime.now());
+        dropoffDetails.setDropoffBy(UserContext.getUsername());
+
+        lead.setDropoffDetails(dropoffDetails);
+
+        leadRepositoryWrapper.saveWithException(lead);
+
+        // Publish event
+        String reason = lead.getReasons() != null ? lead.getReasons().getDropoff() : null;
+        publishLeadStatusChangeEvent(lead, BusinessEvent.LEAD_DROPOFF, reason);
+    }
+
+    private void publishLeadStatusChangeEvent(Lead lead, BusinessEvent event, String reason) {
+        LeadStatusChangeEventPayload payload = LeadStatusChangeEventPayload.builder()
+                .leadId(lead.getId())
+                .leadIdentifier(lead.getLeadIdentifier())
+                .reason(reason)
+                .build();
+
+        applicationEventPublisher.publishEvent(
+                new SystemEvent<>(event.toString(), payload)
+        );
+    }
+
+    private void publishLeadUpdatedEvent(Lead lead) {
+        LeadUpdateEventPayload payload = LeadUpdateEventPayload.builder()
+                .leadId(lead.getId())
+                .leadIdentifier(lead.getLeadIdentifier())
+                .build();
+
+        applicationEventPublisher.publishEvent(
+                new SystemEvent<>(BusinessEvent.LEAD_UPDATED.toString(), payload)
+        );
     }
 
     private void checkForActiveLead(CreateLeadRequest request) {

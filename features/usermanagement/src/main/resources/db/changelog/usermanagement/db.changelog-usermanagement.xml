@@ -5,7 +5,7 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
-    <include file="db/changelog/usermanagement/tables/V1759332519000_10__create_user_table.xml"/>
+    <includeAll path="classpath:db/changelog/usermanagement/tables"/>
 
 </databaseChangeLog>
 

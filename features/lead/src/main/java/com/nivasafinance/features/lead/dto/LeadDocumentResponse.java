@@ -1,6 +1,8 @@
 package com.nivasafinance.features.lead.dto;
 
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
+import com.nivasafinance.features.master.codemaster.dto.MasterCodeResponse;
+import jdk.jfr.Category;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,6 +21,7 @@ public class LeadDocumentResponse {
     private String name;
     private String type;
     private Long size;
+    private List<MasterCodeResponse> categories;
     private List<CodeValueResponse> tags;
     private LocalDateTime createdAt;
     private String createdBy;

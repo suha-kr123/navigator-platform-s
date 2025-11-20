@@ -5,10 +5,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.UUID;
 
 @Repository
-public interface RolePermissionGroupMappingRepository extends JpaRepository<RolePermissionGroupMapping, UUID> {
-    List<RolePermissionGroupMapping> findByRoleIdIn(List<UUID> roleIds);
+public interface RolePermissionGroupMappingRepository extends JpaRepository<RolePermissionGroupMapping, Long> {
+    List<RolePermissionGroupMapping> findByRoleIn(List<String> roles);
 }
 

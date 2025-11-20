@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,6 +30,11 @@ public class OfficeReadServiceImpl implements OfficeReadService {
     public OfficeResponse getOfficeByKey(String key) {
         Office entity = findOfficeByKey(key);
         return toResponse(entity);
+    }
+
+    @Override
+    public List<OfficeResponse> getOfficeByKeys(List<String> keys) {
+       return keys.stream().map(this::findOfficeByKey).map(this::toResponse).collect(Collectors.toList());
     }
 
     @Override

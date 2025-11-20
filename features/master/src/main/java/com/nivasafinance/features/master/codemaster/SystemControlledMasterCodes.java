@@ -11,6 +11,7 @@ public final class SystemControlledMasterCodes {
     public static final String LEAD_REJECT_REASON_MASTER = "LEAD_REJECT_REASON_MASTER";
     public static final String LEAD_WITHDRAWAL_REASON_MASTER = "LEAD_WITHDRAWAL_REASON_MASTER";
     public static final String LEAD_ONHOLD_REASON_MASTER = "LEAD_ONHOLD_REASON_MASTER";
+    public static final String LEAD_DROPOFF_REASON_MASTER = "LEAD_DROPOFF_REASON_MASTER";
     public static final String LEAD_PURPOSE_MASTER = "LEAD_PURPOSE_MASTER";
     
     public static final String LEAD_OCCUPATION_PROFILE_MASTER = "LEAD_OCCUPATION_PROFILE_MASTER";

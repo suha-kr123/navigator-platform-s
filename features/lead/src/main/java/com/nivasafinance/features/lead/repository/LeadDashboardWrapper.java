@@ -6,9 +6,14 @@ import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.features.lead.dto.LeadDashboardFilters;
 import com.nivasafinance.features.lead.dto.LeadDashboardResponse;
 import com.nivasafinance.features.lead.enums.LeadStatus;
+import com.nivasafinance.features.lead.enums.LeadSubStatus;
 import com.nivasafinance.features.master.codemaster.SystemControlledMasterCodes;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import com.nivasafinance.features.master.codemaster.service.CodeValueMasterService;
+import com.nivasafinance.features.offices.dto.OfficeResponse;
+import com.nivasafinance.features.offices.service.OfficeReadService;
+import com.nivasafinance.features.staff.service.StaffReadService;
+import lombok.AllArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
@@ -26,8 +31,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
+@AllArgsConstructor
 public class LeadDashboardWrapper {
 
     private static final Map<String, String> SORTABLE_COLUMNS;
@@ -40,11 +47,8 @@ public class LeadDashboardWrapper {
 
     private final JdbcTemplate jdbcTemplate;
     private final CodeValueMasterService codeValueMasterService;
-
-    public LeadDashboardWrapper(JdbcTemplate jdbcTemplate, CodeValueMasterService codeValueMasterService) {
-        this.jdbcTemplate = jdbcTemplate;
-        this.codeValueMasterService = codeValueMasterService;
-    }
+    private final StaffReadService staffReadService;
+    private final OfficeReadService officeReadService;
 
     public PaginatedResponse<LeadDashboardResponse> findLeadDashboard(
             PaginationRequest paginationRequest,
@@ -53,22 +57,25 @@ public class LeadDashboardWrapper {
         PaginationRequest effectivePagination = paginationRequest != null ? paginationRequest : new PaginationRequest();
         LeadDashboardFilters effectiveFilters = filters != null ? filters : new LeadDashboardFilters();
 
+        String currentUserOfficeKey = staffReadService.getCurrentStaff().getOfficeKey();
+        String currentUserOfficeCode = officeReadService.getOfficeByKey(currentUserOfficeKey).getCode();
+
         List<Object> queryParams = new ArrayList<>();
         StringBuilder whereClause = new StringBuilder(" WHERE 1=1 ");
 
+        // Always apply office hierarchy filter first
+        appendOfficeHierarchyFilter(currentUserOfficeCode, whereClause, queryParams);
+
         appendOwnerFilter(effectiveFilters, whereClause, queryParams);
         appendStatusFilter(effectiveFilters, whereClause, queryParams);
-        appendBranchFilter(effectiveFilters, whereClause, queryParams);
+        appendSubstatusFilter(effectiveFilters, whereClause, queryParams);
+        appendBranchFilter(effectiveFilters, currentUserOfficeCode, whereClause, queryParams);
         appendAmountFilter(effectiveFilters, whereClause, queryParams);
         appendLeadCreatedDateFilter(effectiveFilters, whereClause, queryParams);
         appendActivityDateFilter(effectiveFilters, whereClause, queryParams);
         appendActivityUpdatedByFilter(effectiveFilters, whereClause, queryParams);
 
         String fromClause = baseFromClause();
-
-        /*if (Boolean.TRUE.equals(effectiveFilters.getLeadThroughAdvisors())) {
-            whereClause.append(" AND advisor_mapping.advisor_id IS NOT NULL ");
-        }*/ //todo handle advisor
 
         String sortColumn = resolveSortColumn(effectivePagination.getSortBy());
         String sortDirection = resolveSortDirection(effectivePagination.getSortDirection());
@@ -81,24 +88,8 @@ public class LeadDashboardWrapper {
                                      l.lead_identifier                           AS lead_identifier,
                                      l.requested_amount                          AS requested_amount,
                                      prod.name                                   AS product_name,
-                                     COALESCE(
-                                         decision_maker_person.display_name,
-                                         fallback_contact_person.display_name
-                                     )                                           AS primary_person_name,
-                                     COALESCE(
-                                         (
-                                             SELECT mn->>'number'
-                                             FROM jsonb_array_elements(COALESCE(decision_maker_person.mobile_numbers, '[]'::jsonb)) mn
-                                             WHERE (mn->>'isPrimary')::boolean = true
-                                             LIMIT 1
-                                         ),
-                                         (
-                                             SELECT mn->>'number'
-                                             FROM jsonb_array_elements(COALESCE(fallback_contact_person.mobile_numbers, '[]'::jsonb)) mn
-                                             WHERE (mn->>'isPrimary')::boolean = true
-                                             LIMIT 1
-                                         )
-                                     )                                           AS primary_person_number,
+                                     primary_contact_person.display_name         AS primary_person_name,
+                                     (jsonb_path_query_first(COALESCE(primary_contact_person.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') AS primary_person_number,
                                      o.name                                      AS office_name,
                                      l.owner                                     AS owner_username,
                                      l.status                                    AS lead_status,
@@ -106,11 +97,21 @@ public class LeadDashboardWrapper {
                                      l.updated_at                   AS last_activity_at,
                                      l.updated_by                   AS last_activity_by,
                                      lead_owner_person.display_name              AS lead_owner_name,
-                                     latest_note.content                         AS note_content,
+                                     advisor_person.display_name                 AS advisor_name,
+                                     (jsonb_path_query_first(COALESCE(advisor_person.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') AS advisor_number,
                                      (l.other_details->>'preferredCallStartTime')::time AS preferred_call_start_time,
                                      (l.other_details->>'preferredCallEndTime')::time   AS preferred_call_end_time,
                                      l.other_details->>'priority'                       AS priority_key,
-                                     partners.partner_names                             AS partners
+                                     partners.partner_names                             AS partners,
+                                     l.substatus                                        AS substatus,
+                                     COALESCE(jsonb_array_length(COALESCE(l.call_logs, '[]'::jsonb)), 0) AS number_of_calls,
+                                     latest_call.direction                              AS last_call_direction,
+                                     latest_call.status                                 AS last_call_status,
+                                     latest_call.created_at                             AS last_call_date,
+                                     l.reasons->>'onhold'                               AS onhold_reason_key,
+                                     (l.onhold_details->>'onHoldMovementDate')::timestamp AS onhold_date,
+                                     o.code                                             AS office_code,
+                                     sourcing_channel.sourcing_channel_name             AS sourcing_channel_name
                                  """ + fromClause + whereClause +
                          " ORDER BY " + sortColumn + " " + sortDirection +
                          " LIMIT ? OFFSET ?";
@@ -143,8 +144,18 @@ public class LeadDashboardWrapper {
 
     private void appendOwnerFilter(LeadDashboardFilters filters, StringBuilder whereClause, List<Object> params) {
         if (!CollectionUtils.isEmpty(filters.getLeadOwner())) {
-            whereClause.append(" AND l.owner IN (").append(createPlaceholders(filters.getLeadOwner().size())).append(") ");
-            params.addAll(filters.getLeadOwner());
+            List<String> owners = new ArrayList<>(filters.getLeadOwner());
+            boolean includeUnassigned = owners.remove("UNASSIGNED");
+
+            if (!owners.isEmpty() && includeUnassigned) {
+                whereClause.append(" AND (l.owner IN (").append(createPlaceholders(owners.size())).append(") OR l.owner IS NULL) ");
+                params.addAll(owners);
+            } else if (!owners.isEmpty()) {
+                whereClause.append(" AND l.owner IN (").append(createPlaceholders(owners.size())).append(") ");
+                params.addAll(owners);
+            } else if (includeUnassigned) {
+                whereClause.append(" AND l.owner IS NULL ");
+            }
         }
     }
 
@@ -162,10 +173,33 @@ public class LeadDashboardWrapper {
         }
     }
 
-    private void appendBranchFilter(LeadDashboardFilters filters, StringBuilder whereClause, List<Object> params) {
+    private void appendOfficeHierarchyFilter(String currentOfficeCode, StringBuilder whereClause, List<Object> params) {
+        whereClause.append(" AND o.code LIKE ? ");
+        params.add(currentOfficeCode + "%");
+    }
+
+    private void appendSubstatusFilter(LeadDashboardFilters filters, StringBuilder whereClause, List<Object> params) {
+        if (!CollectionUtils.isEmpty(filters.getSubstatus())) {
+            List<String> normalizedSubstatuses = filters.getSubstatus()
+                    .stream()
+                    .filter(Objects::nonNull)
+                    .map(substatus -> substatus.toUpperCase(Locale.ROOT))
+                    .toList();
+            if (!normalizedSubstatuses.isEmpty()) {
+                whereClause.append(" AND l.substatus IN (").append(createPlaceholders(normalizedSubstatuses.size())).append(") ");
+                params.addAll(normalizedSubstatuses);
+            }
+        }
+    }
+
+    private void appendBranchFilter(LeadDashboardFilters filters, String currentOfficeCode, StringBuilder whereClause, List<Object> params) {
         if (!CollectionUtils.isEmpty(filters.getBranch())) {
-            whereClause.append(" AND l.office_key IN (").append(createPlaceholders(filters.getBranch().size())).append(") ");
-            params.addAll(filters.getBranch());
+            // Validate branch offices are within hierarchy
+            List<String> validatedBranches = officeReadService.getOfficeByKeys(filters.getBranch()).stream().filter(branch -> branch.getCode().startsWith(currentOfficeCode)).map(OfficeResponse::getKey).toList();
+            if (!validatedBranches.isEmpty()) {
+                whereClause.append(" AND l.office_key IN (").append(createPlaceholders(validatedBranches.size())).append(") ");
+                params.addAll(validatedBranches);
+            }
         }
     }
 
@@ -230,30 +264,11 @@ public class LeadDashboardWrapper {
                 LEFT JOIN n_office o ON o.key = l.office_key
                 LEFT JOIN n_user lead_owner_user ON lead_owner_user.username = l.owner
                 LEFT JOIN n_person lead_owner_person ON lead_owner_person.id = lead_owner_user.person_id
-                LEFT JOIN LATERAL (
-                    SELECT c.id as contact_id, c.person_id
-                    FROM jsonb_array_elements(COALESCE(l.contacts, '[]'::jsonb)) AS cont
-                    JOIN n_contact c ON c.id = (cont)::bigint
-                    WHERE c.decision_maker = true
-                    LIMIT 1
-                ) decision_maker_contact ON true
-                LEFT JOIN n_person decision_maker_person ON decision_maker_contact.person_id = decision_maker_person.id
-                LEFT JOIN LATERAL (
-                    SELECT c.id as contact_id, c.person_id
-                    FROM jsonb_array_elements(COALESCE(l.contacts, '[]'::jsonb)) AS cont
-                    JOIN n_contact c ON c.id = (cont)::bigint
-                    ORDER BY cont
-                    LIMIT 1
-                ) fallback_contact ON true
-                LEFT JOIN n_person fallback_contact_person ON fallback_contact.person_id = fallback_contact_person.id
-                LEFT JOIN LATERAL (
-                    SELECT
-                        n.content
-                    FROM jsonb_array_elements_text(COALESCE(l.notes, '[]'::jsonb)) note_id
-                    JOIN n_note n ON n.id = note_id::bigint
-                    ORDER BY n.created_at DESC
-                    LIMIT 1
-                ) latest_note ON true
+                LEFT JOIN n_contact primary_contact ON primary_contact.id = (l.other_details->>'primaryContactId')::bigint
+                LEFT JOIN n_person primary_contact_person ON primary_contact.person_id = primary_contact_person.id
+                LEFT JOIN n_advisor_lead_mapping alm ON alm.lead_id = l.id
+                LEFT JOIN n_advisor advisor ON advisor.id = alm.advisor_id
+                LEFT JOIN n_person advisor_person ON advisor.person_id = advisor_person.id
                 LEFT JOIN LATERAL (
                     SELECT string_agg(lndr.name, ', ' ORDER BY lndr.name) AS partner_names
                     FROM n_lead_lender lead_lender
@@ -261,6 +276,8 @@ public class LeadDashboardWrapper {
                     WHERE lead_lender.lead_id = l.id
                       AND lead_lender.status IN ('SELECTED', 'SUBMITTED')
                 ) partners ON true
+                LEFT JOIN n_call_log latest_call ON latest_call.id = (l.other_details->>'lastCallId')::bigint
+                LEFT JOIN n_sourcing_channel_details sourcing_channel ON sourcing_channel.id = l.sourcing_channel_id
                 """;
     }
 
@@ -321,12 +338,17 @@ public class LeadDashboardWrapper {
                     .leadCreatedAt(getLocalDateTime(rs, "lead_created_at"))
                     .lastActivityDate(getLocalDateTime(rs, "last_activity_at"))
                     .lastActivityBy(rs.getString("last_activity_by"))
-                    .recentNote(rs.getString("note_content"))
-                    //todo add advisor
+                    .advisorName(rs.getString("advisor_name"))
+                    .advisorNumber(rs.getString("advisor_number"))
                     .leadOwner(rs.getString("lead_owner_name"))
                     .preferredCallStartTime(getLocalTime(rs, "preferred_call_start_time"))
                     .preferredCallEndTime(getLocalTime(rs, "preferred_call_end_time"))
-                    .partners(rs.getString("partners"));
+                    .partners(rs.getString("partners"))
+                    .numberOfCalls(rs.getLong("number_of_calls"))
+                    .lastCallDirection(rs.getString("last_call_direction"))
+                    .lastCallStatus(rs.getString("last_call_status"))
+                    .lastCallDate(getLocalDateTime(rs, "last_call_date"))
+                    .office(rs.getString("office_code"));
 
             String status = rs.getString("lead_status");
             if (status != null) {
@@ -337,13 +359,40 @@ public class LeadDashboardWrapper {
                 }
             }
 
+            String substatus = rs.getString("substatus");
+            if (substatus != null) {
+                try {
+                    builder.subStatus(LeadSubStatus.valueOf(substatus));
+                } catch (IllegalArgumentException ex) {
+                    // ignore invalid substatus values
+                }
+            }
+
             String priorityKey = rs.getString("priority_key");
             if (priorityKey != null) {
-                CodeValueResponse priority = codeValueMasterService.getCodeValueByKeyAndCodeKey(
-                        priorityKey,
-                        SystemControlledMasterCodes.LEAD_PRIORITY_MASTER
-                );
+                CodeValueResponse priority = codeValueMasterService.getByKey(priorityKey);
                 builder.priority(priority);
+            }
+
+            String onHoldReasonKey = rs.getString("onhold_reason_key");
+            if (onHoldReasonKey != null) {
+                CodeValueResponse onHoldReason = codeValueMasterService.getByKey(onHoldReasonKey);
+                builder.onHoldReason(onHoldReason);
+            }
+
+            LocalDateTime onHoldDate = getLocalDateTime(rs, "onhold_date");
+            if (onHoldDate != null) {
+                builder.onHoldDate(onHoldDate);
+            }
+
+            String sourcingChannelName = rs.getString("sourcing_channel_name");
+            if (sourcingChannelName != null) {
+                try {
+                    CodeValueResponse sourcingChannel = codeValueMasterService.getByKey(sourcingChannelName);
+                    builder.sourcingChannel(sourcingChannel);
+                } catch (Exception e) {
+                    // ignore if sourcing channel not found
+                }
             }
 
             return builder.build();

@@ -7,7 +7,6 @@ import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -16,15 +15,15 @@ public class PermissionGroupMappingRepositoryWrapper {
     private final PermissionGroupMappingRepository repository;
     private final MessageSource messageSource;
     
-    public List<PermissionGroupMapping> findByPermissionGroupIdIn(List<UUID> groupIds) {
+    public List<PermissionGroupMapping> findByPermissionGroupIdIn(List<Long> groupIds) {
         return repository.findByPermissionGroupIdIn(groupIds);
     }
     
-    public PermissionGroupMapping findById(UUID id) {
+    public PermissionGroupMapping findById(Long id) {
         return repository.findById(id).orElse(null);
     }
     
-    public PermissionGroupMapping findByIdWithException(UUID id) {
+    public PermissionGroupMapping findByIdWithException(Long id) {
         PermissionGroupMapping mapping = findById(id);
         if (mapping == null) {
             throw RoleManagementExceptionFactory.notFound("permission.group.mapping", id, messageSource);

@@ -43,5 +43,11 @@ public class StaffController {
         StaffResponse response = staffWriteService.createStaff(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+
+    @GetMapping("/me")
+    public ResponseEntity<StaffResponse> getCurrentStaff() {
+        StaffResponse staff = staffReadService.getCurrentStaff();
+        return ResponseEntity.ok(staff);
+    }
 }
 

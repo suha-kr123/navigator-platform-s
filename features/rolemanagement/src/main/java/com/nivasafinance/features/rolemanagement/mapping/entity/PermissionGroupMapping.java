@@ -12,10 +12,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
-import java.util.UUID;
-
 @Entity
-@Table(name = "permission_group_mapping")
+@Table(name = "n_permission_group_mapping")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -23,14 +21,13 @@ import java.util.UUID;
 public class PermissionGroupMapping extends AuditableEntity {
     
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(columnDefinition = "UUID")
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
     
     @Column(name = "permission_id", nullable = false)
-    private UUID permissionId;
+    private Long permissionId;
     
     @Column(name = "permission_group_id", nullable = false)
-    private UUID permissionGroupId;
+    private Long permissionGroupId;
 }
 

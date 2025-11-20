@@ -23,6 +23,7 @@ mockk = "1.13.10"
 jacoco = "0.8.11"
 # Cloud storage dependencies
 aws-java-sdk-s3 = "1.12.700"
+aws-sdk-v2-secretsmanager = "2.20.26"
 # Protobuf - patched version to fix CVE-2024-7254
 protobuf-java = "4.28.2"
 
@@ -60,6 +61,7 @@ auth0-jwt = { module = "com.auth0:java-jwt", version.ref = "java-jwt" }
 auth0-jwks = { module = "com.auth0:jwks-rsa", version.ref = "jwks-rsa" }
 # Cloud storage libraries
 aws-s3 = { module = "com.amazonaws:aws-java-sdk-s3", version.ref = "aws-java-sdk-s3" }
+aws-secretsmanager = { module = "software.amazon.awssdk:secretsmanager", version.ref = "aws-sdk-v2-secretsmanager" }
 # Protobuf - patched version to fix CVE-2024-7254
 protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf-java" }
 # Kotlin + Mockk

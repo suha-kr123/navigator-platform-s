@@ -62,6 +62,14 @@ public class StaffRepositoryWrapper {
         }
     }
 
+    public Staff findByUserIdWithException(Long userId) {
+        try {
+            return staffRepository.findByUserId(userId).orElseThrow(() -> new IllegalArgumentException("Staff not found" + userId));
+        } catch (DataAccessException ex) {
+            throw new RuntimeException("Failed to fetch staff", ex);
+        }
+    }
+
     public PaginatedResponse<Staff> findStaff(String officeKey, String nameQuery, PaginationRequest paginationRequest) {
         return executeStaffQuery(officeKey, nameQuery, paginationRequest);
     }

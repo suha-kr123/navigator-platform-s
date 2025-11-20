@@ -6,19 +6,18 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
-import java.util.UUID;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class MasterCodeWithValuesResponse {
-    private UUID id;
+    private Long id;
     private String key;
     private String name;
     private String description;
     private Boolean isSystemDefined;
-    private UUID parentId;
+    private Long parentId;
     private List<CodeValueResponse> values;
 }
 

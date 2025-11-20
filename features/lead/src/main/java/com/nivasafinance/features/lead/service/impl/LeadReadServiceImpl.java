@@ -51,6 +51,8 @@ public class LeadReadServiceImpl implements LeadReadService {
                         SystemControlledMasterCodes.LEAD_WITHDRAWAL_REASON_MASTER, true))
                 .leadOnholdReasons(codeMasterService.getAllCodeValuesByCodeKey(
                         SystemControlledMasterCodes.LEAD_ONHOLD_REASON_MASTER, true))
+                .leadDropoffReasons(codeMasterService.getAllCodeValuesByCodeKey(
+                        SystemControlledMasterCodes.LEAD_DROPOFF_REASON_MASTER, true))
                 .occupationProfiles(codeMasterService.getAllCodeValuesByCodeKey(
                         SystemControlledMasterCodes.LEAD_OCCUPATION_PROFILE_MASTER, true))
                 .roofProfiles(codeMasterService.getAllCodeValuesByCodeKey(
@@ -85,8 +87,14 @@ public class LeadReadServiceImpl implements LeadReadService {
     @Override
     public PreliminaryDetailsResponse getPreliminaryDetails(UUID leadIdentifier) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        Lead.PreliminaryDetails preliminaryDetails = lead.getPreliminaryDetails();
+        if (preliminaryDetails == null) {
+            return PreliminaryDetailsResponse.builder().build();
+        }
         return PreliminaryDetailsResponse.builder()
-                .preliminaryDetails(lead.getPreliminaryDetails())
+                .whatsAppFormDetails(preliminaryDetails.getWhatsAppDIYForm())
+                .isWhatsAppDIYFormCompleted(preliminaryDetails.getIsWhatsAppDIYFormCompleted())
+                .monthlyFamilyIncome(preliminaryDetails.getMonthlyFamilyIncome())
                 .build();
     }
 
@@ -244,5 +252,10 @@ public class LeadReadServiceImpl implements LeadReadService {
             PaginationRequest paginationRequest,
             LeadDashboardFilters filters) {
         return leadDashboardWrapper.findLeadDashboard(paginationRequest, filters);
+    }
+
+    @Override
+    public PaginatedResponse<LeadSearchResponse> searchLeads(PaginationRequest paginationRequest, LeadSearchRequest request) {
+        return leadRepositoryWrapper.searchLeadsByPhoneNumber(paginationRequest, request);
     }
 }
