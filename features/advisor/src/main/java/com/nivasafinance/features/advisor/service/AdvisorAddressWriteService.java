@@ -10,8 +10,6 @@ public interface AdvisorAddressWriteService {
     String addAddress(UUID advisorIdentifier, AddressRequest request);
 
     AddressData updateAddress(UUID advisorIdentifier, String addressId, AddressRequest request);
-
-    void deleteAddress(UUID advisorIdentifier, String addressId);
 }
 
 

@@ -55,8 +55,6 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
         advisor.setPersonId(personResponse.getId());
         advisor.setStatus(AdvisorStatus.CREATED);
 
-        advisor.setBankDetails(new ArrayList<>());
-
         Advisor savedAdvisor = advisorRepositoryWrapper.saveWithException(advisor);
 
         return savedAdvisor.getIdentifier();

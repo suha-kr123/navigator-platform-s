@@ -1,6 +1,9 @@
 package com.nivasafinance.features.person.service.impl;
 
+import com.nivasafinance.common.dto.AddressData;
+import com.nivasafinance.common.dto.AddressRequest;
 import com.nivasafinance.common.exception.BadRequestException;
+import com.nivasafinance.features.address.service.AddressDataService;
 import com.nivasafinance.features.person.dto.PersonCreateRequest;
 import com.nivasafinance.features.person.dto.PersonCreateResponse;
 import com.nivasafinance.features.person.dto.PersonUpdateRequest;
@@ -11,11 +14,15 @@ import com.nivasafinance.features.person.repository.PersonRepositoryWrapper;
 import com.nivasafinance.features.person.service.PersonWriteService;
 import lombok.AllArgsConstructor;
 import org.springframework.context.MessageSource;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @AllArgsConstructor
@@ -24,6 +31,7 @@ public class PersonWriteServiceImpl implements PersonWriteService {
 
     private final PersonRepositoryWrapper personRepositoryWrapper;
     private final MessageSource messageSource;
+    private final AddressDataService addressDataService;
 
     @Override
     public PersonCreateResponse createPerson(PersonCreateRequest request) {
@@ -127,6 +135,76 @@ public class PersonWriteServiceImpl implements PersonWriteService {
         }
         
         return !displayName.isEmpty() ? displayName.toString() : null;
+    }
+
+    @Override
+    public String addAddress(Long personId, AddressRequest request) {
+
+        if (request.getAddressType() == null) {
+            throw PersonExceptionFactory.addressTypeMandatory(messageSource);
+        } 
+
+        Person person = personRepositoryWrapper.findByIdWithException(personId);
+        List<AddressData> addresses = getAddresses(person);
+
+        AddressData addressData = buildAddressData(request, null);
+        // Ensure ID is set before adding to list
+        if (addressData.getId() == null) {
+            addressData.setId(UUID.randomUUID().toString());
+        }
+        addresses.add(addressData);
+
+        saveAddresses(person, addresses);
+
+        return addressData.getId();
+    }
+
+    @Override
+    public AddressData updateAddress(Long personId, String addressId, AddressRequest request) {
+
+
+        if (request.getAddressType() == null) {
+            throw PersonExceptionFactory.addressTypeMandatory(messageSource);
+        } 
+
+        Person person = personRepositoryWrapper.findByIdWithException(personId);
+        List<AddressData> addresses = getAddresses(person);
+
+        AddressData existing = addresses.stream()
+                .filter(address -> addressId.equals(address.getId()))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Address not found for person"));
+
+        AddressData updatedAddress = buildAddressData(request, existing.getId());
+
+        int index = addresses.indexOf(existing);
+        addresses.set(index, updatedAddress);
+
+        saveAddresses(person, addresses);
+
+        return updatedAddress;
+    }
+
+    private List<AddressData> getAddresses(Person person) {
+        List<AddressData> addresses = person.getAddress();
+        return addresses == null ? new ArrayList<>() : new ArrayList<>(addresses);
+    }
+
+    private void saveAddresses(Person person, List<AddressData> addresses) {
+        if (addresses == null || addresses.isEmpty()) {
+            person.setAddress(null);
+        } else {
+            person.setAddress(new ArrayList<>(addresses));
+        }
+        personRepositoryWrapper.saveWithException(person);
+    }
+
+    private AddressData buildAddressData(AddressRequest request, String addressId) {
+        AddressData addressData = addressDataService.createAddressData(request);
+        addressData.setId(addressId != null ? addressId : UUID.randomUUID().toString());
+        addressData.setAddressType(request.getAddressType());
+        return addressData;
     }
 }
 

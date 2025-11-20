@@ -103,11 +103,6 @@ public class AdvisorReadServiceImpl implements AdvisorReadService {
         response.setRemarks(advisor.getRemarks());
         response.setQualificationDetails(advisor.getQualificationDetails());
         response.setOtherDetails(advisor.getOtherDetails());
-        response.setCreatedAt(advisor.getCreatedAt());
-        response.setUpdatedAt(advisor.getUpdatedAt());
-        response.setCreatedBy(advisor.getCreatedBy());
-        response.setUpdatedBy(advisor.getUpdatedBy());
-        response.setVersion(advisor.getVersion());
         return response;
     }
 }
