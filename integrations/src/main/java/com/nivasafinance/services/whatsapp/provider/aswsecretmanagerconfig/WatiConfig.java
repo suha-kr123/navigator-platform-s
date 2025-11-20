@@ -1,4 +1,4 @@
-package com.nivasafinance.common.awssecretmanager.config;
+package com.nivasafinance.services.whatsapp.provider.aswsecretmanagerconfig;
 
 import com.nivasafinance.common.awssecretmanager.service.SecretManagerService;
 import jakarta.annotation.PostConstruct;
@@ -18,7 +18,7 @@ public class WatiConfig {
 
     @PostConstruct
     public void init() {
-        this.watiSecrets = secretManagerService.getSecret("WATI2");
+        this.watiSecrets = secretManagerService.getSecret("CUSTOMER_WATI_2");
     }
 
     public String getApiKey() {
