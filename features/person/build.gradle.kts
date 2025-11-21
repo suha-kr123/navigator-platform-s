@@ -8,7 +8,7 @@ plugins {
 
 dependencies {
     implementation(project(":features:address"))
-
+    implementation(project(":features:identifier"))
 }
 
 springBoot {

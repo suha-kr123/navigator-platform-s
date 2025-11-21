@@ -2,6 +2,8 @@ package com.nivasafinance.features.person.service.impl;
 
 import com.nivasafinance.common.dto.AddressData;
 import com.nivasafinance.common.dto.AddressRequest;
+import com.nivasafinance.common.dto.IdentifierData;
+import com.nivasafinance.common.dto.IdentifierRequest;
 import com.nivasafinance.common.exception.BadRequestException;
 import com.nivasafinance.features.address.service.AddressDataService;
 import com.nivasafinance.features.person.dto.PersonCreateRequest;
@@ -11,6 +13,7 @@ import com.nivasafinance.features.person.entity.MobileNumberDetails;
 import com.nivasafinance.features.person.entity.Person;
 import com.nivasafinance.features.person.exception.PersonExceptionFactory;
 import com.nivasafinance.features.person.repository.PersonRepositoryWrapper;
+import com.nivasafinance.features.identifier.service.IdentifierService;
 import com.nivasafinance.features.person.service.PersonWriteService;
 import lombok.AllArgsConstructor;
 import org.springframework.context.MessageSource;
@@ -32,6 +35,7 @@ public class PersonWriteServiceImpl implements PersonWriteService {
     private final PersonRepositoryWrapper personRepositoryWrapper;
     private final MessageSource messageSource;
     private final AddressDataService addressDataService;
+    private final IdentifierService identifierService;
 
     @Override
     public PersonCreateResponse createPerson(PersonCreateRequest request) {
@@ -205,6 +209,67 @@ public class PersonWriteServiceImpl implements PersonWriteService {
         addressData.setId(addressId != null ? addressId : UUID.randomUUID().toString());
         addressData.setAddressType(request.getAddressType());
         return addressData;
+    }
+
+    @Override
+    public IdentifierData addIdentifier(Long personId, IdentifierRequest request) {
+        Person person = personRepositoryWrapper.findByIdWithException(personId);
+        List<IdentifierData> identifiers = getIdentifiers(person);
+
+        IdentifierData identifierData = identifierService.createIdentifierData(request);
+        identifiers.add(identifierData);
+
+        saveIdentifiers(person, identifiers);
+
+        return identifierData;
+    }
+
+    @Override
+    public void updateIdentifier(Long personId, UUID identifierId, IdentifierRequest request) {
+        Person person = personRepositoryWrapper.findByIdWithException(personId);
+        List<IdentifierData> identifiers = getIdentifiers(person);
+
+        IdentifierData existing = identifiers.stream()
+                .filter(identifier -> identifierId.equals(identifier.getId()))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Identifier not found for person"));
+
+        IdentifierData updatedIdentifier = identifierService.createIdentifierData(request);
+        updatedIdentifier.setId(existing.getId());
+
+        int index = identifiers.indexOf(existing);
+        identifiers.set(index, updatedIdentifier);
+
+        saveIdentifiers(person, identifiers);
+
+    }
+
+    @Override
+    public void deleteIdentifier(Long personId, UUID identifierId) {
+        Person person = personRepositoryWrapper.findByIdWithException(personId);
+        List<IdentifierData> identifiers = getIdentifiers(person);
+
+        boolean removed = identifiers.removeIf(identifier -> identifierId.equals(identifier.getId()));
+        if (!removed) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Identifier not found for person");
+        }
+
+        saveIdentifiers(person, identifiers);
+    }
+
+    private List<IdentifierData> getIdentifiers(Person person) {
+        List<IdentifierData> identifiers = person.getIdentifiers();
+        return identifiers == null ? new ArrayList<>() : identifiers;
+    }
+
+    private void saveIdentifiers(Person person, List<IdentifierData> identifiers) {
+        if (identifiers == null || identifiers.isEmpty()) {
+            person.setIdentifiers(null);
+        } else {
+            person.setIdentifiers(new ArrayList<>(identifiers));
+        }
+        personRepositoryWrapper.saveWithException(person);
     }
 }
 

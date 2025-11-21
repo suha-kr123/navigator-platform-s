@@ -2,6 +2,7 @@ package com.nivasafinance.features.person.entity;
 
 import com.nivasafinance.common.audit.AuditableEntity;
 import com.nivasafinance.common.dto.AddressData;
+import com.nivasafinance.common.dto.IdentifierData;
 import com.nivasafinance.features.person.enums.Gender;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
@@ -59,6 +60,11 @@ public class Person extends AuditableEntity {
     @Column(name = "gender", length = 10)
     @Enumerated(EnumType.STRING)
     private Gender gender;
+
+    @Type(JsonType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "identifiers", columnDefinition = "jsonb")
+    private List<IdentifierData> identifiers;
 
     @Type(JsonType.class)
     @JdbcTypeCode(SqlTypes.JSON)

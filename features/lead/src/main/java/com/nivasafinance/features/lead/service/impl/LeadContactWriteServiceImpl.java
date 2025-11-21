@@ -1,7 +1,8 @@
 package com.nivasafinance.features.lead.service.impl;
 
-import com.nivasafinance.common.dto.AddressData;
 import com.nivasafinance.common.dto.AddressRequest;
+import com.nivasafinance.common.dto.IdentifierData;
+import com.nivasafinance.common.dto.IdentifierRequest;
 import com.nivasafinance.common.events.BusinessEvent;
 import com.nivasafinance.common.events.SystemEvent;
 import com.nivasafinance.common.events.payload.LeadContactCreationEventPayload;
@@ -381,6 +382,27 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
     public void updateAddress(UUID contactIdentifier, String addressId, AddressRequest request) {
         Contact contact = contactRepositoryWrapper.findByIdentifierWithException(contactIdentifier);
         personWriteService.updateAddress(contact.getPersonId(), addressId, request);
+    }
+
+    @Override
+    public IdentifierData addIdentifier(UUID leadId, UUID contactIdentifier, IdentifierRequest request) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadId);
+        Contact contact = findContactByIdentifier(lead, contactIdentifier);
+        return personWriteService.addIdentifier(contact.getPersonId(), request);
+    }
+
+    @Override
+    public void updateIdentifier(UUID leadId, UUID contactIdentifier, UUID identifierId, IdentifierRequest request) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadId);
+        Contact contact = findContactByIdentifier(lead, contactIdentifier);
+        personWriteService.updateIdentifier(contact.getPersonId(), identifierId, request);
+    }
+
+    @Override
+    public void deleteIdentifier(UUID leadId, UUID contactIdentifier, UUID identifierId) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadId);
+        Contact contact = findContactByIdentifier(lead, contactIdentifier);
+        personWriteService.deleteIdentifier(contact.getPersonId(), identifierId);
     }
 }
 

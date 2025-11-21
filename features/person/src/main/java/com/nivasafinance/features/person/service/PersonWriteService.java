@@ -2,14 +2,24 @@ package com.nivasafinance.features.person.service;
 
 import com.nivasafinance.common.dto.AddressData;
 import com.nivasafinance.common.dto.AddressRequest;
+import com.nivasafinance.common.dto.IdentifierData;
+import com.nivasafinance.common.dto.IdentifierRequest;
 import com.nivasafinance.features.person.dto.PersonCreateRequest;
 import com.nivasafinance.features.person.dto.PersonCreateResponse;
 import com.nivasafinance.features.person.dto.PersonUpdateRequest;
+
+import java.util.UUID;
 
 public interface PersonWriteService {
     PersonCreateResponse createPerson(PersonCreateRequest personRequest);
     void updatePerson(Long personId, PersonUpdateRequest personUpdateRequest);
     String addAddress(Long personId, AddressRequest request);
     AddressData updateAddress(Long personId, String addressId, AddressRequest request);
+
+    IdentifierData addIdentifier(Long personId, IdentifierRequest request);
+
+    void updateIdentifier(Long personId, UUID identifierId, IdentifierRequest request);
+
+    void deleteIdentifier(Long personId, UUID identifierId);
 }
 

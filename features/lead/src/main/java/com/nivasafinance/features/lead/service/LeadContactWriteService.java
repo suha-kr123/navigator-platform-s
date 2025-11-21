@@ -1,6 +1,8 @@
 package com.nivasafinance.features.lead.service;
 
 import com.nivasafinance.common.dto.AddressRequest;
+import com.nivasafinance.common.dto.IdentifierData;
+import com.nivasafinance.common.dto.IdentifierRequest;
 import com.nivasafinance.features.lead.dto.CreateLeadContactRequest;
 import com.nivasafinance.features.lead.dto.UpdateLeadContactRequest;
 import jakarta.validation.Valid;
@@ -15,5 +17,11 @@ public interface LeadContactWriteService {
     String addAddress(UUID contactIdentifier, @Valid AddressRequest request);
 
     void updateAddress(UUID contactIdentifier, String addressId, @Valid AddressRequest request);
+
+    IdentifierData addIdentifier(UUID leadId, UUID contactIdentifier, @Valid IdentifierRequest request);
+
+    void updateIdentifier(UUID leadId, UUID contactIdentifier, UUID identifierId, @Valid IdentifierRequest request);
+
+    void deleteIdentifier(UUID leadId, UUID contactIdentifier, UUID identifierId);
 }
 

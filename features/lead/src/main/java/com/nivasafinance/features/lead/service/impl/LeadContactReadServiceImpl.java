@@ -1,6 +1,7 @@
 package com.nivasafinance.features.lead.service.impl;
 
 import com.nivasafinance.common.dto.AddressData;
+import com.nivasafinance.common.dto.IdentifierData;
 import com.nivasafinance.features.lead.dto.LeadContactPersonDetails;
 import com.nivasafinance.features.lead.dto.LeadContactResponse;
 import com.nivasafinance.features.lead.entity.Applicant;
@@ -134,6 +135,24 @@ public class LeadContactReadServiceImpl implements LeadContactReadService {
             return personReadService.getAddress(contact.getPersonId(), addressId);
         } catch (ResponseStatusException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Address not found for contact");
+        }
+    }
+
+    @Override
+    public List<IdentifierData> getIdentifiers(UUID leadId, UUID contactIdentifier) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadId);
+        Contact contact = findContactByIdentifier(lead, contactIdentifier);
+        return personReadService.getIdentifiers(contact.getPersonId());
+    }
+
+    @Override
+    public IdentifierData getIdentifier(UUID leadId, UUID contactIdentifier, UUID identifierId) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadId);
+        Contact contact = findContactByIdentifier(lead, contactIdentifier);
+        try {
+            return personReadService.getIdentifier(contact.getPersonId(), identifierId);
+        } catch (ResponseStatusException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Identifier not found for contact");
         }
     }
 

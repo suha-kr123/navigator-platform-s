@@ -1,6 +1,7 @@
 package com.nivasafinance.features.person.service.impl;
 
 import com.nivasafinance.common.dto.AddressData;
+import com.nivasafinance.common.dto.IdentifierData;
 import com.nivasafinance.features.person.dto.PersonResponse;
 import com.nivasafinance.features.person.entity.Person;
 import com.nivasafinance.features.person.repository.PersonRepositoryWrapper;
@@ -13,6 +14,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @AllArgsConstructor
@@ -55,7 +57,7 @@ public class PersonReadServiceImpl implements PersonReadService {
     public List<AddressData> getAddresses(Long personId) {
         Person person = personRepositoryWrapper.findByIdWithException(personId);
         List<AddressData> addresses = person.getAddress();
-        return addresses == null || addresses.isEmpty() ? new ArrayList<>() : new ArrayList<>(addresses);
+        return addresses == null ? new ArrayList<>() : addresses;
     }
 
     @Override
@@ -66,6 +68,23 @@ public class PersonReadServiceImpl implements PersonReadService {
                 .findFirst()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Address not found for person"));
+    }
+
+    @Override
+    public List<IdentifierData> getIdentifiers(Long personId) {
+        Person person = personRepositoryWrapper.findByIdWithException(personId);
+        List<IdentifierData> identifiers = person.getIdentifiers();
+        return identifiers == null ? new ArrayList<>() : identifiers;
+    }
+
+    @Override
+    public IdentifierData getIdentifier(Long personId, UUID identifierId) {
+        List<IdentifierData> identifiers = getIdentifiers(personId);
+        return identifiers.stream()
+                .filter(identifier -> identifierId.equals(identifier.getId()))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Identifier not found for person"));
     }
 }
 

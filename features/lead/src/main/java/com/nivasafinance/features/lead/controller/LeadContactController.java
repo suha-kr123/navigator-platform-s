@@ -3,6 +3,8 @@ package com.nivasafinance.features.lead.controller;
 import com.nivasafinance.common.constants.ApiConstants;
 import com.nivasafinance.common.dto.AddressData;
 import com.nivasafinance.common.dto.AddressRequest;
+import com.nivasafinance.common.dto.IdentifierData;
+import com.nivasafinance.common.dto.IdentifierRequest;
 import com.nivasafinance.features.lead.dto.AddressIdentifierResponse;
 import com.nivasafinance.features.lead.dto.LeadContactResponse;
 import com.nivasafinance.features.lead.dto.CreateLeadContactRequest;
@@ -95,6 +97,53 @@ public class LeadContactController {
             @PathVariable String addressId,
             @Valid @RequestBody AddressRequest request) {
         leadContactWriteService.updateAddress(contactIdentifier, addressId, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    // Identifier Endpoints
+
+    @PostMapping("/{contactIdentifier}/identifiers")
+    public ResponseEntity<IdentifierData> addIdentifier(
+            @PathVariable UUID leadId,
+            @PathVariable UUID contactIdentifier,
+            @Valid @RequestBody IdentifierRequest request) {
+        IdentifierData identifier = leadContactWriteService.addIdentifier(leadId, contactIdentifier, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(identifier);
+    }
+
+    @GetMapping("/{contactIdentifier}/identifiers")
+    public ResponseEntity<List<IdentifierData>> getIdentifiers(
+            @PathVariable UUID leadId,
+            @PathVariable UUID contactIdentifier) {
+        List<IdentifierData> identifiers = leadContactReadService.getIdentifiers(leadId, contactIdentifier);
+        return ResponseEntity.ok(identifiers);
+    }
+
+    @GetMapping("/{contactIdentifier}/identifiers/{identifierId}")
+    public ResponseEntity<IdentifierData> getIdentifier(
+            @PathVariable UUID leadId,
+            @PathVariable UUID contactIdentifier,
+            @PathVariable UUID identifierId) {
+        IdentifierData identifier = leadContactReadService.getIdentifier(leadId, contactIdentifier, identifierId);
+        return ResponseEntity.ok(identifier);
+    }
+
+    @PutMapping("/{contactIdentifier}/identifiers/{identifierId}")
+    public ResponseEntity<Void> updateIdentifier(
+            @PathVariable UUID leadId,
+            @PathVariable UUID contactIdentifier,
+            @PathVariable UUID identifierId,
+            @Valid @RequestBody IdentifierRequest request) {
+        leadContactWriteService.updateIdentifier(leadId, contactIdentifier, identifierId, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{contactIdentifier}/identifiers/{identifierId}")
+    public ResponseEntity<Void> deleteIdentifier(
+            @PathVariable UUID leadId,
+            @PathVariable UUID contactIdentifier,
+            @PathVariable UUID identifierId) {
+        leadContactWriteService.deleteIdentifier(leadId, contactIdentifier, identifierId);
         return ResponseEntity.noContent().build();
     }
 
