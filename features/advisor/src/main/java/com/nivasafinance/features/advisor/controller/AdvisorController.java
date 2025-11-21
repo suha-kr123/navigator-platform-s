@@ -63,19 +63,35 @@ public class AdvisorController {
         return ResponseEntity.noContent().build();
     }
 
+    @PutMapping("/{identifier}/segmentation-details")
+    public ResponseEntity<Void> updateSegmentationDetails(
+            @PathVariable UUID identifier,
+            @Valid @RequestBody UpdateSegmentationDetailsRequest request) {
+        advisorWriteService.updateSegmentationDetails(identifier, request);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/{identifier}/reject")
-    public ResponseEntity<IdentifierResponse> rejectAdvisor(
+    public ResponseEntity<Void> rejectAdvisor(
             @PathVariable UUID identifier,
             @Valid @RequestBody RejectAdvisorRequest request) {
-        UUID resultIdentifier = advisorWriteService.rejectAdvisor(identifier, request);
-        return ResponseEntity.ok(new IdentifierResponse(resultIdentifier));
+        advisorWriteService.rejectAdvisor(identifier, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{identifier}/dormant")
+    public ResponseEntity<Void> dormantAdvisor(
+            @PathVariable UUID identifier,
+            @Valid @RequestBody DormantAdvisorRequest request) {
+        advisorWriteService.dormantAdvisor(identifier, request);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{identifier}/activate")
-    public ResponseEntity<IdentifierResponse> activateAdvisor(
+    public ResponseEntity<Void> activateAdvisor(
             @PathVariable UUID identifier) {
-        UUID resultIdentifier = advisorWriteService.activateAdvisor(identifier);
-        return ResponseEntity.ok(new IdentifierResponse(resultIdentifier));
+        advisorWriteService.activateAdvisor(identifier);
+        return ResponseEntity.noContent().build();
     }
 
 }

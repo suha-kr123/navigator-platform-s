@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1763704835000_45" author="system" context="default">
+
+        <!-- Segmentation Master -->
+        <insert tableName="n_master_code">
+            <column name="parent_id" value="NULL"/>
+            <column name="key" value="SEGMENTATION_MASTER"/>
+            <column name="name" value='{"default": "Segmentation Master"}'/>
+            <column name="description" value='{"default": "Advisor segmentation categories"}'/>
+            <column name="is_system_defined" valueBoolean="true"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" valueDate="2025-01-27 10:00:00"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+
+    </changeSet>
+
+</databaseChangeLog>
+

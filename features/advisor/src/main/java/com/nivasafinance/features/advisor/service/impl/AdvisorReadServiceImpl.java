@@ -65,17 +65,23 @@ public class AdvisorReadServiceImpl implements AdvisorReadService {
     public AdvisorTemplateResponse getAdvisorTemplate() {
         List<CodeValueResponse> rejectionReasons = codeMasterService.getAllCodeValuesByCodeKey(
                 SystemControlledMasterCodes.ADVISOR_REJECTION_REASON_MASTER, true);
+        List<CodeValueResponse> dormantReasons = codeMasterService.getAllCodeValuesByCodeKey(
+                SystemControlledMasterCodes.ADVISOR_DORMANT_REASON_MASTER, true);
         List<CodeValueResponse> occupationTypes = codeMasterService.getAllCodeValuesByCodeKey(
                 SystemControlledMasterCodes.OCCUPATION_TYPE_MASTER, true);
         List<CodeValueResponse> occupations = codeMasterService.getAllCodeValuesByCodeKey(
                 SystemControlledMasterCodes.OCCUPATION_MASTER, true);
         List<CodeValueResponse> qualifications = codeMasterService.getAllCodeValuesByCodeKey(
                 SystemControlledMasterCodes.QUALIFICATION_MASTER, true);
+        List<CodeValueResponse> segmentations = codeMasterService.getAllCodeValuesByCodeKey(
+                SystemControlledMasterCodes.SEGMENTATION_MASTER, true);
         return AdvisorTemplateResponse.builder()
                 .advisorRejectionReasons(rejectionReasons)
+                .advisorDormantReasons(dormantReasons)
                 .occupationTypes(occupationTypes)
                 .occupations(occupations)
                 .qualifications(qualifications)
+                .segmentations(segmentations)
                 .build();
     }
 
@@ -103,6 +109,7 @@ public class AdvisorReadServiceImpl implements AdvisorReadService {
         response.setRemarks(advisor.getRemarks());
         response.setQualificationDetails(advisor.getQualificationDetails());
         response.setOtherDetails(advisor.getOtherDetails());
+        response.setSegmentationDetails(advisor.getSegmentationDetails());
         return response;
     }
 }

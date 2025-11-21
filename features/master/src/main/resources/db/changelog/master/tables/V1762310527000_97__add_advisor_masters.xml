@@ -18,6 +18,17 @@
             <column name="version" valueNumeric="0"/>
         </insert>
 
+        <!-- Advisor Dormant Reason Master -->
+        <insert tableName="master_code">
+            <column name="parent_id" value="NULL"/>
+            <column name="key" value="ADVISOR_DORMANT_REASON_MASTER"/>
+            <column name="name" value='{"default": "Advisor Dormant Reason Master"}'/>
+            <column name="description" value='{"default": "Reasons for advisor dormant status"}'/>
+            <column name="is_system_defined" valueBoolean="true"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+
     </changeSet>
 
 </databaseChangeLog>

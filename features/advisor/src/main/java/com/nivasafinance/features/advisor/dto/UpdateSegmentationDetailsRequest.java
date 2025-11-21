@@ -5,11 +5,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Request DTO for updating segmentation details
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class AdvisorRemarks {
-    private String rejected;
-    private String dormant;
+public class UpdateSegmentationDetailsRequest {
+    private String segmentation;
 }
+

@@ -18,5 +18,6 @@ public class AdvisorResponse {
     private AdvisorRemarks remarks;
     private QualificationDetails qualificationDetails;
     private OtherDetails otherDetails;
+    private SegmentationDetails segmentationDetails;
 }
 

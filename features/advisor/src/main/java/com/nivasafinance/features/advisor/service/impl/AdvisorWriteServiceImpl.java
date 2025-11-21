@@ -191,7 +191,40 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
     }
 
     @Override
-    public UUID rejectAdvisor(UUID identifier, RejectAdvisorRequest request) {
+    public void updateSegmentationDetails(UUID identifier, UpdateSegmentationDetailsRequest request) {
+        Advisor advisor = advisorRepositoryWrapper.findByIdentifierWithException(identifier);
+
+        // Validate segmentation against SEGMENTATION_MASTER
+        if (request.getSegmentation() != null) {
+            List<CodeValueResponse> segmentations =
+                    codeMasterService.getAllCodeValuesByCodeKey(SystemControlledMasterCodes.SEGMENTATION_MASTER, true);
+            String provided = request.getSegmentation();
+            boolean isValid = segmentations.stream()
+                    .anyMatch(cv ->
+                            provided.equalsIgnoreCase(cv.getKey()) ||
+                            (cv.getValue() != null && provided.equalsIgnoreCase(cv.getValue()))
+                    );
+            if (!isValid) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Invalid segmentation. Provide a valid key or value from SEGMENTATION_MASTER.");
+            }
+        }
+
+        SegmentationDetails segmentationDetails = advisor.getSegmentationDetails();
+        if (segmentationDetails == null) {
+            segmentationDetails = new SegmentationDetails();
+        }
+
+        if (request.getSegmentation() != null) {
+            segmentationDetails.setSegmentation(request.getSegmentation());
+        }
+        advisor.setSegmentationDetails(segmentationDetails);
+
+        advisorRepositoryWrapper.saveWithException(advisor);
+    }
+
+    @Override
+    public void rejectAdvisor(UUID identifier, RejectAdvisorRequest request) {
         Advisor advisor = advisorRepositoryWrapper.findByIdentifierWithException(identifier);
         advisor.setStatus(AdvisorStatus.REJECTED);
         if (request != null && request.getRejected() != null) {
@@ -210,16 +243,30 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
         rejectionDetails.setRejectedBy(UserContext.getUsername());
         advisor.setRejectionDetails(rejectionDetails);
 
-        Advisor saved = advisorRepositoryWrapper.saveWithException(advisor);
-        return saved.getIdentifier();
+        advisorRepositoryWrapper.saveWithException(advisor);
     }
 
     @Override
-    public UUID activateAdvisor(UUID identifier) {
+    public void dormantAdvisor(UUID identifier, DormantAdvisorRequest request) {
+        Advisor advisor = advisorRepositoryWrapper.findByIdentifierWithException(identifier);
+        advisor.setStatus(AdvisorStatus.DORMANT);
+        if (request != null && request.getDormant() != null) {
+            AdvisorRemarks advisorRemarks = advisor.getRemarks();
+            if (advisorRemarks == null) {
+                advisorRemarks = new AdvisorRemarks();
+            }
+            advisorRemarks.setDormant(request.getDormant());
+            advisor.setRemarks(advisorRemarks);
+        }
+
+        advisorRepositoryWrapper.saveWithException(advisor);
+    }
+
+    @Override
+    public void activateAdvisor(UUID identifier) {
         Advisor advisor = advisorRepositoryWrapper.findByIdentifierWithException(identifier);
         advisor.setStatus(AdvisorStatus.ACTIVE);
         advisorRepositoryWrapper.saveWithException(advisor);
-        return identifier;
     }
 
     // Convert CreateAdvisorRequest to PersonCreateRequest

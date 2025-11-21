@@ -5,6 +5,7 @@ import com.nivasafinance.features.advisor.dto.AdvisorRemarks;
 import com.nivasafinance.features.advisor.dto.BankDetails;
 import com.nivasafinance.features.advisor.dto.OtherDetails;
 import com.nivasafinance.features.advisor.dto.QualificationDetails;
+import com.nivasafinance.features.advisor.dto.SegmentationDetails;
 import com.nivasafinance.features.advisor.enums.AdvisorStatus;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
@@ -58,6 +59,11 @@ public class Advisor extends AuditableEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "other_details", columnDefinition = "jsonb")
     private OtherDetails otherDetails;
+
+    @Type(JsonType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "segmentation_details", columnDefinition = "jsonb")
+    private SegmentationDetails segmentationDetails;
 
     @Column(name = "source_channel_id")
     private Long sourceChannelId;

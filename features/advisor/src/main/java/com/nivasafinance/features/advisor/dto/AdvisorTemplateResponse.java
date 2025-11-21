@@ -16,11 +16,15 @@ public class AdvisorTemplateResponse {
     
     private List<CodeValueResponse> advisorRejectionReasons;
     
+    private List<CodeValueResponse> advisorDormantReasons;
+    
     private List<CodeValueResponse> occupationTypes;
     
     private List<CodeValueResponse> occupations;
     
     private List<CodeValueResponse> qualifications;
+    
+    private List<CodeValueResponse> segmentations;
 }
 
 

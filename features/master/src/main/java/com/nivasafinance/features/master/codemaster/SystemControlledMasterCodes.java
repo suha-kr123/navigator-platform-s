@@ -29,6 +29,8 @@ public final class SystemControlledMasterCodes {
     public static final String LEAD_PRIORITY_MASTER = "LEAD_PRIORITY_MASTER";
     // Advisor specific masters
     public static final String ADVISOR_REJECTION_REASON_MASTER = "ADVISOR_REJECTION_REASON_MASTER";
+    public static final String ADVISOR_DORMANT_REASON_MASTER = "ADVISOR_DORMANT_REASON_MASTER";
+    public static final String SEGMENTATION_MASTER = "SEGMENTATION_MASTER";
     // Global masters (usable across modules)
     public static final String OCCUPATION_TYPE_MASTER = "OCCUPATION_TYPE_MASTER";
     public static final String OCCUPATION_MASTER = "OCCUPATION_MASTER";

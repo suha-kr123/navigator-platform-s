@@ -16,9 +16,13 @@ public interface AdvisorWriteService {
     
     void updateOccupationDetails(UUID identifier, UpdateOccupationDetailsRequest request);
     
+    void updateSegmentationDetails(UUID identifier, UpdateSegmentationDetailsRequest request);
     
-    UUID rejectAdvisor(UUID identifier, RejectAdvisorRequest request);
     
-    UUID activateAdvisor(UUID identifier);
+    void rejectAdvisor(UUID identifier, RejectAdvisorRequest request);
+    
+    void dormantAdvisor(UUID identifier, DormantAdvisorRequest request);
+    
+    void activateAdvisor(UUID identifier);
 }
 
