@@ -1,5 +1,7 @@
 package com.nivasafinance.features.sourcechannel.service.impl;
 
+import com.nivasafinance.features.master.codemaster.SystemControlledMasterCodes;
+import com.nivasafinance.features.master.codemaster.service.CodeValueMasterService;
 import com.nivasafinance.features.sourcechannel.dto.SourcingChannelRequest;
 import com.nivasafinance.features.sourcechannel.dto.SourcingChannelResponse;
 import com.nivasafinance.features.sourcechannel.entity.SourcingChannel;
@@ -17,9 +19,18 @@ import java.util.UUID;
 public class SourcingChannelWriteServiceImpl implements SourcingChannelWriteService {
 
     private final SourcingChannelRepositoryWrapper sourcingChannelRepositoryWrapper;
+    private final CodeValueMasterService codeValueMasterService;
 
     @Override
     public SourcingChannelResponse create(SourcingChannelRequest request) {
+
+        if(request.getSourcingChannel() != null){ //validate
+            codeValueMasterService.getCodeValueByKeyAndCodeKey(request.getSourcingChannel(), SystemControlledMasterCodes.MARKETING_SOURCE_MASTER);
+        }
+
+        if(request.getMarketingSource() != null){ //validate
+            codeValueMasterService.getCodeValueByKeyAndCodeKey(request.getMarketingSource(), SystemControlledMasterCodes.MARKETING_CHANNEL_MASTER);
+        }
 
         SourcingChannel.SourcingChannelBuilder builder = SourcingChannel.builder()
                 .sourcingIdentifier(UUID.randomUUID())
