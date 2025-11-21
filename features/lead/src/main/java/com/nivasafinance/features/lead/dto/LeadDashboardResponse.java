@@ -27,6 +27,7 @@ public class LeadDashboardResponse {
     private String ownerUsername;
     private LeadStatus status;
     private LeadSubStatus subStatus;
+    private String recentNote;
     private LocalDateTime leadCreatedAt;
     private LocalDateTime lastActivityDate;
     private String lastActivityBy;
