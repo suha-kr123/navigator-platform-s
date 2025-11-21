@@ -25,6 +25,7 @@ dependencies {
     implementation(project(":features:stage"))
     implementation(project(":features:task"))
     implementation(project(":features:staff"))
+    implementation(project(":features:identifier"))
 }
 
 springBoot {
