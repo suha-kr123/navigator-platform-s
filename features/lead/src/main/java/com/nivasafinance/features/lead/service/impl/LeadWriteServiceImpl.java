@@ -560,7 +560,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         // Store reason code if provided
         if (request.getReasonCode() != null) {
             //validate reason
-            codeValueMasterService.getCodeValueByKeyAndCodeKey(request.getReasonCode(), SystemControlledMasterCodes.LEAD_DROPOFF_REASON_MASTER);
+            codeValueMasterService.getCodeValueByKeyAndCodeKey(request.getReasonCode(), SystemControlledMasterCodes.LEAD_ONHOLD_REASON_MASTER);
             Lead.ReasonDetails reasons = lead.getReasons();
             if (reasons == null) {
                 reasons = new Lead.ReasonDetails();
