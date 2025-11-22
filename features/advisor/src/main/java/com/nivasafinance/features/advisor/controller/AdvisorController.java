@@ -1,9 +1,12 @@
 package com.nivasafinance.features.advisor.controller;
 
 import com.nivasafinance.common.constants.ApiConstants;
+import com.nivasafinance.common.base.model.PaginatedResponse;
+import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.features.advisor.dto.*;
 import com.nivasafinance.features.advisor.service.AdvisorReadService;
 import com.nivasafinance.features.advisor.service.AdvisorWriteService;
+import com.nivasafinance.features.lead.dto.LeadBasicResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -36,6 +39,16 @@ public class AdvisorController {
     @GetMapping("/{identifier}")
     public ResponseEntity<AdvisorResponse> getAdvisorByIdentifier(@PathVariable UUID identifier) {
         AdvisorResponse response = advisorReadService.getAdvisorByIdentifier(identifier);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/search")
+    public ResponseEntity<PaginatedResponse<AdvisorSearchResponse>> searchAdvisors(
+            @Valid PaginationRequest paginationRequest,
+            @Valid @RequestBody AdvisorSearchRequest searchRequest
+    ) {
+        PaginatedResponse<AdvisorSearchResponse> response =
+                advisorReadService.searchAdvisors(paginationRequest, searchRequest);
         return ResponseEntity.ok(response);
     }
 
@@ -92,6 +105,15 @@ public class AdvisorController {
             @PathVariable UUID identifier) {
         advisorWriteService.activateAdvisor(identifier);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/leads")
+    public ResponseEntity<PaginatedResponse<LeadBasicResponse>> getLeadsByAdvisorId(
+            @PathVariable("id") UUID advisorId,
+            @Valid PaginationRequest paginationRequest) {
+        PaginatedResponse<LeadBasicResponse> leads = advisorReadService.getLeadsByAdvisorId(
+                advisorId, paginationRequest);
+        return ResponseEntity.ok(leads);
     }
 
 }

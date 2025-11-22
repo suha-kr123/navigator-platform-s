@@ -1,12 +1,18 @@
 package com.nivasafinance.features.advisor.service.impl;
 
+import com.nivasafinance.common.base.model.PaginatedResponse;
+import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.features.advisor.dto.AdvisorTemplateResponse;
 import com.nivasafinance.features.advisor.dto.AdvisorResponse;
+import com.nivasafinance.features.advisor.dto.AdvisorSearchRequest;
+import com.nivasafinance.features.advisor.dto.AdvisorSearchResponse;
 import com.nivasafinance.features.advisor.dto.PersonalDetails;
 import com.nivasafinance.features.advisor.dto.SourcingDetailsResponse;
 import com.nivasafinance.features.advisor.entity.Advisor;
 import com.nivasafinance.features.advisor.repository.AdvisorRepositoryWrapper;
 import com.nivasafinance.features.advisor.service.AdvisorReadService;
+import com.nivasafinance.features.advisorlead.repository.AdvisorLeadMappingRepositoryWrapper;
+import com.nivasafinance.features.lead.dto.LeadBasicResponse;
 import com.nivasafinance.features.person.entity.Person;
 import com.nivasafinance.features.person.repository.PersonRepositoryWrapper;
 import com.nivasafinance.features.sourcechannel.dto.SourcingChannelResponse;
@@ -30,6 +36,7 @@ public class AdvisorReadServiceImpl implements AdvisorReadService {
     private final PersonRepositoryWrapper personRepositoryWrapper;
     private final SourcingChannelRepositoryWrapper sourcingChannelRepositoryWrapper;
     private final CodeMasterService codeMasterService;
+    private final AdvisorLeadMappingRepositoryWrapper advisorLeadMappingRepositoryWrapper;
 
     @Override
     public AdvisorResponse getAdvisorByIdentifier(UUID identifier) {
@@ -83,6 +90,17 @@ public class AdvisorReadServiceImpl implements AdvisorReadService {
                 .qualifications(qualifications)
                 .segmentations(segmentations)
                 .build();
+    }
+
+    @Override
+    public PaginatedResponse<AdvisorSearchResponse> searchAdvisors(
+            PaginationRequest paginationRequest, AdvisorSearchRequest request) {
+        return advisorRepositoryWrapper.searchAdvisorsByPhoneNumber(paginationRequest, request);
+    }
+
+    @Override
+    public PaginatedResponse<LeadBasicResponse> getLeadsByAdvisorId(UUID advisorId, PaginationRequest paginationRequest) {
+        return advisorLeadMappingRepositoryWrapper.findLeadsByAdvisorIdWithException(advisorId, paginationRequest);
     }
 
     // Map Advisor entity to response DTO

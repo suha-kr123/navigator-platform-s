@@ -76,6 +76,11 @@ public class Advisor extends AuditableEntity {
     @Column(name = "rejection_details", columnDefinition = "jsonb")
     private RejectionDetails rejectionDetails;
 
+    @Type(JsonType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "notes", columnDefinition = "jsonb")
+    private List<Long> notes;
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
