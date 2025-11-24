@@ -111,6 +111,24 @@ public class OfficeRepositoryWrapper {
         }
     }
 
+    public List<Office> findAllByCodePrefix(String codePrefix) {
+        StringBuilder selectQuery = new StringBuilder(BASE_SELECT);
+        MapSqlParameterSource params = new MapSqlParameterSource();
+
+        if (StringUtils.hasText(codePrefix)) {
+            selectQuery.append(" AND o.code LIKE :codePrefix");
+            params.addValue("codePrefix", codePrefix + "%");
+        }
+
+        selectQuery.append(" ORDER BY o.code ASC");
+
+        try {
+            return jdbcTemplate.query(selectQuery.toString(), params, officeRowMapper());
+        } catch (DataAccessException ex) {
+            throw new RuntimeException("Failed to fetch offices by code prefix", ex);
+        }
+    }
+
     private String resolveSortColumn(String sortBy) {
         if (!StringUtils.hasText(sortBy)) {
             return "o.created_at";

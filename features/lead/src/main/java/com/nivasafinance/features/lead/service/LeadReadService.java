@@ -21,4 +21,5 @@ public interface LeadReadService {
             PaginationRequest paginationRequest,
             LeadDashboardFilters filters);
     PaginatedResponse<LeadSearchResponse> searchLeads(PaginationRequest paginationRequest, LeadSearchRequest request);
+    LeadDashboardFiltersResponse getLeadDashboardFilters(LeadDashboardFiltersFilters filters);
 }

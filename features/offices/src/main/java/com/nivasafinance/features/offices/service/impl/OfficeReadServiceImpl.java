@@ -59,6 +59,14 @@ public class OfficeReadServiceImpl implements OfficeReadService {
         );
     }
 
+    @Override
+    public List<OfficeResponse> getOfficesByCodePrefix(String codePrefix) {
+        List<Office> offices = officeRepositoryWrapper.findAllByCodePrefix(codePrefix);
+        return offices.stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
     private Office findOfficeByKey(String key) {
         return officeRepository.findByKey(key).orElseThrow(() ->
                 new OfficeNotFoundException(key, messageSource)

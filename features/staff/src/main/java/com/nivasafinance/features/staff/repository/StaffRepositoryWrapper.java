@@ -141,6 +141,33 @@ public class StaffRepositoryWrapper {
         }
     }
 
+    public List<Staff> findAllByOfficeKeys(List<String> officeKeys) {
+        if (officeKeys == null || officeKeys.isEmpty()) {
+            return List.of();
+        }
+
+        StringBuilder selectQuery = new StringBuilder(BASE_SELECT);
+        MapSqlParameterSource params = new MapSqlParameterSource();
+
+        selectQuery.append(" AND s.office_key IN (");
+        for (int i = 0; i < officeKeys.size(); i++) {
+            if (i > 0) {
+                selectQuery.append(", ");
+            }
+            selectQuery.append(":officeKey").append(i);
+            params.addValue("officeKey" + i, officeKeys.get(i));
+        }
+        selectQuery.append(")");
+
+        selectQuery.append(" ORDER BY s.created_at ASC");
+
+        try {
+            return jdbcTemplate.query(selectQuery.toString(), params, staffRowMapper());
+        } catch (DataAccessException ex) {
+            throw new RuntimeException("Failed to fetch staff by office keys", ex);
+        }
+    }
+
     private String normalizeSearchQuery(String query) {
         if (!StringUtils.hasText(query)) {
             return null;

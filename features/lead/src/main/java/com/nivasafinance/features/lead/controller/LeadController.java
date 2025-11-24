@@ -32,6 +32,14 @@ public class LeadController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/dashboard/filters")
+    public ResponseEntity<LeadDashboardFiltersResponse> getLeadDashboardFilters(
+            @ModelAttribute LeadDashboardFiltersFilters filters
+    ) {
+        LeadDashboardFiltersResponse response = leadReadService.getLeadDashboardFilters(filters);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/template")
     public ResponseEntity<LeadTemplateResponse> getLeadTemplate() {
         LeadTemplateResponse response = leadReadService.getLeadTemplate();

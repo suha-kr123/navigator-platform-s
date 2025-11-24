@@ -12,5 +12,7 @@ public interface OfficeReadService {
     List<OfficeResponse> getOfficeByKeys(List<String> keys);
 
     PaginatedResponse<OfficeResponse> getOffices(String parentKey, String nameQuery, PaginationRequest paginationRequest);
+
+    List<OfficeResponse> getOfficesByCodePrefix(String codePrefix);
 }
 

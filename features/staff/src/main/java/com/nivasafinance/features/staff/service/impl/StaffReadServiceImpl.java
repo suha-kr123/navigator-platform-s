@@ -3,15 +3,11 @@ package com.nivasafinance.features.staff.service.impl;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.common.context.UserContext;
-import com.nivasafinance.features.person.dto.PersonResponse;
-import com.nivasafinance.features.person.service.PersonReadService;
 import com.nivasafinance.features.staff.dto.StaffResponse;
 import com.nivasafinance.features.staff.entity.Staff;
 import com.nivasafinance.features.staff.repository.StaffRepositoryWrapper;
 import com.nivasafinance.features.staff.service.StaffReadService;
 import com.nivasafinance.features.usermanagement.dto.UserResponse;
-import com.nivasafinance.features.usermanagement.entity.User;
-import com.nivasafinance.features.usermanagement.repository.UserRepositoryWrapper;
 import com.nivasafinance.features.offices.service.OfficeReadService;
 import com.nivasafinance.features.usermanagement.service.UserReadService;
 import lombok.RequiredArgsConstructor;
@@ -57,6 +53,18 @@ public class StaffReadServiceImpl implements StaffReadService {
         UserResponse user = userReadService.getUserByUsername(currentUsername);
         Staff staff = staffRepositoryWrapper.findByUserIdWithException(user.getId());
         return mapToResponse(staff, user);
+    }
+
+    @Override
+    public List<StaffResponse> getStaffByOfficeKeys(List<String> officeKeys) {
+        if (officeKeys == null || officeKeys.isEmpty()) {
+            return List.of();
+        }
+
+        List<Staff> staffList = staffRepositoryWrapper.findAllByOfficeKeys(officeKeys);
+        return staffList.stream()
+                .map(staff -> mapToResponse(staff, userReadService.getUserById(staff.getUserId())))
+                .collect(Collectors.toList());
     }
 
     private StaffResponse mapToResponse(Staff staff, UserResponse userResponse) {

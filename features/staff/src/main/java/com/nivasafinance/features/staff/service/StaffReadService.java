@@ -10,4 +10,5 @@ public interface StaffReadService {
 
     PaginatedResponse<StaffResponse> getStaff(String officeKey, String nameQuery, PaginationRequest paginationRequest);
     StaffResponse getCurrentStaff();
+    List<StaffResponse> getStaffByOfficeKeys(List<String> officeKeys);
 }

@@ -12,8 +12,13 @@ import com.nivasafinance.features.master.codemaster.service.CodeMasterService;
 import com.nivasafinance.features.master.codemaster.service.CodeValueMasterService;
 import com.nivasafinance.features.sourcechannel.dto.SourcingChannelResponse;
 import com.nivasafinance.features.sourcechannel.service.SourcingChannelReadService;
+import com.nivasafinance.features.offices.dto.OfficeResponse;
+import com.nivasafinance.features.offices.service.OfficeReadService;
+import com.nivasafinance.features.staff.dto.StaffResponse;
+import com.nivasafinance.features.staff.service.StaffReadService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 import java.util.UUID;
@@ -28,17 +33,23 @@ public class LeadReadServiceImpl implements LeadReadService {
     private final CodeMasterService codeMasterService;
     private final SourcingChannelReadService sourcingChannelReadService;
     private final LeadDashboardWrapper leadDashboardWrapper;
+    private final OfficeReadService officeReadService;
+    private final StaffReadService staffReadService;
 
     public LeadReadServiceImpl(LeadRepositoryWrapper leadRepositoryWrapper,
                                 CodeValueMasterService codeValueMasterService,
                                 CodeMasterService codeMasterService,
                                 SourcingChannelReadService sourcingChannelReadService,
-                                LeadDashboardWrapper leadDashboardWrapper) {
+                                LeadDashboardWrapper leadDashboardWrapper,
+                                OfficeReadService officeReadService,
+                                StaffReadService staffReadService) {
         this.leadRepositoryWrapper = leadRepositoryWrapper;
         this.codeValueMasterService = codeValueMasterService;
         this.codeMasterService = codeMasterService;
         this.sourcingChannelReadService = sourcingChannelReadService;
         this.leadDashboardWrapper = leadDashboardWrapper;
+        this.officeReadService = officeReadService;
+        this.staffReadService = staffReadService;
     }
 
     @Override
@@ -103,31 +114,31 @@ public class LeadReadServiceImpl implements LeadReadService {
     public CreditDetailsResponse getCreditDetails(UUID leadIdentifier) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
         Lead.CreditRatingDetails creditDetails = lead.getCreditRatingDetails();
-        
+
         if (creditDetails == null) {
             return CreditDetailsResponse.builder().build();
         }
-        
+
         return CreditDetailsResponse.builder()
                 .underwriter(creditDetails.getUnderwriter())
-                .occupationProfile(creditDetails.getOccupationProfile() != null 
+                .occupationProfile(creditDetails.getOccupationProfile() != null
                     ? codeValueMasterService.getByKey(creditDetails.getOccupationProfile()) : null)
-                .roofProfile(creditDetails.getRoofProfile() != null 
+                .roofProfile(creditDetails.getRoofProfile() != null
                     ? codeValueMasterService.getByKey(creditDetails.getRoofProfile()) : null)
-                .ltv(creditDetails.getLtv() != null 
+                .ltv(creditDetails.getLtv() != null
                     ? codeValueMasterService.getByKey(creditDetails.getLtv()) : null)
-                .foir(creditDetails.getFoir() != null 
+                .foir(creditDetails.getFoir() != null
                     ? codeValueMasterService.getByKey(creditDetails.getFoir()) : null)
-                .monthlyFamilyIncome(creditDetails.getMonthlyFamilyIncome() != null 
+                .monthlyFamilyIncome(creditDetails.getMonthlyFamilyIncome() != null
                     ? codeValueMasterService.getByKey(creditDetails.getMonthlyFamilyIncome()) : null)
-                .propertyDocumentType(creditDetails.getPropertyDocumentType() != null 
+                .propertyDocumentType(creditDetails.getPropertyDocumentType() != null
                     ? codeValueMasterService.getByKey(creditDetails.getPropertyDocumentType()) : null)
                 .eligibleLoanAmount(creditDetails.getEligibleLoanAmount())
-                .location(creditDetails.getLocation() != null 
+                .location(creditDetails.getLocation() != null
                     ? codeValueMasterService.getByKey(creditDetails.getLocation()) : null)
-                .bureauRating(creditDetails.getBureauRating() != null 
+                .bureauRating(creditDetails.getBureauRating() != null
                     ? codeValueMasterService.getByKey(creditDetails.getBureauRating()) : null)
-                .customerProfiles(creditDetails.getCustomerProfiles() != null 
+                .customerProfiles(creditDetails.getCustomerProfiles() != null
                     ? codeValueMasterService.getByKey(creditDetails.getCustomerProfiles()) : null)
                 .build();
     }
@@ -136,11 +147,11 @@ public class LeadReadServiceImpl implements LeadReadService {
     public ProposedDetailsResponse getProposedDetails(UUID leadIdentifier) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
         Lead.ProposedDetails proposedDetails = lead.getProposedDetails();
-        
+
         if (proposedDetails == null) {
             return ProposedDetailsResponse.builder().build();
         }
-        
+
         return ProposedDetailsResponse.builder()
                 .proposedLoanAmount(proposedDetails.getProposedLoanAmount())
                 .roi(proposedDetails.getRoi())
@@ -155,13 +166,13 @@ public class LeadReadServiceImpl implements LeadReadService {
     public PropertyDetailsResponse getPropertyDetails(UUID leadIdentifier) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
         Lead.OtherDetails otherDetails = lead.getOtherDetails();
-        
+
         if (otherDetails == null || otherDetails.getPropertyDetails() == null) {
             return PropertyDetailsResponse.builder().build();
         }
-        
+
         Lead.PropertyDetails propertyDetails = otherDetails.getPropertyDetails();
-        
+
         return PropertyDetailsResponse.builder()
                 .address(propertyDetails.getAddress())
                 .geoData(propertyDetails.getGeoData())
@@ -172,14 +183,14 @@ public class LeadReadServiceImpl implements LeadReadService {
     @Transactional(readOnly = true)
     public SourcingDetailsResponse getSourcingDetails(UUID leadIdentifier) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
-        
+
         if (lead.getSourcingChannelId() == null) {
             return SourcingDetailsResponse.builder().build();
         }
-        
-        SourcingChannelResponse sourcingChannelResponse = 
+
+        SourcingChannelResponse sourcingChannelResponse =
             sourcingChannelReadService.getById(lead.getSourcingChannelId());
-        
+
         return SourcingDetailsResponse.builder()
                 .sourcingChannelDetails(sourcingChannelResponse)
                 .build();
@@ -190,11 +201,11 @@ public class LeadReadServiceImpl implements LeadReadService {
     public DisbursementDetailsResponse getDisbursementDetails(UUID leadIdentifier) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
         Lead.DisbursementDetails disbursementDetails = lead.getDisbursementDetails();
-        
+
         if (disbursementDetails == null) {
             return DisbursementDetailsResponse.builder().build();
         }
-        
+
         // Map tranches to response
         List<TrancheResponse> trancheResponses = null;
         if (disbursementDetails.getTranches() != null) {
@@ -206,7 +217,7 @@ public class LeadReadServiceImpl implements LeadReadService {
                             .build())
                     .collect(Collectors.toList());
         }
-        
+
         return DisbursementDetailsResponse.builder()
                 .disbursedAmount(disbursementDetails.getDisbursedAmount())
                 .roi(disbursementDetails.getRoi())
@@ -223,17 +234,17 @@ public class LeadReadServiceImpl implements LeadReadService {
     public TrancheResponse getTrancheByIdentifier(UUID leadIdentifier, UUID trancheIdentifier) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
         Lead.DisbursementDetails disbursementDetails = lead.getDisbursementDetails();
-        
+
         if (disbursementDetails == null || disbursementDetails.getTranches() == null) {
             throw new RuntimeException("Tranche not found with identifier: " + trancheIdentifier);
         }
-        
+
         // Find tranche by identifier
         Lead.Tranche tranche = disbursementDetails.getTranches().stream()
                 .filter(t -> trancheIdentifier.equals(t.getIdentifier()))
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Tranche not found with identifier: " + trancheIdentifier));
-        
+
         return TrancheResponse.builder()
                 .identifier(tranche.getIdentifier())
                 .amount(tranche.getAmount())
@@ -257,5 +268,53 @@ public class LeadReadServiceImpl implements LeadReadService {
     @Override
     public PaginatedResponse<LeadSearchResponse> searchLeads(PaginationRequest paginationRequest, LeadSearchRequest request) {
         return leadRepositoryWrapper.searchLeadsByPhoneNumber(paginationRequest, request);
+    }
+
+    @Override
+    public LeadDashboardFiltersResponse getLeadDashboardFilters(LeadDashboardFiltersFilters filters) {
+        // Get current user's staff and office
+        StaffResponse currentStaff = staffReadService.getCurrentStaff();
+        String currentUserOfficeKey = currentStaff.getOfficeKey();
+        OfficeResponse currentUserOffice = officeReadService.getOfficeByKey(currentUserOfficeKey);
+        String currentUserOfficeCode = currentUserOffice.getCode();
+
+        // Get all offices in hierarchy
+        List<LeadDashboardFiltersResponse.OfficeResponse> allOffices = officeReadService.getOfficesByCodePrefix(currentUserOfficeCode)
+                .stream().map(officeResponse ->  LeadDashboardFiltersResponse
+                        .OfficeResponse.builder()
+                        .key(officeResponse.getKey())
+                        .name(officeResponse.getName())
+                        .build()).toList();
+
+        // Determine which offices to use for staff filtering
+        List<String> officeKeysForStaff;
+        if (filters != null && !CollectionUtils.isEmpty(filters.getOffices())) {
+            // Validate branch offices are within hierarchy
+            List<OfficeResponse> filteredOffices = officeReadService.getOfficeByKeys(filters.getOffices());
+            officeKeysForStaff = filteredOffices.stream()
+                    .filter(office -> office.getCode().startsWith(currentUserOfficeCode))
+                    .map(OfficeResponse::getKey)
+                    .collect(Collectors.toList());
+        } else {
+            // Get staff from all offices in hierarchy
+            officeKeysForStaff = allOffices.stream()
+                    .map(LeadDashboardFiltersResponse.OfficeResponse::getKey)
+                    .collect(Collectors.toList());
+        }
+
+        // Get staff for the determined offices
+        List<LeadDashboardFiltersResponse.StaffResponse> staffList = staffReadService
+                .getStaffByOfficeKeys(officeKeysForStaff)
+                .stream()
+                .map(staffResponse -> LeadDashboardFiltersResponse.StaffResponse
+                        .builder()
+                        .displayName(staffResponse.getUserResponse().getPersonResponse().getDisplayName())
+                        .username(staffResponse.getUserResponse().getUsername()).build())
+                .toList();
+
+        return LeadDashboardFiltersResponse.builder()
+                .offices(allOffices)
+                .staffs(staffList)
+                .build();
     }
 }
