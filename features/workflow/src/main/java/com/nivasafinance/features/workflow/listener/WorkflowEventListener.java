@@ -1,6 +1,5 @@
 package com.nivasafinance.features.workflow.listener;
 
-import com.nivasafinance.common.events.BusinessEvent;
 import com.nivasafinance.common.events.SystemEvent;
 import com.nivasafinance.common.events.payload.StageTransitionEventPayload;
 import com.nivasafinance.common.enums.EntityType;
@@ -29,19 +28,16 @@ public class WorkflowEventListener {
 
     /**
      * Handles STAGE_TRANSITIONED events asynchronously to create tasks for the new stage.
+     * The condition ensures only STAGE_TRANSITIONED events are processed by this listener.
      */
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @TransactionalEventListener(
+            phase = TransactionPhase.AFTER_COMMIT,
+            condition = "#event.eventType == 'STAGE_TRANSITIONED'"
+    )
     @Async
     public void handleSystemEvent(SystemEvent<?> event) {
-        String eventType = event.getEventType();
-
-        // Only handle STAGE_TRANSITIONED events
-        if (!BusinessEvent.STAGE_TRANSITIONED.toString().equals(eventType)) {
-            return;
-        }
-
         if (!(event.getPayload() instanceof StageTransitionEventPayload)) {
-            log.warn("Received non-StageTransitionEventPayload for STAGE_TRANSITIONED event: {}", eventType);
+            log.warn("Received non-StageTransitionEventPayload for STAGE_TRANSITIONED event: {}", event.getEventType());
             return;
         }
 
