@@ -7,9 +7,9 @@ import com.nivasafinance.features.person.dto.PersonResponse;
 import com.nivasafinance.features.rolemanagement.mapping.entity.UserRoleMapping;
 import com.nivasafinance.features.rolemanagement.mapping.repository.UserRoleMappingRepository;
 import com.nivasafinance.features.rolemanagement.role.dto.UserAssignmentResponse;
+import com.nivasafinance.common.context.UserContext;
 import com.nivasafinance.features.rolemanagement.role.service.UserQueryService;
 import com.nivasafinance.features.rolemanagement.role.service.UserRoleService;
-import com.nivasafinance.features.staff.service.StaffReadService;
 import com.nivasafinance.features.usermanagement.dto.UserResponse;
 import com.nivasafinance.features.usermanagement.service.UserReadService;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +29,6 @@ public class UserQueryServiceImpl implements UserQueryService, ApplicationContex
     private final UserReadService userReadService;
     private final OfficeReadService officeReadService;
     private final UserRoleService userRoleService;
-    private final StaffReadService staffReadService;
     private ApplicationContext applicationContext;
     
     @Override
@@ -60,6 +59,29 @@ public class UserQueryServiceImpl implements UserQueryService, ApplicationContex
             return null;
         }
     }
+    
+    private String getCurrentStaffOfficeKey() {
+        try {
+            String currentUsername = UserContext.getUsername();
+            if (!ValidationUtils.isNonNull(currentUsername)) {
+                return null;
+            }
+            
+            UserResponse user = userReadService.getUserByUsername(currentUsername);
+            if (!ValidationUtils.isNonNull(user)) {
+                return null;
+            }
+            
+            Optional<Object> staffOpt = findStaffByUserId(user.getId());
+            if (staffOpt.isEmpty()) {
+                return null;
+            }
+            
+            return getStaffOfficeKey(staffOpt.get());
+        } catch (Exception e) {
+            return null;
+        }
+    }
 
     @Override
     public List<UserAssignmentResponse> getUsersByOfficeAndRoles(List<String> roles) {
@@ -68,8 +90,8 @@ public class UserQueryServiceImpl implements UserQueryService, ApplicationContex
                 return Collections.emptyList();
             }
 
-            // Fetch officeKey from current staff
-            String officeKey = staffReadService.getCurrentStaff().getOfficeKey();
+            // Fetch officeKey from current staff using reflection to avoid circular dependency
+            String officeKey = getCurrentStaffOfficeKey();
             if (!ValidationUtils.isNonNull(officeKey)) {
                 return Collections.emptyList();
             }

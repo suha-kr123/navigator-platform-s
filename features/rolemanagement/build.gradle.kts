@@ -8,8 +8,7 @@ plugins {
 dependencies {
     implementation(project(":common"))
     implementation(project(":features:usermanagement"))
-    // Note: Changed to implementation to allow compile-time access to StaffReadService
-    implementation(project(":features:staff"))
+    // Note: Removed staff dependency to break circular dependency. Using reflection instead.
     implementation(project(":features:offices"))
     implementation(project(":features:person"))
 }
