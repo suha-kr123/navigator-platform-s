@@ -22,6 +22,7 @@ dependencies {
     implementation(project(":features:staff"))
     implementation(project(":features:offices"))
     implementation(project(":features:usermanagement"))
+    implementation(project(":features:advisor"))
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
 }
 

@@ -11,7 +11,8 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AdvisorResponse {
-    
+
+    private Long id;
     private UUID identifier;
     private AdvisorStatus status;
     private PersonalDetails personalDetails;

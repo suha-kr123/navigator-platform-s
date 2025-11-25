@@ -1,21 +1,23 @@
 package com.nivasafinance.features.lead.service.impl;
 
 import com.nivasafinance.common.context.UserContext;
+import com.nivasafinance.common.dto.AddressData;
 import com.nivasafinance.common.events.BusinessEvent;
 import com.nivasafinance.common.events.SystemEvent;
 import com.nivasafinance.common.events.payload.LeadCreationEventPayload;
 import com.nivasafinance.common.events.payload.LeadStatusChangeEventPayload;
 import com.nivasafinance.common.events.payload.LeadUpdateEventPayload;
-import com.nivasafinance.common.dto.AddressData;
 import com.nivasafinance.common.exception.BadRequestException;
 import com.nivasafinance.features.address.service.AddressDataService;
+import com.nivasafinance.features.advisor.dto.AdvisorResponse;
+import com.nivasafinance.features.advisor.service.AdvisorReadService;
+import com.nivasafinance.features.advisorlead.entity.AdvisorLeadMapping;
+import com.nivasafinance.features.advisorlead.repository.AdvisorLeadMappingRepositoryWrapper;
 import com.nivasafinance.features.lead.dto.*;
-import com.nivasafinance.features.lead.entity.Contact;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.enums.LeadStatus;
 import com.nivasafinance.features.lead.enums.LeadSubStatus;
 import com.nivasafinance.features.lead.exception.ActiveLeadAlreadyExistsException;
-import com.nivasafinance.features.lead.repository.ContactRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadContactWriteService;
 import com.nivasafinance.features.lead.service.LeadWriteService;
@@ -23,11 +25,9 @@ import com.nivasafinance.features.master.codemaster.SystemControlledMasterCodes;
 import com.nivasafinance.features.master.codemaster.service.CodeValueMasterService;
 import com.nivasafinance.features.master.products.service.ProductReadService;
 import com.nivasafinance.features.person.dto.PersonCreateRequest;
-import com.nivasafinance.features.person.dto.PersonCreateResponse;
 import com.nivasafinance.features.person.entity.MobileNumberDetails;
 import com.nivasafinance.features.person.entity.Person;
 import com.nivasafinance.features.person.repository.PersonRepositoryWrapper;
-import com.nivasafinance.features.person.service.PersonWriteService;
 import com.nivasafinance.features.sourcechannel.dto.SourcingChannelRequest;
 import com.nivasafinance.features.sourcechannel.dto.SourcingChannelResponse;
 import com.nivasafinance.features.sourcechannel.service.SourcingChannelWriteService;
@@ -61,6 +61,8 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     private final CodeValueMasterService codeValueMasterService;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final LeadContactWriteService contactWriteService;
+    private final AdvisorLeadMappingRepositoryWrapper advisorLeadMappingRepositoryWrapper;
+    private final AdvisorReadService advisorReadService;
 
 
     @Override
@@ -141,6 +143,9 @@ public class LeadWriteServiceImpl implements LeadWriteService {
             otherDetails.setPriority(request.getPriority());
         }
         lead.setOtherDetails(otherDetails);
+
+        // Handle advisor mapping
+        handleAdvisorMapping(lead, request);
 
         leadRepositoryWrapper.saveWithException(lead);
 
@@ -683,6 +688,36 @@ public class LeadWriteServiceImpl implements LeadWriteService {
                     request.getPhoneNumber().getMobileNumber(),
                     messageSource
             );
+        }
+    }
+
+    private void handleAdvisorMapping(Lead lead, UpdateLeadRequest request) {
+        if (request.getAdvisorId() != null) {
+
+            // Validate advisor exists - this will throw exception if not found
+            AdvisorResponse advisor = advisorReadService.getAdvisorByIdentifier(request.getAdvisorId());
+            Long advisorId = advisor.getId();
+            Long leadId = lead.getId();
+
+            // Find existing mapping for this lead
+            Optional<AdvisorLeadMapping> existingMapping = advisorLeadMappingRepositoryWrapper.findByLeadId(leadId);
+
+            AdvisorLeadMapping mapping;
+            if (existingMapping.isPresent()) {
+                // Update existing mapping
+                mapping = existingMapping.get();
+                mapping.setAdvisorId(advisorId);
+            } else {
+                // Create new mapping
+                mapping = new AdvisorLeadMapping();
+                mapping.setAdvisorId(advisorId);
+                mapping.setLeadId(leadId);
+            }
+            advisorLeadMappingRepositoryWrapper.saveWithException(mapping);
+        } else {
+            // Remove mapping if advisorId is null
+            Optional<AdvisorLeadMapping> existingMapping = advisorLeadMappingRepositoryWrapper.findByLeadId(lead.getId());
+            existingMapping.ifPresent(advisorLeadMappingRepositoryWrapper::deleteWithException);
         }
     }
 }

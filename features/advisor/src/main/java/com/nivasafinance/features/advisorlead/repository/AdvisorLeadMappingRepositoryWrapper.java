@@ -21,6 +21,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -79,6 +80,22 @@ public class AdvisorLeadMappingRepositoryWrapper {
             AdvisorLeadMappingOperationException exception = AdvisorLeadMappingExceptionFactory.deleteFailed(messageSource);
             exception.initCause(e);
             throw exception;
+        }
+    }
+
+    public Optional<AdvisorLeadMapping> findByLeadId(Long leadId) {
+        try {
+            return advisorLeadMappingRepository.findByLeadId(leadId);
+        } catch (DataAccessException e) {
+            throw AdvisorLeadMappingExceptionFactory.retrieveEntityFailed(messageSource);
+        }
+    }
+
+    public void deleteWithException(AdvisorLeadMapping advisorLeadMapping) {
+        try {
+            advisorLeadMappingRepository.delete(advisorLeadMapping);
+        } catch (DataAccessException e) {
+            throw AdvisorLeadMappingExceptionFactory.deleteFailed(messageSource);
         }
     }
 

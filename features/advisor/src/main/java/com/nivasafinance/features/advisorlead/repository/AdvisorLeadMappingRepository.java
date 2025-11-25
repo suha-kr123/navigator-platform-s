@@ -6,10 +6,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface AdvisorLeadMappingRepository extends JpaRepository<AdvisorLeadMapping, UUID> {
     Page<AdvisorLeadMapping> findAllByAdvisorId(UUID advisorId, Pageable pageable);
+    Optional<AdvisorLeadMapping> findByLeadId(Long leadId);
 }
 

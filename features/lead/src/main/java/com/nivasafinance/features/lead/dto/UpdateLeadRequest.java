@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalTime;
+import java.util.UUID;
 
 @Data
 @NoArgsConstructor
@@ -27,7 +28,7 @@ public class UpdateLeadRequest {
     
     private String productCode;
 
-    private String advisorId;
+    private UUID advisorId;
 
     private LocalTime preferredCallStartTime;
 

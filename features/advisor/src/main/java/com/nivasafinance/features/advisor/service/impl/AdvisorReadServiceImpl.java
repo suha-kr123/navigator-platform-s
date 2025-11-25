@@ -103,6 +103,7 @@ public class AdvisorReadServiceImpl implements AdvisorReadService {
         Person person = personRepositoryWrapper.findByIdWithException(advisor.getPersonId());
         
         AdvisorResponse response = new AdvisorResponse();
+        response.setId(advisor.getId());
         response.setIdentifier(advisor.getIdentifier());
         
         // Map personal details from Person entity
