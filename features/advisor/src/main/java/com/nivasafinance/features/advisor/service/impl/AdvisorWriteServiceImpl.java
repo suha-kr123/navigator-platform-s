@@ -68,6 +68,16 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
         PersonUpdateRequest personUpdateRequest = buildPersonUpdateRequest(request);
         personWriteService.updatePerson(advisor.getPersonId(), personUpdateRequest);
 
+        // Update office key if provided
+        if (request.getOfficeKey() != null) {
+            advisor.setOfficeKey(request.getOfficeKey());
+        }
+
+        // Update owner if provided
+        if (request.getOwner() != null) {
+            advisor.setOwner(request.getOwner());
+        }
+
         advisorRepositoryWrapper.saveWithException(advisor);
     }
 

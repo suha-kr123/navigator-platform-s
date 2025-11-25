@@ -20,5 +20,8 @@ public class AdvisorResponse {
     private QualificationDetails qualificationDetails;
     private OtherDetails otherDetails;
     private SegmentationDetails segmentationDetails;
+    private String ownerUsername;
+    private String officeKey;
+    private String officeName;
 }
 

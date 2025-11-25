@@ -115,4 +115,13 @@ public class AdvisorController {
         return ResponseEntity.ok(leads);
     }
 
+    @GetMapping("/dashboard")
+    public ResponseEntity<PaginatedResponse<AdvisorDashboardResponse>> getAdvisorDashboard(
+            @Valid PaginationRequest paginationRequest,
+            @ModelAttribute AdvisorDashboardFilters filters) {
+        PaginatedResponse<AdvisorDashboardResponse> response =
+                advisorReadService.getAdvisorDashboard(paginationRequest, filters);
+        return ResponseEntity.ok(response);
+    }
+
 }

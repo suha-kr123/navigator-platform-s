@@ -71,6 +71,9 @@ public class Advisor extends AuditableEntity {
     @Column(name = "office_key", length = 100)
     private String officeKey;
 
+    @Column(name = "owner", length = 255)
+    private String owner;
+
     @Type(JsonType.class)
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "rejection_details", columnDefinition = "jsonb")
