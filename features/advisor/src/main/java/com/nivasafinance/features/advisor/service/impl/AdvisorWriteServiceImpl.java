@@ -6,10 +6,10 @@ import com.nivasafinance.features.advisor.entity.Advisor;
 import com.nivasafinance.features.advisor.enums.AdvisorStatus;
 import com.nivasafinance.features.advisor.repository.AdvisorRepositoryWrapper;
 import com.nivasafinance.features.advisor.service.AdvisorWriteService;
+import com.nivasafinance.features.offices.service.OfficeReadService;
 import com.nivasafinance.features.person.dto.PersonCreateRequest;
 import com.nivasafinance.features.person.dto.PersonCreateResponse;
 import com.nivasafinance.features.person.dto.PersonUpdateRequest;
-import com.nivasafinance.features.person.entity.Person;
 import com.nivasafinance.features.person.repository.PersonRepositoryWrapper;
 import com.nivasafinance.features.person.service.PersonWriteService;
 import com.nivasafinance.features.sourcechannel.dto.SourcingChannelRequest;
@@ -42,6 +42,7 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
     private final SourcingChannelWriteService sourcingChannelWriteService;
     private final SourcingChannelRepositoryWrapper sourcingChannelRepositoryWrapper;
     private final CodeMasterService codeMasterService;
+    private final OfficeReadService officeReadService;
 
     @Override
     public UUID createAdvisor(CreateAdvisorRequest request) {
@@ -54,6 +55,12 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
         advisor.setIdentifier(UUID.randomUUID());
         advisor.setPersonId(personResponse.getId());
         advisor.setStatus(AdvisorStatus.CREATED);
+        if (request.getOfficeKey() != null) {
+            officeReadService.getOfficeByKey(request.getOfficeKey()); //validate
+            advisor.setOfficeKey(request.getOfficeKey());
+        }
+        else
+            advisor.setOfficeKey("HQ");
 
         Advisor savedAdvisor = advisorRepositoryWrapper.saveWithException(advisor);
 

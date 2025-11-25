@@ -16,4 +16,6 @@ public class CreateAdvisorRequest {
     private MobileNumberDetails mobileNumberDetails;
 
     private PersonalDetails personalDetails;
+
+    private String officeKey;
 }
