@@ -59,4 +59,13 @@ public class LeadResponse {
     private String lenderStatus;
     private CodeValueResponse lenderStage;
     private String lenderOfficeName;
+
+    //workflow details
+    private String workflowConfigKey;
+    private String currentStageKey;
+    private String currentSubStageKey;
+    private String assignedTo;
+    private LocalDateTime assignedAt;
+    private LocalDateTime enteredAt;
+
 }

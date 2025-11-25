@@ -5,12 +5,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationInfo;
 import com.nivasafinance.common.base.model.PaginationRequest;
-import com.nivasafinance.features.task.dto.OutcomeDetails;
-import com.nivasafinance.features.task.dto.TaskDetails;
+import com.nivasafinance.common.utils.ValidationUtils;
+import com.nivasafinance.features.task.dto.OutcomeDetailsResponse;
+import com.nivasafinance.features.task.dto.TaskDetailsResponse;
 import com.nivasafinance.features.task.dto.TaskResponse;
 import com.nivasafinance.features.task.service.TaskReadService;
 import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
@@ -21,11 +21,11 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 @Transactional(readOnly = true)
 @AllArgsConstructor
-@Slf4j
 public class TaskReadServiceImpl implements TaskReadService {
 
     private final JdbcTemplate jdbcTemplate;
@@ -45,9 +45,6 @@ public class TaskReadServiceImpl implements TaskReadService {
     @Override
     public PaginatedResponse<TaskResponse> getTasksByAssignedTo(String assignedTo, boolean includeCompleted, 
                                                                  PaginationRequest paginationRequest) {
-        log.debug("Fetching tasks for assignedTo: {}, includeCompleted: {}, pagination: {}", 
-                  assignedTo, includeCompleted, paginationRequest);
-        
         StringBuilder whereClause = new StringBuilder("WHERE t.assigned_to = ? ");
         if (!includeCompleted) {
             whereClause.append("AND t.outcome IS NULL ");
@@ -76,7 +73,7 @@ public class TaskReadServiceImpl implements TaskReadService {
         String sortBy = paginationRequest.getSortBy();
         String sortDirection = paginationRequest.getSortDirection();
         
-        if (sortBy == null || sortBy.trim().isEmpty()) {
+        if (!ValidationUtils.isNonNull(sortBy) || sortBy.trim().isEmpty()) {
             return "ORDER BY t.due_at ASC, t.created_at DESC ";
         }
         
@@ -120,19 +117,20 @@ public class TaskReadServiceImpl implements TaskReadService {
         @Override
         public TaskResponse mapRow(ResultSet rs, int rowNum) throws SQLException {
             Map<String, Object> outcomeDetailsMap = parseJsonColumn(rs, "outcome_details");
-            OutcomeDetails outcomeDetails = null;
-            if (outcomeDetailsMap != null && !outcomeDetailsMap.isEmpty()) {
-                outcomeDetails = objectMapper.convertValue(outcomeDetailsMap, OutcomeDetails.class);
+            OutcomeDetailsResponse outcomeDetails = null;
+            if (ValidationUtils.isNonNull(outcomeDetailsMap) && !outcomeDetailsMap.isEmpty()) {
+                outcomeDetails = objectMapper.convertValue(outcomeDetailsMap, OutcomeDetailsResponse.class);
             }
             
             Map<String, Object> taskDetailsMap = parseJsonColumn(rs, "task_details");
-            TaskDetails taskDetails = null;
-            if (taskDetailsMap != null && !taskDetailsMap.isEmpty()) {
-                taskDetails = objectMapper.convertValue(taskDetailsMap, TaskDetails.class);
+            TaskDetailsResponse taskDetails = null;
+            if (ValidationUtils.isNonNull(taskDetailsMap) && !taskDetailsMap.isEmpty()) {
+                taskDetails = objectMapper.convertValue(taskDetailsMap, TaskDetailsResponse.class);
             }
             
+            UUID taskIdentifier = rs.getObject("task_identifier", UUID.class);
             return TaskResponse.builder()
-                    .taskIdentifier(rs.getString("task_identifier"))
+                    .taskIdentifier(taskIdentifier)
                     .taskConfigKey(rs.getString("task_config_key"))
                     .taskName(rs.getString("task_name"))
                     .taskDescription(rs.getString("task_description"))
@@ -151,7 +149,7 @@ public class TaskReadServiceImpl implements TaskReadService {
 
     private LocalDateTime getLocalDateTime(ResultSet rs, String columnName) throws SQLException {
         Object value = rs.getObject(columnName);
-        if (value == null) {
+        if (!ValidationUtils.isNonNull(value)) {
             return null;
         }
         
@@ -169,12 +167,11 @@ public class TaskReadServiceImpl implements TaskReadService {
     private Map<String, Object> parseJsonColumn(ResultSet rs, String columnName) {
         try {
             String jsonString = rs.getString(columnName);
-            if (jsonString == null || jsonString.trim().isEmpty()) {
+            if (!ValidationUtils.isNonNull(jsonString) || jsonString.trim().isEmpty()) {
                 return null;
             }
             return objectMapper.readValue(jsonString, new TypeReference<Map<String, Object>>() {});
         } catch (Exception e) {
-            log.warn("Failed to parse JSON column {}: {}", columnName, e.getMessage());
             return null;
         }
     }

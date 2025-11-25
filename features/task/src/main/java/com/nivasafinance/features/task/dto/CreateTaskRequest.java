@@ -22,5 +22,5 @@ public class CreateTaskRequest {
 
     private LocalDateTime dueAt;
 
-    private TaskDetails taskDetails;
+    private TaskDetailsRequest taskDetails;
 }

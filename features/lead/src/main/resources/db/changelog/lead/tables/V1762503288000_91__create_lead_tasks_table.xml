@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="create_n_lead_tasks_table" author="system">
+        <createTable tableName="n_lead_tasks">
+            <!-- id -->
+            <column name="id" type="BIGSERIAL" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <!-- lead_id -->
+            <column name="lead_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- task_id -->
+            <column name="task_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- task_details -->
+            <column name="task_details" type="jsonb"/>
+
+            <!-- Audit fields -->
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="NOW()"/>
+            <column name="created_by" type="VARCHAR(255)"/>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="NOW()"/>
+            <column name="updated_by" type="VARCHAR(255)"/>
+            <column name="version" type="BIGINT" defaultValueNumeric="0"/>
+        </createTable>
+
+        <!-- Index for lead_id queries (most common lookup) -->
+        <createIndex indexName="idx_lead_tasks_lead_id" tableName="n_lead_tasks">
+            <column name="lead_id"/>
+        </createIndex>
+
+        <!-- Index for task_id lookups -->
+        <createIndex indexName="idx_lead_tasks_task_id" tableName="n_lead_tasks">
+            <column name="task_id"/>
+        </createIndex>
+
+        <!-- Composite index for lead_id and task_id lookups -->
+        <createIndex indexName="idx_lead_tasks_lead_task" tableName="n_lead_tasks">
+            <column name="lead_id"/>
+            <column name="task_id"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>
+

@@ -10,6 +10,7 @@ dependencies {
     implementation(project(":features:usermanagement"))
     implementation(project(":features:person"))
     implementation(project(":features:offices"))
+    implementation(project(":features:rolemanagement"))
 }
 
 springBoot {

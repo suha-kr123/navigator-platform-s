@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Data
 @NoArgsConstructor
@@ -16,7 +17,9 @@ import java.time.LocalDateTime;
 @Builder
 public class TaskResponse {
   
-    private String taskIdentifier;
+    private Long id;
+    
+    private UUID taskIdentifier;
 
     private String taskConfigKey;
 
@@ -30,9 +33,9 @@ public class TaskResponse {
 
     private String outcome;
 
-    private OutcomeDetails outcomeDetails;
+    private OutcomeDetailsResponse outcomeDetails;
 
-    private TaskDetails taskDetails;
+    private TaskDetailsResponse taskDetails;
 
     private LocalDateTime createdAt;
 
@@ -43,21 +46,39 @@ public class TaskResponse {
     private String updatedBy;
 
     public static TaskResponse from(Task task, TaskConfig taskConfig, ObjectMapper objectMapper) {
-        OutcomeDetails outcomeDetails = null;
-        if (task.getOutcomeDetails() != null && !task.getOutcomeDetails().isEmpty()) {
-            outcomeDetails = objectMapper.convertValue(task.getOutcomeDetails(), OutcomeDetails.class);
+        OutcomeDetailsResponse outcomeDetails = null;
+        if (com.nivasafinance.common.utils.ValidationUtils.isNonNull(task.getOutcomeDetails())) {
+            outcomeDetails = OutcomeDetailsResponse.builder()
+                    .remarks(task.getOutcomeDetails().getRemarks())
+                    .completedAt(task.getOutcomeDetails().getCompletedAt())
+                    .completedBy(task.getOutcomeDetails().getCompletedBy())
+                    .build();
         }
         
-        TaskDetails taskDetails = null;
-        if (task.getTaskDetails() != null && !task.getTaskDetails().isEmpty()) {
-            taskDetails = objectMapper.convertValue(task.getTaskDetails(), TaskDetails.class);
+        TaskDetailsResponse taskDetails = null;
+        if (com.nivasafinance.common.utils.ValidationUtils.isNonNull(task.getTaskDetails())) {
+            TaskDetailsResponse.PreferredCallWindow preferredCallWindow = null;
+            if (com.nivasafinance.common.utils.ValidationUtils.isNonNull(task.getTaskDetails().getPreferredCallWindow())) {
+                preferredCallWindow = TaskDetailsResponse.PreferredCallWindow.builder()
+                        .start(task.getTaskDetails().getPreferredCallWindow().getStart())
+                        .end(task.getTaskDetails().getPreferredCallWindow().getEnd())
+                        .build();
+            }
+            taskDetails = TaskDetailsResponse.builder()
+                    .entityId(task.getTaskDetails().getEntityId())
+                    .entityType(task.getTaskDetails().getEntityType())
+                    .preferredCallWindow(preferredCallWindow)
+                    .creatorRemarks(task.getTaskDetails().getCreatorRemarks())
+                    .iterationCount(task.getTaskDetails().getIterationCount())
+                    .build();
         }
         
         return TaskResponse.builder()
+                .id(task.getId())
                 .taskIdentifier(task.getTaskIdentifier())
                 .taskConfigKey(task.getTaskConfigKey())
-                .taskName(taskConfig != null ? taskConfig.getName() : null)
-                .taskDescription(taskConfig != null ? taskConfig.getDescription() : null)
+                .taskName(com.nivasafinance.common.utils.ValidationUtils.isNonNull(taskConfig) ? taskConfig.getName() : null)
+                .taskDescription(com.nivasafinance.common.utils.ValidationUtils.isNonNull(taskConfig) ? taskConfig.getDescription() : null)
                 .assignedTo(task.getAssignedTo())
                 .dueAt(task.getDueAt())
                 .outcome(task.getOutcome())

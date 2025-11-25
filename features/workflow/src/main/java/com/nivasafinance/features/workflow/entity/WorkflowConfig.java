@@ -1,6 +1,7 @@
 package com.nivasafinance.features.workflow.entity;
 
 import com.nivasafinance.common.audit.AuditableEntity;
+import com.nivasafinance.features.workflow.dto.WorkflowStageConfig;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -9,6 +10,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -16,7 +18,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.Type;
 import org.hibernate.type.SqlTypes;
 
-import java.util.Map;
+import java.util.List;
 
 @Entity
 @Table(name = "n_workflow_config")
@@ -42,9 +44,20 @@ public class WorkflowConfig extends AuditableEntity {
     @Type(JsonType.class)
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "workflow_config_details", columnDefinition = "jsonb")
-    private Map<String, Object> workflowConfigDetails;
+    private WorkflowConfigDetails workflowConfigDetails;
 
     @Column(name = "is_active")
     private Boolean isActive;
+
+    // Nested data class for JSONB field
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class WorkflowConfigDetails {
+        private String landingStage;
+        private List<WorkflowStageConfig> stages;
+    }
 }
 

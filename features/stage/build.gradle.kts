@@ -8,6 +8,7 @@ plugins {
 
 dependencies {
     implementation(project(":features:master"))
+    implementation(project(":features:rolemanagement"))
 }
 
 springBoot {

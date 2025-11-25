@@ -19,18 +19,31 @@ import java.util.stream.Collectors;
 public class LeadStageHistoryResponse {
     
     private Long id;
+    
     private Long leadId;
+    
     private String stageKey;
+    
     private String stageFrom;
+    
     private String subStageKey;
+    
     private LocalDateTime enteredAt;
+    
     private LocalDateTime exitedAt;
+    
     private String movedBy;
+    
     private String remarks;
+    
     private List<LeadStageAssignmentHistoryResponse> assignmentHistory;
+    
     private LocalDateTime createdAt;
+    
     private String createdBy;
+    
     private LocalDateTime updatedAt;
+    
     private String updatedBy;
 
     public static LeadStageHistoryResponse from(LeadStageHistory leadStageHistory) {

@@ -9,6 +9,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -16,7 +17,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.Type;
 import org.hibernate.type.SqlTypes;
 
-import java.util.Map;
+import java.util.List;
 
 @Entity
 @Table(name = "n_task_config")
@@ -42,9 +43,21 @@ public class TaskConfig extends AuditableEntity {
     @Type(JsonType.class)
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "task_config_details", columnDefinition = "jsonb")
-    private Map<String, Object> taskConfigDetails;
+    private TaskConfigDetails taskConfigDetails;
 
     @Column(name = "is_active")
     private Boolean isActive;
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class TaskConfigDetails {
+        private String allowedOutcomesCodeValueKey;
+        private Boolean isRescheduledAllowed;
+        private String rescheduleReasonsCodeValueKey;
+        private List<String> allowedRoles;
+        private String dueDateLogicExpression;
+    }
 }
 

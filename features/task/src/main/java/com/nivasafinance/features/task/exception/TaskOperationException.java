@@ -4,6 +4,7 @@ import com.nivasafinance.common.exception.ExceptionUtils;
 import org.springframework.context.MessageSource;
 
 import java.io.Serial;
+import java.util.UUID;
 
 public class TaskOperationException extends RuntimeException {
 
@@ -28,28 +29,28 @@ public class TaskOperationException extends RuntimeException {
         );
     }
 
-    public static TaskOperationException alreadyCompleted(String taskIdentifier, MessageSource messageSource) {
+    public static TaskOperationException alreadyCompleted(UUID taskIdentifier, MessageSource messageSource) {
         return new TaskOperationException(
             ExceptionUtils.createLocalizedMessage("error.task.already.completed", 
                 new Object[]{taskIdentifier}, messageSource)
         );
     }
 
-    public static TaskOperationException cannotReassignCompleted(String taskIdentifier, MessageSource messageSource) {
+    public static TaskOperationException cannotReassignCompleted(UUID taskIdentifier, MessageSource messageSource) {
         return new TaskOperationException(
             ExceptionUtils.createLocalizedMessage("error.task.cannot.reassign.completed", 
                 new Object[]{taskIdentifier}, messageSource)
         );
     }
 
-    public static TaskOperationException cannotRescheduleCompleted(String taskIdentifier, MessageSource messageSource) {
+    public static TaskOperationException cannotRescheduleCompleted(UUID taskIdentifier, MessageSource messageSource) {
         return new TaskOperationException(
             ExceptionUtils.createLocalizedMessage("error.task.cannot.reschedule.completed", 
                 new Object[]{taskIdentifier}, messageSource)
         );
     }
 
-    public static TaskOperationException cannotReassignToSameUserOrRole(String taskIdentifier, MessageSource messageSource) {
+    public static TaskOperationException cannotReassignToSameUserOrRole(UUID taskIdentifier, MessageSource messageSource) {
         return new TaskOperationException(
             ExceptionUtils.createLocalizedMessage("error.task.cannot.reassign.same", 
                 new Object[]{taskIdentifier}, messageSource)

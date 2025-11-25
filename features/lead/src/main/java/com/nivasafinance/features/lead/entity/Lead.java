@@ -151,10 +151,36 @@ public class Lead extends AuditableEntity {
     @AllArgsConstructor
     @Builder
     public static class WorkflowDetails {
-        private String workflowIdentifier;
+        private String workflowConfigKey;
+        private CurrentStageDetails currentStageDetails;
+        private LastStageDetails lastStageDetails;
+    }
+    
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class CurrentStageDetails {
+        private String stageKey;    
+        private String subStageKey;
         private String assignedTo;
-        private String currentStage;
-        private String currentOutcome;
+        private LocalDateTime assignedAt;
+        private LocalDateTime enteredAt;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class LastStageDetails {
+        private String stageKey;
+        private String subStageKey;
+        private String assignedTo;
+        private LocalDateTime assignedAt;
+        private LocalDateTime enteredAt;
+        private LocalDateTime exitedAt;
+        private String movedBy;
+        private String remarks;
     }
 
     @Data

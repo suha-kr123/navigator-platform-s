@@ -12,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Optional;
 
 @Component
@@ -32,7 +33,28 @@ public class LeadStageHistoryRepositoryWrapper {
     public PaginatedResponse<LeadStageHistory> findByLeadIdOrderByEnteredAtDesc(Long leadId, PaginationRequest paginationRequest) {
         int offset = paginationRequest.getOffset();
         int limit = paginationRequest.getLimit();
-        String sortBy = paginationRequest.getSortBy() != null ? paginationRequest.getSortBy() : "enteredAt";
+        String sortBy = paginationRequest.getSortBy();
+        
+        // Map common field names from snake_case to camelCase (entity property names)
+        if ("created_at".equals(sortBy)) {
+            sortBy = "createdAt";
+        } else if ("entered_at".equals(sortBy)) {
+            sortBy = "enteredAt";
+        } else if ("exited_at".equals(sortBy)) {
+            sortBy = "exitedAt";
+        } else if ("stage_from".equals(sortBy)) {
+            sortBy = "stageFrom";
+        } else if ("stage_key".equals(sortBy)) {
+            sortBy = "stageKey";
+        } else if ("sub_stage_key".equals(sortBy)) {
+            sortBy = "subStageKey";
+        } else if ("moved_by".equals(sortBy)) {
+            sortBy = "movedBy";
+        } else if (sortBy == null || sortBy.isEmpty()) {
+            // Default to enteredAt for stage history (more appropriate than createdAt)
+            sortBy = "enteredAt";
+        }
+        
         String sortDirection = paginationRequest.getSortDirection() != null ? paginationRequest.getSortDirection() : "DESC";
         
         Sort sort = Sort.by(Sort.Direction.fromString(sortDirection), sortBy);
@@ -49,6 +71,10 @@ public class LeadStageHistoryRepositoryWrapper {
                 offset, limit, totalElements, totalPages, currentPage, hasNext, hasPrevious);
         
         return new PaginatedResponse<>(page.getContent(), paginationInfo);
+    }
+
+    public List<LeadStageHistory> findAllByLeadId(Long leadId) {
+        return repository.findByLeadIdOrderByEnteredAtDesc(leadId);
     }
 }
 

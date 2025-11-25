@@ -5,7 +5,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
+import java.util.UUID;
 
 @Data
 @NoArgsConstructor
@@ -13,8 +15,8 @@ import jakarta.validation.constraints.NotBlank;
 @Builder
 public class ReassignTaskRequest {
     
-    @NotBlank(message = "Task identifier is required")
-    private String taskIdentifier;
+    @NotNull(message = "Task identifier is required")
+    private UUID taskIdentifier;
 
     private String newAssignedTo;
 }

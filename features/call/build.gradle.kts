@@ -9,6 +9,7 @@ plugins {
 dependencies {
     implementation(project(":features:usermanagement"))
     implementation(project(":integrations"))
+    implementation(project(":features:rolemanagement"))
 }
 
 springBoot {

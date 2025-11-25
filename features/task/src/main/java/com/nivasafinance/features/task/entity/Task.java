@@ -1,6 +1,7 @@
 package com.nivasafinance.features.task.entity;
 
 import com.nivasafinance.common.audit.AuditableEntity;
+import com.nivasafinance.common.enums.EntityType;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -10,6 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -19,7 +21,6 @@ import org.hibernate.annotations.Type;
 import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
-import java.util.Map;
 import java.util.UUID;
 
 @Entity
@@ -34,9 +35,10 @@ public class Task extends AuditableEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "task_identifier", nullable = false, unique = true, updatable = false)
+    @JdbcTypeCode(SqlTypes.UUID)
+    @Column(name = "task_identifier", nullable = false, unique = true, updatable = false, columnDefinition = "UUID")
     @Setter(AccessLevel.NONE)
-    private String taskIdentifier = UUID.randomUUID().toString();
+    private UUID taskIdentifier;
 
     @Column(name = "task_config_key", nullable = false, length = 100)
     private String taskConfigKey;
@@ -53,11 +55,50 @@ public class Task extends AuditableEntity {
     @Type(JsonType.class)
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "outcome_details", columnDefinition = "jsonb")
-    private Map<String, Object> outcomeDetails;
+    private OutcomeDetails outcomeDetails;
 
     @Type(JsonType.class)
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "task_details", columnDefinition = "jsonb")
-    private Map<String, Object> taskDetails;
+    private TaskDetails taskDetails;
+
+    @jakarta.persistence.PrePersist
+    void prePersist() {
+        if (!com.nivasafinance.common.utils.ValidationUtils.isNonNull(taskIdentifier)) {
+            taskIdentifier = UUID.randomUUID();
+        }
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class OutcomeDetails {
+        private String remarks;
+        private LocalDateTime completedAt;
+        private String completedBy;
+        private String rescheduleReasonCodeValueKey;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class TaskDetails {
+        private Long entityId;
+        private EntityType entityType;
+        private PreferredCallWindow preferredCallWindow;
+        private String creatorRemarks;
+        private Integer iterationCount;
+
+        @Data
+        @NoArgsConstructor
+        @AllArgsConstructor
+        @Builder
+        public static class PreferredCallWindow {
+            private LocalDateTime start;
+            private LocalDateTime end;
+        }
+    }
 }
 

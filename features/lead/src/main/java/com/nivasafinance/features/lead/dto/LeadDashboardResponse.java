@@ -46,7 +46,12 @@ public class LeadDashboardResponse {
     private LocalDateTime onHoldDate;
     private String office;
     private CodeValueResponse sourcingChannel;
-
-
-    //TODO :: to add stage, substage, next task data, stageOwner, stageTat
+    
+    // Workflow details
+    private String workflowConfigKey;
+    private String currentStageKey;
+    private String currentSubStageKey;
+    private String stageAssignedTo;
+    private LocalDateTime stageAssignedAt;
+    private LocalDateTime stageEnteredAt;
 }

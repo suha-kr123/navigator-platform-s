@@ -63,5 +63,26 @@ public class TaskValidationException extends ValidationException {
                 new Object[]{outcome, taskConfigKey}, messageSource)
         );
     }
+
+    public static TaskValidationException userCannotCreateTask(String username, String taskConfigKey, MessageSource messageSource) {
+        return new TaskValidationException(
+            ExceptionUtils.createLocalizedMessage("error.task.user.cannot.create", 
+                new Object[]{username, taskConfigKey}, messageSource)
+        );
+    }
+
+    public static TaskValidationException userCannotCompleteTask(String username, String taskConfigKey, MessageSource messageSource) {
+        return new TaskValidationException(
+            ExceptionUtils.createLocalizedMessage("error.task.user.cannot.complete", 
+                new Object[]{username, taskConfigKey}, messageSource)
+        );
+    }
+
+    public static TaskValidationException assignedUserDoesNotHaveRequiredRole(String assignedTo, String taskConfigKey, MessageSource messageSource) {
+        return new TaskValidationException(
+            ExceptionUtils.createLocalizedMessage("error.task.assigned.user.invalid.role", 
+                new Object[]{assignedTo, taskConfigKey}, messageSource)
+        );
+    }
 }
 

@@ -1,11 +1,14 @@
 package com.nivasafinance.features.task.dto;
 
+import java.util.UUID;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 @Data
 @NoArgsConstructor
@@ -13,11 +16,21 @@ import jakarta.validation.constraints.NotBlank;
 @Builder
 public class CompleteTaskRequest {
 
-    @NotBlank(message = "Task identifier is required")
-    private String taskIdentifier;
+    @NotNull(message = "Task identifier is required")
+    private UUID taskIdentifier;
 
     @NotBlank(message = "Outcome is required")
     private String outcomeCodeValueKey;
 
-    private OutcomeDetails outcomeDetails;
+    private OutcomeDetailsRequest outcomeDetails;
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class OutcomeDetailsRequest {
+        private String remarks;
+    }
 }
+
+

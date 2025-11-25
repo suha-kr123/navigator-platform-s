@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Drop n_task_creator_mapping if it exists -->
+    <changeSet id="drop_n_task_creator_mapping" author="system">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="n_task_creator_mapping"/>
+        </preConditions>
+        <dropTable tableName="n_task_creator_mapping" cascadeConstraints="true"/>
+    </changeSet>
+
+    <!-- Drop n_task_event_mapping if it exists -->
+    <changeSet id="drop_n_task_event_mapping" author="system">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="n_task_event_mapping"/>
+        </preConditions>
+        <dropTable tableName="n_task_event_mapping" cascadeConstraints="true"/>
+    </changeSet>
+
+</databaseChangeLog>
+

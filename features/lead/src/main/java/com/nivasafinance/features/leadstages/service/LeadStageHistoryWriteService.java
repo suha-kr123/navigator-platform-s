@@ -1,13 +1,21 @@
 package com.nivasafinance.features.leadstages.service;
 
-import com.nivasafinance.features.leadstages.dto.CreateLeadStageHistoryRequest;
+import com.nivasafinance.features.leadstages.dto.BulkChangeAssignmentRequest;
+import com.nivasafinance.features.leadstages.dto.BulkChangeAssignmentResponse;
+import com.nivasafinance.features.leadstages.dto.StageTransitionRequest;
 import com.nivasafinance.features.leadstages.entity.LeadStageHistory;
+
+import java.util.UUID;
 
 public interface LeadStageHistoryWriteService {
 
-    LeadStageHistory createStageEntry(CreateLeadStageHistoryRequest request);
+    LeadStageHistory createInitialStage(UUID leadId, String workflowConfigKey);
 
-    LeadStageHistory changeAssignment(Long leadId, String stageKey, String newAssignedTo);
+    LeadStageHistory createStageEntry(UUID leadId, StageTransitionRequest request);
 
-    LeadStageHistory changeSubStage(Long leadId, String stageKey, String subStageKey);
+    LeadStageHistory changeAssignment(UUID leadId, String stageKey, String newAssignedTo);
+
+    LeadStageHistory changeSubStage(UUID leadId, String stageKey, String subStageKey);
+    
+    BulkChangeAssignmentResponse bulkChangeAssignment(BulkChangeAssignmentRequest request);
 }

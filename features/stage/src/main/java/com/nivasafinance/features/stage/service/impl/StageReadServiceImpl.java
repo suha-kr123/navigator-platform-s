@@ -4,6 +4,7 @@ import com.nivasafinance.common.utils.ValidationUtils;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import com.nivasafinance.features.master.codemaster.service.CodeMasterService;
 import com.nivasafinance.features.stage.dto.StageConfigResponse;
+import com.nivasafinance.features.stage.dto.StageTemplateResponse;
 import com.nivasafinance.features.stage.entity.StageConfig;
 import com.nivasafinance.features.stage.repository.StageConfigRepositoryWrapper;
 import com.nivasafinance.features.stage.service.StageReadService;
@@ -13,8 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -28,40 +27,21 @@ public class StageReadServiceImpl implements StageReadService {
     public StageConfigResponse getStageByKey(String key) {
         StageConfig stageConfig = stageConfigRepositoryWrapper.findByKeyWithException(key);
         
-        List<String> possibleNextStages = extractPossibleNextStages(stageConfig.getStageConfig());
-        List<String> assigneeRoles = extractAssigneeRoles(stageConfig.getAssigneeRoles());
+        StageConfig.StageConfigDetails stageConfigDetails = stageConfig.getStageConfig();
+        List<String> possibleNextStages = ValidationUtils.isNonNull(stageConfigDetails) 
+                && ValidationUtils.isNonNull(stageConfigDetails.getPossibleNextStages())
+                ? stageConfigDetails.getPossibleNextStages() 
+                : Collections.emptyList();
+        
+        StageConfig.AssigneeRoles assigneeRolesEntity = stageConfig.getAssigneeRoles();
+        List<String> assigneeRoles = ValidationUtils.isNonNull(assigneeRolesEntity) 
+                && ValidationUtils.isNonNull(assigneeRolesEntity.getRoles())
+                ? assigneeRolesEntity.getRoles() 
+                : Collections.emptyList();
+        
         List<CodeValueResponse> subStages = fetchSubStages(stageConfig.getSubStagesCode());
         
         return StageConfigResponse.from(stageConfig, possibleNextStages, assigneeRoles, subStages);
-    }
-
-    @SuppressWarnings("unchecked")
-    private List<String> extractPossibleNextStages(Map<String, Object> stageConfig) {
-        if (!ValidationUtils.isNonNull(stageConfig)) {
-            return Collections.emptyList();
-        }
-        
-        Object nextStages = stageConfig.get("possible_next_stages");
-        if (nextStages instanceof List) {
-            return (List<String>) nextStages;
-        }
-        
-        return Collections.emptyList();
-    }
-
-    private List<String> extractAssigneeRoles(Map<String, Object> assigneeRoles) {
-        if (!ValidationUtils.isNonNull(assigneeRoles)) {
-            return Collections.emptyList();
-        }
-        
-        Object roles = assigneeRoles.get("roles");
-        if (roles instanceof List) {
-            return ((List<?>) roles).stream()
-                    .map(Object::toString)
-                    .collect(Collectors.toList());
-        }
-        
-        return Collections.emptyList();
     }
 
     private List<CodeValueResponse> fetchSubStages(String subStagesCode) {
@@ -72,5 +52,18 @@ public class StageReadServiceImpl implements StageReadService {
         List<CodeValueResponse> codeValues = codeMasterService.getAllCodeValuesByCodeKey(subStagesCode, true);
         
         return codeValues;
+    }
+
+    @Override
+    public StageTemplateResponse getStageTemplate(String stageKey) {
+        StageConfigResponse stageConfig = getStageByKey(stageKey);
+        
+        return StageTemplateResponse.builder()
+                .stageKey(stageConfig.getKey())
+                .stageName(stageConfig.getName())
+                .stageDescription(stageConfig.getDescription())
+                .possibleNextStages(stageConfig.getPossibleNextStages())
+                .availableSubStages(stageConfig.getSubStages())
+                .build();
     }
 }

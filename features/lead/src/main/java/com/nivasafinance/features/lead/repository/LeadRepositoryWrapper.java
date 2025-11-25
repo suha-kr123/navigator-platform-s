@@ -127,7 +127,21 @@ public class LeadRepositoryWrapper {
                          END as reasonCode,
                     primary_contact_person.display_name         AS primaryPersonName,
                     (jsonb_path_query_first(COALESCE(primary_contact_person.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') AS primaryPersonNumber,
-                     o.name as officeName
+                     o.name as officeName,
+                     (l.workflow_details->>'workflowConfigKey') AS workflow_config_key,
+                     ((l.workflow_details->'currentStageDetails')->>'stageKey') AS current_stage_key,
+                     ((l.workflow_details->'currentStageDetails')->>'subStageKey') AS current_sub_stage_key,
+                     ((l.workflow_details->'currentStageDetails')->>'assignedTo') AS assigned_to,
+                     CASE
+                         WHEN (l.workflow_details->'currentStageDetails')->>'assignedAt' IS NOT NULL
+                         THEN to_timestamp((l.workflow_details->'currentStageDetails')->>'assignedAt', 'DD-MM-YYYY HH24:MI:SS')
+                         ELSE NULL
+                     END AS assigned_at,
+                     CASE
+                         WHEN (l.workflow_details->'currentStageDetails')->>'enteredAt' IS NOT NULL
+                         THEN to_timestamp((l.workflow_details->'currentStageDetails')->>'enteredAt', 'DD-MM-YYYY HH24:MI:SS')
+                         ELSE NULL
+                     END AS entered_at
                  FROM n_lead l
                 -- Left join with primary contact from other_details -> person
                 LEFT JOIN n_contact primary_contact ON primary_contact.id = (l.other_details->>'primaryContactId')::bigint
@@ -160,13 +174,15 @@ public class LeadRepositoryWrapper {
                 LEFT JOIN n_lender_office lender_office ON lender_office.key = latest_lender.lender_office_key
                  LEFT JOIN n_office o ON o.key = l.office_key
                  WHERE l.lead_identifier = ?
-                    \s""";
+                """;
 
         try {
-            LeadResponse leadResponse = jdbcTemplate.queryForObject(sql, (rs, rowNum) -> mapLeadResponse(rs), leadIdentifier);
+            LeadResponse leadResponse = jdbcTemplate.queryForObject(sql, (rs, rowNum) -> mapLeadResponseFromResultSet(rs), leadIdentifier);
             if (leadResponse == null) {
                 throw new LeadNotFoundException(leadIdentifier, messageSource);
             }
+            // Enrich leadResponse with service data after query completes
+            enrichLeadResponse(leadResponse);
             return leadResponse;
         } catch (EmptyResultDataAccessException e) {
             throw new LeadNotFoundException(leadIdentifier, messageSource);
@@ -211,7 +227,11 @@ public class LeadRepositoryWrapper {
         }
     }
 
-    private LeadResponse mapLeadResponse(ResultSet rs) throws SQLException {
+    /**
+     * Maps ResultSet to LeadResponse without making service calls.
+     * Service calls are done separately in enrichLeadResponse() to avoid transaction issues.
+     */
+    private LeadResponse mapLeadResponseFromResultSet(ResultSet rs) throws SQLException {
         UUID leadIdentifier = rs.getString("leadIdentifier") != null ? UUID.fromString(rs.getString("leadIdentifier")) : null;
 
         LeadResponse.LeadResponseBuilder builder = LeadResponse.builder()
@@ -239,7 +259,13 @@ public class LeadRepositoryWrapper {
                 .lenderStatus(rs.getString("lender_status"))
                 .lenderOfficeName(rs.getString("lender_office_name"))
                 .preferredCallStartTime(getLocalTime(rs, "preferred_call_start_time"))
-                .preferredCallEndTime(getLocalTime(rs, "preferred_call_end_time"));
+                .preferredCallEndTime(getLocalTime(rs, "preferred_call_end_time"))
+                .workflowConfigKey(rs.getString("workflow_config_key"))
+                .currentStageKey(rs.getString("current_stage_key"))
+                .currentSubStageKey(rs.getString("current_sub_stage_key"))
+                .assignedTo(rs.getString("assigned_to"))
+                .assignedAt(getLocalDateTime(rs, "assigned_at"))
+                .enteredAt(getLocalDateTime(rs, "entered_at"));
 
         String status = rs.getString("status");
         if (status != null) {
@@ -261,73 +287,116 @@ public class LeadRepositoryWrapper {
 
         LeadResponse leadResponse = builder.build();
 
-        if (leadResponse.getReasonCode() != null) {
-            if (leadResponse.getSubStatus() == LeadSubStatus.ONHOLD) {
-                CodeValueResponse codeValueResponse = codeValueMasterService.getCodeValueByKeyAndCodeKey(
-                        leadResponse.getReasonCode(), SystemControlledMasterCodes.LEAD_ONHOLD_REASON_MASTER);
-                leadResponse.setReason(codeValueResponse.getValue());
-            }
-            if (leadResponse.getStatus() == LeadStatus.REJECTED) {
-                CodeValueResponse codeValueResponse = codeValueMasterService.getCodeValueByKeyAndCodeKey(
-                        leadResponse.getReasonCode(), SystemControlledMasterCodes.LEAD_REJECT_REASON_MASTER);
-                leadResponse.setReason(codeValueResponse.getValue());
-            }
-            if (leadResponse.getStatus() == LeadStatus.WITHDRAWN) {
-                CodeValueResponse codeValueResponse = codeValueMasterService.getCodeValueByKeyAndCodeKey(
-                        leadResponse.getReasonCode(), SystemControlledMasterCodes.LEAD_WITHDRAWAL_REASON_MASTER);
-                leadResponse.setReason(codeValueResponse.getValue());
-            }
-        }
-        if(leadResponse.getProductCode() != null) {
-            leadResponse.setProductName(productReadService.getProductByCode(leadResponse.getProductCode()).getName());
-        }
-
+        // Store keys for later enrichment (outside ResultSet processing)
         String priorityKey = rs.getString("priority_key");
         if (priorityKey != null) {
-            CodeValueResponse priority = codeValueMasterService.getCodeValueByKeyAndCodeKey(
-                    priorityKey,
-                    SystemControlledMasterCodes.LEAD_PRIORITY_MASTER
-            );
-            leadResponse.setPriority(priority);
+            leadResponse.setPriority(CodeValueResponse.builder().key(priorityKey).build());
         }
 
         String bureauRatingKey = rs.getString("bureau_rating_key");
         if (bureauRatingKey != null) {
-            CodeValueResponse bureauRating = codeValueMasterService.getCodeValueByKeyAndCodeKey(
-                    bureauRatingKey,
-                    SystemControlledMasterCodes.LEAD_BUREAU_RATING_MASTER
-            );
-            leadResponse.setBureauRating(bureauRating);
+            leadResponse.setBureauRating(CodeValueResponse.builder().key(bureauRatingKey).build());
         }
 
         String customerProfilesKey = rs.getString("customer_profiles_key");
         if (customerProfilesKey != null) {
-            CodeValueResponse customerProfile = codeValueMasterService.getCodeValueByKeyAndCodeKey(
-                    customerProfilesKey,
-                    SystemControlledMasterCodes.LEAD_CUSTOMER_PROFILE_MASTER
-            );
-            leadResponse.setCustomerProfiles(customerProfile);
+            leadResponse.setCustomerProfiles(CodeValueResponse.builder().key(customerProfilesKey).build());
         }
 
         String monthlyFamilyIncomeKey = rs.getString("monthly_family_income_key");
         if (monthlyFamilyIncomeKey != null) {
-            CodeValueResponse monthlyIncome = codeValueMasterService.getCodeValueByKeyAndCodeKey(
-                    monthlyFamilyIncomeKey,
-                    SystemControlledMasterCodes.LEAD_MONTHLY_INCOME_MASTER
-            );
-            leadResponse.setMonthlyFamilyIncome(monthlyIncome);
+            leadResponse.setMonthlyFamilyIncome(CodeValueResponse.builder().key(monthlyFamilyIncomeKey).build());
         }
 
         String lenderStageKey = rs.getString("lender_stage_key");
         if (lenderStageKey != null) {
-            CodeValueResponse lenderStage = codeValueMasterService.getCodeValueByKeyAndCodeKey(
-                    lenderStageKey,
-                    SystemControlledMasterCodes.LENDER_STAGE_MASTER
-            );
-            leadResponse.setLenderStage(lenderStage);
+            leadResponse.setLenderStage(CodeValueResponse.builder().key(lenderStageKey).build());
         }
 
         return leadResponse;
+    }
+
+    /**
+     * Enriches LeadResponse with data from service calls.
+     * Called after the query completes to avoid making database calls while ResultSet is open.
+     */
+    private void enrichLeadResponse(LeadResponse leadResponse) {
+        try {
+            // Enrich reason code
+            if (leadResponse.getReasonCode() != null) {
+                if (leadResponse.getSubStatus() == LeadSubStatus.ONHOLD) {
+                    CodeValueResponse codeValueResponse = codeValueMasterService.getCodeValueByKeyAndCodeKey(
+                            leadResponse.getReasonCode(), SystemControlledMasterCodes.LEAD_ONHOLD_REASON_MASTER);
+                    leadResponse.setReason(codeValueResponse.getValue());
+                }
+                if (leadResponse.getStatus() == LeadStatus.REJECTED) {
+                    CodeValueResponse codeValueResponse = codeValueMasterService.getCodeValueByKeyAndCodeKey(
+                            leadResponse.getReasonCode(), SystemControlledMasterCodes.LEAD_REJECT_REASON_MASTER);
+                    leadResponse.setReason(codeValueResponse.getValue());
+                }
+                if (leadResponse.getStatus() == LeadStatus.WITHDRAWN) {
+                    CodeValueResponse codeValueResponse = codeValueMasterService.getCodeValueByKeyAndCodeKey(
+                            leadResponse.getReasonCode(), SystemControlledMasterCodes.LEAD_WITHDRAWAL_REASON_MASTER);
+                    if (codeValueResponse != null) {
+                        leadResponse.setReason(codeValueResponse.getValue());
+                    }
+                }
+            }
+
+            // Enrich product name
+            if (leadResponse.getProductCode() != null) {
+                leadResponse.setProductName(productReadService.getProductByCode(leadResponse.getProductCode()).getName());
+            }
+
+            // Enrich priority
+            if (leadResponse.getPriority() != null && leadResponse.getPriority().getKey() != null) {
+                CodeValueResponse priority = codeValueMasterService.getCodeValueByKeyAndCodeKey(
+                        leadResponse.getPriority().getKey(),
+                        SystemControlledMasterCodes.LEAD_PRIORITY_MASTER
+                );
+                leadResponse.setPriority(priority);
+            }
+
+            // Enrich bureau rating
+            if (leadResponse.getBureauRating() != null && leadResponse.getBureauRating().getKey() != null) {
+                CodeValueResponse bureauRating = codeValueMasterService.getCodeValueByKeyAndCodeKey(
+                        leadResponse.getBureauRating().getKey(),
+                        SystemControlledMasterCodes.LEAD_BUREAU_RATING_MASTER
+                );
+                leadResponse.setBureauRating(bureauRating);
+            }
+
+            // Enrich customer profiles
+            if (leadResponse.getCustomerProfiles() != null && leadResponse.getCustomerProfiles().getKey() != null) {
+                CodeValueResponse customerProfile = codeValueMasterService.getCodeValueByKeyAndCodeKey(
+                        leadResponse.getCustomerProfiles().getKey(),
+                        SystemControlledMasterCodes.LEAD_CUSTOMER_PROFILE_MASTER
+                );
+                leadResponse.setCustomerProfiles(customerProfile);
+            }
+
+            // Enrich monthly family income
+            if (leadResponse.getMonthlyFamilyIncome() != null && leadResponse.getMonthlyFamilyIncome().getKey() != null) {
+                CodeValueResponse monthlyIncome = codeValueMasterService.getCodeValueByKeyAndCodeKey(
+                        leadResponse.getMonthlyFamilyIncome().getKey(),
+                        SystemControlledMasterCodes.LEAD_MONTHLY_INCOME_MASTER
+                );
+                leadResponse.setMonthlyFamilyIncome(monthlyIncome);
+            }
+
+            // Enrich lender stage
+            if (leadResponse.getLenderStage() != null && leadResponse.getLenderStage().getKey() != null) {
+                CodeValueResponse lenderStage = codeValueMasterService.getCodeValueByKeyAndCodeKey(
+                        leadResponse.getLenderStage().getKey(),
+                        SystemControlledMasterCodes.LENDER_STAGE_MASTER
+                );
+                leadResponse.setLenderStage(lenderStage);
+            }
+        } catch (DataAccessException e) {
+            // Log error but don't fail the entire operation
+            // The lead response will be returned with partial data
+            throw new RuntimeException("Failed to enrich lead response with service data", e);
+        }
     }
 
     private LocalDateTime getLocalDateTime(ResultSet rs, String column) throws SQLException {

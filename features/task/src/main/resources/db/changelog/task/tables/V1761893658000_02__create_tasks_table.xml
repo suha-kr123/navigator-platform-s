@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="create_n_tasks_table" author="system">
+        <createTable tableName="n_tasks">
+            <!-- id -->
+            <column name="id" type="BIGSERIAL" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <!-- task_identifier (UUID) -->
+            <column name="task_identifier" type="UUID">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <!-- task_config_key -->
+            <column name="task_config_key" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <!-- assigned_to -->
+            <column name="assigned_to" type="VARCHAR(255)"/>
+            <!-- due_at -->
+            <column name="due_at" type="TIMESTAMP"/>
+            <!-- outcome -->
+            <column name="outcome" type="VARCHAR(100)"/>
+            <!-- outcome_details -->
+            <column name="outcome_details" type="JSONB"/>
+            <!-- task_details -->
+            <column name="task_details" type="JSONB"/>
+            <!-- created_at -->
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="NOW()"/>
+            <!-- created_by -->
+            <column name="created_by" type="VARCHAR(255)"/>
+            <!-- updated_at -->
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="NOW()"/>
+            <!-- updated_by -->
+            <column name="updated_by" type="VARCHAR(255)"/>
+            <!-- version -->
+            <column name="version" type="BIGINT" defaultValueNumeric="0"/>
+        </createTable>
+
+        <!-- foreign key for task_config_key -->
+        <addForeignKeyConstraint
+                baseTableName="n_tasks"
+                baseColumnNames="task_config_key"
+                constraintName="fk_tasks_task_config"
+                referencedTableName="n_task_config"
+                referencedColumnNames="task_config_key"
+                onDelete="CASCADE"/>
+
+        <!-- index for task_identifier (for fast lookups by UUID) -->
+        <createIndex indexName="idx_tasks_task_identifier" tableName="n_tasks" unique="true">
+            <column name="task_identifier"/>
+        </createIndex>
+
+        <!-- index for task_config_key -->
+        <createIndex indexName="idx_tasks_task_config_key" tableName="n_tasks">
+            <column name="task_config_key"/>
+        </createIndex>
+
+        <!-- index for outcome -->
+        <createIndex indexName="idx_tasks_outcome" tableName="n_tasks">
+            <column name="outcome"/>
+        </createIndex>
+
+        <!-- index for assigned_to -->
+        <createIndex indexName="idx_tasks_assigned_to" tableName="n_tasks">
+            <column name="assigned_to"/>
+        </createIndex>
+
+        <!-- index for due_at -->
+        <createIndex indexName="idx_tasks_due_at" tableName="n_tasks">
+            <column name="due_at"/>
+        </createIndex>
+
+        <!-- index for created_at -->
+        <createIndex indexName="idx_tasks_created_at" tableName="n_tasks">
+            <column name="created_at"/>
+        </createIndex>
+
+        <!-- index for updated_at -->
+        <createIndex indexName="idx_tasks_updated_at" tableName="n_tasks">
+            <column name="updated_at"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>
+

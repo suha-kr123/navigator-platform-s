@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import jakarta.validation.constraints.NotNull;
 
@@ -16,11 +17,14 @@ import jakarta.validation.constraints.NotNull;
 public class RescheduleTaskRequest {
     
     @NotNull(message = "Task ID is required")
-    private String taskIdentifier;
+    private UUID taskIdentifier;
 
-    @NotNull(message = "New due at is required")
-    private LocalDateTime newDueAt;
+    @NotNull(message = "Preferred start time is required")
+    private LocalDateTime preferredStartTime;
     
-    private String reason;
+    @NotNull(message = "Preferred end time is required")
+    private LocalDateTime preferredEndTime;
+    
+    private String reasonCodeValueKey;
 }
 

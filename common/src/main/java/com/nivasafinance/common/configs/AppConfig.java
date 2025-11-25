@@ -19,19 +19,24 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.support.ReloadableResourceBundleMessageSource;
+import org.springframework.scheduling.annotation.AsyncConfigurer;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.i18n.SessionLocaleResolver;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.concurrent.Executor;
 import java.util.Locale;
 
 @Configuration
 @EnableCaching
 @EnableScheduling
-public class AppConfig {
+@EnableAsync
+public class AppConfig implements AsyncConfigurer {
     
     @Bean
     public ModelMapper modelMapper() {
@@ -87,6 +92,31 @@ public class AppConfig {
         SessionLocaleResolver localeResolver = new SessionLocaleResolver();
         localeResolver.setDefaultLocale(Locale.ENGLISH);
         return localeResolver;
+    }
+
+    /**
+     * Task executor for async event processing.
+     * Used by @Async("eventTaskExecutor") annotations.
+     */
+    @Bean(name = "eventTaskExecutor")
+    public Executor eventTaskExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(5);
+        executor.setMaxPoolSize(10);
+        executor.setQueueCapacity(100);
+        executor.setThreadNamePrefix("event-task-");
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(60);
+        executor.initialize();
+        return executor;
+    }
+
+    /**
+     * Default async executor for @Async annotations without explicit executor name.
+     */
+    @Override
+    public Executor getAsyncExecutor() {
+        return eventTaskExecutor();
     }
 }
 

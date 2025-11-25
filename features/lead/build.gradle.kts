@@ -7,6 +7,7 @@ plugins {
 }
 
 dependencies {
+    implementation(project(":common"))
     implementation(project(":features:master"))
     implementation(project(":features:notes"))
     implementation(project(":features:document"))
@@ -16,7 +17,7 @@ dependencies {
     implementation(project(":features:master"))
     implementation(project(":features:marketing"))
     implementation(project(":features:rolemanagement"))
-    implementation(project(":features:stage"))
+    implementation(project(":features:workflow"))
     implementation(project(":features:task"))
     implementation(project(":features:call"))
     implementation(project(":features:staff"))
@@ -24,6 +25,7 @@ dependencies {
     implementation(project(":features:usermanagement"))
     implementation(project(":features:advisor"))
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
+    implementation("org.springframework.boot:spring-boot-starter-jdbc")
 }
 
 springBoot {

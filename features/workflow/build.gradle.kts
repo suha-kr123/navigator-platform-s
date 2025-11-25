@@ -8,7 +8,9 @@ plugins {
 
 dependencies {
     implementation(project(":features:task"))
-    implementation(project(":features:lead"))
+    implementation(project(":features:master"))
+    implementation(project(":features:stage"))
+    implementation(project(":features:rolemanagement"))
 }
 
 springBoot {

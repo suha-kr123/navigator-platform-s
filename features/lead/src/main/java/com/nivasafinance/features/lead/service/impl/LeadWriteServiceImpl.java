@@ -21,6 +21,9 @@ import com.nivasafinance.features.lead.exception.ActiveLeadAlreadyExistsExceptio
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadContactWriteService;
 import com.nivasafinance.features.lead.service.LeadWriteService;
+import com.nivasafinance.features.workflow.constants.WorkflowConstants;
+import com.nivasafinance.features.workflow.repository.WorkflowConfigRepositoryWrapper;
+import com.nivasafinance.features.leadstages.service.LeadStageHistoryWriteService;
 import com.nivasafinance.features.master.codemaster.SystemControlledMasterCodes;
 import com.nivasafinance.features.master.codemaster.service.CodeValueMasterService;
 import com.nivasafinance.features.master.products.service.ProductReadService;
@@ -31,6 +34,7 @@ import com.nivasafinance.features.person.repository.PersonRepositoryWrapper;
 import com.nivasafinance.features.sourcechannel.dto.SourcingChannelRequest;
 import com.nivasafinance.features.sourcechannel.dto.SourcingChannelResponse;
 import com.nivasafinance.features.sourcechannel.service.SourcingChannelWriteService;
+
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -61,6 +65,8 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     private final CodeValueMasterService codeValueMasterService;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final LeadContactWriteService contactWriteService;
+    private final WorkflowConfigRepositoryWrapper workflowConfigRepositoryWrapper;
+    private final LeadStageHistoryWriteService leadStageHistoryWriteService;
     private final AdvisorLeadMappingRepositoryWrapper advisorLeadMappingRepositoryWrapper;
     private final AdvisorReadService advisorReadService;
 
@@ -104,6 +110,13 @@ public class LeadWriteServiceImpl implements LeadWriteService {
 
         contactWriteService.createContact(savedLead.getLeadIdentifier(), contactPersonDetails);
 
+        // Create initial stage synchronously and publish event for async task creation
+        // TODO: Replace with dynamic workflow picker once design is complete
+        String workflowKey = WorkflowConstants.Workflow.DEFAULT_WORKFLOW_KEY;
+        String workflowConfigKey = workflowConfigRepositoryWrapper.findActiveByWorkflowConfigKey(workflowKey).getWorkflowConfigKey();
+        leadStageHistoryWriteService.createInitialStage(savedLead.getLeadIdentifier(), workflowConfigKey);
+
+        // Publish LEAD_CREATED event for other listeners (activities, notifications, etc.) - not used by workflow
         publishLeadCreatedEvent(savedLead, request);
 
         return new CreateLeadResponse(savedLead.getLeadIdentifier());
