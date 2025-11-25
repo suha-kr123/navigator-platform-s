@@ -15,8 +15,7 @@ import java.time.LocalTime;
 @AllArgsConstructor
 @Builder
 public class UpdateLeadRequest {
-    
-    @NotNull(message = "Requested amount is required")
+
     @DecimalMin(value = "0.0", inclusive = false, message = "Requested amount must be greater than 0")
     private BigDecimal requestedAmount;
     

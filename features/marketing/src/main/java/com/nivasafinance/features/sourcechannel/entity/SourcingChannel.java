@@ -45,5 +45,6 @@ public class SourcingChannel extends AuditableEntity {
         private String sourceId;
         private String campaignId;
         private String sourcedBy;
+        private String sourceUrl;
     }
 }

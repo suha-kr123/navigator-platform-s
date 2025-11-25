@@ -307,6 +307,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
                 request.getMarketingSource(),
                 SourcingChannelRequest.MarketingDetails.builder()
                         .sourceId(request.getSourceId())
+                        .sourceUrl(request.getSourceUrl())
                         .campaignId(request.getCampaignId())
                         .sourcedBy(request.getSourcedBy())
                         .build()

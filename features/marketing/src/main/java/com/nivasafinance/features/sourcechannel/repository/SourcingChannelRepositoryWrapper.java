@@ -49,8 +49,12 @@ public class SourcingChannelRepositoryWrapper {
     }
 
     private SourcingChannelResponse toResponse(SourcingChannel sourcingChannel) {
-        CodeValueResponse sourcingChannelCodeValue = codeValueMasterService.getByKey(sourcingChannel.getSourcingChannel());
-        CodeValueResponse marketingSourceCodeValue = codeValueMasterService.getByKey(sourcingChannel.getMarketingSource());
+        CodeValueResponse sourcingChannelCodeValue = sourcingChannel.getSourcingChannel() != null 
+            ? codeValueMasterService.getByKey(sourcingChannel.getSourcingChannel()) 
+            : null;
+        CodeValueResponse marketingSourceCodeValue = sourcingChannel.getMarketingSource() != null 
+            ? codeValueMasterService.getByKey(sourcingChannel.getMarketingSource()) 
+            : null;
 
         return new SourcingChannelResponse(
                 sourcingChannel.getId(),

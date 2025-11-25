@@ -40,6 +40,7 @@ public class SourcingChannelWriteServiceImpl implements SourcingChannelWriteServ
             builder.marketingDetails(SourcingChannel.MarketingDetails
                     .builder()
                     .sourceId(request.getMarketingDetails().getSourceId())
+                    .sourceUrl(request.getMarketingDetails().getSourceUrl())
                     .campaignId(request.getMarketingDetails().getCampaignId())
                     .sourcedBy(request.getMarketingDetails().getSourcedBy())
                     .build());
@@ -53,6 +54,14 @@ public class SourcingChannelWriteServiceImpl implements SourcingChannelWriteServ
     public SourcingChannelResponse update(Long id, SourcingChannelRequest request) {
         SourcingChannel existingEntity = sourcingChannelRepositoryWrapper.findByIdWithException(id);
 
+        if(request.getSourcingChannel() != null){ 
+            codeValueMasterService.getCodeValueByKeyAndCodeKey(request.getSourcingChannel(), SystemControlledMasterCodes.MARKETING_SOURCE_MASTER);
+        }
+
+        if(request.getMarketingSource() != null){ 
+            codeValueMasterService.getCodeValueByKeyAndCodeKey(request.getMarketingSource(), SystemControlledMasterCodes.MARKETING_CHANNEL_MASTER);
+        }
+
         existingEntity.setSourcingChannel(request.getSourcingChannel());
         existingEntity.setMarketingSource(request.getMarketingSource());
         if (request.getMarketingDetails() != null) {
@@ -61,6 +70,7 @@ public class SourcingChannelWriteServiceImpl implements SourcingChannelWriteServ
                 marketingDetails = new SourcingChannel.MarketingDetails();
             }
             marketingDetails.setSourceId(request.getMarketingDetails().getSourceId());
+            marketingDetails.setSourceUrl(request.getMarketingDetails().getSourceUrl());
             marketingDetails.setCampaignId(request.getMarketingDetails().getCampaignId());
             marketingDetails.setSourcedBy(request.getMarketingDetails().getSourcedBy());
             existingEntity.setMarketingDetails(marketingDetails);

@@ -19,6 +19,7 @@ public class SourcingChannelRequest {
     @Builder
     public static class MarketingDetails {
         private String sourceId;
+        private String sourceUrl;
         private String campaignId;
         private String sourcedBy;
     }

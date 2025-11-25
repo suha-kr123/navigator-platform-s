@@ -11,6 +11,7 @@ public class UpdateSourcingDetailsRequest {
     private String sourcingChannel;
     private String marketingSource;
     private String sourceId;
+    private String sourceUrl;
     private String campaignId;
     private String sourcedBy;
 }
