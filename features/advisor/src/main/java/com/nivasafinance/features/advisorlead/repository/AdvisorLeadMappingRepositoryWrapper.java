@@ -3,11 +3,10 @@ package com.nivasafinance.features.advisorlead.repository;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationInfo;
 import com.nivasafinance.common.base.model.PaginationRequest;
+import com.nivasafinance.features.advisor.dto.AdvisorLeadResponse;
 import com.nivasafinance.features.advisorlead.entity.AdvisorLeadMapping;
 import com.nivasafinance.features.advisorlead.exception.AdvisorLeadMappingExceptionFactory;
 import com.nivasafinance.features.advisorlead.exception.AdvisorLeadMappingOperationException;
-import com.nivasafinance.features.lead.dto.LeadBasicResponse;
-import com.nivasafinance.features.lead.enums.LeadStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.dao.DataAccessException;
@@ -91,7 +90,7 @@ public class AdvisorLeadMappingRepositoryWrapper {
      * @param paginationRequest Pagination parameters
      * @return PaginatedResponse containing LeadBasicResponse objects
      */
-    public PaginatedResponse<LeadBasicResponse> findLeadsByAdvisorIdWithException(
+    public PaginatedResponse<AdvisorLeadResponse> findLeadsByAdvisorIdWithException(
             UUID advisorIdentifier, PaginationRequest paginationRequest) {
         String countSql = """
             SELECT COUNT(DISTINCT l.id)
@@ -128,7 +127,7 @@ public class AdvisorLeadMappingRepositoryWrapper {
             long total = totalCount != null ? totalCount : 0L;
 
             // Get paginated data
-            List<LeadBasicResponse> results = jdbcTemplate.query(
+            List<AdvisorLeadResponse> results = jdbcTemplate.query(
                     dataSql,
                     new LeadBasicResponseRowMapper(),
                     advisorIdentifier,
@@ -167,10 +166,10 @@ public class AdvisorLeadMappingRepositoryWrapper {
                 .build();
     }
 
-    private static class LeadBasicResponseRowMapper implements RowMapper<LeadBasicResponse> {
+    private static class LeadBasicResponseRowMapper implements RowMapper<AdvisorLeadResponse> {
         @Override
-        public LeadBasicResponse mapRow(ResultSet rs, int rowNum) throws SQLException {
-            LeadBasicResponse.LeadBasicResponseBuilder builder = LeadBasicResponse.builder();
+        public AdvisorLeadResponse mapRow(ResultSet rs, int rowNum) throws SQLException {
+            AdvisorLeadResponse.AdvisorLeadResponseBuilder builder = AdvisorLeadResponse.builder();
 
             String leadIdentifierStr = rs.getString("leadIdentifier");
             if (leadIdentifierStr != null) {
@@ -186,7 +185,7 @@ public class AdvisorLeadMappingRepositoryWrapper {
             String status = rs.getString("status");
             if (status != null) {
                 try {
-                    builder.status(LeadStatus.valueOf(status));
+                    builder.status(status);
                 } catch (IllegalArgumentException ignored) {
                     // Invalid status, leave as null
                 }
