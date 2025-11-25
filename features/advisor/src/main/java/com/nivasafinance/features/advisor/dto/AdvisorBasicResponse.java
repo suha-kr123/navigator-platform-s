@@ -13,12 +13,13 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AdvisorSearchResponse {
+public class AdvisorBasicResponse {
     private UUID advisorIdentifier;
     private String Name;
     private String mobileNumber;
     private AdvisorStatus status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private String officeKey;
 }
 

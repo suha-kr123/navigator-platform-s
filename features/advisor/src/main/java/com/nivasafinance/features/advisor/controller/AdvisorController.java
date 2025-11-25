@@ -29,6 +29,16 @@ public class AdvisorController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping
+    public ResponseEntity<PaginatedResponse<AdvisorBasicResponse>> getAllAdvisors(
+            @Valid PaginationRequest paginationRequest,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String mobileNumber) {
+        PaginatedResponse<AdvisorBasicResponse> response =
+                advisorReadService.getAllAdvisors(paginationRequest, name, mobileNumber);
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping
     public ResponseEntity<IdentifierResponse> createAdvisor(@Valid @RequestBody CreateAdvisorRequest request) {
         UUID identifier = advisorWriteService.createAdvisor(request);
@@ -42,11 +52,11 @@ public class AdvisorController {
     }
 
     @PostMapping("/search")
-    public ResponseEntity<PaginatedResponse<AdvisorSearchResponse>> searchAdvisors(
+    public ResponseEntity<PaginatedResponse<AdvisorBasicResponse>> searchAdvisors(
             @Valid PaginationRequest paginationRequest,
             @Valid @RequestBody AdvisorSearchRequest searchRequest
     ) {
-        PaginatedResponse<AdvisorSearchResponse> response =
+        PaginatedResponse<AdvisorBasicResponse> response =
                 advisorReadService.searchAdvisors(paginationRequest, searchRequest);
         return ResponseEntity.ok(response);
     }
