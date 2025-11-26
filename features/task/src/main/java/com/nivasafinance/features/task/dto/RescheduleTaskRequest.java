@@ -26,5 +26,7 @@ public class RescheduleTaskRequest {
     private LocalDateTime preferredEndTime;
     
     private String reasonCodeValueKey;
+    
+    private String creatorRemarks;
 }
 

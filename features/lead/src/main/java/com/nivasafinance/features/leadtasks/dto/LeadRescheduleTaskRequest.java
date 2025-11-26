@@ -25,5 +25,7 @@ public class LeadRescheduleTaskRequest {
     private LocalDateTime preferredEndTime;
     
     private String reasonCodeValueKey;
+    
+    private String creatorRemarks;
 }
 

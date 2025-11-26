@@ -171,6 +171,7 @@ public class LeadTaskWriteServiceImpl implements LeadTaskWriteService {
                 .preferredStartTime(request.getPreferredStartTime())
                 .preferredEndTime(request.getPreferredEndTime())
                 .reasonCodeValueKey(request.getReasonCodeValueKey())
+                .creatorRemarks(request.getCreatorRemarks())
                 .build();
         
         // Reschedule the task (closes old task)
@@ -197,13 +198,17 @@ public class LeadTaskWriteServiceImpl implements LeadTaskWriteService {
                         .build();
             }
             
-            // Build creator remarks
-            String creatorRemarks = "Rescheduled from task " + oldTask.getTaskIdentifier();
-            if (ValidationUtils.isNonNull(oldTask.getTaskDetails().getCreatorRemarks())) {
-                creatorRemarks += ". Previous: " + oldTask.getTaskDetails().getCreatorRemarks();
-            }
-            if (ValidationUtils.isNonNull(request.getReasonCodeValueKey())) {
-                creatorRemarks += ". Reason: " + request.getReasonCodeValueKey();
+            // Use user-provided creator remarks, or build default if not provided
+            String creatorRemarks = request.getCreatorRemarks();
+            if (!ValidationUtils.isNonNull(creatorRemarks)) {
+                // Fallback: build default remarks if user didn't provide any
+                creatorRemarks = "Rescheduled from task " + oldTask.getTaskIdentifier();
+                if (ValidationUtils.isNonNull(oldTask.getTaskDetails().getCreatorRemarks())) {
+                    creatorRemarks += ". Previous: " + oldTask.getTaskDetails().getCreatorRemarks();
+                }
+                if (ValidationUtils.isNonNull(request.getReasonCodeValueKey())) {
+                    creatorRemarks += ". Reason: " + request.getReasonCodeValueKey();
+                }
             }
             
             // Increment iteration count
