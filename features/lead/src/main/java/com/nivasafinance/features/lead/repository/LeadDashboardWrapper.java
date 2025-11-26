@@ -73,6 +73,8 @@ public class LeadDashboardWrapper {
         appendActivityUpdatedByFilter(effectiveFilters, whereClause, queryParams);
         appendLastCallDirectionFilter(effectiveFilters, whereClause, queryParams);
         appendLastCallStatusFilter(effectiveFilters, whereClause, queryParams);
+        appendStageFilter(effectiveFilters, whereClause, queryParams);
+        appendSubStageFilter(effectiveFilters, whereClause, queryParams);
 
         String fromClause = baseFromClause();
 
@@ -293,6 +295,40 @@ public class LeadDashboardWrapper {
             String normalizedStatus = filters.getLastCallStatus().toUpperCase(Locale.ROOT);
             whereClause.append(" AND latest_call.status = ? ");
             params.add(normalizedStatus);
+        }
+    }
+
+    private void appendStageFilter(LeadDashboardFilters filters, StringBuilder whereClause, List<Object> params) {
+        if (!CollectionUtils.isEmpty(filters.getStageKey())) {
+            List<String> normalizedStageKeys = filters.getStageKey()
+                    .stream()
+                    .filter(Objects::nonNull)
+                    .map(stageKey -> stageKey.trim())
+                    .filter(stageKey -> !stageKey.isEmpty())
+                    .toList();
+            if (!normalizedStageKeys.isEmpty()) {
+                whereClause.append(" AND ((l.workflow_details->'currentStageDetails')->>'stageKey') IN (")
+                        .append(createPlaceholders(normalizedStageKeys.size()))
+                        .append(") ");
+                params.addAll(normalizedStageKeys);
+            }
+        }
+    }
+
+    private void appendSubStageFilter(LeadDashboardFilters filters, StringBuilder whereClause, List<Object> params) {
+        if (!CollectionUtils.isEmpty(filters.getSubStageKey())) {
+            List<String> normalizedSubStageKeys = filters.getSubStageKey()
+                    .stream()
+                    .filter(Objects::nonNull)
+                    .map(subStageKey -> subStageKey.trim())
+                    .filter(subStageKey -> !subStageKey.isEmpty())
+                    .toList();
+            if (!normalizedSubStageKeys.isEmpty()) {
+                whereClause.append(" AND ((l.workflow_details->'currentStageDetails')->>'subStageKey') IN (")
+                        .append(createPlaceholders(normalizedSubStageKeys.size()))
+                        .append(") ");
+                params.addAll(normalizedSubStageKeys);
+            }
         }
     }
 

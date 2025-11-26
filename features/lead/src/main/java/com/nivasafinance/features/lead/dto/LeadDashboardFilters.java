@@ -27,7 +27,9 @@ public class LeadDashboardFilters {
     List<String> branch;
     String lastCallDirection;
     String lastCallStatus;
+    List<String> stageKey;
+    List<String> subStageKey;
 
 
-    //TODO : advisors, stages, subStages, add next task filter
+    //TODO : advisors, add next task filter
 }
