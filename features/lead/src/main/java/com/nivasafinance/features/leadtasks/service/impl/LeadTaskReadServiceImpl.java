@@ -110,6 +110,7 @@ public class LeadTaskReadServiceImpl implements LeadTaskReadService {
                         .remarks((String) outcomeDetailsMap.get("remarks"))
                         .completedAt(ValidationUtils.isNonNull(completedAt) ? getLocalDateTime(completedAt) : null)
                         .completedBy((String) outcomeDetailsMap.get("completedBy"))
+                        .rescheduleReasonCodeValueKey((String) outcomeDetailsMap.get("rescheduleReasonCodeValueKey"))
                         .build();
             }
             

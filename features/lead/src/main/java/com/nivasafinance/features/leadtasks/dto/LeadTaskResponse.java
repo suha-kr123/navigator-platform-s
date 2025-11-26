@@ -45,6 +45,7 @@ public class LeadTaskResponse {
         private String remarks;
         private LocalDateTime completedAt;
         private String completedBy;
+        private String rescheduleReasonCodeValueKey;
     }
     
     @Data
@@ -73,6 +74,7 @@ public class LeadTaskResponse {
                     .remarks(taskResponse.getOutcomeDetails().getRemarks())
                     .completedAt(taskResponse.getOutcomeDetails().getCompletedAt())
                     .completedBy(taskResponse.getOutcomeDetails().getCompletedBy())
+                    .rescheduleReasonCodeValueKey(taskResponse.getOutcomeDetails().getRescheduleReasonCodeValueKey())
                     .build();
         }
         
@@ -120,6 +122,7 @@ public class LeadTaskResponse {
                         .remarks(taskResponse.getOutcomeDetails().getRemarks())
                         .completedAt(taskResponse.getOutcomeDetails().getCompletedAt())
                         .completedBy(taskResponse.getOutcomeDetails().getCompletedBy())
+                        .rescheduleReasonCodeValueKey(taskResponse.getOutcomeDetails().getRescheduleReasonCodeValueKey())
                         .build();
             }
             

@@ -22,5 +22,7 @@ public class OutcomeDetailsResponse {
     
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private String completedBy;
+    
+    private String rescheduleReasonCodeValueKey;
 }
 
