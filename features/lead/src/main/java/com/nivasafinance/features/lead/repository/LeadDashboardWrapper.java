@@ -75,6 +75,9 @@ public class LeadDashboardWrapper {
         appendLastCallStatusFilter(effectiveFilters, whereClause, queryParams);
         appendStageFilter(effectiveFilters, whereClause, queryParams);
         appendSubStageFilter(effectiveFilters, whereClause, queryParams);
+        appendStageAssignedToFilter(effectiveFilters, whereClause, queryParams);
+        appendStageAssignedAtFilter(effectiveFilters, whereClause, queryParams);
+        appendStageEnteredAtFilter(effectiveFilters, whereClause, queryParams);
 
         String fromClause = baseFromClause();
 
@@ -329,6 +332,77 @@ public class LeadDashboardWrapper {
                         .append(") ");
                 params.addAll(normalizedSubStageKeys);
             }
+        }
+    }
+
+    private void appendStageAssignedToFilter(LeadDashboardFilters filters, StringBuilder whereClause, List<Object> params) {
+        if (!CollectionUtils.isEmpty(filters.getStageAssignedTo())) {
+            List<String> assignedToList = new ArrayList<>(filters.getStageAssignedTo());
+            boolean includeUnassigned = assignedToList.remove("UNASSIGNED");
+
+            if (!assignedToList.isEmpty() && includeUnassigned) {
+                whereClause.append(" AND (((l.workflow_details->'currentStageDetails')->>'assignedTo') IN (")
+                        .append(createPlaceholders(assignedToList.size()))
+                        .append(") OR (l.workflow_details->'currentStageDetails')->>'assignedTo' IS NULL) ");
+                params.addAll(assignedToList);
+            } else if (!assignedToList.isEmpty()) {
+                whereClause.append(" AND ((l.workflow_details->'currentStageDetails')->>'assignedTo') IN (")
+                        .append(createPlaceholders(assignedToList.size()))
+                        .append(") ");
+                params.addAll(assignedToList);
+            } else if (includeUnassigned) {
+                whereClause.append(" AND ((l.workflow_details->'currentStageDetails')->>'assignedTo' IS NULL) ");
+            }
+        }
+    }
+
+    private void appendStageAssignedAtFilter(LeadDashboardFilters filters, StringBuilder whereClause, List<Object> params) {
+        LocalDateTime assignedAtFrom = filters.getStageAssignedAtFrom();
+        LocalDateTime assignedAtTo = filters.getStageAssignedAtTo();
+
+        if (assignedAtFrom != null) {
+            whereClause.append(" AND (")
+                    .append("CASE ")
+                    .append("WHEN (l.workflow_details->'currentStageDetails')->>'assignedAt' IS NOT NULL ")
+                    .append("THEN to_timestamp(((l.workflow_details->'currentStageDetails')->>'assignedAt'), 'DD-MM-YYYY HH24:MI:SS') ")
+                    .append("ELSE NULL ")
+                    .append("END) >= ? ");
+            params.add(assignedAtFrom);
+        }
+
+        if (assignedAtTo != null) {
+            whereClause.append(" AND (")
+                    .append("CASE ")
+                    .append("WHEN (l.workflow_details->'currentStageDetails')->>'assignedAt' IS NOT NULL ")
+                    .append("THEN to_timestamp(((l.workflow_details->'currentStageDetails')->>'assignedAt'), 'DD-MM-YYYY HH24:MI:SS') ")
+                    .append("ELSE NULL ")
+                    .append("END) <= ? ");
+            params.add(assignedAtTo);
+        }
+    }
+
+    private void appendStageEnteredAtFilter(LeadDashboardFilters filters, StringBuilder whereClause, List<Object> params) {
+        LocalDateTime enteredAtFrom = filters.getStageEnteredAtFrom();
+        LocalDateTime enteredAtTo = filters.getStageEnteredAtTo();
+
+        if (enteredAtFrom != null) {
+            whereClause.append(" AND (")
+                    .append("CASE ")
+                    .append("WHEN (l.workflow_details->'currentStageDetails')->>'enteredAt' IS NOT NULL ")
+                    .append("THEN to_timestamp(((l.workflow_details->'currentStageDetails')->>'enteredAt'), 'DD-MM-YYYY HH24:MI:SS') ")
+                    .append("ELSE NULL ")
+                    .append("END) >= ? ");
+            params.add(enteredAtFrom);
+        }
+
+        if (enteredAtTo != null) {
+            whereClause.append(" AND (")
+                    .append("CASE ")
+                    .append("WHEN (l.workflow_details->'currentStageDetails')->>'enteredAt' IS NOT NULL ")
+                    .append("THEN to_timestamp(((l.workflow_details->'currentStageDetails')->>'enteredAt'), 'DD-MM-YYYY HH24:MI:SS') ")
+                    .append("ELSE NULL ")
+                    .append("END) <= ? ");
+            params.add(enteredAtTo);
         }
     }
 

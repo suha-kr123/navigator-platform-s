@@ -29,6 +29,11 @@ public class LeadDashboardFilters {
     String lastCallStatus;
     List<String> stageKey;
     List<String> subStageKey;
+    List<String> stageAssignedTo;
+    LocalDateTime stageAssignedAtFrom;
+    LocalDateTime stageAssignedAtTo;
+    LocalDateTime stageEnteredAtFrom;
+    LocalDateTime stageEnteredAtTo;
 
 
     //TODO : advisors, add next task filter
