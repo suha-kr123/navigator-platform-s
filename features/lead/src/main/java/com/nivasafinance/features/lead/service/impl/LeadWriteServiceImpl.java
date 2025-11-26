@@ -112,9 +112,9 @@ public class LeadWriteServiceImpl implements LeadWriteService {
 
         // Create initial stage synchronously and publish event for async task creation
         // TODO: Replace with dynamic workflow picker once design is complete
-        /*String workflowKey = WorkflowConstants.Workflow.DEFAULT_WORKFLOW_KEY;
+        String workflowKey = WorkflowConstants.Workflow.DEFAULT_WORKFLOW_KEY;
         String workflowConfigKey = workflowConfigRepositoryWrapper.findActiveByWorkflowConfigKey(workflowKey).getWorkflowConfigKey();
-        leadStageHistoryWriteService.createInitialStage(savedLead.getLeadIdentifier(), workflowConfigKey);*/
+        leadStageHistoryWriteService.createInitialStage(savedLead.getLeadIdentifier(), workflowConfigKey);
 
         // Publish LEAD_CREATED event for other listeners (activities, notifications, etc.) - not used by workflow
         publishLeadCreatedEvent(savedLead, request);
