@@ -10,7 +10,7 @@ import com.nivasafinance.features.task.dto.CreateTaskRequest;
 import com.nivasafinance.features.task.dto.TaskDetailsRequest;
 import com.nivasafinance.features.workflow.adapter.EntityWorkflowAdapter;
 import com.nivasafinance.features.workflow.constants.WorkflowConstants;
-import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -20,11 +20,17 @@ import java.util.Map;
 import java.util.UUID;
 
 @Component
-@RequiredArgsConstructor
 public class LeadWorkflowAdapter implements EntityWorkflowAdapter {
     
     private final LeadRepositoryWrapper leadRepositoryWrapper;
     private final LeadTaskWriteService leadTaskWriteService;
+    
+    public LeadWorkflowAdapter(
+            LeadRepositoryWrapper leadRepositoryWrapper,
+            @Lazy LeadTaskWriteService leadTaskWriteService) {
+        this.leadRepositoryWrapper = leadRepositoryWrapper;
+        this.leadTaskWriteService = leadTaskWriteService;
+    }
     
     @Override
     public EntityType getEntityType() {

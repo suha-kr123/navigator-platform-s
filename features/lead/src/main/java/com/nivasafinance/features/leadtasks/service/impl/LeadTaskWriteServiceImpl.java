@@ -4,6 +4,7 @@ import com.nivasafinance.common.enums.EntityType;
 import com.nivasafinance.common.utils.ValidationUtils;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
+import com.nivasafinance.features.lead.workflow.LeadWorkflowAdapter;
 import com.nivasafinance.features.leadstages.entity.LeadStageHistory;
 import com.nivasafinance.features.leadstages.repository.LeadStageHistoryRepositoryWrapper;
 import com.nivasafinance.features.leadtasks.dto.CreateAdhocTaskRequest;
@@ -23,11 +24,10 @@ import com.nivasafinance.features.task.dto.TaskResponse;
 import com.nivasafinance.features.task.entity.Task;
 import com.nivasafinance.features.task.repository.TaskRepositoryWrapper;
 import com.nivasafinance.features.task.service.TaskWriteService;
-import com.nivasafinance.features.workflow.adapter.EntityWorkflowAdapter;
-import com.nivasafinance.features.workflow.adapter.EntityWorkflowAdapterRegistry;
+import com.nivasafinance.features.lead.workflow.LeadWorkflowAdapter;
 import com.nivasafinance.features.workflow.constants.WorkflowConstants;
 import com.nivasafinance.features.workflow.orchestrator.WorkflowOrchestratorService;
-import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,7 +36,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
 @Transactional
 public class LeadTaskWriteServiceImpl implements LeadTaskWriteService {
 
@@ -46,7 +45,24 @@ public class LeadTaskWriteServiceImpl implements LeadTaskWriteService {
     private final TaskWriteService taskWriteService;
     private final TaskRepositoryWrapper taskRepositoryWrapper;
     private final WorkflowOrchestratorService workflowOrchestratorService;
-    private final EntityWorkflowAdapterRegistry adapterRegistry;
+    private final LeadWorkflowAdapter leadWorkflowAdapter;
+    
+    public LeadTaskWriteServiceImpl(
+            LeadRepositoryWrapper leadRepositoryWrapper,
+            LeadStageHistoryRepositoryWrapper leadStageHistoryRepositoryWrapper,
+            LeadTaskRepositoryWrapper leadTaskRepositoryWrapper,
+            TaskWriteService taskWriteService,
+            TaskRepositoryWrapper taskRepositoryWrapper,
+            WorkflowOrchestratorService workflowOrchestratorService,
+            @Lazy LeadWorkflowAdapter leadWorkflowAdapter) {
+        this.leadRepositoryWrapper = leadRepositoryWrapper;
+        this.leadStageHistoryRepositoryWrapper = leadStageHistoryRepositoryWrapper;
+        this.leadTaskRepositoryWrapper = leadTaskRepositoryWrapper;
+        this.taskWriteService = taskWriteService;
+        this.taskRepositoryWrapper = taskRepositoryWrapper;
+        this.workflowOrchestratorService = workflowOrchestratorService;
+        this.leadWorkflowAdapter = leadWorkflowAdapter;
+    }
 
     @Override
     public LeadTaskResponse createAdhocTask(UUID leadIdentifier, CreateAdhocTaskRequest request) {
@@ -69,8 +85,8 @@ public class LeadTaskWriteServiceImpl implements LeadTaskWriteService {
         // Call adapter directly with full request to preserve all fields including creatorRemarks
         // Note: We skip createAdhocTaskForStage because it creates a task with incomplete data (missing creatorRemarks, etc.)
         // The adapter will create the task properly with all fields preserved
-        EntityWorkflowAdapter adapter = adapterRegistry.getAdapter(EntityType.LEAD);
-        Object result = adapter.createAdhocTask(leadIdentifier, fullRequest);
+        // Using @Lazy to break circular dependency: LeadTaskWriteService -> LeadWorkflowAdapter -> LeadTaskWriteService
+        Object result = leadWorkflowAdapter.createAdhocTask(leadIdentifier, fullRequest);
         
         return (LeadTaskResponse) result;
     }
