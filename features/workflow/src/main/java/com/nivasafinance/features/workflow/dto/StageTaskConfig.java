@@ -35,7 +35,7 @@ public class StageTaskConfig {
 
         // When we need to create tasks regardless of the previous stage, we can use special value "DEFAULT"
         if (WorkflowConstants.WorkflowConfigDetails.DEFAULT_STAGE.equals(fromStage)) {
-            return WorkflowConstants.StageTask.DEFAULT_STAGE.equals(actualFromStage);
+            return true;  // Always match regardless of actualFromStage
         }  
 
         // Otherwise, exact match
