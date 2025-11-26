@@ -23,6 +23,8 @@ import com.nivasafinance.features.task.dto.TaskResponse;
 import com.nivasafinance.features.task.entity.Task;
 import com.nivasafinance.features.task.repository.TaskRepositoryWrapper;
 import com.nivasafinance.features.task.service.TaskWriteService;
+import com.nivasafinance.features.workflow.adapter.EntityWorkflowAdapter;
+import com.nivasafinance.features.workflow.adapter.EntityWorkflowAdapterRegistry;
 import com.nivasafinance.features.workflow.constants.WorkflowConstants;
 import com.nivasafinance.features.workflow.orchestrator.WorkflowOrchestratorService;
 import lombok.RequiredArgsConstructor;
@@ -44,6 +46,7 @@ public class LeadTaskWriteServiceImpl implements LeadTaskWriteService {
     private final TaskWriteService taskWriteService;
     private final TaskRepositoryWrapper taskRepositoryWrapper;
     private final WorkflowOrchestratorService workflowOrchestratorService;
+    private final EntityWorkflowAdapterRegistry adapterRegistry;
 
     @Override
     public LeadTaskResponse createAdhocTask(UUID leadIdentifier, CreateAdhocTaskRequest request) {
@@ -52,12 +55,22 @@ public class LeadTaskWriteServiceImpl implements LeadTaskWriteService {
         // Get current stage from lead workflow details or use provided stageKey
         String stageKey = getStageKey(lead, request.getStageKey());
         
-        Object result = workflowOrchestratorService.createAdhocTaskForStage(
-                lead.getId(), 
-                EntityType.LEAD, 
-                stageKey, 
-                request.getTaskConfigKey()
-        );
+        // Update request with validated stageKey and preserve all fields including creatorRemarks
+        CreateAdhocTaskRequest fullRequest = CreateAdhocTaskRequest.builder()
+                .taskConfigKey(request.getTaskConfigKey())
+                .assignedTo(request.getAssignedTo())
+                .dueAt(request.getDueAt())
+                .stageKey(stageKey)
+                .creatorRemarks(request.getCreatorRemarks())
+                .preferredCallWindowStart(request.getPreferredCallWindowStart())
+                .preferredCallWindowEnd(request.getPreferredCallWindowEnd())
+                .build();
+        
+        // Call adapter directly with full request to preserve all fields including creatorRemarks
+        // Note: We skip createAdhocTaskForStage because it creates a task with incomplete data (missing creatorRemarks, etc.)
+        // The adapter will create the task properly with all fields preserved
+        EntityWorkflowAdapter adapter = adapterRegistry.getAdapter(EntityType.LEAD);
+        Object result = adapter.createAdhocTask(leadIdentifier, fullRequest);
         
         return (LeadTaskResponse) result;
     }
