@@ -165,7 +165,7 @@ public class WorkflowOrchestratorServiceImpl implements WorkflowOrchestratorServ
             try {
                 // Pass dueAt as-is (can be null). Task service will calculate from task config if needed.
                 CreateTaskRequest createTaskRequest = buildCreateTaskRequest(
-                        taskConfig, entityId, entityType, assignedTo, dueAt, preferredCallWindow);
+                        taskConfig, entityId, entityType, assignedTo, dueAt, preferredCallWindow, entityInfo, adapter);
                 adapter.createTaskAndAssociate(entityId, createTaskRequest, taskDetails);
             } catch (Exception e) {
                 String errorMessage = ValidationUtils.isNonNull(e.getMessage()) ? e.getMessage() : e.getClass().getSimpleName();
@@ -184,10 +184,16 @@ public class WorkflowOrchestratorServiceImpl implements WorkflowOrchestratorServ
             EntityType entityType,
             String assignedTo,
             LocalDateTime dueAt,
-            TaskDetailsRequest.PreferredCallWindow preferredCallWindow) {
+            TaskDetailsRequest.PreferredCallWindow preferredCallWindow,
+            Object entityInfo,
+            EntityWorkflowAdapter adapter) {
+
+        UUID entityIdentifier = ValidationUtils.isNonNull(entityInfo) && ValidationUtils.isNonNull(adapter)
+                ? adapter.getEntityIdentifier(entityInfo)
+                : null;
 
         TaskDetailsRequest taskDetails = TaskDetailsRequest.builder()
-                .entityId(entityId)
+                .entityId(entityIdentifier)
                 .entityType(entityType)
                 .creatorRemarks(null)
                 .preferredCallWindow(preferredCallWindow)

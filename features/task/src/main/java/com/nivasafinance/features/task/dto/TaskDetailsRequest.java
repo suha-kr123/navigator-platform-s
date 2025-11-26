@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import com.nivasafinance.common.enums.EntityType;
 
@@ -14,7 +15,7 @@ import com.nivasafinance.common.enums.EntityType;
 @AllArgsConstructor
 @Builder
 public class TaskDetailsRequest {
-    private Long entityId;
+    private UUID entityId;
     private EntityType entityType;
     private PreferredCallWindow preferredCallWindow;
     private String creatorRemarks;

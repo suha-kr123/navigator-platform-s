@@ -114,7 +114,7 @@ public class LeadWorkflowAdapter implements EntityWorkflowAdapter {
             }
             
             TaskDetailsRequest taskDetails = TaskDetailsRequest.builder()
-                    .entityId(lead.getId())
+                    .entityId(lead.getLeadIdentifier())
                     .entityType(EntityType.LEAD)
                     .creatorRemarks(adhocRequest.getCreatorRemarks())
                     .preferredCallWindow(preferredCallWindow)

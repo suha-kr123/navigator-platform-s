@@ -85,7 +85,7 @@ public class Task extends AuditableEntity {
     @AllArgsConstructor
     @Builder
     public static class TaskDetails {
-        private Long entityId;
+        private UUID entityId;
         private EntityType entityType;
         private PreferredCallWindow preferredCallWindow;
         private String creatorRemarks;
