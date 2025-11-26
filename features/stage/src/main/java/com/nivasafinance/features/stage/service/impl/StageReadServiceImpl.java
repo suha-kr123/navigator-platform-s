@@ -4,6 +4,7 @@ import com.nivasafinance.common.utils.ValidationUtils;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import com.nivasafinance.features.master.codemaster.service.CodeMasterService;
 import com.nivasafinance.features.stage.dto.StageConfigResponse;
+import com.nivasafinance.features.stage.dto.StageFilterResponse;
 import com.nivasafinance.features.stage.dto.StageTemplateResponse;
 import com.nivasafinance.features.stage.entity.StageConfig;
 import com.nivasafinance.features.stage.repository.StageConfigRepositoryWrapper;
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -65,5 +67,12 @@ public class StageReadServiceImpl implements StageReadService {
                 .possibleNextStages(stageConfig.getPossibleNextStages())
                 .availableSubStages(stageConfig.getSubStages())
                 .build();
+    }
+    
+    @Override
+    public List<StageFilterResponse> getAllActiveStages() {
+        return stageConfigRepositoryWrapper.findAllActiveStages().stream()
+                .map(StageFilterResponse::from)
+                .collect(Collectors.toList());
     }
 }

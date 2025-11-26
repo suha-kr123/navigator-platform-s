@@ -3,6 +3,7 @@ package com.nivasafinance.features.stage.controller;
 import com.nivasafinance.common.constants.ApiConstants;
 import com.nivasafinance.features.rolemanagement.role.dto.UserAssignmentResponse;
 import com.nivasafinance.features.rolemanagement.role.service.UserQueryService;
+import com.nivasafinance.features.stage.dto.StageFilterResponse;
 import com.nivasafinance.features.stage.dto.StageTemplateResponse;
 import com.nivasafinance.features.stage.service.StageReadService;
 import lombok.AllArgsConstructor;
@@ -18,6 +19,11 @@ public class StageController {
 
     private final StageReadService stageReadService;
     private final UserQueryService userQueryService;
+
+    @GetMapping
+    public ResponseEntity<List<StageFilterResponse>> getAllActiveStages() {
+        return ResponseEntity.ok(stageReadService.getAllActiveStages());
+    }
 
     @GetMapping("/{stageKey}/template")
     public ResponseEntity<StageTemplateResponse> getStageTemplate(@PathVariable String stageKey) {

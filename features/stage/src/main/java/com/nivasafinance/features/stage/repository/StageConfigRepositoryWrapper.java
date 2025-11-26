@@ -6,6 +6,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class StageConfigRepositoryWrapper {
@@ -16,6 +18,10 @@ public class StageConfigRepositoryWrapper {
     public StageConfig findByKeyWithException(String key) {
         return stageConfigRepository.findByKeyAndIsActive(key, true)
                 .orElseThrow(() -> StageConfigNotFoundException.stageConfigNotFound(key, messageSource));
+    }
+    
+    public List<StageConfig> findAllActiveStages() {
+        return stageConfigRepository.findByIsActiveOrderByNameAsc(true);
     }
 }
 
