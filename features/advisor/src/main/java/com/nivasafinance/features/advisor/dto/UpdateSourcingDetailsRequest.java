@@ -14,10 +14,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class UpdateSourcingDetailsRequest {
-    @NotBlank(message = "sourcingChannel is required")
     private String sourcingChannel;
-
-    @NotBlank(message = "marketingSource is required")
     private String marketingSource;
     private String sourceId;
     private String campaignId;

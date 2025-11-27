@@ -8,6 +8,8 @@
     <!-- Staff module migrations -->
     <include file="tables/V1762400000000_01__create_staff_table.xml"
              relativeToChangelogFile="true"/>
+    <include file="tables/V1764220656000_42__create_staff_for_appuser.xml"
+             relativeToChangelogFile="true"/>
 
 </databaseChangeLog>
 
