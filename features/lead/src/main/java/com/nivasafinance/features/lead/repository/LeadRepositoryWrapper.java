@@ -123,6 +123,8 @@ public class LeadRepositoryWrapper {
                              THEN l.reasons ->> 'reject'
                          WHEN l.status = 'WITHDRAWN' AND l.reasons ->> 'withdrawn' IS NOT NULL
                              THEN l.reasons ->> 'withdrawn'
+                         WHEN l.substatus = 'DROPOFF' AND l.reasons ->> 'dropoff' IS NOT NULL
+                             THEN l.reasons ->> 'dropoff'
                          ELSE NULL
                          END as reasonCode,
                     primary_contact_person.display_name         AS primaryPersonName,
@@ -337,6 +339,13 @@ public class LeadRepositoryWrapper {
                 if (leadResponse.getStatus() == LeadStatus.WITHDRAWN) {
                     CodeValueResponse codeValueResponse = codeValueMasterService.getCodeValueByKeyAndCodeKey(
                             leadResponse.getReasonCode(), SystemControlledMasterCodes.LEAD_WITHDRAWAL_REASON_MASTER);
+                    if (codeValueResponse != null) {
+                        leadResponse.setReason(codeValueResponse.getValue());
+                    }
+                }
+                if (leadResponse.getSubStatus() == LeadSubStatus.DROPOFF) {
+                    CodeValueResponse codeValueResponse = codeValueMasterService.getCodeValueByKeyAndCodeKey(
+                            leadResponse.getReasonCode(), SystemControlledMasterCodes.LEAD_DROPOFF_REASON_MASTER);
                     if (codeValueResponse != null) {
                         leadResponse.setReason(codeValueResponse.getValue());
                     }
