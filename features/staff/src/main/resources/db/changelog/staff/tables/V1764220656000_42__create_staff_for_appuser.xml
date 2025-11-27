@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1764220656000_42" author="system" context="default">
+        <comment>Create staff record for appuser</comment>
+
+        <insert tableName="n_staff">
+            <column name="user_id" valueComputed="(SELECT id FROM n_user WHERE username = 'appuser')"/>
+            <column name="office_key" value="HQ"/>
+            <column name="created_by" value="system"/>
+            <column name="updated_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+    </changeSet>
+
+</databaseChangeLog>
+
