@@ -51,6 +51,7 @@ public class LeadDashboardResponse {
     private String workflowConfigKey;
     private String currentStageKey;
     private String currentSubStageKey;
+    private String currentSubStageName;
     private String stageAssignedTo;
     private LocalDateTime stageAssignedAt;
     private LocalDateTime stageEnteredAt;

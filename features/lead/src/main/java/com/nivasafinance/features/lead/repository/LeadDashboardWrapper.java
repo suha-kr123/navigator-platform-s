@@ -560,6 +560,19 @@ public class LeadDashboardWrapper {
                     .stageAssignedAt(getLocalDateTime(rs, "stage_assigned_at"))
                     .stageEnteredAt(getLocalDateTime(rs, "stage_entered_at"));
 
+            // Populate currentSubStageName
+            String currentSubStageKey = rs.getString("current_sub_stage_key");
+            if (currentSubStageKey != null && !currentSubStageKey.trim().isEmpty()) {
+                try {
+                    CodeValueResponse subStage = codeValueMasterService.getByKey(currentSubStageKey);
+                    if (subStage != null && subStage.getValue() != null) {
+                        builder.currentSubStageName(subStage.getValue());
+                    }
+                } catch (Exception e) {
+                    // Ignore if sub-stage not found - leave name as null
+                }
+            }
+
             return builder.build();
         }
 
