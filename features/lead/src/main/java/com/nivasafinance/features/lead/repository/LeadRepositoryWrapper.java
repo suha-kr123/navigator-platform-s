@@ -401,6 +401,18 @@ public class LeadRepositoryWrapper {
                 );
                 leadResponse.setLenderStage(lenderStage);
             }
+
+            // Enrich current sub-stage name
+            if (leadResponse.getCurrentSubStageKey() != null && !leadResponse.getCurrentSubStageKey().trim().isEmpty()) {
+                try {
+                    CodeValueResponse subStage = codeValueMasterService.getByKey(leadResponse.getCurrentSubStageKey());
+                    if (subStage != null && subStage.getValue() != null) {
+                        leadResponse.setCurrentSubStageName(subStage.getValue());
+                    }
+                } catch (Exception e) {
+                    // Ignore if sub-stage not found - leave name as null
+                }
+            }
         } catch (DataAccessException e) {
             // Log error but don't fail the entire operation
             // The lead response will be returned with partial data
