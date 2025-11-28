@@ -84,6 +84,11 @@ public class Advisor extends AuditableEntity {
     @Column(name = "notes", columnDefinition = "jsonb")
     private List<Long> notes;
 
+    @Type(JsonType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "call_logs", columnDefinition = "jsonb")
+    private List<CallLogDetails> callLogDetails;
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
@@ -91,6 +96,14 @@ public class Advisor extends AuditableEntity {
     public static class RejectionDetails {
         private LocalDateTime rejectionDate;
         private String rejectedBy;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class CallLogDetails {
+        private Long callLogId;
     }
 }
 

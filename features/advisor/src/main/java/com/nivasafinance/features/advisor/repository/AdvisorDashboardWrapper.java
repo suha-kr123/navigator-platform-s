@@ -20,6 +20,7 @@ import org.springframework.util.CollectionUtils;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -105,7 +106,9 @@ public class AdvisorDashboardWrapper {
                     a.segmentation_details->>'segmentation' AS segmentation_key,
                     sourcing_channel.sourcing_channel_name AS sourcing_channel_name,
                     (SELECT COUNT(DISTINCT l.id) FROM n_advisor_lead_mapping alm JOIN n_lead l ON l.id = alm.lead_id WHERE alm.advisor_id = a.id) AS no_of_leads,
-                    a.owner AS sales_owner
+                    a.owner AS sales_owner,
+                    (a.other_details->>'preferredCallStartTime')::time AS preferred_call_start_time,
+                    (a.other_details->>'preferredCallEndTime')::time AS preferred_call_end_time
                 """ + fromClause + whereClause +
                 " ORDER BY " + sortColumn + " " + sortDirection +
                 " LIMIT ? OFFSET ?";
@@ -311,11 +314,18 @@ public class AdvisorDashboardWrapper {
                 }
             }
 
+            builder.preferredCallStartTime(getLocalTime(rs, "preferred_call_start_time"))
+                    .preferredCallEndTime(getLocalTime(rs, "preferred_call_end_time"));
+
             return builder.build();
         }
 
         private LocalDateTime getLocalDateTime(ResultSet rs, String column) throws SQLException {
             return rs.getTimestamp(column) != null ? rs.getTimestamp(column).toLocalDateTime() : null;
+        }
+
+        private LocalTime getLocalTime(ResultSet rs, String column) throws SQLException {
+            return rs.getTime(column) != null ? rs.getTime(column).toLocalTime() : null;
         }
 
         private Long getLong(ResultSet rs, String column) throws SQLException {

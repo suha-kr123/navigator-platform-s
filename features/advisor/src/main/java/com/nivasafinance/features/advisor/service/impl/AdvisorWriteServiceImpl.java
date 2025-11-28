@@ -23,6 +23,7 @@ import com.nivasafinance.features.sourcechannel.service.SourcingChannelWriteServ
 import com.nivasafinance.features.master.codemaster.SystemControlledMasterCodes;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import com.nivasafinance.features.master.codemaster.service.CodeMasterService;
+import com.nivasafinance.common.exception.BadRequestException;
 import lombok.AllArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
@@ -31,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.UUID;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -67,6 +69,21 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
         }
         else
             advisor.setOfficeKey("HQ");
+
+        // Handle preferred call times
+        if (request.getPreferredCallStartTime() != null || request.getPreferredCallEndTime() != null) {
+            OtherDetails otherDetails = new OtherDetails();
+            if (request.getPreferredCallStartTime() != null && request.getPreferredCallEndTime() != null) {
+                if (request.getPreferredCallStartTime().isAfter(request.getPreferredCallEndTime())) {
+                    throw new BadRequestException("Preferred call start time cannot be after preferred call end time");
+                }
+                otherDetails.setPreferredCallStartTime(request.getPreferredCallStartTime());
+                otherDetails.setPreferredCallEndTime(request.getPreferredCallEndTime());
+            } else {
+                throw new BadRequestException("Both preferred call start time and end time must be provided together");
+            }
+            advisor.setOtherDetails(otherDetails);
+        }
 
         Advisor savedAdvisor = advisorRepositoryWrapper.saveWithException(advisor);
 
@@ -105,6 +122,24 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
         if (request.getOwner() != null) {
             advisor.setOwner(request.getOwner());
         }
+
+        // Handle preferred call times
+        OtherDetails otherDetails = advisor.getOtherDetails();
+        if (otherDetails == null) {
+            otherDetails = new OtherDetails();
+        }
+        if (request.getPreferredCallStartTime() != null && request.getPreferredCallEndTime() != null) {
+            if (request.getPreferredCallStartTime().isAfter(request.getPreferredCallEndTime())) {
+                throw new BadRequestException("Preferred call start time cannot be after preferred call end time");
+            }
+            otherDetails.setPreferredCallStartTime(request.getPreferredCallStartTime());
+            otherDetails.setPreferredCallEndTime(request.getPreferredCallEndTime());
+        } else if (request.getPreferredCallStartTime() != null || request.getPreferredCallEndTime() != null) {
+            // If only one is provided, clear both
+            otherDetails.setPreferredCallStartTime(null);
+            otherDetails.setPreferredCallEndTime(null);
+        }
+        advisor.setOtherDetails(otherDetails);
 
         advisorRepositoryWrapper.saveWithException(advisor);
 
