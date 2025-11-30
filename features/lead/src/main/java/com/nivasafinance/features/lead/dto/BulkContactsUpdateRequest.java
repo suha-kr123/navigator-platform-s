@@ -1,5 +1,7 @@
 package com.nivasafinance.features.lead.dto;
 
+import com.nivasafinance.common.dto.AddressRequest;
+import com.nivasafinance.common.dto.IdentifierRequest;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,6 +28,14 @@ public class BulkContactsUpdateRequest {
     @Builder.Default
     private List<String> deletes = new ArrayList<>();
     
+    @Builder.Default
+    @Valid
+    private List<AddressOperation> addressOperations = new ArrayList<>();
+    
+    @Builder.Default
+    @Valid
+    private List<IdentifierOperation> identifierOperations = new ArrayList<>();
+    
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
@@ -35,6 +45,32 @@ public class BulkContactsUpdateRequest {
         
         @Valid
         private UpdateLeadContactRequest data;
+    }
+    
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class AddressOperation {
+        private String contactIdentifier;  // Required
+        private String operation;           // 'create', 'update', or 'delete'
+        private String addressId;           // Required for 'update' and 'delete'
+        
+        @Valid
+        private AddressRequest data;        // Required for 'create' and 'update'
+    }
+    
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class IdentifierOperation {
+        private String contactIdentifier;  // Required
+        private String operation;           // 'create', 'update', or 'delete'
+        private String identifierId;        // Required for 'update' and 'delete' (UUID as string)
+        
+        @Valid
+        private IdentifierRequest data;     // Required for 'create' and 'update'
     }
 }
 

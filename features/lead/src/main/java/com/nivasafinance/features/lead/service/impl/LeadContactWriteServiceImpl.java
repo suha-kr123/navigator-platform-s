@@ -488,6 +488,68 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
             }
         }
         
+        // Process address operations - if any fails, transaction will rollback
+        if (request.getAddressOperations() != null) {
+            for (BulkContactsUpdateRequest.AddressOperation addressOp : request.getAddressOperations()) {
+                totalProcessed++;
+                UUID contactIdentifier = UUID.fromString(addressOp.getContactIdentifier());
+                
+                switch (addressOp.getOperation().toUpperCase()) {
+                    case "CREATE":
+                        if (addressOp.getData() == null) {
+                            throw new IllegalArgumentException("Address data is required for create operation");
+                        }
+                        addAddress(contactIdentifier, addressOp.getData());
+                        break;
+                    case "UPDATE":
+                        if (addressOp.getAddressId() == null || addressOp.getData() == null) {
+                            throw new IllegalArgumentException("Address ID and data are required for update operation");
+                        }
+                        updateAddress(contactIdentifier, addressOp.getAddressId(), addressOp.getData());
+                        break;
+                    case "DELETE":
+                        // Note: There's no delete address endpoint in the service, so we skip this
+                        // If delete is needed, it should be added to the service first
+                        throw new UnsupportedOperationException("Delete address operation is not supported");
+                    default:
+                        throw new IllegalArgumentException("Invalid address operation: " + addressOp.getOperation());
+                }
+            }
+        }
+        
+        // Process identifier operations - if any fails, transaction will rollback
+        if (request.getIdentifierOperations() != null) {
+            for (BulkContactsUpdateRequest.IdentifierOperation identifierOp : request.getIdentifierOperations()) {
+                totalProcessed++;
+                UUID contactIdentifier = UUID.fromString(identifierOp.getContactIdentifier());
+                
+                switch (identifierOp.getOperation().toUpperCase()) {
+                    case "CREATE":
+                        if (identifierOp.getData() == null) {
+                            throw new IllegalArgumentException("Identifier data is required for create operation");
+                        }
+                        addIdentifier(leadId, contactIdentifier, identifierOp.getData());
+                        break;
+                    case "UPDATE":
+                        if (identifierOp.getIdentifierId() == null || identifierOp.getData() == null) {
+                            throw new IllegalArgumentException("Identifier ID and data are required for update operation");
+                        }
+                        UUID identifierId = UUID.fromString(identifierOp.getIdentifierId());
+                        updateIdentifier(leadId, contactIdentifier, identifierId, identifierOp.getData());
+                        break;
+                    case "DELETE":
+                        if (identifierOp.getIdentifierId() == null) {
+                            throw new IllegalArgumentException("Identifier ID is required for delete operation");
+                        }
+                        UUID identifierIdToDelete = UUID.fromString(identifierOp.getIdentifierId());
+                        deleteIdentifier(leadId, contactIdentifier, identifierIdToDelete);
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Invalid identifier operation: " + identifierOp.getOperation());
+                }
+            }
+        }
+        
         // Only return response if all operations succeeded (no exceptions thrown)
         return responseBuilder
                 .totalProcessed(totalProcessed)
