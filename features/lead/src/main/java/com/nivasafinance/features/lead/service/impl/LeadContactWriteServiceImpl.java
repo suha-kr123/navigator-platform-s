@@ -16,6 +16,7 @@ import com.nivasafinance.features.lead.dto.LeadContactPersonDetails;
 import com.nivasafinance.features.lead.dto.LeadContactResponse;
 import com.nivasafinance.features.lead.dto.CreateLeadContactRequest;
 import com.nivasafinance.features.lead.dto.UpdateLeadContactRequest;
+import com.nivasafinance.features.lead.exception.LeadContactValidationException;
 import com.nivasafinance.features.lead.service.LeadContactReadService;
 import com.nivasafinance.features.lead.entity.Applicant;
 import com.nivasafinance.features.lead.entity.Contact;
@@ -508,14 +509,24 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
                 switch (addressOp.getOperation().toUpperCase()) {
                     case "CREATE":
                         if (addressOp.getData() == null) {
-                            throw new IllegalArgumentException("Address data is required for create operation");
+                            throw LeadContactValidationException.missingRequiredField("Address data", "create");
                         }
+                        if (addressOp.getData().getAddressType() == null) {
+                            throw LeadContactValidationException.missingRequiredField("Address type", "create");
+                        }
+                        // Validate that an address of this type doesn't already exist
+                        validateUniqueAddressType(contactIdentifier, addressOp.getData().getAddressType());
                         addAddress(contactIdentifier, addressOp.getData());
                         break;
                     case "UPDATE":
                         if (addressOp.getAddressId() == null || addressOp.getData() == null) {
-                            throw new IllegalArgumentException("Address ID and data are required for update operation");
+                            throw LeadContactValidationException.missingRequiredField("Address ID and data", "update");
                         }
+                        if (addressOp.getData().getAddressType() == null) {
+                            throw LeadContactValidationException.missingRequiredField("Address type", "update");
+                        }
+                        // For update, check if another address of the same type exists (excluding the one being updated)
+                        validateUniqueAddressTypeForUpdate(contactIdentifier, addressOp.getAddressId(), addressOp.getData().getAddressType());
                         updateAddress(contactIdentifier, addressOp.getAddressId(), addressOp.getData());
                         break;
                     case "DELETE":
@@ -523,7 +534,7 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
                         // If delete is needed, it should be added to the service first
                         throw new UnsupportedOperationException("Delete address operation is not supported");
                     default:
-                        throw new IllegalArgumentException("Invalid address operation: " + addressOp.getOperation());
+                        throw LeadContactValidationException.invalidOperation(addressOp.getOperation(), "create, update, delete");
                 }
             }
         }
@@ -537,26 +548,36 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
                 switch (identifierOp.getOperation().toUpperCase()) {
                     case "CREATE":
                         if (identifierOp.getData() == null) {
-                            throw new IllegalArgumentException("Identifier data is required for create operation");
+                            throw LeadContactValidationException.missingRequiredField("Identifier data", "create");
                         }
+                        if (identifierOp.getData().getType() == null) {
+                            throw LeadContactValidationException.missingRequiredField("Identifier type", "create");
+                        }
+                        // Validate that an identifier of this type doesn't already exist
+                        validateUniqueIdentifierType(leadId, contactIdentifier, identifierOp.getData().getType());
                         addIdentifier(leadId, contactIdentifier, identifierOp.getData());
                         break;
                     case "UPDATE":
                         if (identifierOp.getIdentifierId() == null || identifierOp.getData() == null) {
-                            throw new IllegalArgumentException("Identifier ID and data are required for update operation");
+                            throw LeadContactValidationException.missingRequiredField("Identifier ID and data", "update");
+                        }
+                        if (identifierOp.getData().getType() == null) {
+                            throw LeadContactValidationException.missingRequiredField("Identifier type", "update");
                         }
                         UUID identifierId = UUID.fromString(identifierOp.getIdentifierId());
+                        // For update, check if another identifier of the same type exists (excluding the one being updated)
+                        validateUniqueIdentifierTypeForUpdate(leadId, contactIdentifier, identifierId, identifierOp.getData().getType());
                         updateIdentifier(leadId, contactIdentifier, identifierId, identifierOp.getData());
                         break;
                     case "DELETE":
                         if (identifierOp.getIdentifierId() == null) {
-                            throw new IllegalArgumentException("Identifier ID is required for delete operation");
+                            throw LeadContactValidationException.missingRequiredField("Identifier ID", "delete");
                         }
                         UUID identifierIdToDelete = UUID.fromString(identifierOp.getIdentifierId());
                         deleteIdentifier(leadId, contactIdentifier, identifierIdToDelete);
                         break;
                     default:
-                        throw new IllegalArgumentException("Invalid identifier operation: " + identifierOp.getOperation());
+                        throw LeadContactValidationException.invalidOperation(identifierOp.getOperation(), "create, update, delete");
                 }
             }
         }
@@ -576,11 +597,11 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
      * @param contactIdentifierStr The contact identifier string (UUID or "create:index")
      * @param createdContactIdentifiers Map of create index to contact identifier
      * @return The resolved UUID
-     * @throws IllegalArgumentException if the identifier cannot be resolved
+     * @throws LeadContactValidationException if the identifier cannot be resolved
      */
     private UUID resolveContactIdentifier(String contactIdentifierStr, java.util.Map<Integer, UUID> createdContactIdentifiers) {
         if (contactIdentifierStr == null || contactIdentifierStr.trim().isEmpty()) {
-            throw new IllegalArgumentException("Contact identifier is required");
+            throw LeadContactValidationException.missingRequiredField("Contact identifier", "operation");
         }
         
         // Check if it's a reference to a newly created contact (format: "create:0", "create:1", etc.)
@@ -590,13 +611,11 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
                 int index = Integer.parseInt(indexStr);
                 UUID identifier = createdContactIdentifiers.get(index);
                 if (identifier == null) {
-                    throw new IllegalArgumentException("Invalid create reference: " + contactIdentifierStr + 
-                            ". Contact at index " + index + " was not created in this request.");
+                    throw LeadContactValidationException.invalidCreateReference(contactIdentifierStr, index);
                 }
                 return identifier;
             } catch (NumberFormatException e) {
-                throw new IllegalArgumentException("Invalid create reference format: " + contactIdentifierStr + 
-                        ". Expected format: 'create:0', 'create:1', etc.");
+                throw LeadContactValidationException.invalidCreateReferenceFormat(contactIdentifierStr);
             }
         }
         
@@ -604,8 +623,7 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
         try {
             return UUID.fromString(contactIdentifierStr);
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid contact identifier format: " + contactIdentifierStr + 
-                    ". Must be a valid UUID or a create reference (e.g., 'create:0')");
+            throw LeadContactValidationException.invalidContactIdentifier(contactIdentifierStr);
         }
     }
     
@@ -636,6 +654,82 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
                 .addresses(addresses != null ? addresses : new ArrayList<>())
                 .identifiers(identifiers != null ? identifiers : new ArrayList<>())
                 .build();
+    }
+    
+    /**
+     * Validates that an address of the given type doesn't already exist for the contact.
+     * 
+     * @param contactIdentifier The contact identifier
+     * @param addressType The address type to check
+     * @throws LeadContactValidationException if an address of this type already exists
+     */
+    private void validateUniqueAddressType(UUID contactIdentifier, com.nivasafinance.common.enums.AddressType addressType) {
+        List<AddressData> existingAddresses = leadContactReadService.getAddresses(contactIdentifier);
+        if (existingAddresses != null) {
+            boolean addressTypeExists = existingAddresses.stream()
+                    .anyMatch(addr -> addressType.equals(addr.getAddressType()));
+            if (addressTypeExists) {
+                throw LeadContactValidationException.duplicateAddressType(addressType.name());
+            }
+        }
+    }
+    
+    /**
+     * Validates that no other address (excluding the one being updated) of the given type exists.
+     * 
+     * @param contactIdentifier The contact identifier
+     * @param addressId The address ID being updated
+     * @param addressType The address type to check
+     * @throws LeadContactValidationException if another address of this type already exists
+     */
+    private void validateUniqueAddressTypeForUpdate(UUID contactIdentifier, String addressId, com.nivasafinance.common.enums.AddressType addressType) {
+        List<AddressData> existingAddresses = leadContactReadService.getAddresses(contactIdentifier);
+        if (existingAddresses != null) {
+            boolean addressTypeExists = existingAddresses.stream()
+                    .anyMatch(addr -> addressType.equals(addr.getAddressType()) && !addressId.equals(addr.getId()));
+            if (addressTypeExists) {
+                throw LeadContactValidationException.duplicateAddressType(addressType.name());
+            }
+        }
+    }
+    
+    /**
+     * Validates that an identifier of the given type doesn't already exist for the contact.
+     * 
+     * @param leadId The lead identifier
+     * @param contactIdentifier The contact identifier
+     * @param identifierType The identifier type to check
+     * @throws LeadContactValidationException if an identifier of this type already exists
+     */
+    private void validateUniqueIdentifierType(UUID leadId, UUID contactIdentifier, com.nivasafinance.common.enums.IdentifierType identifierType) {
+        List<IdentifierData> existingIdentifiers = leadContactReadService.getIdentifiers(leadId, contactIdentifier);
+        if (existingIdentifiers != null) {
+            boolean identifierTypeExists = existingIdentifiers.stream()
+                    .anyMatch(id -> identifierType.equals(id.getType()));
+            if (identifierTypeExists) {
+                throw LeadContactValidationException.duplicateIdentifierType(identifierType.name());
+            }
+        }
+    }
+    
+    /**
+     * Validates that no other identifier (excluding the one being updated) of the given type exists.
+     * 
+     * @param leadId The lead identifier
+     * @param contactIdentifier The contact identifier
+     * @param identifierId The identifier ID being updated
+     * @param identifierType The identifier type to check
+     * @throws LeadContactValidationException if another identifier of this type already exists
+     */
+    private void validateUniqueIdentifierTypeForUpdate(UUID leadId, UUID contactIdentifier, UUID identifierId, com.nivasafinance.common.enums.IdentifierType identifierType) {
+        List<IdentifierData> existingIdentifiers = leadContactReadService.getIdentifiers(leadId, contactIdentifier);
+        if (existingIdentifiers != null) {
+            boolean identifierTypeExists = existingIdentifiers.stream()
+                    .anyMatch(id -> identifierType.equals(id.getType()) && !identifierId.equals(id.getId()));
+            if (identifierTypeExists) {
+                throw LeadContactValidationException.duplicateIdentifierType(identifierType.name());
+            }
+        }
     }
 }
 
