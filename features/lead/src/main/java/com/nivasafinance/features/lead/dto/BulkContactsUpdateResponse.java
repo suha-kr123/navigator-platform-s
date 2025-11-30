@@ -17,10 +17,10 @@ public class BulkContactsUpdateResponse {
     private int totalProcessed;
     
     @Builder.Default
-    private List<LeadContactResponse> createdContacts = new ArrayList<>();
+    private List<EnrichedLeadContactResponse> createdContacts = new ArrayList<>();
     
     @Builder.Default
-    private List<LeadContactResponse> updatedContacts = new ArrayList<>();
+    private List<EnrichedLeadContactResponse> updatedContacts = new ArrayList<>();
     
     private int deletedCount;
 }

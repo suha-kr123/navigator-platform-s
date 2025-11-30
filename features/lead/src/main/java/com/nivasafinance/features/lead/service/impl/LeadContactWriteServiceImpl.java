@@ -1,15 +1,17 @@
 package com.nivasafinance.features.lead.service.impl;
 
 import com.nivasafinance.common.dto.AddressRequest;
-import com.nivasafinance.common.dto.IdentifierData;
 import com.nivasafinance.common.dto.IdentifierRequest;
 import com.nivasafinance.common.events.BusinessEvent;
 import com.nivasafinance.common.events.SystemEvent;
 import com.nivasafinance.common.events.payload.LeadContactCreationEventPayload;
 import com.nivasafinance.common.events.payload.LeadContactDeletionEventPayload;
 import com.nivasafinance.common.events.payload.LeadContactUpdationEventPayload;
+import com.nivasafinance.common.dto.AddressData;
+import com.nivasafinance.common.dto.IdentifierData;
 import com.nivasafinance.features.lead.dto.BulkContactsUpdateRequest;
 import com.nivasafinance.features.lead.dto.BulkContactsUpdateResponse;
+import com.nivasafinance.features.lead.dto.EnrichedLeadContactResponse;
 import com.nivasafinance.features.lead.dto.LeadContactPersonDetails;
 import com.nivasafinance.features.lead.dto.LeadContactResponse;
 import com.nivasafinance.features.lead.dto.CreateLeadContactRequest;
@@ -415,14 +417,18 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
     public BulkContactsUpdateResponse bulkUpdateContacts(UUID leadId, BulkContactsUpdateRequest request) {
         BulkContactsUpdateResponse.BulkContactsUpdateResponseBuilder responseBuilder = BulkContactsUpdateResponse.builder();
         
-        List<LeadContactResponse> createdContacts = new ArrayList<>();
-        List<LeadContactResponse> updatedContacts = new ArrayList<>();
+        List<EnrichedLeadContactResponse> createdContacts = new ArrayList<>();
+        List<EnrichedLeadContactResponse> updatedContacts = new ArrayList<>();
+        
+        // Map to store created contact identifiers by index (for referencing in address/identifier operations)
+        java.util.Map<Integer, UUID> createdContactIdentifiers = new java.util.HashMap<>();
         
         int totalProcessed = 0;
         int deletedCount = 0;
         
         // Process creates - if any fails, transaction will rollback
         if (request.getCreates() != null) {
+            int createIndex = 0;
             for (CreateLeadContactRequest createRequest : request.getCreates()) {
                 totalProcessed++;
                 // We need to get the contact identifier after creation
@@ -440,6 +446,9 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
                 contact.setIsPropertyOwner(createRequest.getIsPropertyOwner());
                 Contact savedContact = contactRepositoryWrapper.saveWithException(contact);
                 UUID createdContactIdentifier = savedContact.getIdentifier();
+                
+                // Store the identifier for later reference
+                createdContactIdentifiers.put(createIndex, createdContactIdentifier);
                 
                 // Handle decision maker logic
                 if (createRequest.getIsDecisionMaker()) {
@@ -460,9 +469,11 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
                 // Publish event
                 publishLeadContactCreatedEvent(lead, savedContact, createRequest.getApplicantType());
                 
-                // Fetch the created contact
-                LeadContactResponse createdContact = leadContactReadService.getContactById(leadId, createdContactIdentifier);
-                createdContacts.add(createdContact);
+                // Fetch the created contact with addresses and identifiers
+                EnrichedLeadContactResponse enrichedContact = enrichContactResponse(leadId, createdContactIdentifier);
+                createdContacts.add(enrichedContact);
+                
+                createIndex++;
             }
         }
         
@@ -472,9 +483,9 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
                 totalProcessed++;
                 UUID contactIdentifier = UUID.fromString(updateItem.getContactIdentifier());
                 updateContact(leadId, contactIdentifier, updateItem.getData());
-                // Fetch the updated contact
-                LeadContactResponse updatedContact = leadContactReadService.getContactById(leadId, contactIdentifier);
-                updatedContacts.add(updatedContact);
+                // Fetch the updated contact with addresses and identifiers
+                EnrichedLeadContactResponse enrichedContact = enrichContactResponse(leadId, contactIdentifier);
+                updatedContacts.add(enrichedContact);
             }
         }
         
@@ -492,7 +503,7 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
         if (request.getAddressOperations() != null) {
             for (BulkContactsUpdateRequest.AddressOperation addressOp : request.getAddressOperations()) {
                 totalProcessed++;
-                UUID contactIdentifier = UUID.fromString(addressOp.getContactIdentifier());
+                UUID contactIdentifier = resolveContactIdentifier(addressOp.getContactIdentifier(), createdContactIdentifiers);
                 
                 switch (addressOp.getOperation().toUpperCase()) {
                     case "CREATE":
@@ -521,7 +532,7 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
         if (request.getIdentifierOperations() != null) {
             for (BulkContactsUpdateRequest.IdentifierOperation identifierOp : request.getIdentifierOperations()) {
                 totalProcessed++;
-                UUID contactIdentifier = UUID.fromString(identifierOp.getContactIdentifier());
+                UUID contactIdentifier = resolveContactIdentifier(identifierOp.getContactIdentifier(), createdContactIdentifiers);
                 
                 switch (identifierOp.getOperation().toUpperCase()) {
                     case "CREATE":
@@ -556,6 +567,74 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
                 .createdContacts(createdContacts)
                 .updatedContacts(updatedContacts)
                 .deletedCount(deletedCount)
+                .build();
+    }
+    
+    /**
+     * Resolves contact identifier from either a UUID string or a create reference (e.g., "create:0").
+     * 
+     * @param contactIdentifierStr The contact identifier string (UUID or "create:index")
+     * @param createdContactIdentifiers Map of create index to contact identifier
+     * @return The resolved UUID
+     * @throws IllegalArgumentException if the identifier cannot be resolved
+     */
+    private UUID resolveContactIdentifier(String contactIdentifierStr, java.util.Map<Integer, UUID> createdContactIdentifiers) {
+        if (contactIdentifierStr == null || contactIdentifierStr.trim().isEmpty()) {
+            throw new IllegalArgumentException("Contact identifier is required");
+        }
+        
+        // Check if it's a reference to a newly created contact (format: "create:0", "create:1", etc.)
+        if (contactIdentifierStr.startsWith("create:")) {
+            try {
+                String indexStr = contactIdentifierStr.substring(7); // Remove "create:" prefix
+                int index = Integer.parseInt(indexStr);
+                UUID identifier = createdContactIdentifiers.get(index);
+                if (identifier == null) {
+                    throw new IllegalArgumentException("Invalid create reference: " + contactIdentifierStr + 
+                            ". Contact at index " + index + " was not created in this request.");
+                }
+                return identifier;
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Invalid create reference format: " + contactIdentifierStr + 
+                        ". Expected format: 'create:0', 'create:1', etc.");
+            }
+        }
+        
+        // Otherwise, treat it as a UUID
+        try {
+            return UUID.fromString(contactIdentifierStr);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid contact identifier format: " + contactIdentifierStr + 
+                    ". Must be a valid UUID or a create reference (e.g., 'create:0')");
+        }
+    }
+    
+    /**
+     * Enriches a LeadContactResponse with addresses and identifiers.
+     * 
+     * @param leadId The lead identifier
+     * @param contactIdentifier The contact identifier
+     * @return Enriched contact response with addresses and identifiers
+     */
+    private EnrichedLeadContactResponse enrichContactResponse(UUID leadId, UUID contactIdentifier) {
+        // Get basic contact response
+        LeadContactResponse contactResponse = leadContactReadService.getContactById(leadId, contactIdentifier);
+        
+        // Get addresses
+        List<AddressData> addresses = leadContactReadService.getAddresses(contactIdentifier);
+        
+        // Get identifiers
+        List<IdentifierData> identifiers = leadContactReadService.getIdentifiers(leadId, contactIdentifier);
+        
+        // Build enriched response
+        return EnrichedLeadContactResponse.builder()
+                .identifier(contactResponse.getIdentifier())
+                .contactPersonDetails(contactResponse.getContactPersonDetails())
+                .applicantType(contactResponse.getApplicantType())
+                .isDecisionMaker(contactResponse.getIsDecisionMaker())
+                .isPropertyOwner(contactResponse.getIsPropertyOwner())
+                .addresses(addresses != null ? addresses : new ArrayList<>())
+                .identifiers(identifiers != null ? identifiers : new ArrayList<>())
                 .build();
     }
 }
