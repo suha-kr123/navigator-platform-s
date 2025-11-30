@@ -10,6 +10,8 @@ import com.nivasafinance.features.task.dto.OutcomeDetailsResponse;
 import com.nivasafinance.features.task.dto.TaskDetailsResponse;
 import com.nivasafinance.features.task.dto.TaskResponse;
 import com.nivasafinance.features.task.service.TaskReadService;
+import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
+import com.nivasafinance.features.master.codemaster.service.CodeValueMasterService;
 import lombok.AllArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -30,6 +32,7 @@ public class TaskReadServiceImpl implements TaskReadService {
 
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
+    private final CodeValueMasterService codeValueMasterService;
 
     private static final String BASE_QUERY = 
         "SELECT " +
@@ -129,6 +132,22 @@ public class TaskReadServiceImpl implements TaskReadService {
             }
             
             UUID taskIdentifier = rs.getObject("task_identifier", UUID.class);
+            
+            // Enrich outcome with value from code master
+            String outcomeKey = rs.getString("outcome");
+            String outcomeValue = null;
+            if (ValidationUtils.isNonNullOrEmpty(outcomeKey)) {
+                try {
+                    CodeValueResponse outcomeCodeValue = codeValueMasterService.getByKey(outcomeKey);
+                    if (ValidationUtils.isNonNull(outcomeCodeValue) && ValidationUtils.isNonNullOrEmpty(outcomeCodeValue.getValue())) {
+                        outcomeValue = outcomeCodeValue.getValue();
+                    }
+                } catch (Exception e) {
+                    // If outcome not found in code master, use the key as fallback
+                    outcomeValue = outcomeKey;
+                }
+            }
+            
             return TaskResponse.builder()
                     .taskIdentifier(taskIdentifier)
                     .taskConfigKey(rs.getString("task_config_key"))
@@ -136,7 +155,7 @@ public class TaskReadServiceImpl implements TaskReadService {
                     .taskDescription(rs.getString("task_description"))
                     .assignedTo(rs.getString("assigned_to"))
                     .dueAt(getLocalDateTime(rs, "due_at"))
-                    .outcome(rs.getString("outcome"))
+                    .outcome(outcomeValue)
                     .outcomeDetails(outcomeDetails)
                     .taskDetails(taskDetails)
                     .createdAt(getLocalDateTime(rs, "created_at"))

@@ -12,6 +12,8 @@ import com.nivasafinance.features.leadstages.repository.LeadStageHistoryReposito
 import com.nivasafinance.features.leadstages.entity.LeadStageHistory;
 import com.nivasafinance.features.leadtasks.dto.LeadTaskResponse;
 import com.nivasafinance.features.leadtasks.service.LeadTaskReadService;
+import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
+import com.nivasafinance.features.master.codemaster.service.CodeValueMasterService;
 import com.nivasafinance.features.workflow.orchestrator.WorkflowOrchestratorService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -32,6 +34,7 @@ public class LeadTaskReadServiceImpl implements LeadTaskReadService {
     private final LeadRepositoryWrapper leadRepositoryWrapper;
     private final LeadStageHistoryRepositoryWrapper leadStageHistoryRepositoryWrapper;
     private final WorkflowOrchestratorService workflowOrchestratorService;
+    private final CodeValueMasterService codeValueMasterService;
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
 
@@ -152,6 +155,21 @@ public class LeadTaskReadServiceImpl implements LeadTaskReadService {
                 stageKey = (String) leadTaskDetailsMap.get("stageKey");
             }
             
+            // Enrich outcome with value from code master
+            String outcomeKey = rs.getString("outcome");
+            String outcomeValue = null;
+            if (ValidationUtils.isNonNullOrEmpty(outcomeKey)) {
+                try {
+                    CodeValueResponse outcomeCodeValue = codeValueMasterService.getByKey(outcomeKey);
+                    if (ValidationUtils.isNonNull(outcomeCodeValue) && ValidationUtils.isNonNullOrEmpty(outcomeCodeValue.getValue())) {
+                        outcomeValue = outcomeCodeValue.getValue();
+                    }
+                } catch (Exception e) {
+                    // If outcome not found in code master, use the key as fallback
+                    outcomeValue = outcomeKey;
+                }
+            }
+            
             return LeadTaskResponse.builder()
                     .id(rs.getLong("lead_task_id"))
                     .leadIdentifier(leadIdentifier)
@@ -161,7 +179,7 @@ public class LeadTaskReadServiceImpl implements LeadTaskReadService {
                     .taskDescription(rs.getString("task_description"))
                     .assignedTo(rs.getString("assigned_to"))
                     .dueAt(getLocalDateTime(rs, "due_at"))
-                    .outcome(rs.getString("outcome"))
+                    .outcome(outcomeValue)
                     .outcomeDetails(outcomeDetails)
                     .taskDetails(taskDetails)
                     .stageKey(stageKey)
