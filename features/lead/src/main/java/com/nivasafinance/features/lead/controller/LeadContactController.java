@@ -6,6 +6,8 @@ import com.nivasafinance.common.dto.AddressRequest;
 import com.nivasafinance.common.dto.IdentifierData;
 import com.nivasafinance.common.dto.IdentifierRequest;
 import com.nivasafinance.features.lead.dto.AddressIdentifierResponse;
+import com.nivasafinance.features.lead.dto.BulkContactsUpdateRequest;
+import com.nivasafinance.features.lead.dto.BulkContactsUpdateResponse;
 import com.nivasafinance.features.lead.dto.LeadContactResponse;
 import com.nivasafinance.features.lead.dto.CreateLeadContactRequest;
 import com.nivasafinance.features.lead.dto.UpdateLeadContactRequest;
@@ -65,6 +67,14 @@ public class LeadContactController {
             @PathVariable UUID contactIdentifier) {
         LeadContactResponse contact = leadContactReadService.getContactById(leadId, contactIdentifier);
         return ResponseEntity.ok(contact);
+    }
+
+    @PostMapping("/bulk-update")
+    public ResponseEntity<BulkContactsUpdateResponse> bulkUpdateContacts(
+            @PathVariable UUID leadId,
+            @Valid @RequestBody BulkContactsUpdateRequest request) {
+        BulkContactsUpdateResponse response = leadContactWriteService.bulkUpdateContacts(leadId, request);
+        return ResponseEntity.ok(response);
     }
 
     // Address Endpoints

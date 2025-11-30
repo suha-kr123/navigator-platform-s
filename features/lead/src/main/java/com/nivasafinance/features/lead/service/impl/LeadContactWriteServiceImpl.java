@@ -8,9 +8,13 @@ import com.nivasafinance.common.events.SystemEvent;
 import com.nivasafinance.common.events.payload.LeadContactCreationEventPayload;
 import com.nivasafinance.common.events.payload.LeadContactDeletionEventPayload;
 import com.nivasafinance.common.events.payload.LeadContactUpdationEventPayload;
+import com.nivasafinance.features.lead.dto.BulkContactsUpdateRequest;
+import com.nivasafinance.features.lead.dto.BulkContactsUpdateResponse;
 import com.nivasafinance.features.lead.dto.LeadContactPersonDetails;
+import com.nivasafinance.features.lead.dto.LeadContactResponse;
 import com.nivasafinance.features.lead.dto.CreateLeadContactRequest;
 import com.nivasafinance.features.lead.dto.UpdateLeadContactRequest;
+import com.nivasafinance.features.lead.service.LeadContactReadService;
 import com.nivasafinance.features.lead.entity.Applicant;
 import com.nivasafinance.features.lead.entity.Contact;
 import com.nivasafinance.features.lead.entity.Lead;
@@ -42,6 +46,7 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
     private final ApplicantRepositoryWrapper applicantRepositoryWrapper;
     private final PersonWriteService personWriteService;
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final LeadContactReadService leadContactReadService;
 
     @Override
     @Transactional
@@ -403,6 +408,93 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadId);
         Contact contact = findContactByIdentifier(lead, contactIdentifier);
         personWriteService.deleteIdentifier(contact.getPersonId(), identifierId);
+    }
+
+    @Override
+    @Transactional
+    public BulkContactsUpdateResponse bulkUpdateContacts(UUID leadId, BulkContactsUpdateRequest request) {
+        BulkContactsUpdateResponse.BulkContactsUpdateResponseBuilder responseBuilder = BulkContactsUpdateResponse.builder();
+        
+        List<LeadContactResponse> createdContacts = new ArrayList<>();
+        List<LeadContactResponse> updatedContacts = new ArrayList<>();
+        
+        int totalProcessed = 0;
+        int deletedCount = 0;
+        
+        // Process creates - if any fails, transaction will rollback
+        if (request.getCreates() != null) {
+            for (CreateLeadContactRequest createRequest : request.getCreates()) {
+                totalProcessed++;
+                // We need to get the contact identifier after creation
+                // Since createContact doesn't return it, we'll create a modified version
+                Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadId);
+                
+                // Create Person
+                PersonCreateRequest personRequest = mapToPersonCreateRequest(createRequest.getContactPersonDetails());
+                PersonCreateResponse personResponse = personWriteService.createPerson(personRequest);
+                
+                // Create Contact
+                Contact contact = new Contact();
+                contact.setPersonId(personResponse.getId());
+                contact.setIsDecisionMaker(createRequest.getIsDecisionMaker());
+                contact.setIsPropertyOwner(createRequest.getIsPropertyOwner());
+                Contact savedContact = contactRepositoryWrapper.saveWithException(contact);
+                UUID createdContactIdentifier = savedContact.getIdentifier();
+                
+                // Handle decision maker logic
+                if (createRequest.getIsDecisionMaker()) {
+                    unsetOtherDecisionMakers(lead, savedContact.getId());
+                }
+                
+                // Add contact to lead
+                addContactToLead(lead, savedContact.getId());
+                
+                // Handle applicant type
+                handleApplicantType(lead, savedContact, createRequest.getApplicantType());
+                
+                // Update primary contact ID
+                updatePrimaryContactId(lead);
+                
+                leadRepositoryWrapper.saveWithException(lead);
+                
+                // Publish event
+                publishLeadContactCreatedEvent(lead, savedContact, createRequest.getApplicantType());
+                
+                // Fetch the created contact
+                LeadContactResponse createdContact = leadContactReadService.getContactById(leadId, createdContactIdentifier);
+                createdContacts.add(createdContact);
+            }
+        }
+        
+        // Process updates - if any fails, transaction will rollback
+        if (request.getUpdates() != null) {
+            for (BulkContactsUpdateRequest.ContactUpdateItem updateItem : request.getUpdates()) {
+                totalProcessed++;
+                UUID contactIdentifier = UUID.fromString(updateItem.getContactIdentifier());
+                updateContact(leadId, contactIdentifier, updateItem.getData());
+                // Fetch the updated contact
+                LeadContactResponse updatedContact = leadContactReadService.getContactById(leadId, contactIdentifier);
+                updatedContacts.add(updatedContact);
+            }
+        }
+        
+        // Process deletes - if any fails, transaction will rollback
+        if (request.getDeletes() != null) {
+            for (String contactIdentifierStr : request.getDeletes()) {
+                totalProcessed++;
+                UUID contactIdentifier = UUID.fromString(contactIdentifierStr);
+                deleteContact(leadId, contactIdentifier);
+                deletedCount++;
+            }
+        }
+        
+        // Only return response if all operations succeeded (no exceptions thrown)
+        return responseBuilder
+                .totalProcessed(totalProcessed)
+                .createdContacts(createdContacts)
+                .updatedContacts(updatedContacts)
+                .deletedCount(deletedCount)
+                .build();
     }
 }
 
