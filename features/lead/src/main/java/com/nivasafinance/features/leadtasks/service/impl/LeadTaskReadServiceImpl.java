@@ -17,9 +17,12 @@ import com.nivasafinance.features.master.codemaster.service.CodeValueMasterServi
 import com.nivasafinance.common.exception.ResourceNotFoundException;
 import com.nivasafinance.features.workflow.orchestrator.WorkflowOrchestratorService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.ResultSet;
@@ -38,6 +41,10 @@ public class LeadTaskReadServiceImpl implements LeadTaskReadService {
     private final CodeValueMasterService codeValueMasterService;
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
+    
+    // ApplicationContext to get self-proxy for calling enrichment method in separate transaction context
+    @Autowired
+    private ApplicationContext applicationContext;
 
     private static final String BASE_QUERY = 
         "SELECT " +
@@ -73,36 +80,73 @@ public class LeadTaskReadServiceImpl implements LeadTaskReadService {
             paginationRequest.getOffset()
         );
         
-        // Enrich responses with code master values after query completes
-        enrichOutcomeValues(responses);
-        
         PaginationInfo paginationInfo = buildPaginationInfo(paginationRequest, totalElements);
-        return new PaginatedResponse<>(responses, paginationInfo);
+        PaginatedResponse<LeadTaskResponse> paginatedResponse = new PaginatedResponse<>(responses, paginationInfo);
+        
+        // Enrich responses with code master values in a separate transaction context
+        // This prevents any exceptions from affecting the main transaction
+        try {
+            // Get self-proxy from application context to avoid circular dependency
+            // This ensures the @Transactional annotation is respected through the proxy
+            LeadTaskReadServiceImpl selfProxy = applicationContext.getBean(LeadTaskReadServiceImpl.class);
+            selfProxy.enrichOutcomeValues(responses);
+        } catch (Exception e) {
+            // Silently ignore enrichment errors - outcome keys will be used as fallback
+            // This ensures the transaction is not affected by code master service issues
+        }
+        
+        return paginatedResponse;
     }
     
     /**
-     * Enriches task responses with outcome values from code master.
-     * This is done outside the RowMapper to avoid transaction rollback issues.
-     * The enrichment happens after the database query completes, so any exceptions
-     * from code master service won't affect the database transaction.
+     * Enriches task responses with outcome values and reschedule reason values from code master.
+     * This method runs with NOT_SUPPORTED propagation to suspend any existing transaction,
+     * ensuring that exceptions from code master service won't affect the database transaction.
      */
-    private void enrichOutcomeValues(List<LeadTaskResponse> responses) {
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public void enrichOutcomeValues(List<LeadTaskResponse> responses) {
         if (responses == null || responses.isEmpty()) {
             return;
         }
         
         for (LeadTaskResponse response : responses) {
+            if (response == null) {
+                continue;
+            }
+            
+            // Enrich outcome value
             String outcomeKey = response.getOutcome();
             if (ValidationUtils.isNonNullOrEmpty(outcomeKey)) {
                 try {
                     CodeValueResponse outcomeCodeValue = codeValueMasterService.getByKey(outcomeKey);
                     if (ValidationUtils.isNonNull(outcomeCodeValue) && ValidationUtils.isNonNullOrEmpty(outcomeCodeValue.getValue())) {
-                        // Update the response with the enriched value
                         response.setOutcome(outcomeCodeValue.getValue());
                     }
+                } catch (ResourceNotFoundException e) {
+                    // Expected - outcome key not found in code master, keep key as is
+                } catch (RuntimeException e) {
+                    // Any other runtime exception - keep key as is
                 } catch (Exception e) {
-                    // If outcome not found in code master, keep the key as is
-                    // This is expected behavior - outcome will display as the key
+                    // Any other exception - keep key as is
+                }
+            }
+            
+            // Enrich reschedule reason code value key
+            LeadTaskResponse.OutcomeDetails outcomeDetails = response.getOutcomeDetails();
+            if (outcomeDetails != null && ValidationUtils.isNonNullOrEmpty(outcomeDetails.getRescheduleReasonCodeValueKey())) {
+                try {
+                    CodeValueResponse rescheduleReasonCodeValue = codeValueMasterService.getByKey(
+                            outcomeDetails.getRescheduleReasonCodeValueKey());
+                    if (ValidationUtils.isNonNull(rescheduleReasonCodeValue) && 
+                            ValidationUtils.isNonNullOrEmpty(rescheduleReasonCodeValue.getValue())) {
+                        outcomeDetails.setRescheduleReasonCodeValueKey(rescheduleReasonCodeValue.getValue());
+                    }
+                } catch (ResourceNotFoundException e) {
+                    // Expected - reschedule reason key not found in code master, keep key as is
+                } catch (RuntimeException e) {
+                    // Any other runtime exception - keep key as is
+                } catch (Exception e) {
+                    // Any other exception - keep key as is
                 }
             }
         }
