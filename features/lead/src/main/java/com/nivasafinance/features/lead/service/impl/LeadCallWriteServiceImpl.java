@@ -12,6 +12,7 @@ import com.nivasafinance.features.call.dto.InitiateCallRequest;
 import com.nivasafinance.features.call.dto.InitiateCallResponse;
 import com.nivasafinance.features.call.dto.UpdateCallLog;
 import com.nivasafinance.features.call.entity.CallLog;
+import com.nivasafinance.features.call.enums.CallDirection;
 import com.nivasafinance.features.call.enums.CallSource;
 import com.nivasafinance.features.call.service.CallReadService;
 import com.nivasafinance.features.call.service.CallWriteService;
@@ -129,7 +130,11 @@ public class LeadCallWriteServiceImpl implements LeadCallWriteService {
         PersonResponse person = personReadService.getPersonById(contact.getPersonId());
 
         validateContactBelongsToLead(lead, contact.getId());
-        validatePhoneBelongsToPerson(person, request.getToNumber());
+        if (request.getDirection() == CallDirection.INBOUND) {
+            validatePhoneBelongsToPerson(person, request.getFromNumber());
+        } else {
+            validatePhoneBelongsToPerson(person, request.getToNumber());
+        }
 
         // Create new CallLog entity
         CallLog callLog = new CallLog();
