@@ -73,8 +73,39 @@ public class LeadTaskReadServiceImpl implements LeadTaskReadService {
             paginationRequest.getOffset()
         );
         
+        // Enrich responses with code master values after query completes
+        enrichOutcomeValues(responses);
+        
         PaginationInfo paginationInfo = buildPaginationInfo(paginationRequest, totalElements);
         return new PaginatedResponse<>(responses, paginationInfo);
+    }
+    
+    /**
+     * Enriches task responses with outcome values from code master.
+     * This is done outside the RowMapper to avoid transaction rollback issues.
+     * The enrichment happens after the database query completes, so any exceptions
+     * from code master service won't affect the database transaction.
+     */
+    private void enrichOutcomeValues(List<LeadTaskResponse> responses) {
+        if (responses == null || responses.isEmpty()) {
+            return;
+        }
+        
+        for (LeadTaskResponse response : responses) {
+            String outcomeKey = response.getOutcome();
+            if (ValidationUtils.isNonNullOrEmpty(outcomeKey)) {
+                try {
+                    CodeValueResponse outcomeCodeValue = codeValueMasterService.getByKey(outcomeKey);
+                    if (ValidationUtils.isNonNull(outcomeCodeValue) && ValidationUtils.isNonNullOrEmpty(outcomeCodeValue.getValue())) {
+                        // Update the response with the enriched value
+                        response.setOutcome(outcomeCodeValue.getValue());
+                    }
+                } catch (Exception e) {
+                    // If outcome not found in code master, keep the key as is
+                    // This is expected behavior - outcome will display as the key
+                }
+            }
+        }
     }
 
     private PaginationInfo buildPaginationInfo(PaginationRequest paginationRequest, long totalElements) {
@@ -156,20 +187,8 @@ public class LeadTaskReadServiceImpl implements LeadTaskReadService {
                 stageKey = (String) leadTaskDetailsMap.get("stageKey");
             }
             
-            // Enrich outcome with value from code master
+            // Store outcome key - will be enriched after query completes
             String outcomeKey = rs.getString("outcome");
-            String outcomeValue = null;
-            if (ValidationUtils.isNonNullOrEmpty(outcomeKey)) {
-                try {
-                    CodeValueResponse outcomeCodeValue = codeValueMasterService.getByKey(outcomeKey);
-                    if (ValidationUtils.isNonNull(outcomeCodeValue) && ValidationUtils.isNonNullOrEmpty(outcomeCodeValue.getValue())) {
-                        outcomeValue = outcomeCodeValue.getValue();
-                    }
-                } catch (Exception e) {
-                    // If outcome not found in code master, use the key as fallback
-                    outcomeValue = outcomeKey;
-                }
-            }
             
             return LeadTaskResponse.builder()
                     .id(rs.getLong("lead_task_id"))
@@ -180,7 +199,7 @@ public class LeadTaskReadServiceImpl implements LeadTaskReadService {
                     .taskDescription(rs.getString("task_description"))
                     .assignedTo(rs.getString("assigned_to"))
                     .dueAt(getLocalDateTime(rs, "due_at"))
-                    .outcome(outcomeValue)
+                    .outcome(outcomeKey)
                     .outcomeDetails(outcomeDetails)
                     .taskDetails(taskDetails)
                     .stageKey(stageKey)
