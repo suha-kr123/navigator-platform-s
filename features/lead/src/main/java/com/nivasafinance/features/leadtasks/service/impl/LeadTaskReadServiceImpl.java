@@ -14,6 +14,7 @@ import com.nivasafinance.features.leadtasks.dto.LeadTaskResponse;
 import com.nivasafinance.features.leadtasks.service.LeadTaskReadService;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import com.nivasafinance.features.master.codemaster.service.CodeValueMasterService;
+import com.nivasafinance.common.exception.ResourceNotFoundException;
 import com.nivasafinance.features.workflow.orchestrator.WorkflowOrchestratorService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -27,7 +28,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
-@Transactional(readOnly = true)
+@Transactional(readOnly = true, noRollbackFor = ResourceNotFoundException.class)
 @RequiredArgsConstructor
 public class LeadTaskReadServiceImpl implements LeadTaskReadService {
 
