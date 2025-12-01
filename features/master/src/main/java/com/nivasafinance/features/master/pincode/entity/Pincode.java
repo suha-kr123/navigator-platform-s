@@ -27,17 +27,18 @@ public class Pincode extends AuditableEntity {
     @Column(name = "pincode", nullable = false, length = 10)
     private String pincode;
     
-    @Column(name = "area", nullable = false, length = 255)
-    private String area;
+    // Foreign key references to location master tables (only IDs stored)
+    @Column(name = "country_id", nullable = true)
+    private Long countryId;
     
-    @Column(name = "district", nullable = true, length = 255)
-    private String district;
+    @Column(name = "state_id", nullable = true)
+    private Long stateId;
     
-    @Column(name = "state", nullable = true, length = 255)
-    private String state;
+    @Column(name = "district_id", nullable = true)
+    private Long districtId;
     
-    @Column(name = "country", nullable = true, length = 255)
-    private String country;
+    @Column(name = "taluka_id", nullable = true)
+    private Long talukaId;
     
     @Column(name = "is_servicable", nullable = false)
     private Boolean isServicable = false;

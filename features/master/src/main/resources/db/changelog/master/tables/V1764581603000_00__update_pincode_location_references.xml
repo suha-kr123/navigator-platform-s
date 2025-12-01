@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1764581603000_00" author="system" context="default">
+        <!-- Add foreign key columns for location master references -->
+        <addColumn tableName="n_master_pincode">
+            <column name="country_id" type="bigint"/>
+        </addColumn>
+        
+        <addColumn tableName="n_master_pincode">
+            <column name="state_id" type="bigint"/>
+        </addColumn>
+        
+        <addColumn tableName="n_master_pincode">
+            <column name="district_id" type="bigint"/>
+        </addColumn>
+        
+        <addColumn tableName="n_master_pincode">
+            <column name="taluka_id" type="bigint"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="V1764581603000_01" author="system" context="default">
+        <!-- Add foreign key constraints -->
+        <addForeignKeyConstraint baseTableName="n_master_pincode"
+                                 baseColumnNames="country_id"
+                                 constraintName="fk_pincode_country"
+                                 referencedTableName="n_master_country"
+                                 referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint baseTableName="n_master_pincode"
+                                 baseColumnNames="state_id"
+                                 constraintName="fk_pincode_state"
+                                 referencedTableName="n_master_state"
+                                 referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint baseTableName="n_master_pincode"
+                                 baseColumnNames="district_id"
+                                 constraintName="fk_pincode_district"
+                                 referencedTableName="n_master_district"
+                                 referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint baseTableName="n_master_pincode"
+                                 baseColumnNames="taluka_id"
+                                 constraintName="fk_pincode_taluka"
+                                 referencedTableName="n_master_taluka"
+                                 referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="V1764581603000_02" author="system" context="default">
+        <!-- Create indexes on foreign key columns -->
+        <createIndex indexName="idx_pincode_country_id" tableName="n_master_pincode">
+            <column name="country_id"/>
+        </createIndex>
+
+        <createIndex indexName="idx_pincode_state_id" tableName="n_master_pincode">
+            <column name="state_id"/>
+        </createIndex>
+
+        <createIndex indexName="idx_pincode_district_id" tableName="n_master_pincode">
+            <column name="district_id"/>
+        </createIndex>
+
+        <createIndex indexName="idx_pincode_taluka_id" tableName="n_master_pincode">
+            <column name="taluka_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="V1764581603000_03" author="system" context="default">
+        <!-- Drop legacy string columns (no longer needed) -->
+        <dropColumn tableName="n_master_pincode" columnName="district"/>
+        <dropColumn tableName="n_master_pincode" columnName="state"/>
+        <dropColumn tableName="n_master_pincode" columnName="country"/>
+        <dropColumn tableName="n_master_pincode" columnName="area"/>
+    </changeSet>
+
+</databaseChangeLog>
+

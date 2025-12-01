@@ -87,10 +87,11 @@ public class Advisor extends AuditableEntity {
 
     @Type(JsonType.class)
     @JdbcTypeCode(SqlTypes.JSON)
-
     @Column(name = "external_ids", columnDefinition = "jsonb")
     private Map<String, String> externalIds;
 
+    @Type(JsonType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "call_logs", columnDefinition = "jsonb")
     private List<CallLogDetails> callLogDetails;
 

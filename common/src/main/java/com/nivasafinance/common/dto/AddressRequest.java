@@ -12,10 +12,10 @@ import lombok.NonNull;
 @Data
 public class AddressRequest {
     private AddressType addressType;
-    private String addressLineOne;
-    private String addressLineTwo;
+    private String address;
     @NonNull
     @Pattern(regexp = "^[0-9]{6}$", message = "Pincode must be exactly 6 digits")
     private String pincode;
-    private String area;
+    private String villageCode;
+    private String villageName;
 }
