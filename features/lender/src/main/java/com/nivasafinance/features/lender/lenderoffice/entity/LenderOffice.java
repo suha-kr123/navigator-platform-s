@@ -13,6 +13,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -46,10 +47,19 @@ public class LenderOffice extends AuditableEntity {
     @Type(JsonType.class)
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "address", columnDefinition = "jsonb")
-    private AddressData addressData;
+    private AddressDetails addressDetails;
 
     @Column(name = "status", nullable = false, length = 40)
     @Enumerated(EnumType.STRING)
     private LenderOfficeStatus status;
+    
+    // Nested class for JSONB field (similar to Lead.PropertyDetails)
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class AddressDetails {
+        private AddressData address;
+    }
 }
 

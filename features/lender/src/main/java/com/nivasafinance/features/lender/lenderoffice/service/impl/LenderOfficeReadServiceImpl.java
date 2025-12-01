@@ -47,12 +47,17 @@ public class LenderOfficeReadServiceImpl implements LenderOfficeReadService {
         if (lenderOffice.getId() == null) {
             throw new IllegalStateException("Lender office ID cannot be null");
         }
+        // Unwrap AddressData from nested structure
+        com.nivasafinance.common.dto.AddressData addressData = null;
+        if (lenderOffice.getAddressDetails() != null) {
+            addressData = lenderOffice.getAddressDetails().getAddress();
+        }
         return new LenderOfficeReponseData(
                 lenderOffice.getId(),
                 lenderOffice.getName(),
                 lenderOffice.getKey(),
                 lenderOffice.getLenderKey(),
-                lenderOffice.getAddressData()
+                addressData
         );
     }
 }

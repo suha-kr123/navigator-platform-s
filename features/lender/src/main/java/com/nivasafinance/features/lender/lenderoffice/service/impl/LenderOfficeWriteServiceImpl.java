@@ -39,7 +39,15 @@ public class LenderOfficeWriteServiceImpl implements LenderOfficeWriteService {
         lenderOffice.setName(lenderOfficeData.getName());
         lenderOffice.setKey(lenderOfficeData.getKey());
         lenderOffice.setLenderKey(lenderOfficeData.getLenderKey());
-        lenderOffice.setAddressData(addressData);
+        
+        // Wrap AddressData in nested structure (like Lead does)
+        if (addressData != null) {
+            LenderOffice.AddressDetails addressDetails = LenderOffice.AddressDetails.builder()
+                    .address(addressData)
+                    .build();
+            lenderOffice.setAddressDetails(addressDetails);
+        }
+        
         lenderOffice.setStatus(lenderOfficeData.getStatus());
         
         LenderOffice savedLenderOffice = lenderOfficeRepositoryWrapper.saveWithException(lenderOffice);
@@ -59,7 +67,17 @@ public class LenderOfficeWriteServiceImpl implements LenderOfficeWriteService {
         existingLenderOffice.setName(lenderOfficeData.getName());
         existingLenderOffice.setKey(lenderOfficeData.getKey());
         existingLenderOffice.setLenderKey(lenderOfficeData.getLenderKey());
-        existingLenderOffice.setAddressData(addressData);
+        
+        // Wrap AddressData in nested structure (like Lead does)
+        if (addressData != null) {
+            LenderOffice.AddressDetails addressDetails = LenderOffice.AddressDetails.builder()
+                    .address(addressData)
+                    .build();
+            existingLenderOffice.setAddressDetails(addressDetails);
+        } else {
+            existingLenderOffice.setAddressDetails(null);
+        }
+        
         existingLenderOffice.setStatus(lenderOfficeData.getStatus());
         
         LenderOffice savedLenderOffice = lenderOfficeRepositoryWrapper.saveWithException(existingLenderOffice);
@@ -75,12 +93,17 @@ public class LenderOfficeWriteServiceImpl implements LenderOfficeWriteService {
         if (lenderOffice.getId() == null) {
             throw new IllegalStateException("Lender office ID cannot be null");
         }
+        // Unwrap AddressData from nested structure
+        com.nivasafinance.common.dto.AddressData addressData = null;
+        if (lenderOffice.getAddressDetails() != null) {
+            addressData = lenderOffice.getAddressDetails().getAddress();
+        }
         return new LenderOfficeReponseData(
                 lenderOffice.getId(),
                 lenderOffice.getName(),
                 lenderOffice.getKey(),
                 lenderOffice.getLenderKey(),
-                lenderOffice.getAddressData()
+                addressData
         );
     }
 }
