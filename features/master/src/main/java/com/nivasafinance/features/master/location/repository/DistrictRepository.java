@@ -10,5 +10,6 @@ import java.util.List;
 public interface DistrictRepository extends JpaRepository<District, Long> {
     List<District> findAllByIsActiveTrue();
     List<District> findByStateIdAndIsActiveTrue(Long stateId);
+    java.util.Optional<District> findByCodeAndStateIdAndIsActiveTrue(String code, Long stateId);
 }
 

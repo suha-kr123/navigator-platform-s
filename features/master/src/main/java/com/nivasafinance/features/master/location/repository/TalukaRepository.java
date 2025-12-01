@@ -10,5 +10,6 @@ import java.util.List;
 public interface TalukaRepository extends JpaRepository<Taluka, Long> {
     List<Taluka> findAllByIsActiveTrue();
     List<Taluka> findByDistrictIdAndIsActiveTrue(Long districtId);
+    java.util.Optional<Taluka> findByCodeAndDistrictIdAndIsActiveTrue(String code, Long districtId);
 }
 

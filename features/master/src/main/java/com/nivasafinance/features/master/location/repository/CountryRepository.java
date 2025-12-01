@@ -9,5 +9,6 @@ import java.util.List;
 @Repository
 public interface CountryRepository extends JpaRepository<Country, Long> {
     List<Country> findAllByIsActiveTrue();
+    java.util.Optional<Country> findByCodeAndIsActiveTrue(String code);
 }
 
