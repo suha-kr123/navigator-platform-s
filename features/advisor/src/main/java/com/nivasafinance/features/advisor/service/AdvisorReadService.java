@@ -14,7 +14,9 @@ public interface AdvisorReadService {
 
     AdvisorTemplateResponse getAdvisorTemplate();
 
-    PaginatedResponse<AdvisorSearchResponse> searchAdvisors(PaginationRequest paginationRequest, AdvisorSearchRequest request);
+    PaginatedResponse<AdvisorBasicResponse> getAllAdvisors(PaginationRequest paginationRequest, String name, String mobileNumber);
+
+    PaginatedResponse<AdvisorBasicResponse> searchAdvisors(PaginationRequest paginationRequest, AdvisorSearchRequest request);
 
     PaginatedResponse<AdvisorLeadResponse> getLeadsByAdvisorId(UUID advisorId, PaginationRequest paginationRequest);
 

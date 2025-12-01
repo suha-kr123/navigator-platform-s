@@ -13,6 +13,8 @@ dependencies {
     implementation(project(":features:notes"))
     implementation(project(":features:offices"))
     implementation(project(":features:staff"))
+    implementation(project(":features:call"))
+    implementation(project(":features:usermanagement"))
 }
 
 springBoot {

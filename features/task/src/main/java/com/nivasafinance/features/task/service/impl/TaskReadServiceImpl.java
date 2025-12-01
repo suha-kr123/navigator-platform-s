@@ -9,13 +9,17 @@ import com.nivasafinance.common.utils.ValidationUtils;
 import com.nivasafinance.features.task.dto.OutcomeDetailsResponse;
 import com.nivasafinance.features.task.dto.TaskDetailsResponse;
 import com.nivasafinance.features.task.dto.TaskResponse;
+import com.nivasafinance.common.exception.ResourceNotFoundException;
 import com.nivasafinance.features.task.service.TaskReadService;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import com.nivasafinance.features.master.codemaster.service.CodeValueMasterService;
 import lombok.AllArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.ResultSet;
@@ -26,13 +30,17 @@ import java.util.Map;
 import java.util.UUID;
 
 @Service
-@Transactional(readOnly = true)
+@Transactional(readOnly = true, noRollbackFor = ResourceNotFoundException.class)
 @AllArgsConstructor
 public class TaskReadServiceImpl implements TaskReadService {
 
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
     private final CodeValueMasterService codeValueMasterService;
+    
+    // ApplicationContext to get self-proxy for calling enrichment method in separate transaction context
+    @Autowired
+    private ApplicationContext applicationContext;
 
     private static final String BASE_QUERY = 
         "SELECT " +
@@ -68,6 +76,18 @@ public class TaskReadServiceImpl implements TaskReadService {
             paginationRequest.getLimit(), 
             paginationRequest.getOffset()
         );
+        
+        // Enrich responses with code master values in a separate transaction context
+        // This prevents any exceptions from affecting the main transaction
+        try {
+            // Get self-proxy from application context to avoid circular dependency
+            // This ensures the @Transactional annotation is respected through the proxy
+            TaskReadServiceImpl selfProxy = applicationContext.getBean(TaskReadServiceImpl.class);
+            selfProxy.enrichOutcomeValues(tasks);
+        } catch (Exception e) {
+            // Silently ignore enrichment errors - outcome keys will be used as fallback
+            // This ensures the transaction is not affected by code master service issues
+        }
         
         return buildPaginatedResponse(tasks, paginationRequest, totalElements);
     }
@@ -128,25 +148,18 @@ public class TaskReadServiceImpl implements TaskReadService {
             Map<String, Object> taskDetailsMap = parseJsonColumn(rs, "task_details");
             TaskDetailsResponse taskDetails = null;
             if (ValidationUtils.isNonNull(taskDetailsMap) && !taskDetailsMap.isEmpty()) {
-                taskDetails = objectMapper.convertValue(taskDetailsMap, TaskDetailsResponse.class);
+                try {
+                    taskDetails = objectMapper.convertValue(taskDetailsMap, TaskDetailsResponse.class);
+                } catch (Exception e) {
+                    // If conversion fails (e.g., entityId is not a valid UUID), manually construct TaskDetailsResponse
+                    taskDetails = buildTaskDetailsResponseSafely(taskDetailsMap);
+                }
             }
             
             UUID taskIdentifier = rs.getObject("task_identifier", UUID.class);
             
-            // Enrich outcome with value from code master
+            // Store outcome key - will be enriched after query completes
             String outcomeKey = rs.getString("outcome");
-            String outcomeValue = null;
-            if (ValidationUtils.isNonNullOrEmpty(outcomeKey)) {
-                try {
-                    CodeValueResponse outcomeCodeValue = codeValueMasterService.getByKey(outcomeKey);
-                    if (ValidationUtils.isNonNull(outcomeCodeValue) && ValidationUtils.isNonNullOrEmpty(outcomeCodeValue.getValue())) {
-                        outcomeValue = outcomeCodeValue.getValue();
-                    }
-                } catch (Exception e) {
-                    // If outcome not found in code master, use the key as fallback
-                    outcomeValue = outcomeKey;
-                }
-            }
             
             return TaskResponse.builder()
                     .taskIdentifier(taskIdentifier)
@@ -155,7 +168,7 @@ public class TaskReadServiceImpl implements TaskReadService {
                     .taskDescription(rs.getString("task_description"))
                     .assignedTo(rs.getString("assigned_to"))
                     .dueAt(getLocalDateTime(rs, "due_at"))
-                    .outcome(outcomeValue)
+                    .outcome(outcomeKey)
                     .outcomeDetails(outcomeDetails)
                     .taskDetails(taskDetails)
                     .createdAt(getLocalDateTime(rs, "created_at"))
@@ -192,6 +205,133 @@ public class TaskReadServiceImpl implements TaskReadService {
             return objectMapper.readValue(jsonString, new TypeReference<Map<String, Object>>() {});
         } catch (Exception e) {
             return null;
+        }
+    }
+    
+    /**
+     * Safely builds TaskDetailsResponse when automatic conversion fails (e.g., entityId is not a valid UUID).
+     */
+    private TaskDetailsResponse buildTaskDetailsResponseSafely(Map<String, Object> taskDetailsMap) {
+        UUID entityId = null;
+        Object entityIdObj = taskDetailsMap.get("entityId");
+        if (ValidationUtils.isNonNull(entityIdObj)) {
+            if (entityIdObj instanceof UUID) {
+                entityId = (UUID) entityIdObj;
+            } else if (entityIdObj instanceof String) {
+                try {
+                    entityId = UUID.fromString((String) entityIdObj);
+                } catch (IllegalArgumentException e) {
+                    // If it's not a valid UUID string, leave it as null
+                    entityId = null;
+                }
+            }
+            // If entityIdObj is a number (like "15"), we can't convert it to UUID, so leave it as null
+        }
+        
+        TaskDetailsResponse.PreferredCallWindow preferredCallWindow = null;
+        @SuppressWarnings("unchecked")
+        Map<String, Object> preferredCallWindowMap = (Map<String, Object>) taskDetailsMap.get("preferredCallWindow");
+        if (ValidationUtils.isNonNull(preferredCallWindowMap) && !preferredCallWindowMap.isEmpty()) {
+            try {
+                preferredCallWindow = objectMapper.convertValue(preferredCallWindowMap, 
+                    TaskDetailsResponse.PreferredCallWindow.class);
+            } catch (Exception e) {
+                // Fallback to manual parsing if convertValue fails
+                Object start = preferredCallWindowMap.get("start");
+                Object end = preferredCallWindowMap.get("end");
+                if (ValidationUtils.isNonNull(start) || ValidationUtils.isNonNull(end)) {
+                    preferredCallWindow = TaskDetailsResponse.PreferredCallWindow.builder()
+                            .start(parseLocalDateTime(start))
+                            .end(parseLocalDateTime(end))
+                            .build();
+                }
+            }
+        }
+        
+        Object iterCount = taskDetailsMap.get("iterationCount");
+        Integer iterationCount = ValidationUtils.isNonNull(iterCount) ? 
+                (iterCount instanceof Integer ? (Integer) iterCount : ((Number) iterCount).intValue()) : null;
+        
+        String entityTypeStr = (String) taskDetailsMap.get("entityType");
+        com.nivasafinance.common.enums.EntityType entityType = null;
+        if (ValidationUtils.isNonNullOrEmpty(entityTypeStr)) {
+            try {
+                entityType = com.nivasafinance.common.enums.EntityType.valueOf(entityTypeStr);
+            } catch (IllegalArgumentException e) {
+                // Invalid enum value, leave as null
+            }
+        }
+        
+        return TaskDetailsResponse.builder()
+                .entityId(entityId)
+                .entityType(entityType)
+                .preferredCallWindow(preferredCallWindow)
+                .creatorRemarks((String) taskDetailsMap.get("creatorRemarks"))
+                .iterationCount(iterationCount)
+                .build();
+    }
+    
+    private LocalDateTime parseLocalDateTime(Object value) {
+        if (!ValidationUtils.isNonNull(value)) {
+            return null;
+        }
+        
+        if (value instanceof LocalDateTime) {
+            return (LocalDateTime) value;
+        }
+        
+        if (value instanceof java.sql.Timestamp) {
+            return ((java.sql.Timestamp) value).toLocalDateTime();
+        }
+        
+        if (value instanceof String) {
+            try {
+                String dateString = (String) value;
+                if (dateString.contains("T")) {
+                    return LocalDateTime.parse(dateString);
+                }
+                java.time.format.DateTimeFormatter formatter = 
+                    java.time.format.DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
+                return LocalDateTime.parse(dateString, formatter);
+            } catch (Exception e) {
+                return null;
+            }
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Enriches task responses with outcome values from code master.
+     * This method runs with NOT_SUPPORTED propagation to suspend any existing transaction,
+     * ensuring that exceptions from code master service won't affect the database transaction.
+     */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public void enrichOutcomeValues(List<TaskResponse> responses) {
+        if (responses == null || responses.isEmpty()) {
+            return;
+        }
+        
+        for (TaskResponse response : responses) {
+            if (response == null) {
+                continue;
+            }
+            
+            String outcomeKey = response.getOutcome();
+            if (ValidationUtils.isNonNullOrEmpty(outcomeKey)) {
+                try {
+                    CodeValueResponse outcomeCodeValue = codeValueMasterService.getByKey(outcomeKey);
+                    if (ValidationUtils.isNonNull(outcomeCodeValue) && ValidationUtils.isNonNullOrEmpty(outcomeCodeValue.getValue())) {
+                        response.setOutcome(outcomeCodeValue.getValue());
+                    }
+                } catch (ResourceNotFoundException e) {
+                    // Expected - outcome key not found in code master, keep key as is
+                } catch (RuntimeException e) {
+                    // Any other runtime exception - keep key as is
+                } catch (Exception e) {
+                    // Any other exception - keep key as is
+                }
+            }
         }
     }
 }

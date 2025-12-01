@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.UUID;
 
 @Data
@@ -26,5 +27,7 @@ public class AdvisorDashboardResponse {
     private CodeValueResponse sourcingChannel;
     private Long noOfLeads;
     private String salesOwner;
+    private LocalTime preferredCallStartTime;
+    private LocalTime preferredCallEndTime;
 }
 

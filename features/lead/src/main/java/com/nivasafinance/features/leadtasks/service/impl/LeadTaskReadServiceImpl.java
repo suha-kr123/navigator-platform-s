@@ -14,11 +14,15 @@ import com.nivasafinance.features.leadtasks.dto.LeadTaskResponse;
 import com.nivasafinance.features.leadtasks.service.LeadTaskReadService;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import com.nivasafinance.features.master.codemaster.service.CodeValueMasterService;
+import com.nivasafinance.common.exception.ResourceNotFoundException;
 import com.nivasafinance.features.workflow.orchestrator.WorkflowOrchestratorService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.ResultSet;
@@ -27,7 +31,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
-@Transactional(readOnly = true)
+@Transactional(readOnly = true, noRollbackFor = ResourceNotFoundException.class)
 @RequiredArgsConstructor
 public class LeadTaskReadServiceImpl implements LeadTaskReadService {
 
@@ -37,6 +41,10 @@ public class LeadTaskReadServiceImpl implements LeadTaskReadService {
     private final CodeValueMasterService codeValueMasterService;
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
+    
+    // ApplicationContext to get self-proxy for calling enrichment method in separate transaction context
+    @Autowired
+    private ApplicationContext applicationContext;
 
     private static final String BASE_QUERY = 
         "SELECT " +
@@ -73,7 +81,75 @@ public class LeadTaskReadServiceImpl implements LeadTaskReadService {
         );
         
         PaginationInfo paginationInfo = buildPaginationInfo(paginationRequest, totalElements);
-        return new PaginatedResponse<>(responses, paginationInfo);
+        PaginatedResponse<LeadTaskResponse> paginatedResponse = new PaginatedResponse<>(responses, paginationInfo);
+        
+        // Enrich responses with code master values in a separate transaction context
+        // This prevents any exceptions from affecting the main transaction
+        try {
+            // Get self-proxy from application context to avoid circular dependency
+            // This ensures the @Transactional annotation is respected through the proxy
+            LeadTaskReadServiceImpl selfProxy = applicationContext.getBean(LeadTaskReadServiceImpl.class);
+            selfProxy.enrichOutcomeValues(responses);
+        } catch (Exception e) {
+            // Silently ignore enrichment errors - outcome keys will be used as fallback
+            // This ensures the transaction is not affected by code master service issues
+        }
+        
+        return paginatedResponse;
+    }
+    
+    /**
+     * Enriches task responses with outcome values and reschedule reason values from code master.
+     * This method runs with NOT_SUPPORTED propagation to suspend any existing transaction,
+     * ensuring that exceptions from code master service won't affect the database transaction.
+     */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public void enrichOutcomeValues(List<LeadTaskResponse> responses) {
+        if (responses == null || responses.isEmpty()) {
+            return;
+        }
+        
+        for (LeadTaskResponse response : responses) {
+            if (response == null) {
+                continue;
+            }
+            
+            // Enrich outcome value
+            String outcomeKey = response.getOutcome();
+            if (ValidationUtils.isNonNullOrEmpty(outcomeKey)) {
+                try {
+                    CodeValueResponse outcomeCodeValue = codeValueMasterService.getByKey(outcomeKey);
+                    if (ValidationUtils.isNonNull(outcomeCodeValue) && ValidationUtils.isNonNullOrEmpty(outcomeCodeValue.getValue())) {
+                        response.setOutcome(outcomeCodeValue.getValue());
+                    }
+                } catch (ResourceNotFoundException e) {
+                    // Expected - outcome key not found in code master, keep key as is
+                } catch (RuntimeException e) {
+                    // Any other runtime exception - keep key as is
+                } catch (Exception e) {
+                    // Any other exception - keep key as is
+                }
+            }
+            
+            // Enrich reschedule reason code value key
+            LeadTaskResponse.OutcomeDetails outcomeDetails = response.getOutcomeDetails();
+            if (outcomeDetails != null && ValidationUtils.isNonNullOrEmpty(outcomeDetails.getRescheduleReasonCodeValueKey())) {
+                try {
+                    CodeValueResponse rescheduleReasonCodeValue = codeValueMasterService.getByKey(
+                            outcomeDetails.getRescheduleReasonCodeValueKey());
+                    if (ValidationUtils.isNonNull(rescheduleReasonCodeValue) && 
+                            ValidationUtils.isNonNullOrEmpty(rescheduleReasonCodeValue.getValue())) {
+                        outcomeDetails.setRescheduleReasonCodeValueKey(rescheduleReasonCodeValue.getValue());
+                    }
+                } catch (ResourceNotFoundException e) {
+                    // Expected - reschedule reason key not found in code master, keep key as is
+                } catch (RuntimeException e) {
+                    // Any other runtime exception - keep key as is
+                } catch (Exception e) {
+                    // Any other exception - keep key as is
+                }
+            }
+        }
     }
 
     private PaginationInfo buildPaginationInfo(PaginationRequest paginationRequest, long totalElements) {
@@ -155,20 +231,8 @@ public class LeadTaskReadServiceImpl implements LeadTaskReadService {
                 stageKey = (String) leadTaskDetailsMap.get("stageKey");
             }
             
-            // Enrich outcome with value from code master
+            // Store outcome key - will be enriched after query completes
             String outcomeKey = rs.getString("outcome");
-            String outcomeValue = null;
-            if (ValidationUtils.isNonNullOrEmpty(outcomeKey)) {
-                try {
-                    CodeValueResponse outcomeCodeValue = codeValueMasterService.getByKey(outcomeKey);
-                    if (ValidationUtils.isNonNull(outcomeCodeValue) && ValidationUtils.isNonNullOrEmpty(outcomeCodeValue.getValue())) {
-                        outcomeValue = outcomeCodeValue.getValue();
-                    }
-                } catch (Exception e) {
-                    // If outcome not found in code master, use the key as fallback
-                    outcomeValue = outcomeKey;
-                }
-            }
             
             return LeadTaskResponse.builder()
                     .id(rs.getLong("lead_task_id"))
@@ -179,7 +243,7 @@ public class LeadTaskReadServiceImpl implements LeadTaskReadService {
                     .taskDescription(rs.getString("task_description"))
                     .assignedTo(rs.getString("assigned_to"))
                     .dueAt(getLocalDateTime(rs, "due_at"))
-                    .outcome(outcomeValue)
+                    .outcome(outcomeKey)
                     .outcomeDetails(outcomeDetails)
                     .taskDetails(taskDetails)
                     .stageKey(stageKey)
