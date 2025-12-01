@@ -16,6 +16,7 @@ import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Entity
@@ -83,6 +84,11 @@ public class Advisor extends AuditableEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "notes", columnDefinition = "jsonb")
     private List<Long> notes;
+
+    @Type(JsonType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "external_ids", columnDefinition = "jsonb")
+    private Map<String, String> externalIds;
 
     @Data
     @NoArgsConstructor

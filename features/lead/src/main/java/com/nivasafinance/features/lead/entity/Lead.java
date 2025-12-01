@@ -144,6 +144,11 @@ public class Lead extends AuditableEntity {
     @Column(name = "call_logs", columnDefinition = "jsonb")
     private List<CallLogDetails> callLogDetails;
 
+    @Type(JsonType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "external_ids", columnDefinition = "jsonb")
+    private Map<String, String> externalIds;
+
     // Nested data classes for JSONB fields
 
     @Data
