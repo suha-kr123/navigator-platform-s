@@ -123,7 +123,7 @@ public class AdvisorLeadMappingRepositoryWrapper {
                 l.requested_amount as requestedAmount,
                 l.status,
                 l.created_at as createdAt,
-                l.workflow_details->>'currentStage' as currentStage,
+                ((l.workflow_details->'currentStageDetails')->>'stageKey') as currentStage,
                 primary_person.display_name as primaryContactName,
                 (jsonb_path_query_first(COALESCE(primary_person.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') AS primaryContactPhone,
                 o.name as office
