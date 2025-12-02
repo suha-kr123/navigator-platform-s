@@ -102,6 +102,7 @@ public class LeadRepositoryWrapper {
                     (l.proposed_details->>'proposedLoanAmount')::numeric as proposed_amount,
                     (l.proposed_details->>'roi')::numeric as proposed_roi,
                     (l.credit_rating_details->>'eligibleLoanAmount')::numeric as eligible_loan_amount,
+                    (l.disbursement_details->>'disbursedAmount')::numeric as disbursed_amount,
                     l.credit_rating_details->>'bureauRating' as bureau_rating_key,
                     l.credit_rating_details->>'customerProfiles' as customer_profiles_key,
                     l.credit_rating_details->>'monthlyFamilyIncome' as monthly_family_income_key,
@@ -250,6 +251,7 @@ public class LeadRepositoryWrapper {
                 .proposedAmount(rs.getBigDecimal("proposed_amount"))
                 .proposedRoi(rs.getBigDecimal("proposed_roi"))
                 .eligibleLoanAmount(rs.getBigDecimal("eligible_loan_amount"))
+                .disbursedAmount(rs.getBigDecimal("disbursed_amount"))
                 .recentNote(rs.getString("recent_note"))
                 .noteCreatedBy(rs.getString("recent_note_created_by"))
                 .noteCreatedAt(getLocalDateTime(rs, "recent_note_created_at"))

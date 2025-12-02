@@ -20,6 +20,9 @@ import java.util.UUID;
 public class LeadDashboardResponse {
     private UUID leadIdentifier;
     private BigDecimal requestedAmount;
+    private BigDecimal eligibleAmount;
+    private BigDecimal proposedAmount;
+    private BigDecimal disbursedAmount;
     private String productName;
     private String primaryPersonName;
     private String primaryPersonNumber;

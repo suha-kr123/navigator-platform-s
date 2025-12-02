@@ -91,6 +91,9 @@ public class LeadDashboardWrapper {
                     l.id                                        AS internal_lead_id,
                     l.lead_identifier                           AS lead_identifier,
                     l.requested_amount                          AS requested_amount,
+                    (l.credit_rating_details->>'eligibleLoanAmount')::numeric AS eligible_amount,
+                    (l.proposed_details->>'proposedLoanAmount')::numeric AS proposed_amount,
+                    (l.disbursement_details->>'disbursedAmount')::numeric AS disbursed_amount,
                     prod.name                                   AS product_name,
                     primary_contact_person.display_name         AS primary_person_name,
                     (jsonb_path_query_first(COALESCE(primary_contact_person.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') AS primary_person_number,
@@ -486,6 +489,9 @@ public class LeadDashboardWrapper {
             LeadDashboardResponse.LeadDashboardResponseBuilder builder = LeadDashboardResponse.builder()
                     .leadIdentifier(UUID.fromString(rs.getString("lead_identifier")))
                     .requestedAmount(rs.getBigDecimal("requested_amount"))
+                    .eligibleAmount(rs.getBigDecimal("eligible_amount"))
+                    .proposedAmount(rs.getBigDecimal("proposed_amount"))
+                    .disbursedAmount(rs.getBigDecimal("disbursed_amount"))
                     .productName(rs.getString("product_name"))
                     .primaryPersonName(rs.getString("primary_person_name"))
                     .primaryPersonNumber(rs.getString("primary_person_number"))

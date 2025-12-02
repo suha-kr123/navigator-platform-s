@@ -21,6 +21,8 @@ import java.util.UUID;
 public class LeadResponse {
     private UUID leadIdentifier;
     private BigDecimal requestedAmount;
+    private BigDecimal eligibleAmount;
+    private BigDecimal disbursedAmount;
     private String productCode;
     private String productName;
     private String purpose;
