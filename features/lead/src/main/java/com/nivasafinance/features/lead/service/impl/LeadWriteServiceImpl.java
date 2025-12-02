@@ -108,7 +108,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
                         .build())
                 .build();
 
-        contactWriteService.createContact(savedLead.getLeadIdentifier(), contactPersonDetails);
+        CreateLeadContactResponse contactResponse = contactWriteService.createContact(savedLead.getLeadIdentifier(), contactPersonDetails);
 
         // Create initial stage synchronously and publish event for async task creation
         // TODO: Replace with dynamic workflow picker once design is complete
@@ -119,7 +119,11 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         // Publish LEAD_CREATED event for other listeners (activities, notifications, etc.) - not used by workflow
         publishLeadCreatedEvent(savedLead, request);
 
-        return new CreateLeadResponse(savedLead.getLeadIdentifier());
+        return CreateLeadResponse
+                .builder()
+                .leadIdentifier(savedLead.getLeadIdentifier())
+                .contactIdentifier(contactResponse.getIdentifier())
+                .build();
     }
 
     @Override

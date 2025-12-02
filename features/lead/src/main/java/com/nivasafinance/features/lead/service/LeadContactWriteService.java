@@ -3,16 +3,13 @@ package com.nivasafinance.features.lead.service;
 import com.nivasafinance.common.dto.AddressRequest;
 import com.nivasafinance.common.dto.IdentifierData;
 import com.nivasafinance.common.dto.IdentifierRequest;
-import com.nivasafinance.features.lead.dto.BulkContactsUpdateRequest;
-import com.nivasafinance.features.lead.dto.BulkContactsUpdateResponse;
-import com.nivasafinance.features.lead.dto.CreateLeadContactRequest;
-import com.nivasafinance.features.lead.dto.UpdateLeadContactRequest;
+import com.nivasafinance.features.lead.dto.*;
 import jakarta.validation.Valid;
 
 import java.util.UUID;
 
 public interface LeadContactWriteService {
-    void createContact(UUID leadId, CreateLeadContactRequest request);
+    CreateLeadContactResponse createContact(UUID leadId, CreateLeadContactRequest request);
     void updateContact(UUID leadId, UUID contactId, UpdateLeadContactRequest request);
     void deleteContact(UUID leadId, UUID contactId);
     
