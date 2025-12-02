@@ -115,7 +115,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         String workflowKey = WorkflowConstants.Workflow.DEFAULT_WORKFLOW_KEY;
         String workflowConfigKey = workflowConfigRepositoryWrapper.findActiveByWorkflowConfigKey(workflowKey).getWorkflowConfigKey();
         leadStageHistoryWriteService.createInitialStage(savedLead.getLeadIdentifier(), workflowConfigKey);
-
+        handleAdvisorMapping(lead.getId(), request.getAdvisorIdentifier());
         // Publish LEAD_CREATED event for other listeners (activities, notifications, etc.) - not used by workflow
         publishLeadCreatedEvent(savedLead, request);
 
@@ -165,7 +165,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         lead.setOtherDetails(otherDetails);
 
         // Handle advisor mapping
-        handleAdvisorMapping(lead, request);
+        handleAdvisorMapping(lead.getId(), request.getAdvisorId());
 
         leadRepositoryWrapper.saveWithException(lead);
 
@@ -711,13 +711,12 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         }
     }
 
-    private void handleAdvisorMapping(Lead lead, UpdateLeadRequest request) {
-        if (request.getAdvisorId() != null) {
+    private void handleAdvisorMapping(Long leadId, UUID advisorIdentifier) {
+        if (advisorIdentifier != null) {
 
             // Validate advisor exists - this will throw exception if not found
-            AdvisorResponse advisor = advisorReadService.getAdvisorByIdentifier(request.getAdvisorId());
+            AdvisorResponse advisor = advisorReadService.getAdvisorByIdentifier(advisorIdentifier);
             Long advisorId = advisor.getId();
-            Long leadId = lead.getId();
 
             // Find existing mapping for this lead
             Optional<AdvisorLeadMapping> existingMapping = advisorLeadMappingRepositoryWrapper.findByLeadId(leadId);
@@ -736,7 +735,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
             advisorLeadMappingRepositoryWrapper.saveWithException(mapping);
         } else {
             // Remove mapping if advisorId is null
-            Optional<AdvisorLeadMapping> existingMapping = advisorLeadMappingRepositoryWrapper.findByLeadId(lead.getId());
+            Optional<AdvisorLeadMapping> existingMapping = advisorLeadMappingRepositoryWrapper.findByLeadId(leadId);
             existingMapping.ifPresent(advisorLeadMappingRepositoryWrapper::deleteWithException);
         }
     }
