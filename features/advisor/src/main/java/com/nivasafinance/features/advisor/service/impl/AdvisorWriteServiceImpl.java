@@ -4,6 +4,7 @@ import com.nivasafinance.common.context.UserContext;
 import com.nivasafinance.common.events.BusinessEvent;
 import com.nivasafinance.common.events.SystemEvent;
 import com.nivasafinance.common.events.payload.AdvisorCreationEventPayload;
+import com.nivasafinance.common.events.payload.AdvisorStatusChangeEventPayload;
 import com.nivasafinance.common.events.payload.AdvisorUpdateEventPayload;
 import com.nivasafinance.features.advisor.dto.*;
 import com.nivasafinance.features.advisor.entity.Advisor;
@@ -144,28 +145,20 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
         advisorRepositoryWrapper.saveWithException(advisor);
 
         // Publish ADVISOR_UPDATED event
+        publishAdvisorUpdatedEvent(advisor);
+    }
+
+    private void publishAdvisorUpdatedEvent(Advisor advisor) {
         // Get primary mobile number from person entity
+        com.nivasafinance.features.person.entity.Person person = 
+                personRepositoryWrapper.findByIdWithException(advisor.getPersonId());
         String mobileNumber = null;
-        if (request.getMobileNumberDetails() != null && !request.getMobileNumberDetails().isEmpty()) {
-            // Get primary mobile from request if provided
-            mobileNumber = request.getMobileNumberDetails().stream()
+        if (person.getMobileNumbers() != null && !person.getMobileNumbers().isEmpty()) {
+            mobileNumber = person.getMobileNumbers().stream()
                     .filter(m -> m.getIsPrimary() != null && m.getIsPrimary())
-                    .map(MobileNumberDetails::getMobileNumber)
+                    .map(com.nivasafinance.features.person.entity.MobileNumberDetails::getNumber)
                     .findFirst()
                     .orElse(null);
-        }
-        
-        // If not in request, get from person entity
-        if (mobileNumber == null) {
-            com.nivasafinance.features.person.entity.Person person = 
-                    personRepositoryWrapper.findByIdWithException(advisor.getPersonId());
-            if (person.getMobileNumbers() != null && !person.getMobileNumbers().isEmpty()) {
-                mobileNumber = person.getMobileNumbers().stream()
-                        .filter(m -> m.getIsPrimary() != null && m.getIsPrimary())
-                        .map(com.nivasafinance.features.person.entity.MobileNumberDetails::getNumber)
-                        .findFirst()
-                        .orElse(null);
-            }
         }
 
         AdvisorUpdateEventPayload payload = AdvisorUpdateEventPayload.builder()
@@ -212,6 +205,9 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
         }
 
         advisorRepositoryWrapper.saveWithException(advisor);
+
+        // Publish ADVISOR_UPDATED event
+        publishAdvisorUpdatedEvent(advisor);
     }
 
     @Override
@@ -245,6 +241,9 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
         advisor.setQualificationDetails(qualificationDetails);
 
         advisorRepositoryWrapper.saveWithException(advisor);
+
+        // Publish ADVISOR_UPDATED event
+        publishAdvisorUpdatedEvent(advisor);
     }
 
     @Override
@@ -296,6 +295,9 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
         advisor.setOtherDetails(otherDetails);
 
         advisorRepositoryWrapper.saveWithException(advisor);
+
+        // Publish ADVISOR_UPDATED event
+        publishAdvisorUpdatedEvent(advisor);
     }
 
     @Override
@@ -329,6 +331,9 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
         advisor.setSegmentationDetails(segmentationDetails);
 
         advisorRepositoryWrapper.saveWithException(advisor);
+
+        // Publish ADVISOR_UPDATED event
+        publishAdvisorUpdatedEvent(advisor);
     }
 
     @Override
@@ -352,6 +357,10 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
         advisor.setRejectionDetails(rejectionDetails);
 
         advisorRepositoryWrapper.saveWithException(advisor);
+
+        // Publish ADVISOR_REJECTED event
+        String reason = advisor.getRemarks() != null ? advisor.getRemarks().getRejected() : null;
+        publishAdvisorStatusChangeEvent(advisor, BusinessEvent.ADVISOR_REJECTED, reason);
     }
 
     @Override
@@ -368,6 +377,10 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
         }
 
         advisorRepositoryWrapper.saveWithException(advisor);
+
+        // Publish ADVISOR_DORMANT event
+        String reason = advisor.getRemarks() != null ? advisor.getRemarks().getDormant() : null;
+        publishAdvisorStatusChangeEvent(advisor, BusinessEvent.ADVISOR_DORMANT, reason);
     }
 
     @Override
@@ -375,6 +388,21 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
         Advisor advisor = advisorRepositoryWrapper.findByIdentifierWithException(identifier);
         advisor.setStatus(AdvisorStatus.ACTIVE);
         advisorRepositoryWrapper.saveWithException(advisor);
+
+        // Publish ADVISOR_ACTIVE event
+        publishAdvisorStatusChangeEvent(advisor, BusinessEvent.ADVISOR_ACTIVE, null);
+    }
+
+    private void publishAdvisorStatusChangeEvent(Advisor advisor, BusinessEvent event, String reason) {
+        AdvisorStatusChangeEventPayload payload = AdvisorStatusChangeEventPayload.builder()
+                .id(advisor.getId())
+                .advisorIdentifier(advisor.getIdentifier())
+                .reason(reason)
+                .build();
+
+        applicationEventPublisher.publishEvent(
+                new SystemEvent<>(event.toString(), payload)
+        );
     }
 
     // Convert CreateAdvisorRequest to PersonCreateRequest

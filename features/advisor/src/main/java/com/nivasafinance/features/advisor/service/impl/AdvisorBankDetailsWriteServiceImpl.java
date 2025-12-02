@@ -1,5 +1,8 @@
 package com.nivasafinance.features.advisor.service.impl;
 
+import com.nivasafinance.common.events.BusinessEvent;
+import com.nivasafinance.common.events.SystemEvent;
+import com.nivasafinance.common.events.payload.AdvisorUpdateEventPayload;
 import com.nivasafinance.features.advisor.dto.AddBankDetailsRequest;
 import com.nivasafinance.features.advisor.dto.BankDetails;
 import com.nivasafinance.features.advisor.dto.UpdateBankDetailsRequest;
@@ -10,13 +13,15 @@ import com.nivasafinance.features.advisor.service.AdvisorBankDetailsWriteService
 import com.nivasafinance.features.master.codemaster.SystemControlledMasterCodes;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import com.nivasafinance.features.master.codemaster.service.CodeMasterService;
+import com.nivasafinance.features.person.repository.PersonRepositoryWrapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
-import java.util.UUID;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @Transactional
@@ -25,6 +30,8 @@ public class AdvisorBankDetailsWriteServiceImpl implements AdvisorBankDetailsWri
 
     private final AdvisorRepositoryWrapper advisorRepositoryWrapper;
     private final CodeMasterService codeMasterService;
+    private final ApplicationEventPublisher applicationEventPublisher;
+    private final PersonRepositoryWrapper personRepositoryWrapper;
 
     @Override
     public UUID addBankDetails(UUID advisorIdentifier, AddBankDetailsRequest request) {
@@ -57,6 +64,9 @@ public class AdvisorBankDetailsWriteServiceImpl implements AdvisorBankDetailsWri
         advisor.getBankDetails().add(newBankDetail);
         advisorRepositoryWrapper.saveWithException(advisor);
 
+        // Publish ADVISOR_UPDATED event
+        publishAdvisorUpdatedEvent(advisor);
+
         return newBankDetail.getBankIdentifier();
     }
 
@@ -86,6 +96,9 @@ public class AdvisorBankDetailsWriteServiceImpl implements AdvisorBankDetailsWri
         bankDetail.setUpid(request.getUpid());
 
         advisorRepositoryWrapper.saveWithException(advisor);
+
+        // Publish ADVISOR_UPDATED event
+        publishAdvisorUpdatedEvent(advisor);
     }
 
     private void validateBankName(String bankNameKey) {
@@ -117,6 +130,9 @@ public class AdvisorBankDetailsWriteServiceImpl implements AdvisorBankDetailsWri
 
         bankDetail.setStatus(statusToSet);
         advisorRepositoryWrapper.saveWithException(advisor);
+
+        // Publish ADVISOR_UPDATED event
+        publishAdvisorUpdatedEvent(advisor);
     }
 
     private Advisor getAdvisor(UUID advisorIdentifier) {
@@ -132,6 +148,30 @@ public class AdvisorBankDetailsWriteServiceImpl implements AdvisorBankDetailsWri
                 .filter(bankDetails -> bankDetails.getBankIdentifier().equals(bankIdentifier))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("Bank detail not found with identifier: " + bankIdentifier));
+    }
+
+    private void publishAdvisorUpdatedEvent(Advisor advisor) {
+        // Get primary mobile number from person entity
+        com.nivasafinance.features.person.entity.Person person = 
+                personRepositoryWrapper.findByIdWithException(advisor.getPersonId());
+        String mobileNumber = null;
+        if (person.getMobileNumbers() != null && !person.getMobileNumbers().isEmpty()) {
+            mobileNumber = person.getMobileNumbers().stream()
+                    .filter(m -> m.getIsPrimary() != null && m.getIsPrimary())
+                    .map(com.nivasafinance.features.person.entity.MobileNumberDetails::getNumber)
+                    .findFirst()
+                    .orElse(null);
+        }
+
+        AdvisorUpdateEventPayload payload = AdvisorUpdateEventPayload.builder()
+                .id(advisor.getId())
+                .advisorIdentifier(advisor.getIdentifier())
+                .mobileNumber(mobileNumber)
+                .build();
+
+        applicationEventPublisher.publishEvent(
+                new SystemEvent<>(BusinessEvent.ADVISOR_UPDATED.toString(), payload)
+        );
     }
 }
 
