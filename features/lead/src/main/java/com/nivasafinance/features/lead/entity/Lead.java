@@ -38,7 +38,7 @@ public class Lead extends AuditableEntity {
     @Column(name = "requested_amount", precision = 18, scale = 2)
     private BigDecimal requestedAmount;
 
-    @Column(name = "office_key")
+    @Column(name = "office_key", nullable = false)
     private String officeKey;
 
     @Type(JsonType.class)

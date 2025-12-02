@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1764656181000_96" author="system" context="default">
+        <!-- First, update any existing NULL values to default 'HQ' -->
+        <update tableName="n_lead">
+            <column name="office_key" value="HQ"/>
+            <where>office_key IS NULL</where>
+        </update>
+
+        <!-- Then, add NOT NULL constraint -->
+        <addNotNullConstraint tableName="n_lead" columnName="office_key" columnDataType="VARCHAR(255)"/>
+    </changeSet>
+
+</databaseChangeLog>
+

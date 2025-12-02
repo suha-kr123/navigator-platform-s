@@ -128,6 +128,9 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
 
         lead.setRequestedAmount(request.getRequestedAmount());
+        if (request.getOfficeKey() == null) {
+            throw new BadRequestException("Office key is required and cannot be null");
+        }
         lead.setOfficeKey(request.getOfficeKey());
         lead.setOwner(request.getOwner());
         lead.setPurpose(request.getPurpose());
