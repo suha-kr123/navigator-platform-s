@@ -9,13 +9,7 @@ import com.nivasafinance.common.events.payload.LeadContactDeletionEventPayload;
 import com.nivasafinance.common.events.payload.LeadContactUpdationEventPayload;
 import com.nivasafinance.common.dto.AddressData;
 import com.nivasafinance.common.dto.IdentifierData;
-import com.nivasafinance.features.lead.dto.BulkContactsUpdateRequest;
-import com.nivasafinance.features.lead.dto.BulkContactsUpdateResponse;
-import com.nivasafinance.features.lead.dto.EnrichedLeadContactResponse;
-import com.nivasafinance.features.lead.dto.LeadContactPersonDetails;
-import com.nivasafinance.features.lead.dto.LeadContactResponse;
-import com.nivasafinance.features.lead.dto.CreateLeadContactRequest;
-import com.nivasafinance.features.lead.dto.UpdateLeadContactRequest;
+import com.nivasafinance.features.lead.dto.*;
 import com.nivasafinance.features.lead.exception.LeadContactValidationException;
 import com.nivasafinance.features.lead.service.LeadContactReadService;
 import com.nivasafinance.features.lead.entity.Applicant;
@@ -53,7 +47,7 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
 
     @Override
     @Transactional
-    public void createContact(UUID leadId, CreateLeadContactRequest request) {
+    public CreateLeadContactResponse createContact(UUID leadId, CreateLeadContactRequest request) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadId);
 
         // Create Person
@@ -85,6 +79,11 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
 
         // Publish event
         publishLeadContactCreatedEvent(lead, savedContact, request.getApplicantType());
+
+        return CreateLeadContactResponse
+                .builder()
+                .identifier(savedContact.getIdentifier())
+                .build();
     }
 
     @Override

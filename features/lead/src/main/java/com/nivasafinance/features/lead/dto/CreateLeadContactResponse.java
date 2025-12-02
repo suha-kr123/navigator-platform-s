@@ -11,7 +11,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CreateLeadResponse {
-    private UUID leadIdentifier;
-    private UUID contactIdentifier;
+public class CreateLeadContactResponse {
+    private UUID identifier;
 }
+
