@@ -533,14 +533,22 @@ public class LeadDashboardWrapper {
 
             String priorityKey = rs.getString("priority_key");
             if (priorityKey != null) {
-                CodeValueResponse priority = codeValueMasterService.getByKey(priorityKey);
-                builder.priority(priority);
+                try {
+                    CodeValueResponse priority = codeValueMasterService.getByKey(priorityKey);
+                    builder.priority(priority);
+                } catch (Exception e) {
+                    // Ignore if priority not found - leave as null
+                }
             }
 
             String onHoldReasonKey = rs.getString("onhold_reason_key");
             if (onHoldReasonKey != null) {
-                CodeValueResponse onHoldReason = codeValueMasterService.getByKey(onHoldReasonKey);
-                builder.onHoldReason(onHoldReason);
+                try {
+                    CodeValueResponse onHoldReason = codeValueMasterService.getByKey(onHoldReasonKey);
+                    builder.onHoldReason(onHoldReason);
+                } catch (Exception e) {
+                    // Ignore if onhold reason not found - leave as null
+                }
             }
 
             LocalDateTime onHoldDate = getLocalDateTime(rs, "onhold_date");

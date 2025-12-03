@@ -137,7 +137,12 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         }
         lead.setOfficeKey(request.getOfficeKey());
         lead.setOwner(request.getOwner());
-        lead.setPurpose(request.getPurpose());
+        if (request.getPurpose() != null) {
+            codeValueMasterService.getCodeValueByKeyAndCodeKey(request.getPurpose(), SystemControlledMasterCodes.LEAD_PURPOSE_MASTER);
+            lead.setPurpose(request.getPurpose());
+        } else {
+            lead.setPurpose(null);
+        }
         //validates product exists
         if (request.getProductCode() != null) {
             productReadService.getProductByCode(request.getProductCode());
@@ -228,16 +233,44 @@ public class LeadWriteServiceImpl implements LeadWriteService {
             creditDetails = new Lead.CreditRatingDetails();
         }
 
-        creditDetails.setOccupationProfile(request.getOccupationProfile());
-        creditDetails.setRoofProfile(request.getRoofProfile());
-        creditDetails.setLtv(request.getLtv());
-        creditDetails.setFoir(request.getFoir());
-        creditDetails.setMonthlyFamilyIncome(request.getMonthlyFamilyIncome());
-        creditDetails.setPropertyDocumentType(request.getPropertyDocumentType());
+        // Validate and set code values
+        if (request.getOccupationProfile() != null) {
+            codeValueMasterService.getCodeValueByKeyAndCodeKey(request.getOccupationProfile(), SystemControlledMasterCodes.LEAD_OCCUPATION_PROFILE_MASTER);
+            creditDetails.setOccupationProfile(request.getOccupationProfile());
+        }
+        if (request.getRoofProfile() != null) {
+            codeValueMasterService.getCodeValueByKeyAndCodeKey(request.getRoofProfile(), SystemControlledMasterCodes.LEAD_ROOF_PROFILE_MASTER);
+            creditDetails.setRoofProfile(request.getRoofProfile());
+        }
+        if (request.getLtv() != null) {
+            codeValueMasterService.getCodeValueByKeyAndCodeKey(request.getLtv(), SystemControlledMasterCodes.LEAD_LTV_MASTER);
+            creditDetails.setLtv(request.getLtv());
+        }
+        if (request.getFoir() != null) {
+            codeValueMasterService.getCodeValueByKeyAndCodeKey(request.getFoir(), SystemControlledMasterCodes.LEAD_FOIR_MASTER);
+            creditDetails.setFoir(request.getFoir());
+        }
+        if (request.getMonthlyFamilyIncome() != null) {
+            codeValueMasterService.getCodeValueByKeyAndCodeKey(request.getMonthlyFamilyIncome(), SystemControlledMasterCodes.LEAD_MONTHLY_INCOME_MASTER);
+            creditDetails.setMonthlyFamilyIncome(request.getMonthlyFamilyIncome());
+        }
+        if (request.getPropertyDocumentType() != null) {
+            codeValueMasterService.getCodeValueByKeyAndCodeKey(request.getPropertyDocumentType(), SystemControlledMasterCodes.LEAD_PROPERTY_DOCUMENT_TYPE_MASTER);
+            creditDetails.setPropertyDocumentType(request.getPropertyDocumentType());
+        }
         creditDetails.setEligibleLoanAmount(request.getEligibleLoanAmount());
-        creditDetails.setLocation(request.getLocation());
-        creditDetails.setBureauRating(request.getBureauRating());
-        creditDetails.setCustomerProfiles(request.getCustomerProfiles());
+        if (request.getLocation() != null) {
+            codeValueMasterService.getCodeValueByKeyAndCodeKey(request.getLocation(), SystemControlledMasterCodes.LEAD_LOCATION_MASTER);
+            creditDetails.setLocation(request.getLocation());
+        }
+        if (request.getBureauRating() != null) {
+            codeValueMasterService.getCodeValueByKeyAndCodeKey(request.getBureauRating(), SystemControlledMasterCodes.LEAD_BUREAU_RATING_MASTER);
+            creditDetails.setBureauRating(request.getBureauRating());
+        }
+        if (request.getCustomerProfiles() != null) {
+            codeValueMasterService.getCodeValueByKeyAndCodeKey(request.getCustomerProfiles(), SystemControlledMasterCodes.LEAD_CUSTOMER_PROFILE_MASTER);
+            creditDetails.setCustomerProfiles(request.getCustomerProfiles());
+        }
         creditDetails.setUnderwriter(currentUsername);
 
         lead.setCreditRatingDetails(creditDetails);
