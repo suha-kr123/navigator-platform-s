@@ -4,6 +4,7 @@ public enum AdvisorStatus {
     CREATED,
     ACTIVE,
     REJECTED,
-    DORMANT
+    DORMANT,
+    OUT_OF_GEO
 }
 
