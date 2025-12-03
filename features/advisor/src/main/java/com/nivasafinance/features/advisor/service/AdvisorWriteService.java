@@ -24,5 +24,7 @@ public interface AdvisorWriteService {
     void dormantAdvisor(UUID identifier, DormantAdvisorRequest request);
     
     void activateAdvisor(UUID identifier);
+    
+    void outOfGeoAdvisor(UUID identifier, OutOfGeoAdvisorRequest request);
 }
 

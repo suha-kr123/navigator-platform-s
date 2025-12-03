@@ -9,8 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class AdvisorRemarks {
-    private String rejected;
-    private String dormant;
+public class OutOfGeoAdvisorRequest {
     private String outOfGeo;
 }
+

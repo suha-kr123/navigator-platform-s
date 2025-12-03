@@ -116,6 +116,14 @@ public class AdvisorController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/{identifier}/out-of-geo")
+    public ResponseEntity<Void> outOfGeoAdvisor(
+            @PathVariable UUID identifier,
+            @Valid @RequestBody OutOfGeoAdvisorRequest request) {
+        advisorWriteService.outOfGeoAdvisor(identifier, request);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/{id}/leads")
     public ResponseEntity<PaginatedResponse<AdvisorLeadResponse>> getLeadsByAdvisorId(
             @PathVariable("id") UUID advisorId,

@@ -393,6 +393,26 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
         publishAdvisorStatusChangeEvent(advisor, BusinessEvent.ADVISOR_ACTIVE, null);
     }
 
+    @Override
+    public void outOfGeoAdvisor(UUID identifier, OutOfGeoAdvisorRequest request) {
+        Advisor advisor = advisorRepositoryWrapper.findByIdentifierWithException(identifier);
+        advisor.setStatus(AdvisorStatus.OUT_OF_GEO);
+        if (request != null && request.getOutOfGeo() != null) {
+            AdvisorRemarks advisorRemarks = advisor.getRemarks();
+            if (advisorRemarks == null) {
+                advisorRemarks = new AdvisorRemarks();
+            }
+            advisorRemarks.setOutOfGeo(request.getOutOfGeo());
+            advisor.setRemarks(advisorRemarks);
+        }
+
+        advisorRepositoryWrapper.saveWithException(advisor);
+
+        // Publish ADVISOR_OUT_OF_GEO event
+        String reason = advisor.getRemarks() != null ? advisor.getRemarks().getOutOfGeo() : null;
+        publishAdvisorStatusChangeEvent(advisor, BusinessEvent.ADVISOR_OUT_OF_GEO, reason);
+    }
+
     private void publishAdvisorStatusChangeEvent(Advisor advisor, BusinessEvent event, String reason) {
         AdvisorStatusChangeEventPayload payload = AdvisorStatusChangeEventPayload.builder()
                 .id(advisor.getId())
