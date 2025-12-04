@@ -128,6 +128,11 @@ public class LeadRepositoryWrapper {
                              THEN l.reasons ->> 'dropoff'
                          ELSE NULL
                          END as reasonCode,
+                    CASE 
+                        WHEN l.onhold_details->>'holdFollowUpDate' IS NOT NULL 
+                        THEN TO_DATE(l.onhold_details->>'holdFollowUpDate', 'DD-MM-YYYY')
+                        ELSE NULL
+                    END AS hold_follow_up_date,
                     primary_contact_person.display_name         AS primaryPersonName,
                     (jsonb_path_query_first(COALESCE(primary_contact_person.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') AS primaryPersonNumber,
                      o.name as officeName,
@@ -269,7 +274,8 @@ public class LeadRepositoryWrapper {
                 .currentSubStageKey(rs.getString("current_sub_stage_key"))
                 .assignedTo(rs.getString("assigned_to"))
                 .assignedAt(getLocalDateTime(rs, "assigned_at"))
-                .enteredAt(getLocalDateTime(rs, "entered_at"));
+                .enteredAt(getLocalDateTime(rs, "entered_at"))
+                .holdFollowUpDate(getLocalDate(rs, "hold_follow_up_date"));
 
         String status = rs.getString("status");
         if (status != null) {

@@ -36,6 +36,7 @@ public class LeadResponse {
     private String reasonCode;
     private String reason;
     private LocalDate leadCreatedAt;
+    private LocalDate holdFollowUpDate;
     private LocalTime preferredCallStartTime;
     private LocalTime preferredCallEndTime;
     private CodeValueResponse priority;
