@@ -122,6 +122,7 @@ public class AdvisorLeadMappingRepositoryWrapper {
                 l.lead_identifier as leadIdentifier,
                 l.requested_amount as requestedAmount,
                 l.status,
+                l.substatus,
                 l.created_at as createdAt,
                 ((l.workflow_details->'currentStageDetails')->>'stageKey') as currentStage,
                 primary_person.display_name as primaryContactName,
@@ -207,6 +208,8 @@ public class AdvisorLeadMappingRepositoryWrapper {
                     // Invalid status, leave as null
                 }
             }
+
+            builder.substatus(rs.getString("substatus"));
 
             java.sql.Timestamp createdAt = rs.getTimestamp("createdAt");
             if (createdAt != null) {
