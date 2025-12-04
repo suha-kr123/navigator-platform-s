@@ -21,5 +21,6 @@ public class AdvisorDashboardFilters {
     LocalDateTime lastLeadDateTo;
     List<String> segmentation;
     List<String> sourcingChannel;
+    List<String> salesOwner;
 }
 

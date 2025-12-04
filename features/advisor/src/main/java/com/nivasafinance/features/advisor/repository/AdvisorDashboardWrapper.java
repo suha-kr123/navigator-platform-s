@@ -86,6 +86,7 @@ public class AdvisorDashboardWrapper {
         appendLastLeadDateFilter(effectiveFilters, whereClause, queryParams);
         appendSegmentationFilter(effectiveFilters, whereClause, queryParams);
         appendSourcingChannelFilter(effectiveFilters, whereClause, queryParams);
+        appendSalesOwnerFilter(effectiveFilters, whereClause, queryParams);
 
         String fromClause = baseFromClause();
 
@@ -217,6 +218,24 @@ public class AdvisorDashboardWrapper {
                     .append(createPlaceholders(filters.getSourcingChannel().size()))
                     .append(") ");
             params.addAll(filters.getSourcingChannel());
+        }
+    }
+
+    private void appendSalesOwnerFilter(AdvisorDashboardFilters filters, StringBuilder whereClause, List<Object> params) {
+        if (!CollectionUtils.isEmpty(filters.getSalesOwner())) {
+            List<String> owners = new ArrayList<>(filters.getSalesOwner());
+            boolean includeUnassigned = owners.remove("UNASSIGNED");
+
+            if (!owners.isEmpty() && includeUnassigned) {
+                whereClause.append(" AND (a.owner IN (").append(createPlaceholders(owners.size()))
+                        .append(") OR a.owner IS NULL) ");
+                params.addAll(owners);
+            } else if (!owners.isEmpty()) {
+                whereClause.append(" AND a.owner IN (").append(createPlaceholders(owners.size())).append(") ");
+                params.addAll(owners);
+            } else if (includeUnassigned) {
+                whereClause.append(" AND a.owner IS NULL ");
+            }
         }
     }
 
