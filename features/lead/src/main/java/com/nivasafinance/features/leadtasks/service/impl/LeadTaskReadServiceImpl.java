@@ -219,10 +219,26 @@ public class LeadTaskReadServiceImpl implements LeadTaskReadService {
                 Object iterCount = taskDetailsMap.get("iterationCount");
                 Integer iterationCount = ValidationUtils.isNonNull(iterCount) ? (iterCount instanceof Integer ? (Integer) iterCount : ((Number) iterCount).intValue()) : null;
                 
+                UUID rescheduledFromTaskIdentifier = null;
+                Object rescheduledFromTaskIdObj = taskDetailsMap.get("rescheduledFromTaskIdentifier");
+                if (ValidationUtils.isNonNull(rescheduledFromTaskIdObj)) {
+                    if (rescheduledFromTaskIdObj instanceof UUID) {
+                        rescheduledFromTaskIdentifier = (UUID) rescheduledFromTaskIdObj;
+                    } else if (rescheduledFromTaskIdObj instanceof String) {
+                        try {
+                            rescheduledFromTaskIdentifier = UUID.fromString((String) rescheduledFromTaskIdObj);
+                        } catch (IllegalArgumentException e) {
+                            // If it's not a valid UUID string, leave it as null
+                            rescheduledFromTaskIdentifier = null;
+                        }
+                    }
+                }
+                
                 taskDetails = LeadTaskResponse.TaskDetails.builder()
                         .preferredCallWindow(preferredCallWindow)
                         .creatorRemarks((String) taskDetailsMap.get("creatorRemarks"))
                         .iterationCount(iterationCount)
+                        .rescheduledFromTaskIdentifier(rescheduledFromTaskIdentifier)
                         .build();
             }
             

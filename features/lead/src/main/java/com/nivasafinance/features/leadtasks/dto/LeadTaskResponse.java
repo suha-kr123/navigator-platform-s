@@ -56,6 +56,7 @@ public class LeadTaskResponse {
         private PreferredCallWindow preferredCallWindow;
         private String creatorRemarks;
         private Integer iterationCount;
+        private UUID rescheduledFromTaskIdentifier;
         
         @Data
         @NoArgsConstructor
@@ -91,6 +92,7 @@ public class LeadTaskResponse {
                     .preferredCallWindow(preferredCallWindow)
                     .creatorRemarks(taskResponse.getTaskDetails().getCreatorRemarks())
                     .iterationCount(taskResponse.getTaskDetails().getIterationCount())
+                    .rescheduledFromTaskIdentifier(taskResponse.getTaskDetails().getRescheduledFromTaskIdentifier())
                     .build();
         }
         
@@ -139,6 +141,7 @@ public class LeadTaskResponse {
                         .preferredCallWindow(preferredCallWindow)
                         .creatorRemarks(taskResponse.getTaskDetails().getCreatorRemarks())
                         .iterationCount(taskResponse.getTaskDetails().getIterationCount())
+                        .rescheduledFromTaskIdentifier(taskResponse.getTaskDetails().getRescheduledFromTaskIdentifier())
                         .build();
             }
             
