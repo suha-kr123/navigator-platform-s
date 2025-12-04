@@ -119,7 +119,11 @@ public class LeadDashboardWrapper {
                     latest_call.created_at                             AS last_call_date,
                     l.reasons->>'onhold'                               AS onhold_reason_key,
                     (l.onhold_details->>'onHoldMovementDate')::timestamp AS onhold_date,
-                    (l.onhold_details->>'holdFollowUpDate')::date       AS hold_follow_up_date,
+                    CASE 
+                        WHEN l.onhold_details->>'holdFollowUpDate' IS NOT NULL 
+                        THEN TO_DATE(l.onhold_details->>'holdFollowUpDate', 'DD-MM-YYYY')
+                        ELSE NULL
+                    END AS hold_follow_up_date,
                     o.code                                             AS office_code,
                     sourcing_channel.sourcing_channel_name             AS sourcing_channel_name,
                     (l.workflow_details->>'workflowConfigKey')         AS workflow_config_key,
