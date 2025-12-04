@@ -49,6 +49,7 @@ public class LeadDashboardWrapper {
     private final StaffReadService staffReadService;
     private final OfficeReadService officeReadService;
 
+    @SuppressWarnings("text-blocks")
     public PaginatedResponse<LeadDashboardResponse> findLeadDashboard(
             PaginationRequest paginationRequest,
             LeadDashboardFilters filters) {
@@ -119,8 +120,8 @@ public class LeadDashboardWrapper {
                     latest_call.created_at                             AS last_call_date,
                     l.reasons->>'onhold'                               AS onhold_reason_key,
                     (l.onhold_details->>'onHoldMovementDate')::timestamp AS onhold_date,
-                    CASE 
-                        WHEN l.onhold_details->>'holdFollowUpDate' IS NOT NULL 
+                    CASE
+                        WHEN l.onhold_details->>'holdFollowUpDate' IS NOT NULL
                         THEN TO_DATE(l.onhold_details->>'holdFollowUpDate', 'DD-MM-YYYY')
                         ELSE NULL
                     END AS hold_follow_up_date,

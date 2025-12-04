@@ -84,6 +84,7 @@ public class LeadRepositoryWrapper {
      * Primary person name and number priority: applicant -> first co-applicant -> first contact
      * Reason code/value extracted from reasons.reject[0] if exists
      */
+    @SuppressWarnings("text-blocks")
     public LeadResponse findLeadResponseByIdentifierWithException(UUID leadIdentifier) {
         String sql = """
                 SELECT
@@ -128,8 +129,8 @@ public class LeadRepositoryWrapper {
                              THEN l.reasons ->> 'dropoff'
                          ELSE NULL
                          END as reasonCode,
-                    CASE 
-                        WHEN l.onhold_details->>'holdFollowUpDate' IS NOT NULL 
+                    CASE
+                        WHEN l.onhold_details->>'holdFollowUpDate' IS NOT NULL
                         THEN TO_DATE(l.onhold_details->>'holdFollowUpDate', 'DD-MM-YYYY')
                         ELSE NULL
                     END AS hold_follow_up_date,
@@ -220,7 +221,7 @@ public class LeadRepositoryWrapper {
                   AND l.status = 'ACTIVE'
                 LIMIT 1
                 """;
-            
+
             Long leadId = jdbcTemplate.queryForObject(
                 sql,
                 Long.class,
@@ -458,7 +459,7 @@ public class LeadRepositoryWrapper {
         }
 
         String mobileNumber = request.getMobileNumber().trim();
-        
+
         // Get current staff office and code for hierarchy filtering
         String currentUserOfficeKey = staffReadService.getCurrentStaff().getOfficeKey();
         String currentUserOfficeCode = officeReadService.getOfficeByKey(currentUserOfficeKey).getCode();
@@ -520,7 +521,7 @@ public class LeadRepositoryWrapper {
 
         try {
             String officePattern = currentUserOfficeCode + "%";
-            
+
             // Get total count
             Long totalCount = jdbcTemplate.queryForObject(countSql, Long.class, mobileNumber, officePattern);
             long total = totalCount != null ? totalCount : 0L;
