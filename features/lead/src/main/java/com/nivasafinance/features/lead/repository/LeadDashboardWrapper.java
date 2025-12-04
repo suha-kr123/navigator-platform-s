@@ -21,6 +21,7 @@ import org.springframework.util.CollectionUtils;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -118,6 +119,7 @@ public class LeadDashboardWrapper {
                     latest_call.created_at                             AS last_call_date,
                     l.reasons->>'onhold'                               AS onhold_reason_key,
                     (l.onhold_details->>'onHoldMovementDate')::timestamp AS onhold_date,
+                    (l.onhold_details->>'holdFollowUpDate')::date       AS hold_follow_up_date,
                     o.code                                             AS office_code,
                     sourcing_channel.sourcing_channel_name             AS sourcing_channel_name,
                     (l.workflow_details->>'workflowConfigKey')         AS workflow_config_key,
@@ -556,6 +558,11 @@ public class LeadDashboardWrapper {
                 builder.onHoldDate(onHoldDate);
             }
 
+            LocalDate holdFollowUpDate = getLocalDate(rs, "hold_follow_up_date");
+            if (holdFollowUpDate != null) {
+                builder.holdFollowUpDate(holdFollowUpDate);
+            }
+
             String sourcingChannelName = rs.getString("sourcing_channel_name");
             if (sourcingChannelName != null) {
                 try {
@@ -592,6 +599,10 @@ public class LeadDashboardWrapper {
 
         private LocalDateTime getLocalDateTime(ResultSet rs, String column) throws SQLException {
             return rs.getTimestamp(column) != null ? rs.getTimestamp(column).toLocalDateTime() : null;
+        }
+
+        private LocalDate getLocalDate(ResultSet rs, String column) throws SQLException {
+            return rs.getDate(column) != null ? rs.getDate(column).toLocalDate() : null;
         }
 
         private LocalTime getLocalTime(ResultSet rs, String column) throws SQLException {

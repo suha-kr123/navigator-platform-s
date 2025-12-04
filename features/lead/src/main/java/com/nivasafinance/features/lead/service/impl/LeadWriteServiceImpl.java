@@ -613,6 +613,9 @@ public class LeadWriteServiceImpl implements LeadWriteService {
             throw new BadRequestException("Cannot put lead on hold, lead is already rejected or withdrawn");
         }
 
+        // Check if lead is already on hold (before we set it)
+        boolean isAlreadyOnHold = LeadSubStatus.ONHOLD.equals(lead.getSubstatus());
+
         // Set substatus to ONHOLD (keep current status)
         lead.setSubstatus(LeadSubStatus.ONHOLD);
 
@@ -627,6 +630,20 @@ public class LeadWriteServiceImpl implements LeadWriteService {
             reasons.setOnhold(request.getReasonCode());
             lead.setReasons(reasons);
         }
+
+        // Set onHoldDetails
+        Lead.OnHoldDetails onHoldDetails = lead.getOnHoldDetails();
+        if (onHoldDetails == null) {
+            onHoldDetails = new Lead.OnHoldDetails();
+        }
+        // Only update movement date and who put it on hold if not already on hold (first time putting on hold)
+        if (!isAlreadyOnHold) {
+            onHoldDetails.setOnHoldMovementDate(LocalDateTime.now());
+            onHoldDetails.setOnHoldBy(UserContext.getUsername());
+        }
+        // Always update follow-up date (allows updating it when already on hold)
+        onHoldDetails.setHoldFollowUpDate(request.getHoldFollowUpDate());
+        lead.setOnHoldDetails(onHoldDetails);
 
         leadRepositoryWrapper.saveWithException(lead);
 

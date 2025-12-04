@@ -291,6 +291,7 @@ public class Lead extends AuditableEntity {
     public static class OnHoldDetails {
         private LocalDateTime onHoldMovementDate;
         private String onHoldBy;
+        private LocalDate holdFollowUpDate;
     }
 
     @Data

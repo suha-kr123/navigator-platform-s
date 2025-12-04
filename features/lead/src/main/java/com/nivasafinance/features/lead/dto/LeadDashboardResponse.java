@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.UUID;
@@ -47,6 +48,7 @@ public class LeadDashboardResponse {
     private LocalDateTime lastCallDate;
     private CodeValueResponse onHoldReason;
     private LocalDateTime onHoldDate;
+    private LocalDate holdFollowUpDate;
     private String office;
     private CodeValueResponse sourcingChannel;
     
