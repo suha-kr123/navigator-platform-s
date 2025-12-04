@@ -195,13 +195,18 @@ public class LeadTaskWriteServiceImpl implements LeadTaskWriteService {
         Task oldTask = taskRepositoryWrapper.findByTaskIdentifierWithException(request.getTaskIdentifier());
         
         // Convert LeadRescheduleTaskRequest to RescheduleTaskRequest
+        // Use rescheduledFromTaskIdentifier from request if provided, otherwise use old task's identifier
+        UUID rescheduledFromTaskId = ValidationUtils.isNonNull(request.getRescheduledFromTaskIdentifier()) 
+                ? request.getRescheduledFromTaskIdentifier() 
+                : oldTask.getTaskIdentifier();
+        
         RescheduleTaskRequest rescheduleTaskRequest = RescheduleTaskRequest.builder()
                 .taskIdentifier(request.getTaskIdentifier())
                 .preferredStartTime(request.getPreferredStartTime())
                 .preferredEndTime(request.getPreferredEndTime())
                 .reasonCodeValueKey(request.getReasonCodeValueKey())
                 .creatorRemarks(request.getCreatorRemarks())
-                .rescheduledFromTaskIdentifier(oldTask.getTaskIdentifier())
+                .rescheduledFromTaskIdentifier(rescheduledFromTaskId)
                 .build();
         
         // Reschedule the task (closes old task)
@@ -243,13 +248,14 @@ public class LeadTaskWriteServiceImpl implements LeadTaskWriteService {
                     : null;
             
             // Create new task
+            // Reuse rescheduledFromTaskId that was already calculated above
             TaskDetailsRequest taskDetails = TaskDetailsRequest.builder()
                     .entityId(oldTask.getTaskDetails().getEntityId())
                     .entityType(oldTask.getTaskDetails().getEntityType())
                     .preferredCallWindow(preferredCallWindow)
                     .creatorRemarks(creatorRemarks)
                     .iterationCount(newIterationCount)
-                    .rescheduledFromTaskIdentifier(oldTask.getTaskIdentifier())
+                    .rescheduledFromTaskIdentifier(rescheduledFromTaskId)
                     .build();
             
             CreateTaskRequest createTaskRequest = CreateTaskRequest.builder()

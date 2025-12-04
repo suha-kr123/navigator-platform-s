@@ -27,5 +27,7 @@ public class LeadRescheduleTaskRequest {
     private String reasonCodeValueKey;
     
     private String creatorRemarks;
+    
+    private UUID rescheduledFromTaskIdentifier;
 }
 
