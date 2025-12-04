@@ -201,6 +201,7 @@ public class LeadTaskWriteServiceImpl implements LeadTaskWriteService {
                 .preferredEndTime(request.getPreferredEndTime())
                 .reasonCodeValueKey(request.getReasonCodeValueKey())
                 .creatorRemarks(request.getCreatorRemarks())
+                .rescheduledFromTaskIdentifier(oldTask.getTaskIdentifier())
                 .build();
         
         // Reschedule the task (closes old task)

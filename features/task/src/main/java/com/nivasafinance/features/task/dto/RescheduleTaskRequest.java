@@ -28,5 +28,7 @@ public class RescheduleTaskRequest {
     private String reasonCodeValueKey;
     
     private String creatorRemarks;
+    
+    private UUID rescheduledFromTaskIdentifier;
 }
 
