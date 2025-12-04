@@ -21,6 +21,7 @@ public class AdvisorLeadResponse {
     BigDecimal requestedAmount;
     String currentStage;
     String status;
+    String substatus;
     LocalDateTime createdAt;
     String office;
 }
