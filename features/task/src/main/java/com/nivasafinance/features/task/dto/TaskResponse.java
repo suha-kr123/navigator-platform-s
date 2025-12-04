@@ -71,6 +71,7 @@ public class TaskResponse {
                     .preferredCallWindow(preferredCallWindow)
                     .creatorRemarks(task.getTaskDetails().getCreatorRemarks())
                     .iterationCount(task.getTaskDetails().getIterationCount())
+                    .rescheduledFromTaskIdentifier(task.getTaskDetails().getRescheduledFromTaskIdentifier())
                     .build();
         }
         

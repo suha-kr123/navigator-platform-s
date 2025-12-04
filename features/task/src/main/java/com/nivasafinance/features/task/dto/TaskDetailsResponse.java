@@ -19,6 +19,7 @@ public class TaskDetailsResponse {
     private PreferredCallWindow preferredCallWindow;
     private String creatorRemarks;
     private Integer iterationCount;
+    private UUID rescheduledFromTaskIdentifier;
 
     @Data
     @NoArgsConstructor

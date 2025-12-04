@@ -216,6 +216,7 @@ public class TaskWriteServiceImpl implements TaskWriteService {
                     .iterationCount(ValidationUtils.isNonNull(request.getTaskDetails().getIterationCount()) 
                             ? request.getTaskDetails().getIterationCount() 
                             : 0)
+                    .rescheduledFromTaskIdentifier(request.getTaskDetails().getRescheduledFromTaskIdentifier())
                     .build();
         }
         task.setTaskDetails(taskDetails);

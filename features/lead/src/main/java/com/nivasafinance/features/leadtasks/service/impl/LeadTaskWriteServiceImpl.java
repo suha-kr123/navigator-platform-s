@@ -227,18 +227,8 @@ public class LeadTaskWriteServiceImpl implements LeadTaskWriteService {
                         .build();
             }
             
-            // Use user-provided creator remarks, or build default if not provided
+            // Use user-provided creator remarks, or null if not provided
             String creatorRemarks = request.getCreatorRemarks();
-            if (!ValidationUtils.isNonNull(creatorRemarks)) {
-                // Fallback: build default remarks if user didn't provide any
-                creatorRemarks = "Rescheduled from task " + oldTask.getTaskIdentifier();
-                if (ValidationUtils.isNonNull(oldTask.getTaskDetails().getCreatorRemarks())) {
-                    creatorRemarks += ". Previous: " + oldTask.getTaskDetails().getCreatorRemarks();
-                }
-                if (ValidationUtils.isNonNull(request.getReasonCodeValueKey())) {
-                    creatorRemarks += ". Reason: " + request.getReasonCodeValueKey();
-                }
-            }
             
             // Increment iteration count
             Integer oldIterationCount = oldTask.getTaskDetails().getIterationCount();
@@ -258,6 +248,7 @@ public class LeadTaskWriteServiceImpl implements LeadTaskWriteService {
                     .preferredCallWindow(preferredCallWindow)
                     .creatorRemarks(creatorRemarks)
                     .iterationCount(newIterationCount)
+                    .rescheduledFromTaskIdentifier(oldTask.getTaskIdentifier())
                     .build();
             
             CreateTaskRequest createTaskRequest = CreateTaskRequest.builder()
