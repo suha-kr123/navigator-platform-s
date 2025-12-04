@@ -11,6 +11,7 @@ import com.nivasafinance.features.lead.dto.BulkContactsUpdateResponse;
 import com.nivasafinance.features.lead.dto.LeadContactResponse;
 import com.nivasafinance.features.lead.dto.CreateLeadContactRequest;
 import com.nivasafinance.features.lead.dto.UpdateLeadContactRequest;
+import com.nivasafinance.features.lead.dto.UpdateContactNameRequest;
 import com.nivasafinance.features.lead.service.LeadContactReadService;
 import com.nivasafinance.features.lead.service.LeadContactWriteService;
 import jakarta.validation.Valid;
@@ -44,6 +45,15 @@ public class LeadContactController {
             @PathVariable UUID contactIdentifier,
             @Valid @RequestBody UpdateLeadContactRequest request) {
         leadContactWriteService.updateContact(leadId, contactIdentifier, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{contactIdentifier}/name")
+    public ResponseEntity<Void> updateContactName(
+            @PathVariable UUID leadId,
+            @PathVariable UUID contactIdentifier,
+            @Valid @RequestBody UpdateContactNameRequest request) {
+        leadContactWriteService.updateContactName(leadId, contactIdentifier, request);
         return ResponseEntity.noContent().build();
     }
 

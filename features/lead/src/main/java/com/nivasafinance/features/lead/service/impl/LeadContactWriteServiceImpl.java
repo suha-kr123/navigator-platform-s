@@ -23,6 +23,7 @@ import com.nivasafinance.features.lead.service.LeadContactWriteService;
 import com.nivasafinance.features.person.dto.PersonCreateRequest;
 import com.nivasafinance.features.person.dto.PersonCreateResponse;
 import com.nivasafinance.features.person.dto.PersonUpdateRequest;
+import com.nivasafinance.features.person.service.PersonReadService;
 import com.nivasafinance.features.person.service.PersonWriteService;
 import lombok.AllArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -42,6 +43,7 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
     private final ContactRepositoryWrapper contactRepositoryWrapper;
     private final ApplicantRepositoryWrapper applicantRepositoryWrapper;
     private final PersonWriteService personWriteService;
+    private final PersonReadService personReadService;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final LeadContactReadService leadContactReadService;
 
@@ -124,6 +126,53 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
 
         // Publish event
         publishLeadContactUpdatedEvent(lead, contact, request.getApplicantType());
+    }
+
+    @Override
+    @Transactional
+    public void updateContactName(UUID leadId, UUID contactId, UpdateContactNameRequest request) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadId);
+        Contact contact = findContactByIdentifier(lead, contactId);
+
+        // Get existing person details
+        com.nivasafinance.features.person.dto.PersonResponse existingPerson = personReadService.getPersonById(contact.getPersonId());
+
+        // Merge name fields - use new values if provided, otherwise keep existing
+        String firstName = request.getFirstName() != null ? request.getFirstName() : existingPerson.getFirstName();
+        String middleName = request.getMiddleName() != null ? request.getMiddleName() : existingPerson.getMiddleName();
+        String lastName = request.getLastName() != null ? request.getLastName() : existingPerson.getLastName();
+
+        // Create PersonUpdateRequest with merged data
+        PersonUpdateRequest personRequest = new PersonUpdateRequest(
+                firstName,
+                middleName,
+                lastName,
+                existingPerson.getMobileNumbers(),
+                existingPerson.getDateOfBirth(),
+                existingPerson.getGender()
+        );
+
+        // Update Person
+        personWriteService.updatePerson(contact.getPersonId(), personRequest);
+
+        // Set this contact as decision maker (this will make it the primary contact)
+        contact.setIsDecisionMaker(true);
+        contactRepositoryWrapper.saveWithException(contact);
+
+        // Unset other decision makers
+        unsetOtherDecisionMakers(lead, contact.getId());
+
+        // Update primary contact ID (will prioritize decision maker)
+        updatePrimaryContactId(lead);
+
+        // Save lead to persist primary contact ID change
+        leadRepositoryWrapper.saveWithException(lead);
+
+        // Determine current applicant type for event
+        LeadContactPersonType currentType = determineCurrentApplicantType(lead, contact);
+
+        // Publish eventgit
+        publishLeadContactUpdatedEvent(lead, contact, currentType);
     }
 
     @Override
