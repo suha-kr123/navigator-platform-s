@@ -29,7 +29,7 @@ public class MasterCodeValue extends AuditableEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(name = "key", nullable = false, length = 100)
+    @Column(name = "key", nullable = false, length = 100, unique = true)
     private String key;
     
     @Column(name = "code_key", nullable = false, length = 100)
