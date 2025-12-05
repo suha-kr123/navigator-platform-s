@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -34,6 +35,11 @@ public class LeadDashboardFilters {
     LocalDateTime stageAssignedAtTo;
     LocalDateTime stageEnteredAtFrom;
     LocalDateTime stageEnteredAtTo;
+    LocalDateTime onHoldDateFrom;
+    LocalDateTime onHoldDateTo;
+    List<String> onHoldReason;
+    LocalDate onHoldFollowUpDateFrom;
+    LocalDate onHoldFollowUpDateTo;
 
 
     //TODO : advisors, add next task filter

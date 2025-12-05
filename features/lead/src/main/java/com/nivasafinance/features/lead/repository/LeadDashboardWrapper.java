@@ -80,6 +80,9 @@ public class LeadDashboardWrapper {
         appendStageAssignedToFilter(effectiveFilters, whereClause, queryParams);
         appendStageAssignedAtFilter(effectiveFilters, whereClause, queryParams);
         appendStageEnteredAtFilter(effectiveFilters, whereClause, queryParams);
+        appendOnHoldDateFilter(effectiveFilters, whereClause, queryParams);
+        appendOnHoldReasonFilter(effectiveFilters, whereClause, queryParams);
+        appendOnHoldFollowUpDateFilter(effectiveFilters, whereClause, queryParams);
 
         String fromClause = baseFromClause();
 
@@ -413,6 +416,73 @@ public class LeadDashboardWrapper {
                     .append("ELSE NULL ")
                     .append("END) <= ? ");
             params.add(enteredAtTo);
+        }
+    }
+
+    private void appendOnHoldDateFilter(LeadDashboardFilters filters, StringBuilder whereClause, List<Object> params) {
+        LocalDateTime onHoldDateFrom = filters.getOnHoldDateFrom();
+        LocalDateTime onHoldDateTo = filters.getOnHoldDateTo();
+
+        if (onHoldDateFrom != null) {
+            whereClause.append(" AND (")
+                    .append("CASE ")
+                    .append("WHEN l.onhold_details->>'onHoldMovementDate' IS NOT NULL ")
+                    .append("THEN (l.onhold_details->>'onHoldMovementDate')::timestamp ")
+                    .append("ELSE NULL ")
+                    .append("END) >= ? ");
+            params.add(onHoldDateFrom);
+        }
+
+        if (onHoldDateTo != null) {
+            whereClause.append(" AND (")
+                    .append("CASE ")
+                    .append("WHEN l.onhold_details->>'onHoldMovementDate' IS NOT NULL ")
+                    .append("THEN (l.onhold_details->>'onHoldMovementDate')::timestamp ")
+                    .append("ELSE NULL ")
+                    .append("END) <= ? ");
+            params.add(onHoldDateTo);
+        }
+    }
+
+    private void appendOnHoldReasonFilter(LeadDashboardFilters filters, StringBuilder whereClause, List<Object> params) {
+        if (!CollectionUtils.isEmpty(filters.getOnHoldReason())) {
+            List<String> normalizedReasons = filters.getOnHoldReason()
+                    .stream()
+                    .filter(Objects::nonNull)
+                    .map(reason -> reason.trim())
+                    .filter(reason -> !reason.isEmpty())
+                    .toList();
+            if (!normalizedReasons.isEmpty()) {
+                whereClause.append(" AND (l.reasons->>'onhold') IN (")
+                        .append(createPlaceholders(normalizedReasons.size()))
+                        .append(") ");
+                params.addAll(normalizedReasons);
+            }
+        }
+    }
+
+    private void appendOnHoldFollowUpDateFilter(LeadDashboardFilters filters, StringBuilder whereClause, List<Object> params) {
+        LocalDate followUpDateFrom = filters.getOnHoldFollowUpDateFrom();
+        LocalDate followUpDateTo = filters.getOnHoldFollowUpDateTo();
+
+        if (followUpDateFrom != null) {
+            whereClause.append(" AND (")
+                    .append("CASE ")
+                    .append("WHEN l.onhold_details->>'holdFollowUpDate' IS NOT NULL ")
+                    .append("THEN TO_DATE(l.onhold_details->>'holdFollowUpDate', 'DD-MM-YYYY') ")
+                    .append("ELSE NULL ")
+                    .append("END) >= ? ");
+            params.add(java.sql.Date.valueOf(followUpDateFrom));
+        }
+
+        if (followUpDateTo != null) {
+            whereClause.append(" AND (")
+                    .append("CASE ")
+                    .append("WHEN l.onhold_details->>'holdFollowUpDate' IS NOT NULL ")
+                    .append("THEN TO_DATE(l.onhold_details->>'holdFollowUpDate', 'DD-MM-YYYY') ")
+                    .append("ELSE NULL ")
+                    .append("END) <= ? ");
+            params.add(java.sql.Date.valueOf(followUpDateTo));
         }
     }
 
