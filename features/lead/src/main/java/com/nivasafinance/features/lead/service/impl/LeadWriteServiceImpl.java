@@ -115,7 +115,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         String workflowKey = WorkflowConstants.Workflow.DEFAULT_WORKFLOW_KEY;
         String workflowConfigKey = workflowConfigRepositoryWrapper.findActiveByWorkflowConfigKey(workflowKey).getWorkflowConfigKey();
         leadStageHistoryWriteService.createInitialStage(savedLead.getLeadIdentifier(), workflowConfigKey);
-        handleAdvisorMapping(lead.getId(), request.getAdvisorIdentifier());
+        handleAdvisorMapping(savedLead.getId(), request.getAdvisorIdentifier());
         // Publish LEAD_CREATED event for other listeners (activities, notifications, etc.) - not used by workflow
         publishLeadCreatedEvent(savedLead, request);
 
