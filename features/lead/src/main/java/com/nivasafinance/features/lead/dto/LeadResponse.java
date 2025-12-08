@@ -62,6 +62,7 @@ public class LeadResponse {
     private String lenderStatus;
     private CodeValueResponse lenderStage;
     private String lenderOfficeName;
+    private Long noOfCampaignCalls;
 
     //workflow details
     private String workflowConfigKey;

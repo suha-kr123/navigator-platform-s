@@ -100,6 +100,7 @@ public class LeadRepositoryWrapper {
                     (l.other_details->>'preferredCallStartTime')::time as preferred_call_start_time,
                     (l.other_details->>'preferredCallEndTime')::time as preferred_call_end_time,
                     l.other_details->>'priority' as priority_key,
+                    (l.other_details->>'noOfCampaignCalls')::bigint as no_of_campaign_calls,
                     (l.proposed_details->>'proposedLoanAmount')::numeric as proposed_amount,
                     (l.proposed_details->>'roi')::numeric as proposed_roi,
                     (l.credit_rating_details->>'eligibleLoanAmount')::numeric as eligible_loan_amount,
@@ -270,6 +271,7 @@ public class LeadRepositoryWrapper {
                 .lenderOfficeName(rs.getString("lender_office_name"))
                 .preferredCallStartTime(getLocalTime(rs, "preferred_call_start_time"))
                 .preferredCallEndTime(getLocalTime(rs, "preferred_call_end_time"))
+                .noOfCampaignCalls(rs.getLong("no_of_campaign_calls"))
                 .workflowConfigKey(rs.getString("workflow_config_key"))
                 .currentStageKey(rs.getString("current_stage_key"))
                 .currentSubStageKey(rs.getString("current_sub_stage_key"))
