@@ -1,6 +1,5 @@
 package com.nivasafinance.features.advisor.dto;
 
-import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,6 +16,7 @@ public class UpdateSourcingDetailsRequest {
     private String sourcingChannel;
     private String marketingSource;
     private String sourceId;
+    private String sourceUrl;
     private String campaignId;
     private String sourcedBy; 
 }
