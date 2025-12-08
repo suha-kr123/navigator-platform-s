@@ -35,10 +35,7 @@ public class LeadActivityDataFactory {
     private final LeadActivityWriteService writeService;
 
     public <T> void recordEvent(String eventType, T payload ){
-
-        // Handle special case where LEAD_COMPLETED has code "LEAD_DELETED"
-        String normalizedEventType = "LEAD_DELETED".equals(eventType) ? "LEAD_COMPLETED" : eventType;
-        BusinessEvent event = BusinessEvent.valueOf(normalizedEventType);
+        BusinessEvent event = BusinessEvent.valueOf(eventType);
 
         switch (event){
             case LEAD_CREATED -> {
