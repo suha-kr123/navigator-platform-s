@@ -280,6 +280,21 @@ public class TaskWriteServiceImpl implements TaskWriteService {
     }
 
     @Override
+    public void closeAllOpenTasksForLead(UUID leadIdentifier, String outcome) {
+        List<Task> openTasks = taskRepositoryWrapper.findOpenTasksByLeadIdentifier(leadIdentifier);
+        
+        for (Task task : openTasks) {
+            Task.OutcomeDetails outcomeDetails = Task.OutcomeDetails.builder()
+                    .remarks("Lead got rejected")
+                    .completedAt(LocalDateTime.now())
+                    .completedBy(UserContext.getUsername())
+                    .build();
+            updateTaskOutcome(task, outcome, outcomeDetails);
+            taskRepositoryWrapper.saveWithException(task);
+        }
+    }
+
+    @Override
     public BulkReassignTaskResponse bulkReassignTasks(BulkReassignTaskRequest request) {
         List<UUID> successfulTaskIdentifiers = new ArrayList<>();
         List<BulkReassignTaskResponse.BulkAssignmentError> errors = new ArrayList<>();

@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -32,6 +33,13 @@ public class TaskRepositoryWrapper {
 
     public Optional<Task> findById(Long id) {
         return taskRepository.findById(id);
+    }
+    
+    public List<Task> findOpenTasksByLeadIdentifier(UUID leadIdentifier) {
+        return taskRepository.findOpenTasksByEntityIdAndEntityType(
+                leadIdentifier, 
+                com.nivasafinance.common.enums.EntityType.LEAD.name()
+        );
     }
 }
 

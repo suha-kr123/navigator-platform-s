@@ -538,7 +538,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
 
         leadRepositoryWrapper.saveWithException(lead);
 
-        // Publish event
+        // Publish event (task closing will be handled asynchronously by TaskCloseListener)
         String reason = lead.getReasons() != null ? lead.getReasons().getReject() : null;
         publishLeadStatusChangeEvent(lead, BusinessEvent.LEAD_REJECTED, reason);
     }
@@ -579,7 +579,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
 
         leadRepositoryWrapper.saveWithException(lead);
 
-        // Publish event
+        // Publish event (task closing will be handled asynchronously by TaskCloseListener)
         String reason = lead.getReasons() != null ? lead.getReasons().getWithdrawn() : null;
         publishLeadStatusChangeEvent(lead, BusinessEvent.LEAD_WITHDRAWN, reason);
     }
@@ -599,7 +599,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
 
         leadRepositoryWrapper.saveWithException(lead);
 
-        // Publish event
+        // Publish event (task closing will be handled asynchronously by TaskCloseListener)
         publishLeadStatusChangeEvent(lead, BusinessEvent.LEAD_COMPLETED, null);
     }
 
@@ -710,7 +710,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
 
         leadRepositoryWrapper.saveWithException(lead);
 
-        // Publish event
+        // Publish event (task closing will be handled asynchronously by TaskCloseListener)
         String reason = lead.getReasons() != null ? lead.getReasons().getDropoff() : null;
         publishLeadStatusChangeEvent(lead, BusinessEvent.LEAD_DROPOFF, reason);
     }
