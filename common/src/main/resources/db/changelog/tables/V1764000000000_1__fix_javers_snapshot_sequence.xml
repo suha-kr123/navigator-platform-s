@@ -6,14 +6,14 @@
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
 
     <!--
-        Fix Javers snapshot sequence to prevent duplicate key violations.
+        Fix Javers snapshot and commit sequences to prevent duplicate key violations.
         
         Javers uses a sequence multiplier (nextval * 100) by default which causes
         duplicate key errors when multiple transactions get the same sequence value concurrently.
         
         This migration:
-        1. Alters the jv_snapshot table to use the sequence directly without multiplication
-        2. Updates the sequence to have a larger increment to reduce collisions
+        1. Alters the jv_snapshot and jv_commit tables to use sequences directly without multiplication
+        2. Updates sequences to ensure proper synchronization
     -->
     <changeSet id="V1764000000000_1__fix_javers_snapshot_sequence" author="system">
         <preConditions onFail="MARK_RAN">
@@ -42,6 +42,41 @@
         <sql>
             SELECT setval('jv_snapshot_pk_seq', 
                 COALESCE((SELECT MAX(snapshot_pk) FROM jv_snapshot), 1), 
+                true);
+        </sql>
+    </changeSet>
+
+    <!--
+        Fix Javers commit sequence to prevent duplicate key violations.
+        Same issue as snapshot - sequence multiplier causes duplicate keys in concurrent scenarios.
+    -->
+    <changeSet id="V1764000000000_2__fix_javers_commit_sequence" author="system">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="jv_commit"/>
+            <sequenceExists sequenceName="jv_commit_pk_seq"/>
+        </preConditions>
+        
+        <comment>Fix Javers commit sequence to prevent duplicate key violations</comment>
+        
+        <!-- Drop the default value that uses multiplication -->
+        <sql>
+            ALTER TABLE jv_commit ALTER COLUMN commit_pk DROP DEFAULT;
+        </sql>
+        
+        <!-- Set new default without multiplication -->
+        <sql>
+            ALTER TABLE jv_commit ALTER COLUMN commit_pk SET DEFAULT nextval('jv_commit_pk_seq');
+        </sql>
+        
+        <!-- Ensure sequence increment is 1 -->
+        <sql>
+            ALTER SEQUENCE jv_commit_pk_seq INCREMENT BY 1;
+        </sql>
+        
+        <!-- Ensure sequence is at least at the current max value -->
+        <sql>
+            SELECT setval('jv_commit_pk_seq', 
+                COALESCE((SELECT MAX(commit_pk) FROM jv_commit), 1), 
                 true);
         </sql>
     </changeSet>
