@@ -408,6 +408,43 @@ public class WorkflowOrchestratorServiceImpl implements WorkflowOrchestratorServ
 
 
     @Override
+    public String getDefaultSubStageForStage(String workflowConfigKey, String stageKey) {
+        // Input validation
+        ValidationUtils.requireNonNullOrEmpty(workflowConfigKey, WorkflowValidationException::nullOrEmptyWorkflowConfigKey);
+        ValidationUtils.requireNonNullOrEmpty(stageKey, WorkflowValidationException::nullOrEmptyStageKey);
+        
+        try {
+            com.nivasafinance.features.workflow.entity.WorkflowConfig workflowConfig = 
+                workflowConfigReadService.getWorkflowConfigByKey(workflowConfigKey);
+            
+            if (!ValidationUtils.isNonNull(workflowConfig) 
+                    || !ValidationUtils.isNonNull(workflowConfig.getWorkflowConfigDetails())
+                    || !ValidationUtils.isNonNull(workflowConfig.getWorkflowConfigDetails().getStages())) {
+                return null;
+            }
+            
+            // Find the stage config in the workflow
+            WorkflowStageConfig stageConfig = workflowConfig.getWorkflowConfigDetails().getStages().stream()
+                    .filter(stage -> stageKey.equals(stage.getStageKey()))
+                    .findFirst()
+                    .orElse(null);
+            
+            if (ValidationUtils.isNonNull(stageConfig)) {
+                String defaultSubStage = stageConfig.getDefaultSubStage();
+                if (ValidationUtils.isNonNullOrEmpty(defaultSubStage)) {
+                    log.debug("Found default substage {} for stage {} in workflow {}", 
+                            defaultSubStage, stageKey, workflowConfigKey);
+                    return defaultSubStage;
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to get default substage for stage {} in workflow {}: {}", 
+                    stageKey, workflowConfigKey, e.getMessage());
+        }
+        return null;
+    }
+
+    @Override
     public String getEntityWorkflowConfigKey(Long entityId, EntityType entityType) {
         // Input validation
         ValidationUtils.requireNonNull(entityId, WorkflowValidationException::nullEntityId);

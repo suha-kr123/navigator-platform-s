@@ -29,6 +29,11 @@ public interface WorkflowOrchestratorService {
     
     List<String> getAdhocTaskKeysForStage(String workflowConfigKey, String stageKey);
     
+    /**
+     * Gets the default substage for a stage from the workflow configuration.
+     * Returns null if no default substage is configured.
+     */
+    String getDefaultSubStageForStage(String workflowConfigKey, String stageKey);
     
     String getEntityWorkflowConfigKey(Long entityId, EntityType entityType);
 

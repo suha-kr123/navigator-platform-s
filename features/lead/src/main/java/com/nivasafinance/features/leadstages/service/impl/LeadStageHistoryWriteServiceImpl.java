@@ -224,9 +224,12 @@ public class LeadStageHistoryWriteServiceImpl implements LeadStageHistoryWriteSe
             existingWorkflowConfigKey = workflowDetails.getWorkflowConfigKey();
         }
         
+        // Get default substage from workflow configuration if available
+        String defaultSubStage = getDefaultSubStageForStage(existingWorkflowConfigKey, stageKey);
+        
         Lead.CurrentStageDetails.CurrentStageDetailsBuilder builder = Lead.CurrentStageDetails.builder()
                 .stageKey(stageKey)
-                .subStageKey(null)
+                .subStageKey(defaultSubStage)
                 .assignedTo(assignedTo)
                 .enteredAt(enteredAt);
         
@@ -244,6 +247,23 @@ public class LeadStageHistoryWriteServiceImpl implements LeadStageHistoryWriteSe
         
         lead.setWorkflowDetails(workflowDetails);
         leadRepositoryWrapper.saveWithException(lead);
+    }
+    
+    /**
+     * Gets the default substage for a stage from the workflow configuration.
+     * Returns null if no default substage is configured.
+     */
+    private String getDefaultSubStageForStage(String workflowConfigKey, String stageKey) {
+        try {
+            if (!ValidationUtils.isNonNullOrEmpty(workflowConfigKey)) {
+                return null;
+            }
+            return workflowOrchestratorService.getDefaultSubStageForStage(workflowConfigKey, stageKey);
+        } catch (Exception e) {
+            log.warn("Failed to get default substage for stage {} in workflow {}: {}. Proceeding without default substage.", 
+                    stageKey, workflowConfigKey, e.getMessage());
+            return null;
+        }
     }
 
     private void validateCreateStageEntryRequest(CreateLeadStageHistoryRequest request) {
