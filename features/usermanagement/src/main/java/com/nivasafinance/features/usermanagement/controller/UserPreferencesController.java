@@ -30,7 +30,7 @@ public class UserPreferencesController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @PutMapping
+    @PatchMapping
     public ResponseEntity<UserPreferencesResponse> updatePreferences(
             @Valid @RequestBody UserPreferencesRequest request) {
         UserPreferencesResponse response = userPreferencesService.updatePreferencesForCurrentUser(request);
