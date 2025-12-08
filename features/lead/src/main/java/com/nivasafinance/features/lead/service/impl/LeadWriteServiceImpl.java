@@ -14,6 +14,7 @@ import com.nivasafinance.features.advisor.service.AdvisorReadService;
 import com.nivasafinance.features.advisorlead.entity.AdvisorLeadMapping;
 import com.nivasafinance.features.advisorlead.repository.AdvisorLeadMappingRepositoryWrapper;
 import com.nivasafinance.features.lead.dto.*;
+import com.nivasafinance.features.lead.dto.UpdateCallDetailsRequest;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.enums.LeadStatus;
 import com.nivasafinance.features.lead.enums.LeadSubStatus;
@@ -379,6 +380,24 @@ public class LeadWriteServiceImpl implements LeadWriteService {
             lead.setSourcingChannelId(sourcingChannelResponse.getId());
         }
 
+        leadRepositoryWrapper.saveWithException(lead);
+
+        // Publish event
+        publishLeadUpdatedEvent(lead);
+    }
+
+    @Override
+    @Transactional
+    public void updateCallDetails(UUID leadIdentifier, UpdateCallDetailsRequest request) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+
+        Lead.OtherDetails otherDetails = lead.getOtherDetails();
+        if (otherDetails == null) {
+            otherDetails = new Lead.OtherDetails();
+        }
+
+        otherDetails.setNoOfCampaignCalls(request.getNoOfCampaignCalls());
+        lead.setOtherDetails(otherDetails);
         leadRepositoryWrapper.saveWithException(lead);
 
         // Publish event

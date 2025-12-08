@@ -273,6 +273,7 @@ public class Lead extends AuditableEntity {
         private String priority;
         private LocalTime preferredCallStartTime;
         private LocalTime preferredCallEndTime;
+        private Long noOfCampaignCalls;
     }
 
     @Data
