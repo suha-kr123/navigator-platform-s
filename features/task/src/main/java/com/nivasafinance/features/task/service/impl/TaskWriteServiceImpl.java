@@ -283,14 +283,31 @@ public class TaskWriteServiceImpl implements TaskWriteService {
     public void closeAllOpenTasksForLead(UUID leadIdentifier, String outcome) {
         List<Task> openTasks = taskRepositoryWrapper.findOpenTasksByLeadIdentifier(leadIdentifier);
         
+        String remarks = getRemarksForOutcome(outcome);
+        
         for (Task task : openTasks) {
             Task.OutcomeDetails outcomeDetails = Task.OutcomeDetails.builder()
-                    .remarks("Lead got rejected")
+                    .remarks(remarks)
                     .completedAt(LocalDateTime.now())
                     .completedBy(UserContext.getUsername())
                     .build();
             updateTaskOutcome(task, outcome, outcomeDetails);
             taskRepositoryWrapper.saveWithException(task);
+        }
+    }
+    
+    private String getRemarksForOutcome(String outcome) {
+        switch (outcome) {
+            case "REJECTED":
+                return "Lead got rejected";
+            case "WITHDRAWN":
+                return "Lead got withdrawn";
+            case "DROPOFF":
+                return "Lead got dropped off";
+            case "CLOSED":
+                return "Lead got closed";
+            default:
+                return "Lead status changed";
         }
     }
 
