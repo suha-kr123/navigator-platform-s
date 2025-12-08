@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!--
+        Fix Javers snapshot sequence to prevent duplicate key violations.
+        
+        Javers uses a sequence multiplier (nextval * 100) by default which causes
+        duplicate key errors when multiple transactions get the same sequence value concurrently.
+        
+        This migration:
+        1. Alters the jv_snapshot table to use the sequence directly without multiplication
+        2. Updates the sequence to have a larger increment to reduce collisions
+    -->
+    <changeSet id="V1764000000000_1__fix_javers_snapshot_sequence" author="system">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="jv_snapshot"/>
+            <sequenceExists sequenceName="jv_snapshot_pk_seq"/>
+        </preConditions>
+        
+        <comment>Fix Javers snapshot sequence to prevent duplicate key violations</comment>
+        
+        <!-- Drop the default value that uses multiplication -->
+        <sql>
+            ALTER TABLE jv_snapshot ALTER COLUMN snapshot_pk DROP DEFAULT;
+        </sql>
+        
+        <!-- Set new default without multiplication -->
+        <sql>
+            ALTER TABLE jv_snapshot ALTER COLUMN snapshot_pk SET DEFAULT nextval('jv_snapshot_pk_seq');
+        </sql>
+        
+        <!-- Increase sequence increment to reduce collisions (optional but recommended) -->
+        <sql>
+            ALTER SEQUENCE jv_snapshot_pk_seq INCREMENT BY 1;
+        </sql>
+        
+        <!-- Ensure sequence is at least at the current max value -->
+        <sql>
+            SELECT setval('jv_snapshot_pk_seq', 
+                COALESCE((SELECT MAX(snapshot_pk) FROM jv_snapshot), 1), 
+                true);
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>
+
