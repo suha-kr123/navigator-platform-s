@@ -4,6 +4,7 @@ import com.nivasafinance.common.constants.ApiConstants;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.features.lead.dto.*;
+import com.nivasafinance.features.lead.dto.UpdateCallDetailsRequest;
 import com.nivasafinance.features.lead.service.LeadReadService;
 import com.nivasafinance.features.lead.service.LeadWriteService;
 import jakarta.validation.Valid;
@@ -234,5 +235,13 @@ public class LeadController {
         PaginatedResponse<LeadSearchResponse> response =
                 leadReadService.searchLeads(paginationRequest, searchRequest);
         return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/{leadId}/call-details")
+    public ResponseEntity<Void> updateCallDetails(
+            @PathVariable UUID leadId,
+            @Valid @RequestBody UpdateCallDetailsRequest request) {
+        leadWriteService.updateCallDetails(leadId, request);
+        return ResponseEntity.noContent().build();
     }
 }
