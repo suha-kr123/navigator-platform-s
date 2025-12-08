@@ -31,7 +31,17 @@ public class LeadEntityContextEnricher implements EntityContextEnricher {
     @Override
     public Map<String, Object> enrichEntityData(UUID entityIdentifier) {
         try {
+            if (entityIdentifier == null) {
+                log.warn("Cannot enrich lead entity data: entityIdentifier is null");
+                return new HashMap<>();
+            }
+            
             LeadResponse lead = leadReadService.getLeadByIdentifier(entityIdentifier);
+            
+            if (lead == null) {
+                log.warn("Cannot enrich lead entity data: LeadResponse is null for identifier {}", entityIdentifier);
+                return new HashMap<>();
+            }
             
             Map<String, Object> entityData = new HashMap<>();
             entityData.put("name", lead.getPrimaryPersonName());
@@ -41,11 +51,21 @@ public class LeadEntityContextEnricher implements EntityContextEnricher {
             // Send substage key and display name for UI
             entityData.put("subStageKey", lead.getCurrentSubStageKey());
             entityData.put("subStageName", lead.getCurrentSubStageName());
-            entityData.put("leadIdentifier", lead.getLeadIdentifier().toString());
             
+            // Safely handle leadIdentifier - it might be null
+            if (lead.getLeadIdentifier() != null) {
+                entityData.put("leadIdentifier", lead.getLeadIdentifier().toString());
+            } else {
+                log.warn("Lead identifier is null in LeadResponse for entityIdentifier {}", entityIdentifier);
+            }
+            
+            log.debug("Successfully enriched lead entity data for identifier {}", entityIdentifier);
             return entityData;
+        } catch (com.nivasafinance.features.lead.exception.LeadNotFoundException e) {
+            log.warn("Lead not found for identifier {}: {}", entityIdentifier, e.getMessage());
+            return new HashMap<>();
         } catch (Exception e) {
-            log.warn("Failed to enrich lead entity data for identifier {}: {}", entityIdentifier, e.getMessage());
+            log.error("Failed to enrich lead entity data for identifier {}: {}", entityIdentifier, e.getMessage(), e);
             return new HashMap<>();
         }
     }

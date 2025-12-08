@@ -17,6 +17,7 @@ import com.nivasafinance.features.task.service.TaskReadService;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import com.nivasafinance.features.master.codemaster.service.CodeValueMasterService;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -34,6 +35,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @Transactional(readOnly = true, noRollbackFor = ResourceNotFoundException.class)
 @AllArgsConstructor
@@ -333,6 +335,7 @@ public class TaskReadServiceImpl implements TaskReadService {
             UUID entityId = taskDetails.getEntityId();
             
             if (entityType == null || entityId == null) {
+                log.debug("Skipping entity context enrichment: entityType={}, entityId={}", entityType, entityId);
                 continue;
             }
             
@@ -346,7 +349,14 @@ public class TaskReadServiceImpl implements TaskReadService {
                         .build();
                 
                 response.setEntityContext(entityContext);
+                
+                if (entityData.isEmpty()) {
+                    log.warn("Entity data is empty for entityType={}, entityId={}. This may indicate the entity doesn't exist or enrichment failed.", 
+                            entityType, entityId);
+                }
             } catch (Exception e) {
+                log.error("Failed to enrich entity context for entityType={}, entityId={}: {}", 
+                        entityType, entityId, e.getMessage(), e);
                 // Silently ignore enrichment errors - entity context will be null
                 // This ensures the transaction is not affected by entity service issues
             }
@@ -376,6 +386,8 @@ public class TaskReadServiceImpl implements TaskReadService {
         EntityContextEnricher enricher = enrichers.get(entityType);
         
         if (enricher == null) {
+            log.warn("No enricher found for entityType={}, entityId={}. Available enrichers: {}", 
+                    entityType, entityId, enrichers.keySet());
             // No enricher found for this entity type - return empty map
             return new java.util.HashMap<>();
         }
