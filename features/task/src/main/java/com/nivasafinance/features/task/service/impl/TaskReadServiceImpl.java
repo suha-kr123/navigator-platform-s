@@ -16,10 +16,10 @@ import com.nivasafinance.features.task.service.EntityContextEnricher;
 import com.nivasafinance.features.task.service.TaskReadService;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import com.nivasafinance.features.master.codemaster.service.CodeValueMasterService;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
+import jakarta.annotation.PostConstruct;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
@@ -38,20 +38,45 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @Transactional(readOnly = true, noRollbackFor = ResourceNotFoundException.class)
-@AllArgsConstructor
 public class TaskReadServiceImpl implements TaskReadService {
 
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
     private final CodeValueMasterService codeValueMasterService;
-    private final List<EntityContextEnricher> entityContextEnrichers;
     
     // ApplicationContext to get self-proxy for calling enrichment method in separate transaction context
+    // and to manually discover EntityContextEnricher beans to avoid circular dependency issues
     @Autowired
     private ApplicationContext applicationContext;
     
     // Map of entity type to enricher (lazy initialized)
     private Map<EntityType, EntityContextEnricher> enricherMap;
+    
+    public TaskReadServiceImpl(
+            JdbcTemplate jdbcTemplate,
+            ObjectMapper objectMapper,
+            CodeValueMasterService codeValueMasterService) {
+        this.jdbcTemplate = jdbcTemplate;
+        this.objectMapper = objectMapper;
+        this.codeValueMasterService = codeValueMasterService;
+    }
+    
+    @PostConstruct
+    public void logEnrichers() {
+        // Manually discover enrichers from ApplicationContext to avoid circular dependency
+        // This allows us to find enrichers from modules that depend on this module
+        Map<String, EntityContextEnricher> enricherBeans = applicationContext.getBeansOfType(EntityContextEnricher.class);
+        if (enricherBeans != null && !enricherBeans.isEmpty()) {
+            log.info("Discovered {} entity context enrichers: {}", 
+                    enricherBeans.size(),
+                    enricherBeans.values().stream()
+                            .map(e -> e.getEntityType().toString())
+                            .collect(java.util.stream.Collectors.joining(", ")));
+        } else {
+            log.warn("No entity context enrichers discovered! This may indicate a component scanning issue.");
+            log.warn("Expected to find LeadEntityContextEnricher for LEAD entity type.");
+        }
+    }
 
     private static final String BASE_QUERY = 
         "SELECT " +
@@ -365,14 +390,20 @@ public class TaskReadServiceImpl implements TaskReadService {
     
     /**
      * Gets the enricher map, initializing it lazily if needed.
+     * Uses ApplicationContext to discover enrichers to avoid circular dependency issues.
      */
     private Map<EntityType, EntityContextEnricher> getEnricherMap() {
         if (enricherMap == null) {
-            enricherMap = entityContextEnrichers.stream()
+            // Manually discover enrichers from ApplicationContext
+            // This allows us to find enrichers from modules that depend on this module (e.g., lead module)
+            Map<String, EntityContextEnricher> enricherBeans = applicationContext.getBeansOfType(EntityContextEnricher.class);
+            enricherMap = enricherBeans.values().stream()
                     .collect(Collectors.toMap(
                             EntityContextEnricher::getEntityType,
                             Function.identity()
                     ));
+            log.debug("Initialized enricher map with {} enrichers: {}", 
+                    enricherMap.size(), enricherMap.keySet());
         }
         return enricherMap;
     }
