@@ -51,6 +51,7 @@ public class LeadDashboardResponse {
     private LocalDate holdFollowUpDate;
     private String office;
     private CodeValueResponse sourcingChannel;
+    private Long noOfCampaignCalls;
     
     // Workflow details
     private String workflowConfigKey;

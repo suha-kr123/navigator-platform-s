@@ -115,6 +115,7 @@ public class LeadDashboardWrapper {
                     (l.other_details->>'preferredCallStartTime')::time AS preferred_call_start_time,
                     (l.other_details->>'preferredCallEndTime')::time   AS preferred_call_end_time,
                     l.other_details->>'priority'                       AS priority_key,
+                    (l.other_details->>'noOfCampaignCalls')::bigint    AS no_of_campaign_calls,
                     partners.partner_names                             AS partners,
                     l.substatus                                        AS substatus,
                     COALESCE(jsonb_array_length(COALESCE(l.call_logs, '[]'::jsonb)), 0) AS number_of_calls,
@@ -585,6 +586,7 @@ public class LeadDashboardWrapper {
                     .preferredCallEndTime(getLocalTime(rs, "preferred_call_end_time"))
                     .partners(rs.getString("partners"))
                     .numberOfCalls(rs.getLong("number_of_calls"))
+                    .noOfCampaignCalls(rs.getLong("no_of_campaign_calls"))
                     .lastCallDirection(rs.getString("last_call_direction"))
                     .lastCallStatus(rs.getString("last_call_status"))
                     .lastCallDate(getLocalDateTime(rs, "last_call_date"))
