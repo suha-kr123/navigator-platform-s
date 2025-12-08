@@ -44,6 +44,12 @@ public class TaskResponse {
     private LocalDateTime updatedAt;
 
     private String updatedBy;
+    
+    /**
+     * Context information about the entity associated with this task.
+     * Contains entity type, identifier, and additional entity-specific data.
+     */
+    private EntityContextResponse entityContext;
 
     public static TaskResponse from(Task task, TaskConfig taskConfig, ObjectMapper objectMapper) {
         OutcomeDetailsResponse outcomeDetails = null;

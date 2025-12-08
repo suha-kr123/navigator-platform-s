@@ -6,10 +6,13 @@ import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationInfo;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.common.utils.ValidationUtils;
+import com.nivasafinance.common.enums.EntityType;
+import com.nivasafinance.features.task.dto.EntityContextResponse;
 import com.nivasafinance.features.task.dto.OutcomeDetailsResponse;
 import com.nivasafinance.features.task.dto.TaskDetailsResponse;
 import com.nivasafinance.features.task.dto.TaskResponse;
 import com.nivasafinance.common.exception.ResourceNotFoundException;
+import com.nivasafinance.features.task.service.EntityContextEnricher;
 import com.nivasafinance.features.task.service.TaskReadService;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import com.nivasafinance.features.master.codemaster.service.CodeValueMasterService;
@@ -28,6 +31,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true, noRollbackFor = ResourceNotFoundException.class)
@@ -37,10 +42,14 @@ public class TaskReadServiceImpl implements TaskReadService {
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
     private final CodeValueMasterService codeValueMasterService;
+    private final List<EntityContextEnricher> entityContextEnrichers;
     
     // ApplicationContext to get self-proxy for calling enrichment method in separate transaction context
     @Autowired
     private ApplicationContext applicationContext;
+    
+    // Map of entity type to enricher (lazy initialized)
+    private Map<EntityType, EntityContextEnricher> enricherMap;
 
     private static final String BASE_QUERY = 
         "SELECT " +
@@ -77,16 +86,17 @@ public class TaskReadServiceImpl implements TaskReadService {
             paginationRequest.getOffset()
         );
         
-        // Enrich responses with code master values in a separate transaction context
+        // Enrich responses with code master values and entity context in a separate transaction context
         // This prevents any exceptions from affecting the main transaction
         try {
             // Get self-proxy from application context to avoid circular dependency
             // This ensures the @Transactional annotation is respected through the proxy
             TaskReadServiceImpl selfProxy = applicationContext.getBean(TaskReadServiceImpl.class);
             selfProxy.enrichOutcomeValues(tasks);
+            selfProxy.enrichEntityContext(tasks);
         } catch (Exception e) {
-            // Silently ignore enrichment errors - outcome keys will be used as fallback
-            // This ensures the transaction is not affected by code master service issues
+            // Silently ignore enrichment errors - outcome keys and entity context will be used as fallback
+            // This ensures the transaction is not affected by code master service or entity service issues
         }
         
         return buildPaginatedResponse(tasks, paginationRequest, totalElements);
@@ -161,6 +171,7 @@ public class TaskReadServiceImpl implements TaskReadService {
             // Store outcome key - will be enriched after query completes
             String outcomeKey = rs.getString("outcome");
             
+            // Entity context will be enriched after query completes
             return TaskResponse.builder()
                     .taskIdentifier(taskIdentifier)
                     .taskConfigKey(rs.getString("task_config_key"))
@@ -299,6 +310,77 @@ public class TaskReadServiceImpl implements TaskReadService {
         }
         
         return null;
+    }
+    
+    /**
+     * Enriches task responses with entity context based on entity type.
+     * This method runs with NOT_SUPPORTED propagation to suspend any existing transaction,
+     * ensuring that exceptions from entity services won't affect the database transaction.
+     */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public void enrichEntityContext(List<TaskResponse> responses) {
+        if (responses == null || responses.isEmpty()) {
+            return;
+        }
+        
+        for (TaskResponse response : responses) {
+            if (response == null || response.getTaskDetails() == null) {
+                continue;
+            }
+            
+            TaskDetailsResponse taskDetails = response.getTaskDetails();
+            EntityType entityType = taskDetails.getEntityType();
+            UUID entityId = taskDetails.getEntityId();
+            
+            if (entityType == null || entityId == null) {
+                continue;
+            }
+            
+            try {
+                Map<String, Object> entityData = enrichEntityDataByType(entityType, entityId);
+                
+                EntityContextResponse entityContext = EntityContextResponse.builder()
+                        .entityType(entityType)
+                        .entityIdentifier(entityId)
+                        .entityData(entityData)
+                        .build();
+                
+                response.setEntityContext(entityContext);
+            } catch (Exception e) {
+                // Silently ignore enrichment errors - entity context will be null
+                // This ensures the transaction is not affected by entity service issues
+            }
+        }
+    }
+    
+    /**
+     * Gets the enricher map, initializing it lazily if needed.
+     */
+    private Map<EntityType, EntityContextEnricher> getEnricherMap() {
+        if (enricherMap == null) {
+            enricherMap = entityContextEnrichers.stream()
+                    .collect(Collectors.toMap(
+                            EntityContextEnricher::getEntityType,
+                            Function.identity()
+                    ));
+        }
+        return enricherMap;
+    }
+    
+    /**
+     * Enriches entity data based on entity type using the appropriate enricher.
+     * Each entity type can have its own enrichment logic via EntityContextEnricher implementations.
+     */
+    private Map<String, Object> enrichEntityDataByType(EntityType entityType, UUID entityId) {
+        Map<EntityType, EntityContextEnricher> enrichers = getEnricherMap();
+        EntityContextEnricher enricher = enrichers.get(entityType);
+        
+        if (enricher == null) {
+            // No enricher found for this entity type - return empty map
+            return new java.util.HashMap<>();
+        }
+        
+        return enricher.enrichEntityData(entityId);
     }
     
     /**
