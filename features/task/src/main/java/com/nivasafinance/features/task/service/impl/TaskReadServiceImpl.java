@@ -29,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -85,32 +86,39 @@ public class TaskReadServiceImpl implements TaskReadService {
         "t.created_at, t.created_by, t.updated_at, t.updated_by, " +
         "tc.name as task_name, tc.description as task_description " +
         "FROM n_tasks t " +
-        "LEFT JOIN n_task_config tc ON t.task_config_key = tc.task_config_key ";
+        "LEFT JOIN n_task_config tc ON t.task_config_key = tc.task_config_key AND tc.is_active = true ";
 
     private static final String COUNT_QUERY_PREFIX = "SELECT COUNT(*) FROM n_tasks t ";
 
     @Override
     public PaginatedResponse<TaskResponse> getTasksByAssignedTo(String assignedTo, boolean includeCompleted, 
                                                                  PaginationRequest paginationRequest) {
+        List<Object> queryParams = new ArrayList<>();
         StringBuilder whereClause = new StringBuilder("WHERE t.assigned_to = ? ");
+        queryParams.add(assignedTo);
+        
         if (!includeCompleted) {
             whereClause.append("AND t.outcome IS NULL ");
         }
         
+        // Optimized COUNT query - no joins needed for counting
         String countQuery = COUNT_QUERY_PREFIX + whereClause;
-        Long totalElements = jdbcTemplate.queryForObject(countQuery, Long.class, assignedTo);
+        Long totalElements = jdbcTemplate.queryForObject(countQuery, Long.class, queryParams.toArray());
         totalElements = totalElements != null ? totalElements : 0L;
         
         String orderBy = buildOrderByClause(paginationRequest);
+        
+        // Build data query with pagination parameters
+        List<Object> dataQueryParams = new ArrayList<>(queryParams);
+        dataQueryParams.add(paginationRequest.getLimit());
+        dataQueryParams.add(paginationRequest.getOffset());
         
         String query = BASE_QUERY + whereClause + orderBy + " LIMIT ? OFFSET ?";
         
         List<TaskResponse> tasks = jdbcTemplate.query(
             query, 
             new TaskRowMapper(), 
-            assignedTo, 
-            paginationRequest.getLimit(), 
-            paginationRequest.getOffset()
+            dataQueryParams.toArray()
         );
         
         // Enrich responses with code master values and entity context in a separate transaction context
