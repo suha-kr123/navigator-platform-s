@@ -56,7 +56,6 @@ public class AdvisorDashboardWrapper {
 
         String currentUserOfficeKey;
         String currentUserOfficeCode;
-        String currentUserOfficeName;
         
         try {
             currentUserOfficeKey = staffReadService.getCurrentStaff().getOfficeKey();
@@ -64,7 +63,6 @@ public class AdvisorDashboardWrapper {
                 throw new IllegalStateException("Current user does not have an office assigned");
             }
             currentUserOfficeCode = officeReadService.getOfficeByKey(currentUserOfficeKey).getCode();
-            currentUserOfficeName = officeReadService.getOfficeByKey(currentUserOfficeKey).getName();
         } catch (IllegalArgumentException e) {
             if (e.getMessage() != null && e.getMessage().contains("Staff not found")) {
                 throw new IllegalStateException("Current user does not have a staff record. Please contact administrator.", e);
@@ -78,7 +76,7 @@ public class AdvisorDashboardWrapper {
         StringBuilder whereClause = new StringBuilder(" WHERE 1=1 ");
 
         // Always apply office hierarchy filter first
-        appendOfficeHierarchyFilter(currentUserOfficeName, whereClause, queryParams);
+        appendOfficeHierarchyFilter(currentUserOfficeCode, whereClause, queryParams);
 
         appendStatusFilter(effectiveFilters, whereClause, queryParams);
         appendOfficeFilter(effectiveFilters, currentUserOfficeCode, whereClause, queryParams);
@@ -186,9 +184,9 @@ public class AdvisorDashboardWrapper {
         }
     }
 
-    private void appendOfficeHierarchyFilter(String currentOfficeName, StringBuilder whereClause, List<Object> params) {
-        whereClause.append(" AND o.name LIKE ? ");
-        params.add(currentOfficeName + "%");
+    private void appendOfficeHierarchyFilter(String currentOfficeCode, StringBuilder whereClause, List<Object> params) {
+        whereClause.append(" AND o.code LIKE ? ");
+        params.add(currentOfficeCode + "%");
     }
 
     private void appendStatusFilter(AdvisorDashboardFilters filters, StringBuilder whereClause, List<Object> params) {
