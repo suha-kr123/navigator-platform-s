@@ -95,7 +95,7 @@ public class AdvisorDashboardWrapper {
         StringBuilder countWhereClause = new StringBuilder(" WHERE 1=1 ");
         List<Object> countQueryParams = new ArrayList<>();
         
-        appendOfficeHierarchyFilter(currentUserOfficeName, countWhereClause, countQueryParams);
+        appendOfficeHierarchyFilter(currentUserOfficeCode, countWhereClause, countQueryParams);
         appendStatusFilter(effectiveFilters, countWhereClause, countQueryParams);
         appendOfficeFilter(effectiveFilters, currentUserOfficeCode, countWhereClause, countQueryParams);
         appendCreatedAtFilter(effectiveFilters, countWhereClause, countQueryParams);
