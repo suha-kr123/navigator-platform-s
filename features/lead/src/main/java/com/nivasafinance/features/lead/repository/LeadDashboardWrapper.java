@@ -123,7 +123,11 @@ public class LeadDashboardWrapper {
                     latest_call.status                                 AS last_call_status,
                     latest_call.created_at                             AS last_call_date,
                     l.reasons->>'onhold'                               AS onhold_reason_key,
-                    (l.onhold_details->>'onHoldMovementDate')::timestamp AS onhold_date,
+                    CASE
+                        WHEN l.onhold_details->>'onHoldMovementDate' IS NOT NULL
+                        THEN to_timestamp(l.onhold_details->>'onHoldMovementDate', 'DD-MM-YYYY HH24:MI:SS')
+                        ELSE NULL
+                    END AS onhold_date,
                     CASE
                         WHEN l.onhold_details->>'holdFollowUpDate' IS NOT NULL
                         THEN TO_DATE(l.onhold_details->>'holdFollowUpDate', 'DD-MM-YYYY')
@@ -428,7 +432,7 @@ public class LeadDashboardWrapper {
             whereClause.append(" AND (")
                     .append("CASE ")
                     .append("WHEN l.onhold_details->>'onHoldMovementDate' IS NOT NULL ")
-                    .append("THEN (l.onhold_details->>'onHoldMovementDate')::timestamp ")
+                    .append("THEN to_timestamp(l.onhold_details->>'onHoldMovementDate', 'DD-MM-YYYY HH24:MI:SS') ")
                     .append("ELSE NULL ")
                     .append("END) >= ? ");
             params.add(onHoldDateFrom);
@@ -438,7 +442,7 @@ public class LeadDashboardWrapper {
             whereClause.append(" AND (")
                     .append("CASE ")
                     .append("WHEN l.onhold_details->>'onHoldMovementDate' IS NOT NULL ")
-                    .append("THEN (l.onhold_details->>'onHoldMovementDate')::timestamp ")
+                    .append("THEN to_timestamp(l.onhold_details->>'onHoldMovementDate', 'DD-MM-YYYY HH24:MI:SS') ")
                     .append("ELSE NULL ")
                     .append("END) <= ? ");
             params.add(onHoldDateTo);
