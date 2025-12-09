@@ -146,10 +146,9 @@ public class AdvisorDashboardWrapper {
                     a.owner AS sales_owner,
                     (a.other_details->>'preferredCallStartTime')::time AS preferred_call_start_time,
                     (a.other_details->>'preferredCallEndTime')::time AS preferred_call_end_time
-                """ + fromClause +
-                """
+                """ + fromClause + """
                 LEFT JOIN (
-                    SELECT 
+                    SELECT
                         alm.advisor_id,
                         MAX(l.created_at) AS last_lead_date,
                         COUNT(DISTINCT l.id) AS no_of_leads
