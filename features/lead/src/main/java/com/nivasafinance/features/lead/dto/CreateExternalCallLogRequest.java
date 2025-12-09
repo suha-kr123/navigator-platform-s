@@ -35,7 +35,6 @@ public class CreateExternalCallLogRequest {
     @NotBlank(message = "From number is required")
     private String fromNumber;
 
-    @NotBlank(message = "To number is required")
     private String toNumber;
 
     @NotNull(message = "Direction is required")

@@ -45,7 +45,7 @@ public class ExotelVoiceProvider implements VoiceProvider {
         return new ExotelConfiguration( //todo use secret manager
                 map.getOrDefault("accountSid", "nivasafinance1"),
                 map.getOrDefault("baseUrl", "https://api.exotel.com"),
-                map.getOrDefault("webhookUrl", "https://9uncrj2fr0.execute-api.ap-south-1.amazonaws.com/uat/external/exotel/callback"),
+                map.getOrDefault("webhookUrl", "https://tv5fid365h.execute-api.ap-south-1.amazonaws.com/external/exotel/callback"),
                 map.getOrDefault("apiKey", "be905126ae5b7be0965af8816738053e74a7fdb80abef3d0"),
                 map.getOrDefault("apiToken", "fa31c8dbafd884fc2b8c5d3e09e6260a8e66815013b53283")
         );
