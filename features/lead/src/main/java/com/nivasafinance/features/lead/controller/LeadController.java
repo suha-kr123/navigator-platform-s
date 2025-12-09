@@ -4,6 +4,8 @@ import com.nivasafinance.common.constants.ApiConstants;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.features.lead.dto.*;
+import com.nivasafinance.features.lead.dto.BulkSalesOwnerAssignmentRequest;
+import com.nivasafinance.features.lead.dto.BulkSalesOwnerAssignmentResponse;
 import com.nivasafinance.features.lead.dto.UpdateCallDetailsRequest;
 import com.nivasafinance.features.lead.service.LeadReadService;
 import com.nivasafinance.features.lead.service.LeadWriteService;
@@ -64,6 +66,13 @@ public class LeadController {
             @Valid @RequestBody UpdateLeadRequest request) {
         leadWriteService.updateLead(leadId, request);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/bulk-assign-sales-owner")
+    public ResponseEntity<BulkSalesOwnerAssignmentResponse> bulkAssignSalesOwner(
+            @Valid @RequestBody BulkSalesOwnerAssignmentRequest request) {
+        BulkSalesOwnerAssignmentResponse response = leadWriteService.bulkAssignSalesOwner(request);
+        return ResponseEntity.ok(response);
     }
 
     @PutMapping("/{leadId}/preliminary-details")

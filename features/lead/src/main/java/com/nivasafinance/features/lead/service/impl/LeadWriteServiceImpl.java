@@ -808,4 +808,53 @@ public class LeadWriteServiceImpl implements LeadWriteService {
             existingMapping.ifPresent(advisorLeadMappingRepositoryWrapper::deleteWithException);
         }
     }
+
+    @Override
+    @Transactional
+    public BulkSalesOwnerAssignmentResponse bulkAssignSalesOwner(BulkSalesOwnerAssignmentRequest request) {
+        // Input validation
+        if (request == null) {
+            throw new BadRequestException("Request cannot be null");
+        }
+        if (request.getSalesOwner() == null || request.getSalesOwner().trim().isEmpty()) {
+            throw new BadRequestException("Sales owner is required");
+        }
+        if (request.getLeadIdentifiers() == null || request.getLeadIdentifiers().isEmpty()) {
+            throw new BadRequestException("Lead identifiers are required");
+        }
+        
+        List<UUID> successfulLeadIdentifiers = new ArrayList<>();
+        List<BulkSalesOwnerAssignmentResponse.AssignmentError> errors = new ArrayList<>();
+        
+        for (UUID leadIdentifier : request.getLeadIdentifiers()) {
+            try {
+                Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+                lead.setOwner(request.getSalesOwner());
+                leadRepositoryWrapper.saveWithException(lead);
+                successfulLeadIdentifiers.add(leadIdentifier);
+                log.debug("Successfully assigned sales owner {} to lead {}", request.getSalesOwner(), leadIdentifier);
+            } catch (Exception e) {
+                BulkSalesOwnerAssignmentResponse.AssignmentError error = 
+                        BulkSalesOwnerAssignmentResponse.AssignmentError.builder()
+                                .leadIdentifier(leadIdentifier)
+                                .errorMessage(e.getMessage() != null ? e.getMessage() : "Unknown error")
+                                .build();
+                errors.add(error);
+                log.warn("Failed to assign sales owner {} to lead {}: {}", 
+                        request.getSalesOwner(), leadIdentifier, e.getMessage(), e);
+            }
+        }
+        
+        int totalRequested = request.getLeadIdentifiers().size();
+        int successful = successfulLeadIdentifiers.size();
+        int failed = errors.size();
+        
+        return BulkSalesOwnerAssignmentResponse.builder()
+                .totalRequested(totalRequested)
+                .successful(successful)
+                .failed(failed)
+                .successfulLeadIdentifiers(successfulLeadIdentifiers)
+                .errors(errors)
+                .build();
+    }
 }
