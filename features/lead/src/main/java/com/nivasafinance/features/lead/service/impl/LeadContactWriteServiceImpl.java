@@ -23,6 +23,9 @@ import com.nivasafinance.features.lead.service.LeadContactWriteService;
 import com.nivasafinance.features.person.dto.PersonCreateRequest;
 import com.nivasafinance.features.person.dto.PersonCreateResponse;
 import com.nivasafinance.features.person.dto.PersonUpdateRequest;
+import com.nivasafinance.features.person.entity.MobileNumberDetails;
+import com.nivasafinance.features.person.entity.Person;
+import com.nivasafinance.features.person.repository.PersonRepositoryWrapper;
 import com.nivasafinance.features.person.service.PersonReadService;
 import com.nivasafinance.features.person.service.PersonWriteService;
 import lombok.AllArgsConstructor;
@@ -32,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -44,6 +48,7 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
     private final ApplicantRepositoryWrapper applicantRepositoryWrapper;
     private final PersonWriteService personWriteService;
     private final PersonReadService personReadService;
+    private final PersonRepositoryWrapper personRepositoryWrapper;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final LeadContactReadService leadContactReadService;
 
@@ -52,9 +57,8 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
     public CreateLeadContactResponse createContact(UUID leadId, CreateLeadContactRequest request) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadId);
 
-        // Create Person
-        PersonCreateRequest personRequest = mapToPersonCreateRequest(request.getContactPersonDetails());
-        PersonCreateResponse personResponse = personWriteService.createPerson(personRequest);
+        // Check if person already exists with this mobile number, reuse if found
+        PersonCreateResponse personResponse = getOrCreatePerson(request.getContactPersonDetails());
 
         // Create Contact
         Contact contact = new Contact();
@@ -348,6 +352,51 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
         );
     }
 
+    /**
+     * Extracts the primary mobile number from a list of mobile number details.
+     * 
+     * @param mobileNumbers List of mobile number details
+     * @return The primary mobile number, or null if not found
+     */
+    private String extractPrimaryMobileNumber(List<MobileNumberDetails> mobileNumbers) {
+        if (mobileNumbers == null || mobileNumbers.isEmpty()) {
+            return null;
+        }
+        
+        return mobileNumbers.stream()
+                .filter(m -> m.getIsPrimary() != null && m.getIsPrimary())
+                .map(MobileNumberDetails::getNumber)
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * Gets an existing person by mobile number or creates a new one if it doesn't exist.
+     * This allows leads to reuse existing persons when the mobile number already exists.
+     * 
+     * @param contactPersonDetails The contact person details
+     * @return PersonCreateResponse with the person ID (either existing or newly created)
+     */
+    private PersonCreateResponse getOrCreatePerson(LeadContactPersonDetails contactPersonDetails) {
+        // Extract primary mobile number
+        String primaryMobile = extractPrimaryMobileNumber(contactPersonDetails.getMobileNumbers());
+        
+        // Check if person already exists with this mobile number
+        if (primaryMobile != null) {
+            Optional<Person> existingPerson = personRepositoryWrapper.findByPrimaryMobileNumber(primaryMobile);
+            if (existingPerson.isPresent()) {
+                // Reuse existing person
+                return PersonCreateResponse.builder()
+                        .id(existingPerson.get().getId())
+                        .build();
+            }
+        }
+        
+        // Create new person if it doesn't exist
+        PersonCreateRequest personRequest = mapToPersonCreateRequest(contactPersonDetails);
+        return personWriteService.createPerson(personRequest);
+    }
+
     private void updatePrimaryContactId(Lead lead) {
         if (lead.getContacts() == null || lead.getContacts().isEmpty()) {
             // No contacts, clear primary contact ID
@@ -484,9 +533,8 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
                 // Since createContact doesn't return it, we'll create a modified version
                 Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadId);
                 
-                // Create Person
-                PersonCreateRequest personRequest = mapToPersonCreateRequest(createRequest.getContactPersonDetails());
-                PersonCreateResponse personResponse = personWriteService.createPerson(personRequest);
+                // Get or create Person (reuse existing if mobile number already exists)
+                PersonCreateResponse personResponse = getOrCreatePerson(createRequest.getContactPersonDetails());
                 
                 // Create Contact
                 Contact contact = new Contact();
