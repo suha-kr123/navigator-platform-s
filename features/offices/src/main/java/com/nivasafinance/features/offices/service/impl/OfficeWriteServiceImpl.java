@@ -28,17 +28,19 @@ public class OfficeWriteServiceImpl implements OfficeWriteService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public OfficeResponse createOffice(OfficeCreateRequest request) {
         // Use common address data service for address creation
-        AddressData addressData = addressDataService.createAddressData(request.getAddress());
+        Office office = new Office();
+        if(request.getAddress() != null) {
+            AddressData addressData = addressDataService.createAddressData(request.getAddress());
+            office.setAddressData(addressData);
+        }
 
         // Generate hierarchical code using factory
         String generatedCode = officeCodeFactory.generateOfficeCode(request.getParentId());
 
         // Create the office with address data embedded as JSONB
-        Office office = new Office();
         office.setName(request.getName());
         office.setKey(request.getKey());
         office.setCode(generatedCode);
-        office.setAddressData(addressData);
         office.setParentId(request.getParentId());
 
         Office savedOffice = officeRepository.save(office);
