@@ -529,7 +529,7 @@ public class LeadDashboardWrapper {
                     LIMIT 1
                 ) latest_note ON true
                 LEFT JOIN (
-                    SELECT 
+                    SELECT
                         lead_lender.lead_id,
                         string_agg(lndr.name, ', ' ORDER BY lndr.name) AS partner_names
                     FROM n_lead_lender lead_lender
