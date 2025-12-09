@@ -17,8 +17,7 @@ public class OfficeCreateRequest {
     
     @NotNull(message = "Key is required")
     private String key;
-    
-    @Valid
+
     private AddressRequest address;
     
     private Long parentId;
