@@ -69,6 +69,13 @@ public class AdvisorController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/bulk-assign-sales-owner")
+    public ResponseEntity<BulkSalesOwnerAssignmentResponse> bulkAssignSalesOwner(
+            @Valid @RequestBody BulkSalesOwnerAssignmentRequest request) {
+        BulkSalesOwnerAssignmentResponse response = advisorWriteService.bulkAssignSalesOwner(request);
+        return ResponseEntity.ok(response);
+    }
+
     @PutMapping("/{identifier}/qualification-details")
     public ResponseEntity<Void> updateQualificationDetails(
             @PathVariable UUID identifier,

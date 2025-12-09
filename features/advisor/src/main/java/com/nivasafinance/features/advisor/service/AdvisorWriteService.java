@@ -26,5 +26,7 @@ public interface AdvisorWriteService {
     void activateAdvisor(UUID identifier);
     
     void outOfGeoAdvisor(UUID identifier, OutOfGeoAdvisorRequest request);
+    
+    BulkSalesOwnerAssignmentResponse bulkAssignSalesOwner(BulkSalesOwnerAssignmentRequest request);
 }
 
