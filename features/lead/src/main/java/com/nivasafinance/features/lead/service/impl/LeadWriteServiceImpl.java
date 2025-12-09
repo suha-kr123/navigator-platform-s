@@ -563,6 +563,38 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     }
 
     @Override
+@Transactional
+public void undoRejectLead(UUID leadIdentifier) {
+    Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+
+    // Validate that lead is currently rejected
+    if (!LeadStatus.REJECTED.equals(lead.getStatus())) {
+        throw new BadRequestException("Cannot undo reject, lead is not in REJECTED status. Current status: " + lead.getStatus());
+    }
+
+    // Revert status to ACTIVE
+    lead.setStatus(LeadStatus.ACTIVE);
+
+    // Ensure substatus is null
+    lead.setSubstatus(null);
+
+    // Clear reject reason from reasons.reject
+    if (lead.getReasons() != null) {
+        Lead.ReasonDetails reasons = lead.getReasons();
+        reasons.setReject(null);
+        lead.setReasons(reasons);
+    }
+
+    // Clear rejection details (rejectionDate and rejectedBy)
+    lead.setRejectionDetails(null);
+
+    leadRepositoryWrapper.saveWithException(lead);
+
+    // Publish event
+    publishLeadStatusChangeEvent(lead, BusinessEvent.LEAD_REJECTION_UNDO, null);
+}
+
+    @Override
     @Transactional
     public void withdrawLead(UUID leadIdentifier, WithdrawLeadRequest request) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);

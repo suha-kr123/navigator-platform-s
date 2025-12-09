@@ -191,6 +191,13 @@ public class LeadController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/{leadId}/status/undo-reject")
+    public ResponseEntity<Void> undoRejectLead(
+            @PathVariable UUID leadId) {
+        leadWriteService.undoRejectLead(leadId);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/{leadId}/status/withdraw")
     public ResponseEntity<Void> withdrawLead(
             @PathVariable UUID leadId,

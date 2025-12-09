@@ -102,7 +102,7 @@ public class LeadActivityDataFactory {
                 CreateLeadActivityRequest request = createLeadLenderSubmittedActivityRequest((LeadLenderSubmissionEventPayload) payload);
                 writeService.createLeadActivity(request);
             }
-            case LEAD_REJECTED, LEAD_WITHDRAWN, LEAD_ON_HOLD, LEAD_RESUMED, LEAD_COMPLETED, LEAD_DROPOFF -> {
+            case LEAD_REJECTED, LEAD_REJECTION_UNDO, LEAD_WITHDRAWN, LEAD_ON_HOLD, LEAD_RESUMED, LEAD_COMPLETED, LEAD_DROPOFF -> {
                 CreateLeadActivityRequest request = createLeadStatusChangeActivityRequest(event, (LeadStatusChangeEventPayload) payload);
                 writeService.createLeadActivity(request);
             }
@@ -303,6 +303,7 @@ public class LeadActivityDataFactory {
     private String getStatusChangeDescription(BusinessEvent event) {
         String action = switch (event) {
             case LEAD_REJECTED -> "rejected";
+            case LEAD_REJECTION_UNDO -> "rejection undo";
             case LEAD_WITHDRAWN -> "withdrawn";
             case LEAD_ON_HOLD -> "put on hold";
             case LEAD_RESUMED -> "resumed";

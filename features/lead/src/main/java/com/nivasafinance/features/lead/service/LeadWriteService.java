@@ -35,6 +35,7 @@ public interface LeadWriteService {
     void updateTranche(UUID leadIdentifier, UUID trancheIdentifier, UpdateTrancheRequest request);
     void deleteTranche(UUID leadIdentifier, UUID trancheIdentifier);
     void rejectLead(UUID leadIdentifier, RejectLeadRequest request);
+    void undoRejectLead(UUID leadIdentifier);
     void withdrawLead(UUID leadIdentifier, WithdrawLeadRequest request);
     void completeLead(UUID leadIdentifier);
     void onholdLead(UUID leadIdentifier, OnholdLeadRequest request);
