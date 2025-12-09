@@ -92,7 +92,13 @@ public class LeadDashboardWrapper {
         String sortColumn = resolveSortColumn(effectivePagination.getSortBy());
         String sortDirection = resolveSortDirection(effectivePagination.getSortDirection());
 
-        String countSql = "SELECT COUNT(*) " + fromClause + whereClause;
+        // Optimized COUNT query - only join tables needed for filtering
+        String countFromClause = """
+                FROM n_lead l
+                LEFT JOIN n_office o ON o.key = l.office_key
+                LEFT JOIN n_call_log latest_call ON latest_call.id = (l.other_details->>'lastCallId')::bigint
+                """;
+        String countSql = "SELECT COUNT(*) " + countFromClause + whereClause;
 
         String dataSql = """
                 SELECT
@@ -522,13 +528,15 @@ public class LeadDashboardWrapper {
                     ORDER BY n.created_at DESC
                     LIMIT 1
                 ) latest_note ON true
-                LEFT JOIN LATERAL (
-                    SELECT string_agg(lndr.name, ', ' ORDER BY lndr.name) AS partner_names
+                LEFT JOIN (
+                    SELECT 
+                        lead_lender.lead_id,
+                        string_agg(lndr.name, ', ' ORDER BY lndr.name) AS partner_names
                     FROM n_lead_lender lead_lender
                     JOIN n_lender lndr ON lndr.key = lead_lender.lender_key
-                    WHERE lead_lender.lead_id = l.id
-                      AND lead_lender.status IN ('SELECTED', 'SUBMITTED')
-                ) partners ON true
+                    WHERE lead_lender.status IN ('SELECTED', 'SUBMITTED')
+                    GROUP BY lead_lender.lead_id
+                ) partners ON partners.lead_id = l.id
                 LEFT JOIN n_call_log latest_call ON latest_call.id = (l.other_details->>'lastCallId')::bigint
                 LEFT JOIN n_sourcing_channel_details sourcing_channel ON sourcing_channel.id = l.sourcing_channel_id
                 """;

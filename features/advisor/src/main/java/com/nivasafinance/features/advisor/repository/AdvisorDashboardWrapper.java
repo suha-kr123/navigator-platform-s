@@ -93,7 +93,43 @@ public class AdvisorDashboardWrapper {
         String sortColumn = resolveSortColumn(effectivePagination.getSortBy());
         String sortDirection = resolveSortDirection(effectivePagination.getSortDirection());
 
-        String countSql = "SELECT COUNT(DISTINCT a.id) " + fromClause + whereClause;
+        // Build WHERE clause for count query - need to handle lastLeadDate filter differently
+        StringBuilder countWhereClause = new StringBuilder(" WHERE 1=1 ");
+        List<Object> countQueryParams = new ArrayList<>();
+        
+        appendOfficeHierarchyFilter(currentUserOfficeName, countWhereClause, countQueryParams);
+        appendStatusFilter(effectiveFilters, countWhereClause, countQueryParams);
+        appendOfficeFilter(effectiveFilters, currentUserOfficeCode, countWhereClause, countQueryParams);
+        appendCreatedAtFilter(effectiveFilters, countWhereClause, countQueryParams);
+        appendSegmentationFilter(effectiveFilters, countWhereClause, countQueryParams);
+        appendSourcingChannelFilter(effectiveFilters, countWhereClause, countQueryParams);
+        appendSalesOwnerFilter(effectiveFilters, countWhereClause, countQueryParams);
+        
+        // Handle lastLeadDate filter in count query with subquery
+        LocalDateTime lastLeadDateFrom = effectiveFilters.getLastLeadDateFrom();
+        LocalDateTime lastLeadDateTo = effectiveFilters.getLastLeadDateTo();
+        if (lastLeadDateFrom != null || lastLeadDateTo != null) {
+            countWhereClause.append(" AND EXISTS (");
+            countWhereClause.append("SELECT 1 FROM n_advisor_lead_mapping alm2 JOIN n_lead l2 ON l2.id = alm2.lead_id ");
+            countWhereClause.append("WHERE alm2.advisor_id = a.id ");
+            if (lastLeadDateFrom != null) {
+                countWhereClause.append("AND l2.created_at >= ? ");
+                countQueryParams.add(lastLeadDateFrom);
+            }
+            if (lastLeadDateTo != null) {
+                countWhereClause.append("AND l2.created_at <= ? ");
+                countQueryParams.add(lastLeadDateTo);
+            }
+            countWhereClause.append(") ");
+        }
+        
+        // Optimized COUNT query - use simpler FROM clause for counting
+        String countFromClause = """
+                FROM n_advisor a
+                LEFT JOIN n_office o ON o.key = a.office_key
+                LEFT JOIN n_sourcing_channel_details sourcing_channel ON sourcing_channel.id = a.source_channel_id
+                """;
+        String countSql = "SELECT COUNT(DISTINCT a.id) " + countFromClause + countWhereClause;
 
         String dataSql = """
                 SELECT
@@ -101,21 +137,32 @@ public class AdvisorDashboardWrapper {
                     p.display_name AS name,
                     (jsonb_path_query_first(COALESCE(p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') AS phone_number,
                     a.created_at AS created_at,
-                    (SELECT MAX(l.created_at) FROM n_advisor_lead_mapping alm JOIN n_lead l ON l.id = alm.lead_id WHERE alm.advisor_id = a.id) AS last_lead_date,
+                    lead_stats.last_lead_date,
                     a.status AS status,
                     o.name AS office,
                     a.segmentation_details->>'segmentation' AS segmentation_key,
                     sourcing_channel.sourcing_channel_name AS sourcing_channel_name,
-                    (SELECT COUNT(DISTINCT l.id) FROM n_advisor_lead_mapping alm JOIN n_lead l ON l.id = alm.lead_id WHERE alm.advisor_id = a.id) AS no_of_leads,
+                    COALESCE(lead_stats.no_of_leads, 0) AS no_of_leads,
                     a.owner AS sales_owner,
                     (a.other_details->>'preferredCallStartTime')::time AS preferred_call_start_time,
                     (a.other_details->>'preferredCallEndTime')::time AS preferred_call_end_time
-                """ + fromClause + whereClause +
+                """ + fromClause + 
+                """
+                LEFT JOIN (
+                    SELECT 
+                        alm.advisor_id,
+                        MAX(l.created_at) AS last_lead_date,
+                        COUNT(DISTINCT l.id) AS no_of_leads
+                    FROM n_advisor_lead_mapping alm
+                    JOIN n_lead l ON l.id = alm.lead_id
+                    GROUP BY alm.advisor_id
+                ) lead_stats ON lead_stats.advisor_id = a.id
+                """ + whereClause +
                 " ORDER BY " + sortColumn + " " + sortDirection +
                 " LIMIT ? OFFSET ?";
 
         try {
-            Long totalCount = jdbcTemplate.queryForObject(countSql, Long.class, queryParams.toArray());
+            Long totalCount = jdbcTemplate.queryForObject(countSql, Long.class, countQueryParams.toArray());
             long total = totalCount != null ? totalCount : 0L;
 
             List<Object> dataQueryParams = new ArrayList<>(queryParams);
@@ -193,12 +240,12 @@ public class AdvisorDashboardWrapper {
         LocalDateTime lastLeadDateTo = filters.getLastLeadDateTo();
 
         if (lastLeadDateFrom != null) {
-            whereClause.append(" AND (SELECT MAX(l.created_at) FROM n_advisor_lead_mapping alm JOIN n_lead l ON l.id = alm.lead_id WHERE alm.advisor_id = a.id) >= ? ");
+            whereClause.append(" AND lead_stats.last_lead_date >= ? ");
             params.add(lastLeadDateFrom);
         }
 
         if (lastLeadDateTo != null) {
-            whereClause.append(" AND (SELECT MAX(l.created_at) FROM n_advisor_lead_mapping alm JOIN n_lead l ON l.id = alm.lead_id WHERE alm.advisor_id = a.id) <= ? ");
+            whereClause.append(" AND lead_stats.last_lead_date <= ? ");
             params.add(lastLeadDateTo);
         }
     }
