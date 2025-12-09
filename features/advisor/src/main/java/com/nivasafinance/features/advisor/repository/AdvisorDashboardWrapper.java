@@ -146,7 +146,7 @@ public class AdvisorDashboardWrapper {
                     a.owner AS sales_owner,
                     (a.other_details->>'preferredCallStartTime')::time AS preferred_call_start_time,
                     (a.other_details->>'preferredCallEndTime')::time AS preferred_call_end_time
-                """ + fromClause + 
+                """ + fromClause +
                 """
                 LEFT JOIN (
                     SELECT 
