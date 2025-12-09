@@ -12,5 +12,6 @@ import java.util.UUID;
 @JaversSpringDataAuditable
 public interface AdvisorRepository extends JpaRepository<Advisor, UUID> {
     Optional<Advisor> findByIdentifier(UUID identifier);
+    Optional<Advisor> findByPersonId(Long personId);
 }
 

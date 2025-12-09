@@ -25,8 +25,11 @@ import com.nivasafinance.features.master.codemaster.SystemControlledMasterCodes;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import com.nivasafinance.features.master.codemaster.service.CodeMasterService;
 import com.nivasafinance.common.exception.BadRequestException;
+import com.nivasafinance.features.advisor.exception.AdvisorExceptionFactory;
+import com.nivasafinance.features.person.entity.Person;
 import lombok.AllArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +37,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -52,17 +56,45 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
     private final CodeMasterService codeMasterService;
     private final OfficeReadService officeReadService;
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final MessageSource messageSource;
 
     @Override
     public UUID createAdvisor(CreateAdvisorRequest request) {
-        // Create person record
-        PersonCreateRequest personRequest = buildPersonCreateRequest(request);
-        PersonCreateResponse personResponse = personWriteService.createPerson(personRequest);
+        // Extract primary mobile number
+        String primaryMobile = request.getMobileNumberDetails() != null 
+                ? request.getMobileNumberDetails().getMobileNumber() 
+                : null;
+        
+        Long personId;
+        
+        // Check if person already exists with this mobile number
+        if (primaryMobile != null) {
+            Optional<Person> existingPerson = personRepositoryWrapper.findByPrimaryMobileNumber(primaryMobile);
+            if (existingPerson.isPresent()) {
+                personId = existingPerson.get().getId();
+                
+                // Check if advisor already exists for this person
+                Optional<Advisor> existingAdvisor = advisorRepositoryWrapper.findByPersonId(personId);
+                if (existingAdvisor.isPresent()) {
+                    throw AdvisorExceptionFactory.personAlreadyExists(personId, messageSource);
+                }
+            } else {
+                // Create new person
+                PersonCreateRequest personRequest = buildPersonCreateRequest(request);
+                PersonCreateResponse personResponse = personWriteService.createPerson(personRequest);
+                personId = personResponse.getId();
+            }
+        } else {
+            // No mobile number provided, create new person
+            PersonCreateRequest personRequest = buildPersonCreateRequest(request);
+            PersonCreateResponse personResponse = personWriteService.createPerson(personRequest);
+            personId = personResponse.getId();
+        }
 
         // Create advisor
         Advisor advisor = new Advisor();
         advisor.setIdentifier(UUID.randomUUID());
-        advisor.setPersonId(personResponse.getId());
+        advisor.setPersonId(personId);
         advisor.setStatus(AdvisorStatus.CREATED);
         if (request.getOfficeKey() != null) {
             officeReadService.getOfficeByKey(request.getOfficeKey()); //validate

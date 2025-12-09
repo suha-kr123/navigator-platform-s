@@ -29,6 +29,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -82,6 +83,16 @@ public class AdvisorRepositoryWrapper {
             );
         } catch (AdvisorNotFoundException e) {
             throw e;
+        } catch (DataAccessException e) {
+            AdvisorOperationException exception = AdvisorExceptionFactory.retrieveEntityFailed(messageSource);
+            exception.initCause(e);
+            throw exception;
+        }
+    }
+
+    public Optional<Advisor> findByPersonId(Long personId) {
+        try {
+            return advisorRepository.findByPersonId(personId);
         } catch (DataAccessException e) {
             AdvisorOperationException exception = AdvisorExceptionFactory.retrieveEntityFailed(messageSource);
             exception.initCause(e);

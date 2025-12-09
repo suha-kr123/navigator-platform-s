@@ -1,5 +1,7 @@
 package com.nivasafinance.features.advisor.exception;
 
+import com.nivasafinance.common.exception.BadRequestException;
+import com.nivasafinance.common.exception.ExceptionUtils;
 import org.springframework.context.MessageSource;
 
 import java.util.UUID;
@@ -27,5 +29,13 @@ public final class AdvisorExceptionFactory {
 
     public static AdvisorOperationException retrieveEntityFailed(MessageSource messageSource) {
         return new AdvisorOperationException("error.advisor.operation.retrieve", messageSource);
+    }
+
+    public static BadRequestException personAlreadyExists(Long personId, MessageSource messageSource) {
+        return new BadRequestException(ExceptionUtils.createLocalizedMessage(
+                "error.advisor.person.already.exists",
+                new Object[]{personId},
+                messageSource
+        ));
     }
 }
