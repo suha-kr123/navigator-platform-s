@@ -13,6 +13,8 @@ import com.nivasafinance.features.offices.dto.OfficeResponse;
 import com.nivasafinance.features.offices.service.OfficeReadService;
 import com.nivasafinance.features.staff.service.StaffReadService;
 import lombok.AllArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
@@ -36,6 +38,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class LeadDashboardWrapper {
 
+    private static final Logger logger = LoggerFactory.getLogger(LeadDashboardWrapper.class);
     private static final Map<String, String> SORTABLE_COLUMNS;
 
     static {
@@ -124,12 +127,14 @@ public class LeadDashboardWrapper {
                     latest_call.created_at                             AS last_call_date,
                     l.reasons->>'onhold'                               AS onhold_reason_key,
                     CASE
-                        WHEN l.onhold_details->>'onHoldMovementDate' IS NOT NULL
+                        WHEN l.onhold_details->>'onHoldMovementDate' IS NOT NULL 
+                         AND l.onhold_details->>'onHoldMovementDate' != ''
                         THEN to_timestamp(l.onhold_details->>'onHoldMovementDate', 'DD-MM-YYYY HH24:MI:SS')
                         ELSE NULL
                     END AS onhold_date,
                     CASE
                         WHEN l.onhold_details->>'holdFollowUpDate' IS NOT NULL
+                         AND l.onhold_details->>'holdFollowUpDate' != ''
                         THEN TO_DATE(l.onhold_details->>'holdFollowUpDate', 'DD-MM-YYYY')
                         ELSE NULL
                     END AS hold_follow_up_date,
@@ -141,11 +146,13 @@ public class LeadDashboardWrapper {
                     ((l.workflow_details->'currentStageDetails')->>'assignedTo') AS stage_assigned_to,
                     CASE
                         WHEN (l.workflow_details->'currentStageDetails')->>'assignedAt' IS NOT NULL
+                         AND (l.workflow_details->'currentStageDetails')->>'assignedAt' != ''
                         THEN to_timestamp(((l.workflow_details->'currentStageDetails')->>'assignedAt'), 'DD-MM-YYYY HH24:MI:SS')
                         ELSE NULL
                     END AS stage_assigned_at,
                     CASE
                         WHEN (l.workflow_details->'currentStageDetails')->>'enteredAt' IS NOT NULL
+                         AND (l.workflow_details->'currentStageDetails')->>'enteredAt' != ''
                         THEN to_timestamp(((l.workflow_details->'currentStageDetails')->>'enteredAt'), 'DD-MM-YYYY HH24:MI:SS')
                         ELSE NULL
                     END AS stage_entered_at
@@ -174,7 +181,11 @@ public class LeadDashboardWrapper {
 
             return new PaginatedResponse<>(content, paginationInfo);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to fetch lead dashboard details", e);
+            logger.error("Failed to fetch lead dashboard details. SQL: {}", dataSql, e);
+            logger.error("Query params: {}", queryParams, e);
+            logger.error("Root cause: ", e.getCause() != null ? e.getCause() : e);
+            String errorMsg = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
+            throw new RuntimeException("Failed to fetch lead dashboard details: " + errorMsg, e);
         }
     }
 
