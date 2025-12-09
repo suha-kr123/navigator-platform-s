@@ -68,24 +68,17 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
         Long personId;
         
         // Check if person already exists with this mobile number
-        if (primaryMobile != null) {
-            Optional<Person> existingPerson = personRepositoryWrapper.findByPrimaryMobileNumber(primaryMobile);
-            if (existingPerson.isPresent()) {
-                personId = existingPerson.get().getId();
-                
-                // Check if advisor already exists for this person
-                Optional<Advisor> existingAdvisor = advisorRepositoryWrapper.findByPersonId(personId);
-                if (existingAdvisor.isPresent()) {
-                    throw AdvisorExceptionFactory.personAlreadyExists(personId, messageSource);
-                }
-            } else {
-                // Create new person
-                PersonCreateRequest personRequest = buildPersonCreateRequest(request);
-                PersonCreateResponse personResponse = personWriteService.createPerson(personRequest);
-                personId = personResponse.getId();
+        Optional<Person> existingPerson = personRepositoryWrapper.findByPrimaryMobileNumber(primaryMobile);
+        if (existingPerson.isPresent()) {
+            personId = existingPerson.get().getId();
+            
+            // Check if advisor already exists for this person
+            Optional<Advisor> existingAdvisor = advisorRepositoryWrapper.findByPersonId(personId);
+            if (existingAdvisor.isPresent()) {
+                throw AdvisorExceptionFactory.personAlreadyExists(personId, messageSource);
             }
         } else {
-            // No mobile number provided, create new person
+            // Create new person
             PersonCreateRequest personRequest = buildPersonCreateRequest(request);
             PersonCreateResponse personResponse = personWriteService.createPerson(personRequest);
             personId = personResponse.getId();
