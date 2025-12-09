@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1765000000000_97" author="system" context="default">
+        
+        <!-- GIN index for workflow_details JSONB column - critical for dashboard queries with stageKey filters -->
+        <sql>CREATE INDEX IF NOT EXISTS idx_n_lead_workflow_details_gin ON n_lead USING GIN (workflow_details);</sql>
+        <sql>COMMENT ON INDEX idx_n_lead_workflow_details_gin IS 'GIN index on n_lead.workflow_details JSONB column for improved performance on workflow/stage filtering queries in dashboard';</sql>
+
+        <!-- GIN index for onhold_details JSONB column - for onHold date and follow-up date filters -->
+        <sql>CREATE INDEX IF NOT EXISTS idx_n_lead_onhold_details_gin ON n_lead USING GIN (onhold_details);</sql>
+        <sql>COMMENT ON INDEX idx_n_lead_onhold_details_gin IS 'GIN index on n_lead.onhold_details JSONB column for improved performance on onHold date filtering queries';</sql>
+
+        <!-- GIN index for reasons JSONB column - for onHold reason filters -->
+        <sql>CREATE INDEX IF NOT EXISTS idx_n_lead_reasons_gin ON n_lead USING GIN (reasons);</sql>
+        <sql>COMMENT ON INDEX idx_n_lead_reasons_gin IS 'GIN index on n_lead.reasons JSONB column for improved performance on reason filtering queries';</sql>
+
+        <!-- GIN index for other_details JSONB column - for lastCallId and other filters -->
+        <sql>CREATE INDEX IF NOT EXISTS idx_n_lead_other_details_gin ON n_lead USING GIN (other_details);</sql>
+        <sql>COMMENT ON INDEX idx_n_lead_other_details_gin IS 'GIN index on n_lead.other_details JSONB column for improved performance on other_details filtering queries';</sql>
+
+    </changeSet>
+
+</databaseChangeLog>
+

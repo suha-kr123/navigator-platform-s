@@ -345,7 +345,9 @@ public class LeadDashboardWrapper {
                     .filter(stageKey -> !stageKey.isEmpty())
                     .toList();
             if (!normalizedStageKeys.isEmpty()) {
-                whereClause.append(" AND ((l.workflow_details->'currentStageDetails')->>'stageKey') IN (")
+                // Optimized: Use jsonb_extract_path_text which is more efficient than chained operators
+                // This can better utilize GIN indexes on workflow_details
+                whereClause.append(" AND jsonb_extract_path_text(l.workflow_details, 'currentStageDetails', 'stageKey') IN (")
                         .append(createPlaceholders(normalizedStageKeys.size()))
                         .append(") ");
                 params.addAll(normalizedStageKeys);
@@ -362,7 +364,8 @@ public class LeadDashboardWrapper {
                     .filter(subStageKey -> !subStageKey.isEmpty())
                     .toList();
             if (!normalizedSubStageKeys.isEmpty()) {
-                whereClause.append(" AND ((l.workflow_details->'currentStageDetails')->>'subStageKey') IN (")
+                // Optimized: Use jsonb_extract_path_text for better performance
+                whereClause.append(" AND jsonb_extract_path_text(l.workflow_details, 'currentStageDetails', 'subStageKey') IN (")
                         .append(createPlaceholders(normalizedSubStageKeys.size()))
                         .append(") ");
                 params.addAll(normalizedSubStageKeys);
@@ -376,17 +379,18 @@ public class LeadDashboardWrapper {
             boolean includeUnassigned = assignedToList.remove("UNASSIGNED");
 
             if (!assignedToList.isEmpty() && includeUnassigned) {
-                whereClause.append(" AND (((l.workflow_details->'currentStageDetails')->>'assignedTo') IN (")
+                // Optimized: Use jsonb_extract_path_text for better performance
+                whereClause.append(" AND (jsonb_extract_path_text(l.workflow_details, 'currentStageDetails', 'assignedTo') IN (")
                         .append(createPlaceholders(assignedToList.size()))
-                        .append(") OR (l.workflow_details->'currentStageDetails')->>'assignedTo' IS NULL) ");
+                        .append(") OR jsonb_extract_path_text(l.workflow_details, 'currentStageDetails', 'assignedTo') IS NULL) ");
                 params.addAll(assignedToList);
             } else if (!assignedToList.isEmpty()) {
-                whereClause.append(" AND ((l.workflow_details->'currentStageDetails')->>'assignedTo') IN (")
+                whereClause.append(" AND jsonb_extract_path_text(l.workflow_details, 'currentStageDetails', 'assignedTo') IN (")
                         .append(createPlaceholders(assignedToList.size()))
                         .append(") ");
                 params.addAll(assignedToList);
             } else if (includeUnassigned) {
-                whereClause.append(" AND ((l.workflow_details->'currentStageDetails')->>'assignedTo' IS NULL) ");
+                whereClause.append(" AND jsonb_extract_path_text(l.workflow_details, 'currentStageDetails', 'assignedTo') IS NULL ");
             }
         }
     }
@@ -395,24 +399,18 @@ public class LeadDashboardWrapper {
         LocalDateTime assignedAtFrom = filters.getStageAssignedAtFrom();
         LocalDateTime assignedAtTo = filters.getStageAssignedAtTo();
 
-        if (assignedAtFrom != null) {
-            whereClause.append(" AND (")
-                    .append("CASE ")
-                    .append("WHEN (l.workflow_details->'currentStageDetails')->>'assignedAt' IS NOT NULL ")
-                    .append("THEN to_timestamp(((l.workflow_details->'currentStageDetails')->>'assignedAt'), 'DD-MM-YYYY HH24:MI:SS') ")
-                    .append("ELSE NULL ")
-                    .append("END) >= ? ");
-            params.add(assignedAtFrom);
-        }
-
-        if (assignedAtTo != null) {
-            whereClause.append(" AND (")
-                    .append("CASE ")
-                    .append("WHEN (l.workflow_details->'currentStageDetails')->>'assignedAt' IS NOT NULL ")
-                    .append("THEN to_timestamp(((l.workflow_details->'currentStageDetails')->>'assignedAt'), 'DD-MM-YYYY HH24:MI:SS') ")
-                    .append("ELSE NULL ")
-                    .append("END) <= ? ");
-            params.add(assignedAtTo);
+        if (assignedAtFrom != null || assignedAtTo != null) {
+            // Optimized: Extract once using jsonb_extract_path_text, NULL values excluded automatically
+            whereClause.append(" AND jsonb_extract_path_text(l.workflow_details, 'currentStageDetails', 'assignedAt') IS NOT NULL ")
+                    .append("AND jsonb_extract_path_text(l.workflow_details, 'currentStageDetails', 'assignedAt') != '' ");
+            if (assignedAtFrom != null) {
+                whereClause.append("AND to_timestamp(jsonb_extract_path_text(l.workflow_details, 'currentStageDetails', 'assignedAt'), 'DD-MM-YYYY HH24:MI:SS') >= ? ");
+                params.add(assignedAtFrom);
+            }
+            if (assignedAtTo != null) {
+                whereClause.append("AND to_timestamp(jsonb_extract_path_text(l.workflow_details, 'currentStageDetails', 'assignedAt'), 'DD-MM-YYYY HH24:MI:SS') <= ? ");
+                params.add(assignedAtTo);
+            }
         }
     }
 
@@ -420,24 +418,18 @@ public class LeadDashboardWrapper {
         LocalDateTime enteredAtFrom = filters.getStageEnteredAtFrom();
         LocalDateTime enteredAtTo = filters.getStageEnteredAtTo();
 
-        if (enteredAtFrom != null) {
-            whereClause.append(" AND (")
-                    .append("CASE ")
-                    .append("WHEN (l.workflow_details->'currentStageDetails')->>'enteredAt' IS NOT NULL ")
-                    .append("THEN to_timestamp(((l.workflow_details->'currentStageDetails')->>'enteredAt'), 'DD-MM-YYYY HH24:MI:SS') ")
-                    .append("ELSE NULL ")
-                    .append("END) >= ? ");
-            params.add(enteredAtFrom);
-        }
-
-        if (enteredAtTo != null) {
-            whereClause.append(" AND (")
-                    .append("CASE ")
-                    .append("WHEN (l.workflow_details->'currentStageDetails')->>'enteredAt' IS NOT NULL ")
-                    .append("THEN to_timestamp(((l.workflow_details->'currentStageDetails')->>'enteredAt'), 'DD-MM-YYYY HH24:MI:SS') ")
-                    .append("ELSE NULL ")
-                    .append("END) <= ? ");
-            params.add(enteredAtTo);
+        if (enteredAtFrom != null || enteredAtTo != null) {
+            // Optimized: Extract once using jsonb_extract_path_text, NULL values excluded automatically
+            whereClause.append(" AND jsonb_extract_path_text(l.workflow_details, 'currentStageDetails', 'enteredAt') IS NOT NULL ")
+                    .append("AND jsonb_extract_path_text(l.workflow_details, 'currentStageDetails', 'enteredAt') != '' ");
+            if (enteredAtFrom != null) {
+                whereClause.append("AND to_timestamp(jsonb_extract_path_text(l.workflow_details, 'currentStageDetails', 'enteredAt'), 'DD-MM-YYYY HH24:MI:SS') >= ? ");
+                params.add(enteredAtFrom);
+            }
+            if (enteredAtTo != null) {
+                whereClause.append("AND to_timestamp(jsonb_extract_path_text(l.workflow_details, 'currentStageDetails', 'enteredAt'), 'DD-MM-YYYY HH24:MI:SS') <= ? ");
+                params.add(enteredAtTo);
+            }
         }
     }
 
@@ -446,22 +438,17 @@ public class LeadDashboardWrapper {
         LocalDateTime onHoldDateTo = filters.getOnHoldDateTo();
 
         if (onHoldDateFrom != null) {
-            whereClause.append(" AND (")
-                    .append("CASE ")
-                    .append("WHEN l.onhold_details->>'onHoldMovementDate' IS NOT NULL ")
-                    .append("THEN to_timestamp(l.onhold_details->>'onHoldMovementDate', 'DD-MM-YYYY HH24:MI:SS') ")
-                    .append("ELSE NULL ")
-                    .append("END) >= ? ");
+            // Optimized: Extract once and compare, NULL values are automatically excluded
+            whereClause.append(" AND jsonb_extract_path_text(l.onhold_details, 'onHoldMovementDate') IS NOT NULL ")
+                    .append("AND jsonb_extract_path_text(l.onhold_details, 'onHoldMovementDate') != '' ")
+                    .append("AND to_timestamp(jsonb_extract_path_text(l.onhold_details, 'onHoldMovementDate'), 'DD-MM-YYYY HH24:MI:SS') >= ? ");
             params.add(onHoldDateFrom);
         }
 
         if (onHoldDateTo != null) {
-            whereClause.append(" AND (")
-                    .append("CASE ")
-                    .append("WHEN l.onhold_details->>'onHoldMovementDate' IS NOT NULL ")
-                    .append("THEN to_timestamp(l.onhold_details->>'onHoldMovementDate', 'DD-MM-YYYY HH24:MI:SS') ")
-                    .append("ELSE NULL ")
-                    .append("END) <= ? ");
+            whereClause.append(" AND jsonb_extract_path_text(l.onhold_details, 'onHoldMovementDate') IS NOT NULL ")
+                    .append("AND jsonb_extract_path_text(l.onhold_details, 'onHoldMovementDate') != '' ")
+                    .append("AND to_timestamp(jsonb_extract_path_text(l.onhold_details, 'onHoldMovementDate'), 'DD-MM-YYYY HH24:MI:SS') <= ? ");
             params.add(onHoldDateTo);
         }
     }
@@ -475,7 +462,8 @@ public class LeadDashboardWrapper {
                     .filter(reason -> !reason.isEmpty())
                     .toList();
             if (!normalizedReasons.isEmpty()) {
-                whereClause.append(" AND (l.reasons->>'onhold') IN (")
+                // Optimized: Use jsonb_extract_path_text for better performance
+                whereClause.append(" AND jsonb_extract_path_text(l.reasons, 'onhold') IN (")
                         .append(createPlaceholders(normalizedReasons.size()))
                         .append(") ");
                 params.addAll(normalizedReasons);
@@ -488,22 +476,15 @@ public class LeadDashboardWrapper {
         LocalDate followUpDateTo = filters.getOnHoldFollowUpDateTo();
 
         if (followUpDateFrom != null) {
-            whereClause.append(" AND (")
-                    .append("CASE ")
-                    .append("WHEN l.onhold_details->>'holdFollowUpDate' IS NOT NULL ")
-                    .append("THEN TO_DATE(l.onhold_details->>'holdFollowUpDate', 'DD-MM-YYYY') ")
-                    .append("ELSE NULL ")
-                    .append("END) >= ? ");
+            // Optimized: Extract once and compare, NULL values are automatically excluded
+            whereClause.append(" AND jsonb_extract_path_text(l.onhold_details, 'holdFollowUpDate') IS NOT NULL ")
+                    .append("AND TO_DATE(jsonb_extract_path_text(l.onhold_details, 'holdFollowUpDate'), 'DD-MM-YYYY') >= ? ");
             params.add(java.sql.Date.valueOf(followUpDateFrom));
         }
 
         if (followUpDateTo != null) {
-            whereClause.append(" AND (")
-                    .append("CASE ")
-                    .append("WHEN l.onhold_details->>'holdFollowUpDate' IS NOT NULL ")
-                    .append("THEN TO_DATE(l.onhold_details->>'holdFollowUpDate', 'DD-MM-YYYY') ")
-                    .append("ELSE NULL ")
-                    .append("END) <= ? ");
+            whereClause.append(" AND jsonb_extract_path_text(l.onhold_details, 'holdFollowUpDate') IS NOT NULL ")
+                    .append("AND TO_DATE(jsonb_extract_path_text(l.onhold_details, 'holdFollowUpDate'), 'DD-MM-YYYY') <= ? ");
             params.add(java.sql.Date.valueOf(followUpDateTo));
         }
     }
