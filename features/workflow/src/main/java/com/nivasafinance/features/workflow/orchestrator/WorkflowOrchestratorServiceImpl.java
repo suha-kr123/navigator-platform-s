@@ -322,14 +322,8 @@ public class WorkflowOrchestratorServiceImpl implements WorkflowOrchestratorServ
         // Role validation removed - frontend API provides assignable users, audit trail provides accountability
         stageConfigRepositoryWrapper.findByKeyWithException(stageKey);
 
-        // Allow null assignedTo for initial stage assignments (no previous history)
-        if (!ValidationUtils.isNonNull(assignedTo)) {
-            if (hasExistingHistory) {
-                throw new ForbiddenException("User assignment required for stage transition");
-            }
-            return;
-        }
         // No role validation - any user can be assigned
+        // assignedTo can be null for any stage transition
     }
 
     @Override
