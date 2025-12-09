@@ -127,7 +127,7 @@ public class LeadDashboardWrapper {
                     latest_call.created_at                             AS last_call_date,
                     l.reasons->>'onhold'                               AS onhold_reason_key,
                     CASE
-                        WHEN l.onhold_details->>'onHoldMovementDate' IS NOT NULL 
+                        WHEN l.onhold_details->>'onHoldMovementDate' IS NOT NULL
                          AND l.onhold_details->>'onHoldMovementDate' != ''
                         THEN to_timestamp(l.onhold_details->>'onHoldMovementDate', 'DD-MM-YYYY HH24:MI:SS')
                         ELSE NULL
