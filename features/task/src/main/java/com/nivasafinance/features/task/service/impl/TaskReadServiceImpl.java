@@ -81,10 +81,10 @@ public class TaskReadServiceImpl implements TaskReadService {
 
     private static final String BASE_QUERY = 
         "SELECT " +
-        "t.task_identifier, t.task_config_key, t.assigned_to, " +
+        "t.task_identifier, t.task_config_key, t.name, t.assigned_to, " +
         "t.due_at, t.outcome, t.outcome_details, t.task_details, " +
         "t.created_at, t.created_by, t.updated_at, t.updated_by, " +
-        "tc.name as task_name, tc.description as task_description " +
+        "tc.name as task_config_name, tc.description as task_description " +
         "FROM n_tasks t " +
         "LEFT JOIN n_task_config tc ON t.task_config_key = tc.task_config_key AND tc.is_active = true ";
 
@@ -206,11 +206,18 @@ public class TaskReadServiceImpl implements TaskReadService {
             // Store outcome key - will be enriched after query completes
             String outcomeKey = rs.getString("outcome");
             
+            // Prioritize task name from n_tasks if present, otherwise use task config name
+            String taskName = rs.getString("name");  // Get task name from n_tasks
+            String taskConfigName = rs.getString("task_config_name");  // Get task config name
+            String finalTaskName = ValidationUtils.isNonNull(taskName) 
+                ? taskName 
+                : taskConfigName;
+            
             // Entity context will be enriched after query completes
             return TaskResponse.builder()
                     .taskIdentifier(taskIdentifier)
                     .taskConfigKey(rs.getString("task_config_key"))
-                    .taskName(rs.getString("task_name"))
+                    .taskName(finalTaskName)
                     .taskDescription(rs.getString("task_description"))
                     .assignedTo(rs.getString("assigned_to"))
                     .dueAt(getLocalDateTime(rs, "due_at"))

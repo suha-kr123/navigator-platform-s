@@ -8,6 +8,7 @@ import com.nivasafinance.features.task.dto.ReassignTaskRequest;
 import com.nivasafinance.features.task.dto.RescheduleTaskRequest;
 import com.nivasafinance.features.task.dto.TaskResponse;
 import com.nivasafinance.features.task.dto.UpdateDueDateRequest;
+import com.nivasafinance.features.task.dto.UpdateTaskNameRequest;
 
 import java.util.UUID;
 
@@ -24,6 +25,8 @@ public interface TaskWriteService {
     BulkReassignTaskResponse bulkReassignTasks(BulkReassignTaskRequest request);
     
     TaskResponse updateDueDate(UpdateDueDateRequest request);
+    
+    TaskResponse updateTaskName(UUID taskIdentifier, UpdateTaskNameRequest request);
     
     void closeAllOpenTasksForLead(UUID leadIdentifier, String outcome);
 }

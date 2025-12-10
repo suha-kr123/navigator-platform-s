@@ -12,6 +12,7 @@ import com.nivasafinance.features.task.dto.BulkReassignTaskResponse;
 import com.nivasafinance.features.task.dto.TaskResponse;
 import com.nivasafinance.features.task.dto.TaskTemplateResponse;
 import com.nivasafinance.features.task.dto.UpdateDueDateRequest;
+import com.nivasafinance.features.task.dto.UpdateTaskNameRequest;
 import com.nivasafinance.features.task.entity.TaskConfig;
 import com.nivasafinance.features.task.repository.TaskConfigRepositoryWrapper;
 import com.nivasafinance.features.task.service.TaskReadService;
@@ -75,6 +76,14 @@ public class TaskController {
         // Set taskIdentifier from path variable
         request.setTaskIdentifier(taskIdentifier);
         TaskResponse response = taskWriteService.updateDueDate(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/{taskIdentifier}/name")
+    public ResponseEntity<TaskResponse> updateTaskName(
+            @PathVariable UUID taskIdentifier,
+            @Valid @RequestBody UpdateTaskNameRequest request) {
+        TaskResponse response = taskWriteService.updateTaskName(taskIdentifier, request);
         return ResponseEntity.ok(response);
     }
 

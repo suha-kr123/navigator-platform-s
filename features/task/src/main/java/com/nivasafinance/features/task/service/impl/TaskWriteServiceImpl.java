@@ -9,6 +9,7 @@ import com.nivasafinance.features.task.dto.ReassignTaskRequest;
 import com.nivasafinance.features.task.dto.RescheduleTaskRequest;
 import com.nivasafinance.features.task.dto.TaskResponse;
 import com.nivasafinance.features.task.dto.UpdateDueDateRequest;
+import com.nivasafinance.features.task.dto.UpdateTaskNameRequest;
 import com.nivasafinance.features.task.entity.Task;
 import com.nivasafinance.features.task.entity.TaskConfig;
 import com.nivasafinance.features.task.exception.TaskOperationException;
@@ -62,7 +63,7 @@ public class TaskWriteServiceImpl implements TaskWriteService {
                 .taskDetails(request.getTaskDetails())
                 .build();
         
-        Task task = buildTaskFromRequest(requestWithDueDate);
+        Task task = buildTaskFromRequest(requestWithDueDate, taskConfig);
         Task savedTask = taskRepositoryWrapper.saveWithException(task);
         return TaskResponse.from(savedTask, taskConfig, objectMapper);
     }
@@ -80,6 +81,15 @@ public class TaskWriteServiceImpl implements TaskWriteService {
     public TaskResponse updateDueDate(UpdateDueDateRequest request) {
         Task task = validateUpdateDueDateRequest(request);
         task.setDueAt(request.getDueAt());
+        Task savedTask = taskRepositoryWrapper.saveWithException(task);
+        TaskConfig taskConfig = getActiveTaskConfig(task.getTaskConfigKey());
+        return TaskResponse.from(savedTask, taskConfig, objectMapper);
+    }
+
+    @Override
+    public TaskResponse updateTaskName(UUID taskIdentifier, UpdateTaskNameRequest request) {
+        Task task = validateUpdateTaskNameRequest(taskIdentifier, request);
+        task.setName(request.getName());
         Task savedTask = taskRepositoryWrapper.saveWithException(task);
         TaskConfig taskConfig = getActiveTaskConfig(task.getTaskConfigKey());
         return TaskResponse.from(savedTask, taskConfig, objectMapper);
@@ -146,6 +156,13 @@ public class TaskWriteServiceImpl implements TaskWriteService {
         return task;
     }
 
+    private Task validateUpdateTaskNameRequest(UUID taskIdentifier, UpdateTaskNameRequest request) {
+        validateRequestNotNull(request);
+        Task task = taskRepositoryWrapper.findByTaskIdentifierWithException(taskIdentifier);
+        validateTaskNotCompleted(task);
+        return task;
+    }
+
     private TaskValidationResult validateCompleteTaskRequest(CompleteTaskRequest request) {
         validateRequestNotNull(request);
         Task task = taskRepositoryWrapper.findByTaskIdentifierWithException(request.getTaskIdentifier());
@@ -188,9 +205,10 @@ public class TaskWriteServiceImpl implements TaskWriteService {
         taskConfigRepositoryWrapper.findActiveByTaskConfigKey(taskConfigKey);
     }
 
-    private Task buildTaskFromRequest(CreateTaskRequest request) {
+    private Task buildTaskFromRequest(CreateTaskRequest request, TaskConfig taskConfig) {
         Task task = new Task();
         task.setTaskConfigKey(request.getTaskConfigKey());
+        task.setName(taskConfig != null ? taskConfig.getName() : null);
         task.setAssignedTo(request.getAssignedTo());
         task.setDueAt(request.getDueAt());
         

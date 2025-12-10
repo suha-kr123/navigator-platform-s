@@ -81,11 +81,16 @@ public class TaskResponse {
                     .build();
         }
         
+        // Prioritize task.name if present, otherwise fallback to taskConfig.name
+        String taskName = com.nivasafinance.common.utils.ValidationUtils.isNonNull(task.getName()) 
+                ? task.getName() 
+                : (com.nivasafinance.common.utils.ValidationUtils.isNonNull(taskConfig) ? taskConfig.getName() : null);
+        
         return TaskResponse.builder()
                 .id(task.getId())
                 .taskIdentifier(task.getTaskIdentifier())
                 .taskConfigKey(task.getTaskConfigKey())
-                .taskName(com.nivasafinance.common.utils.ValidationUtils.isNonNull(taskConfig) ? taskConfig.getName() : null)
+                .taskName(taskName)
                 .taskDescription(com.nivasafinance.common.utils.ValidationUtils.isNonNull(taskConfig) ? taskConfig.getDescription() : null)
                 .assignedTo(task.getAssignedTo())
                 .dueAt(task.getDueAt())
