@@ -259,6 +259,10 @@ public class LeadReadServiceImpl implements LeadReadService {
     }
 
     @Override
+    @org.springframework.cache.annotation.Cacheable(
+            cacheNames = "leadDashboard",
+            keyGenerator = "leadDashboardCacheKeyGenerator"
+    )
     public PaginatedResponse<LeadDashboardResponse> getLeadDashboard(
             PaginationRequest paginationRequest,
             LeadDashboardFilters filters) {
@@ -271,6 +275,10 @@ public class LeadReadServiceImpl implements LeadReadService {
     }
 
     @Override
+    @org.springframework.cache.annotation.Cacheable(
+            cacheNames = "leadDashboardFilters",
+            key = "T(com.nivasafinance.common.context.UserContext).getUsername() + ':' + (#filters != null && #filters.offices != null ? #filters.offices.toString() : 'empty')"
+    )
     public LeadDashboardFiltersResponse getLeadDashboardFilters(LeadDashboardFiltersFilters filters) {
         // Get current user's staff and office
         StaffResponse currentStaff = staffReadService.getCurrentStaff();

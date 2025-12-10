@@ -74,6 +74,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
 
     @Override
     @Transactional
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = "leadDashboard", allEntries = true)
     public CreateLeadResponse createLead(CreateLeadRequest request) {
         //validates product exists
         if (request.getProduct() != null) {
@@ -129,6 +130,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
 
     @Override
     @Transactional
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = "leadDashboard", allEntries = true)
     public void updateLead(UUID leadIdentifier, UpdateLeadRequest request) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
 
@@ -196,6 +198,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     }
 
     @Override
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = "leadDashboard", allEntries = true)
     public void touchLead(UUID leadIdentifier) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
         leadRepositoryWrapper.saveWithException(lead);
@@ -388,6 +391,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
 
     @Override
     @Transactional
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = "leadDashboard", allEntries = true)
     public void updateCallDetails(UUID leadIdentifier, UpdateCallDetailsRequest request) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
 
@@ -523,6 +527,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
 
     @Override
     @Transactional
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = "leadDashboard", allEntries = true)
     public void rejectLead(UUID leadIdentifier, RejectLeadRequest request) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
 
@@ -563,8 +568,9 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     }
 
     @Override
-@Transactional
-public void undoRejectLead(UUID leadIdentifier) {
+    @Transactional
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = "leadDashboard", allEntries = true)
+    public void undoRejectLead(UUID leadIdentifier) {
     Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
 
     // Validate that lead is currently rejected
@@ -596,6 +602,7 @@ public void undoRejectLead(UUID leadIdentifier) {
 
     @Override
     @Transactional
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = "leadDashboard", allEntries = true)
     public void withdrawLead(UUID leadIdentifier, WithdrawLeadRequest request) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
 
@@ -637,6 +644,7 @@ public void undoRejectLead(UUID leadIdentifier) {
 
     @Override
     @Transactional
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = "leadDashboard", allEntries = true)
     public void completeLead(UUID leadIdentifier) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
 
@@ -656,6 +664,7 @@ public void undoRejectLead(UUID leadIdentifier) {
 
     @Override
     @Transactional
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = "leadDashboard", allEntries = true)
     public void onholdLead(UUID leadIdentifier, OnholdLeadRequest request) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
 
@@ -705,6 +714,7 @@ public void undoRejectLead(UUID leadIdentifier) {
 
     @Override
     @Transactional
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = "leadDashboard", allEntries = true)
     public void resumeLead(UUID leadIdentifier) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
 
@@ -726,6 +736,7 @@ public void undoRejectLead(UUID leadIdentifier) {
 
     @Override
     @Transactional
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = "leadDashboard", allEntries = true)
     public void dropoffLead(UUID leadIdentifier, DropoffLeadRequest request) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
 
@@ -843,6 +854,7 @@ public void undoRejectLead(UUID leadIdentifier) {
 
     @Override
     @Transactional
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = "leadDashboard", allEntries = true)
     public BulkSalesOwnerAssignmentResponse bulkAssignSalesOwner(BulkSalesOwnerAssignmentRequest request) {
         // Input validation
         if (request == null) {

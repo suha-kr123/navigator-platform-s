@@ -27,6 +27,7 @@ public class OfficeReadServiceImpl implements OfficeReadService {
     private final MessageSource messageSource;
 
     @Override
+    @org.springframework.cache.annotation.Cacheable(cacheNames = "offices", key = "#key")
     public OfficeResponse getOfficeByKey(String key) {
         Office entity = findOfficeByKey(key);
         return toResponse(entity);
@@ -60,6 +61,7 @@ public class OfficeReadServiceImpl implements OfficeReadService {
     }
 
     @Override
+    @org.springframework.cache.annotation.Cacheable(cacheNames = "officesByCodePrefix", key = "#codePrefix != null ? #codePrefix : 'null'")
     public List<OfficeResponse> getOfficesByCodePrefix(String codePrefix) {
         List<Office> offices = officeRepositoryWrapper.findAllByCodePrefix(codePrefix);
         return offices.stream()

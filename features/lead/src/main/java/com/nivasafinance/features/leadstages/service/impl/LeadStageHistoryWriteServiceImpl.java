@@ -51,6 +51,7 @@ public class LeadStageHistoryWriteServiceImpl implements LeadStageHistoryWriteSe
 
     @Override
     @Transactional
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = "leadDashboard", allEntries = true)
     public LeadStageHistory createInitialStage(UUID leadId, String workflowConfigKey) {
         ValidationUtils.requireNonNull(leadId, LeadStageValidationException::nullLeadId);
         ValidationUtils.requireNonNullOrEmpty(workflowConfigKey, WorkflowValidationException::nullOrEmptyWorkflowConfigKey);
@@ -101,6 +102,7 @@ public class LeadStageHistoryWriteServiceImpl implements LeadStageHistoryWriteSe
 
     @Override
     @Transactional
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = "leadDashboard", allEntries = true)
     public LeadStageHistory createStageEntry(UUID leadId, StageTransitionRequest request) {
         // Input validation
         ValidationUtils.requireNonNull(leadId, LeadStageValidationException::nullLeadId);
@@ -114,6 +116,7 @@ public class LeadStageHistoryWriteServiceImpl implements LeadStageHistoryWriteSe
 
     @Override
     @Transactional
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = "leadDashboard", allEntries = true)
     public LeadStageHistory changeAssignment(UUID leadId, String stageKey, String newAssignedTo) {
         // Input validation
         ValidationUtils.requireNonNull(leadId, LeadStageValidationException::nullLeadId);
@@ -126,6 +129,7 @@ public class LeadStageHistoryWriteServiceImpl implements LeadStageHistoryWriteSe
 
     @Override
     @Transactional
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = "leadDashboard", allEntries = true)
     public LeadStageHistory changeSubStage(UUID leadId, String stageKey, String subStageKey) {
         // Input validation
         ValidationUtils.requireNonNull(leadId, LeadStageValidationException::nullLeadId);
@@ -480,6 +484,7 @@ public class LeadStageHistoryWriteServiceImpl implements LeadStageHistoryWriteSe
 
     @Override
     @Transactional
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = "leadDashboard", allEntries = true)
     public BulkChangeAssignmentResponse bulkChangeAssignment(BulkChangeAssignmentRequest request) {
         // Input validation
         ValidationUtils.requireNonNull(request, LeadStageValidationException::nullRequest);

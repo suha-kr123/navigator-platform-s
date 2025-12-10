@@ -26,6 +26,7 @@ public class OfficeWriteServiceImpl implements OfficeWriteService {
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = {"offices", "officesByCodePrefix"}, allEntries = true)
     public OfficeResponse createOffice(OfficeCreateRequest request) {
         // Use common address data service for address creation
         Office office = new Office();
