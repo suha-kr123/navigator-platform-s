@@ -5,6 +5,7 @@ import com.nivasafinance.features.lead.dto.LeadDashboardFilters;
 import com.nivasafinance.features.offices.service.OfficeReadService;
 import com.nivasafinance.features.staff.service.StaffReadService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.interceptor.KeyGenerator;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -27,6 +28,7 @@ import java.util.stream.Collectors;
  */
 @Component("leadDashboardCacheKeyGenerator")
 @RequiredArgsConstructor
+@Slf4j
 public class LeadDashboardCacheKeyGenerator implements KeyGenerator {
 
     private final StaffReadService staffReadService;
@@ -87,9 +89,11 @@ public class LeadDashboardCacheKeyGenerator implements KeyGenerator {
             addDateToKey(keyParts, "onHoldFollowUpDateTo", filters.getOnHoldFollowUpDateTo());
         }
 
-        return String.join("|", keyParts.stream()
+        String cacheKey = String.join("|", keyParts.stream()
                 .map(Objects::toString)
                 .collect(Collectors.toList()));
+        log.debug("Generated cache key for Lead Dashboard: {}", cacheKey);
+        return cacheKey;
     }
 
     private void addListToKey(List<Object> keyParts, String prefix, List<String> list) {

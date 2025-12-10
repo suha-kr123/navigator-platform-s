@@ -16,6 +16,7 @@ import com.nivasafinance.features.offices.dto.OfficeResponse;
 import com.nivasafinance.features.offices.service.OfficeReadService;
 import com.nivasafinance.features.staff.dto.StaffResponse;
 import com.nivasafinance.features.staff.service.StaffReadService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -26,6 +27,7 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
+@Slf4j
 public class LeadReadServiceImpl implements LeadReadService {
 
     private final LeadRepositoryWrapper leadRepositoryWrapper;
@@ -266,6 +268,7 @@ public class LeadReadServiceImpl implements LeadReadService {
     public PaginatedResponse<LeadDashboardResponse> getLeadDashboard(
             PaginationRequest paginationRequest,
             LeadDashboardFilters filters) {
+        log.info("Cache MISS - Executing getLeadDashboard query (this means data is being fetched from database)");
         return leadDashboardWrapper.findLeadDashboard(paginationRequest, filters);
     }
 
