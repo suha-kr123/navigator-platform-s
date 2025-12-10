@@ -16,6 +16,8 @@ dependencies {
     implementation(libs.aws.secretsmanager)
     implementation("org.springframework.boot:spring-boot-starter-cache")
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
+    // Micrometer Prometheus for metrics export
+    implementation("io.micrometer:micrometer-registry-prometheus")
 }
 
 springBoot {
