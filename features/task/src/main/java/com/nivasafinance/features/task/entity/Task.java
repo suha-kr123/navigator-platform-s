@@ -43,6 +43,9 @@ public class Task extends AuditableEntity {
     @Column(name = "task_config_key", nullable = false, length = 100)
     private String taskConfigKey;
 
+    @Column(name = "name", length = 100)
+    private String name;
+
     @Column(name = "assigned_to", length = 255)
     private String assignedTo;
 
