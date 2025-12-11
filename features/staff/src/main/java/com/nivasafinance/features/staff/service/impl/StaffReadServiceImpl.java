@@ -43,7 +43,6 @@ public class StaffReadServiceImpl implements StaffReadService {
     }
 
     @Override
-    @org.springframework.cache.annotation.Cacheable(cacheNames = "currentStaff", key = "T(com.nivasafinance.common.context.UserContext).getUsername()")
     public StaffResponse getCurrentStaff() {
         String currentUsername = UserContext.getUsername();
 
@@ -57,7 +56,6 @@ public class StaffReadServiceImpl implements StaffReadService {
     }
 
     @Override
-    @org.springframework.cache.annotation.Cacheable(cacheNames = "staffByOfficeKeys", key = "#officeKeys != null ? #officeKeys.toString() : 'empty'")
     public List<StaffResponse> getStaffByOfficeKeys(List<String> officeKeys) {
         if (officeKeys == null || officeKeys.isEmpty()) {
             return List.of();

@@ -38,7 +38,6 @@ public class StaffWriteServiceImpl implements StaffWriteService {
     private final MessageSource messageSource;
 
     @Override
-    @org.springframework.cache.annotation.CacheEvict(cacheNames = {"currentStaff", "staffByOfficeKeys"}, allEntries = true)
     public StaffResponse createStaff(StaffCreateRequest request) {
         officeReadService.getOfficeByKey(request.getOfficeKey());
 
