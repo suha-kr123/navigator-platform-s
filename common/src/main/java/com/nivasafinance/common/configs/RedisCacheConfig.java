@@ -14,6 +14,9 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.cache.Cache;
+import org.springframework.cache.annotation.CachingConfigurer;
+import org.springframework.cache.interceptor.CacheErrorHandler;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
@@ -22,19 +25,28 @@ import java.time.Duration;
 
 @Configuration
 @Slf4j
-public class RedisCacheConfig {
+public class RedisCacheConfig implements CachingConfigurer {
 
     @Value("${redis.cache.ttl.hours:1}")
     private long cacheTtlHours;
 
+    private RedisConnectionFactory redisConnectionFactory;
+    private ObjectMapper objectMapper;
+
+    public RedisCacheConfig(RedisConnectionFactory redisConnectionFactory, ObjectMapper objectMapper) {
+        this.redisConnectionFactory = redisConnectionFactory;
+        this.objectMapper = objectMapper;
+    }
+
     @Bean
     @Primary
-    public CacheManager cacheManager(RedisConnectionFactory redisConnectionFactory, ObjectMapper objectMapper) {
+    @Override
+    public CacheManager cacheManager() {
         log.info("Configuring Redis CacheManager with JSON serialization (TTL: {} hours)", cacheTtlHours);
         
         // Create a copy of the existing ObjectMapper to avoid modifying the shared instance
         // The existing ObjectMapper already has JavaTimeModule configured
-        ObjectMapper redisObjectMapper = objectMapper.copy();
+        ObjectMapper redisObjectMapper = this.objectMapper.copy();
         
         // Ensure JavaTimeModule is registered (should already be there, but ensure it)
         if (!redisObjectMapper.getRegisteredModuleIds().contains(JavaTimeModule.class.getName())) {
@@ -67,13 +79,46 @@ public class RedisCacheConfig {
                         serializer))
                 .disableCachingNullValues(); // Don't cache null values
 
-        RedisCacheManager cacheManager = RedisCacheManager.builder(redisConnectionFactory)
+        // Note: transactionAware() is removed to prevent cache eviction failures from rolling back transactions
+        // Cache eviction errors will be logged but won't affect the main transaction
+        RedisCacheManager cacheManager = RedisCacheManager.builder(this.redisConnectionFactory)
                 .cacheDefaults(cacheConfig)
-                .transactionAware()
                 .build();
         
         log.info("Redis CacheManager configured successfully with JSON serialization (Java 8 time support + type information, TTL: {} hours)", cacheTtlHours);
         return cacheManager;
+    }
+
+    /**
+     * Cache error handler that logs errors but doesn't throw exceptions.
+     * This ensures cache failures don't break application functionality.
+     * Implements CachingConfigurer to register this as the default error handler.
+     */
+    @Override
+    public CacheErrorHandler errorHandler() {
+        return new CacheErrorHandler() {
+            @Override
+            public void handleCacheGetError(RuntimeException exception, Cache cache, Object key) {
+                log.warn("Cache get error for key {} in cache {}: {}", key, cache.getName(), exception.getMessage());
+            }
+
+            @Override
+            public void handleCachePutError(RuntimeException exception, Cache cache, Object key, Object value) {
+                log.warn("Cache put error for key {} in cache {}: {}", key, cache.getName(), exception.getMessage());
+            }
+
+            @Override
+            public void handleCacheEvictError(RuntimeException exception, Cache cache, Object key) {
+                log.warn("Cache evict error for key {} in cache {}: {}", key, cache.getName(), exception.getMessage());
+                // Don't throw - allow transaction to proceed even if cache eviction fails
+            }
+
+            @Override
+            public void handleCacheClearError(RuntimeException exception, Cache cache) {
+                log.warn("Cache clear error for cache {}: {}", cache.getName(), exception.getMessage());
+                // Don't throw - allow transaction to proceed even if cache clear fails
+            }
+        };
     }
 }
 
