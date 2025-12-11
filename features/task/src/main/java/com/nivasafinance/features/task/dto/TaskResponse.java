@@ -78,6 +78,8 @@ public class TaskResponse {
                     .creatorRemarks(task.getTaskDetails().getCreatorRemarks())
                     .iterationCount(task.getTaskDetails().getIterationCount())
                     .rescheduledFromTaskIdentifier(task.getTaskDetails().getRescheduledFromTaskIdentifier())
+                    .rescheduleReasonCodeValueKey(task.getTaskDetails().getRescheduleReasonCodeValueKey())
+                    .rescheduledFromTaskRemarks(task.getTaskDetails().getRescheduledFromTaskRemarks())
                     .build();
         }
         

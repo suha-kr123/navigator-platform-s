@@ -315,12 +315,33 @@ public class TaskReadServiceImpl implements TaskReadService {
             }
         }
         
+        UUID rescheduledFromTaskIdentifier = null;
+        Object rescheduledFromTaskIdObj = taskDetailsMap.get("rescheduledFromTaskIdentifier");
+        if (ValidationUtils.isNonNull(rescheduledFromTaskIdObj)) {
+            if (rescheduledFromTaskIdObj instanceof UUID) {
+                rescheduledFromTaskIdentifier = (UUID) rescheduledFromTaskIdObj;
+            } else if (rescheduledFromTaskIdObj instanceof String) {
+                try {
+                    rescheduledFromTaskIdentifier = UUID.fromString((String) rescheduledFromTaskIdObj);
+                } catch (IllegalArgumentException e) {
+                    // If it's not a valid UUID string, leave it as null
+                    rescheduledFromTaskIdentifier = null;
+                }
+            }
+        }
+        
+        String rescheduleReasonCodeValueKey = (String) taskDetailsMap.get("rescheduleReasonCodeValueKey");
+        String rescheduledFromTaskRemarks = (String) taskDetailsMap.get("rescheduledFromTaskRemarks");
+        
         return TaskDetailsResponse.builder()
                 .entityId(entityId)
                 .entityType(entityType)
                 .preferredCallWindow(preferredCallWindow)
                 .creatorRemarks((String) taskDetailsMap.get("creatorRemarks"))
                 .iterationCount(iterationCount)
+                .rescheduledFromTaskIdentifier(rescheduledFromTaskIdentifier)
+                .rescheduleReasonCodeValueKey(rescheduleReasonCodeValueKey)
+                .rescheduledFromTaskRemarks(rescheduledFromTaskRemarks)
                 .build();
     }
     

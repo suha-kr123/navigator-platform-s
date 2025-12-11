@@ -235,6 +235,8 @@ public class TaskWriteServiceImpl implements TaskWriteService {
                             ? request.getTaskDetails().getIterationCount() 
                             : 0)
                     .rescheduledFromTaskIdentifier(request.getTaskDetails().getRescheduledFromTaskIdentifier())
+                    .rescheduleReasonCodeValueKey(request.getTaskDetails().getRescheduleReasonCodeValueKey())
+                    .rescheduledFromTaskRemarks(request.getTaskDetails().getRescheduledFromTaskRemarks())
                     .build();
         }
         task.setTaskDetails(taskDetails);

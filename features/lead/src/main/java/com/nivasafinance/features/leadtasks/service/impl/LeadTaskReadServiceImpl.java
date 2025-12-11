@@ -234,11 +234,16 @@ public class LeadTaskReadServiceImpl implements LeadTaskReadService {
                     }
                 }
                 
+                String rescheduleReasonCodeValueKey = (String) taskDetailsMap.get("rescheduleReasonCodeValueKey");
+                String rescheduledFromTaskRemarks = (String) taskDetailsMap.get("rescheduledFromTaskRemarks");
+                
                 taskDetails = LeadTaskResponse.TaskDetails.builder()
                         .preferredCallWindow(preferredCallWindow)
                         .creatorRemarks((String) taskDetailsMap.get("creatorRemarks"))
                         .iterationCount(iterationCount)
                         .rescheduledFromTaskIdentifier(rescheduledFromTaskIdentifier)
+                        .rescheduleReasonCodeValueKey(rescheduleReasonCodeValueKey)
+                        .rescheduledFromTaskRemarks(rescheduledFromTaskRemarks)
                         .build();
             }
             

@@ -212,6 +212,35 @@ public class LeadTaskWriteServiceImpl implements LeadTaskWriteService {
         // Reschedule the task (closes old task)
         TaskResponse taskResponse = taskWriteService.rescheduleTask(rescheduleTaskRequest);
         
+        // Get remarks from the last rescheduled task if it exists
+        // Priority: 1) rescheduledFromTaskRemarks from old task's TaskDetails, 2) creatorRemarks from old task's TaskDetails, 3) remarks from previous task's OutcomeDetails
+        String rescheduledFromTaskRemarks = null;
+        if (ValidationUtils.isNonNull(oldTask.getTaskDetails())) {
+            // First check if old task has rescheduledFromTaskRemarks in its TaskDetails (preserves the chain)
+            if (ValidationUtils.isNonNullOrEmpty(oldTask.getTaskDetails().getRescheduledFromTaskRemarks())) {
+                rescheduledFromTaskRemarks = oldTask.getTaskDetails().getRescheduledFromTaskRemarks();
+            } 
+            // Otherwise, use creatorRemarks from the old task (remarks provided when old task was created/rescheduled)
+            else if (ValidationUtils.isNonNullOrEmpty(oldTask.getTaskDetails().getCreatorRemarks())) {
+                rescheduledFromTaskRemarks = oldTask.getTaskDetails().getCreatorRemarks();
+            }
+            // If old task was rescheduled from another task, try to get remarks from that previous task's OutcomeDetails
+            else if (ValidationUtils.isNonNull(oldTask.getTaskDetails().getRescheduledFromTaskIdentifier())) {
+                try {
+                    Task previousTask = taskRepositoryWrapper.findByTaskIdentifierWithException(
+                            oldTask.getTaskDetails().getRescheduledFromTaskIdentifier());
+                    if (ValidationUtils.isNonNull(previousTask) 
+                            && ValidationUtils.isNonNull(previousTask.getOutcomeDetails())
+                            && ValidationUtils.isNonNullOrEmpty(previousTask.getOutcomeDetails().getRemarks())) {
+                        rescheduledFromTaskRemarks = previousTask.getOutcomeDetails().getRemarks();
+                    }
+                } catch (Exception e) {
+                    // If previous task not found or any error, leave remarks as null
+                    rescheduledFromTaskRemarks = null;
+                }
+            }
+        }
+        
         // Create new task synchronously with same config, new preferred times, iteration+1
         if (ValidationUtils.isNonNull(oldTask.getTaskDetails()) 
                 && ValidationUtils.isNonNull(oldTask.getTaskDetails().getEntityType())
@@ -256,6 +285,8 @@ public class LeadTaskWriteServiceImpl implements LeadTaskWriteService {
                     .creatorRemarks(creatorRemarks)
                     .iterationCount(newIterationCount)
                     .rescheduledFromTaskIdentifier(rescheduledFromTaskId)
+                    .rescheduleReasonCodeValueKey(request.getReasonCodeValueKey())
+                    .rescheduledFromTaskRemarks(rescheduledFromTaskRemarks)
                     .build();
             
             CreateTaskRequest createTaskRequest = CreateTaskRequest.builder()

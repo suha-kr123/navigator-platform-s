@@ -57,6 +57,8 @@ public class LeadTaskResponse {
         private String creatorRemarks;
         private Integer iterationCount;
         private UUID rescheduledFromTaskIdentifier;
+        private String rescheduleReasonCodeValueKey;
+        private String rescheduledFromTaskRemarks;
         
         @Data
         @NoArgsConstructor
@@ -93,6 +95,8 @@ public class LeadTaskResponse {
                     .creatorRemarks(taskResponse.getTaskDetails().getCreatorRemarks())
                     .iterationCount(taskResponse.getTaskDetails().getIterationCount())
                     .rescheduledFromTaskIdentifier(taskResponse.getTaskDetails().getRescheduledFromTaskIdentifier())
+                    .rescheduleReasonCodeValueKey(taskResponse.getTaskDetails().getRescheduleReasonCodeValueKey())
+                    .rescheduledFromTaskRemarks(taskResponse.getTaskDetails().getRescheduledFromTaskRemarks())
                     .build();
         }
         
@@ -142,6 +146,8 @@ public class LeadTaskResponse {
                         .creatorRemarks(taskResponse.getTaskDetails().getCreatorRemarks())
                         .iterationCount(taskResponse.getTaskDetails().getIterationCount())
                         .rescheduledFromTaskIdentifier(taskResponse.getTaskDetails().getRescheduledFromTaskIdentifier())
+                        .rescheduleReasonCodeValueKey(taskResponse.getTaskDetails().getRescheduleReasonCodeValueKey())
+                        .rescheduledFromTaskRemarks(taskResponse.getTaskDetails().getRescheduledFromTaskRemarks())
                         .build();
             }
             

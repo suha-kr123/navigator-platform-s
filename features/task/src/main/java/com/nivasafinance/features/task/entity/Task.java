@@ -94,6 +94,8 @@ public class Task extends AuditableEntity {
         private String creatorRemarks;
         private Integer iterationCount;
         private UUID rescheduledFromTaskIdentifier;
+        private String rescheduleReasonCodeValueKey;
+        private String rescheduledFromTaskRemarks;
 
         @Data
         @NoArgsConstructor
