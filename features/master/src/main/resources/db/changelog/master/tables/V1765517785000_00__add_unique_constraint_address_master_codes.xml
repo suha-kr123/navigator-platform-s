@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1765517785000_00" author="system" context="default">
+        <!-- Add unique constraint on code column for n_master_country -->
+        <addUniqueConstraint 
+            tableName="n_master_country" 
+            columnNames="code" 
+            constraintName="uk_n_master_country_code"/>
+    </changeSet>
+
+    <changeSet id="V1765517785000_01" author="system" context="default">
+        <!-- Add unique constraint on code column for n_master_state -->
+        <addUniqueConstraint 
+            tableName="n_master_state" 
+            columnNames="code" 
+            constraintName="uk_n_master_state_code"/>
+    </changeSet>
+
+    <changeSet id="V1765517785000_02" author="system" context="default">
+        <!-- Add unique constraint on code column for n_master_district -->
+        <addUniqueConstraint 
+            tableName="n_master_district" 
+            columnNames="code" 
+            constraintName="uk_n_master_district_code"/>
+    </changeSet>
+
+    <changeSet id="V1765517785000_03" author="system" context="default">
+        <!-- Add unique constraint on code column for n_master_taluka -->
+        <addUniqueConstraint 
+            tableName="n_master_taluka" 
+            columnNames="code" 
+            constraintName="uk_n_master_taluka_code"/>
+    </changeSet>
+
+    <changeSet id="V1765517785000_04" author="system" context="default">
+        <!-- Add unique constraint on code column for n_master_village -->
+        <addUniqueConstraint 
+            tableName="n_master_village" 
+            columnNames="code" 
+            constraintName="uk_n_master_village_code"/>
+    </changeSet>
+
+</databaseChangeLog>
+
