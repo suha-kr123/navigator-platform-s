@@ -1,11 +1,13 @@
 package com.nivasafinance.common.messaging.config;
 
+import com.nivasafinance.common.messaging.enums.MessageProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.util.StringUtils;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
@@ -27,8 +29,14 @@ public class MessagingConfig {
     private final MessagingConfigurationValidator configurationValidator;
 
     @Bean
-    @ConditionalOnProperty(name = "messaging.provider", havingValue = "SQS")
+    @DependsOn("messagingSecretsLoader")
     public SqsClient sqsClient() {
+        // Check if provider is SQS (either from property or auto-detected)
+        if (messagingProperties.getProvider() != MessageProvider.SQS) {
+            log.debug("SQS provider not enabled, skipping SqsClient creation");
+            return null;
+        }
+        
         configurationValidator.validateSqsConfiguration();
         MessagingProperties.SqsProperties sqs = messagingProperties.getSqs();
 

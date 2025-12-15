@@ -25,7 +25,8 @@ public class MessagingProperties {
 
     /**
      * Optional: Name of the AWS Secrets Manager secret containing SQS configuration.
-     * If provided, SQS config will be loaded from Secrets Manager instead of properties files.
+     * If not provided, defaults to "SQS_CONFIG".
+     * If SQS provider is configured, the application will attempt to load from Secrets Manager.
      */
     private String sqsSecretName;
 
