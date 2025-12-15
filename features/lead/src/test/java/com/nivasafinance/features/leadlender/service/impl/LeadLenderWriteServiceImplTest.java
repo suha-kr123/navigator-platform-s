@@ -172,56 +172,6 @@ class LeadLenderWriteServiceImplTest {
         assertTrue(publishedEvent.getPayload() instanceof LeadLenderCreationEventPayload);
     }
 
-//    @Test
-//    void createLeadLender_existingRelationshipWithInProgressStatus_throwsException() {
-//        // Given
-//        CreateLeadLenderRequest request = new CreateLeadLenderRequest(lenderKey);
-//
-//        when(leadReadService.getLeadBasicByIdentifier(leadIdentifier)).thenReturn(leadBasicResponse);
-//        when(lenderReadService.getByKey(lenderKey)).thenReturn(lenderResponseData);
-//
-//        LeadLender existingLeadLender = new LeadLender();
-//        existingLeadLender.setStatus(LeadLenderStatus.SELECTED);
-//        when(leadLenderRepositoryWrapper.findByLeadIdAndLenderKeyWithException(leadId, lenderKey))
-//                .thenReturn(existingLeadLender);
-//
-//        // When & Then
-//        LeadLenderAlreadyExistsException exception = assertThrows(
-//                LeadLenderAlreadyExistsException.class,
-//                () -> leadLenderWriteService.createLeadLender(leadIdentifier, request)
-//        );
-//
-//        assertTrue(exception.getMessage().contains(leadIdentifier.toString()));
-//        assertTrue(exception.getMessage().contains(lenderKey));
-//
-//        verify(leadReadService).getLeadBasicByIdentifier(leadIdentifier);
-//        verify(lenderReadService).getByKey(lenderKey);
-//        verify(leadLenderRepositoryWrapper).findByLeadIdAndLenderKeyWithException(leadId, lenderKey);
-//        verify(leadLenderRepositoryWrapper, never()).saveWithException(any());
-//        verify(leadWriteService, never()).touchLead(any());
-//        verify(applicationEventPublisher, never()).publishEvent(any());
-//    }
-//
-//    @Test
-//    void createLeadLender_existingRelationshipWithSubmittedStatus_throwsException() {
-//        // Given
-//        CreateLeadLenderRequest request = new CreateLeadLenderRequest(lenderKey);
-//
-//        when(leadReadService.getLeadBasicByIdentifier(leadIdentifier)).thenReturn(leadBasicResponse);
-//        when(lenderReadService.getByKey(lenderKey)).thenReturn(lenderResponseData);
-//
-//        LeadLender existingLeadLender = new LeadLender();
-//        existingLeadLender.setStatus(LeadLenderStatus.SUBMITTED);
-//        when(leadLenderRepositoryWrapper.findByLeadIdAndLenderKeyWithException(leadId, lenderKey))
-//                .thenReturn(existingLeadLender);
-//
-//        // When & Then
-//        assertThrows(
-//                LeadLenderAlreadyExistsException.class,
-//                () -> leadLenderWriteService.createLeadLender(leadIdentifier, request)
-//        );
-//    }
-
     @Test
     void createLeadLender_existingRelationshipWithRejectedStatus_allowsCreation() {
         // Given
