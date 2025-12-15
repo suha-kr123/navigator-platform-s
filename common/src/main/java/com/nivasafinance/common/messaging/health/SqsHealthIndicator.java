@@ -22,12 +22,15 @@ public class SqsHealthIndicator implements HealthIndicator {
     @Override
     public Health health() {
         try {
+            // Only check queues that are configured (AUDIT is optional)
             for (QueueType queueType : QueueType.values()) {
-                String queueUrl = messagingProperties.getSqs().resolveQueueUrl(queueType);
+                String queueUrl = messagingProperties.getSqs().getQueues().get(queueType);
+                if (queueUrl != null && !queueUrl.isBlank()) {
                 sqsClient.getQueueAttributes(GetQueueAttributesRequest.builder()
                         .queueUrl(queueUrl)
                         .attributeNames(QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES)
                         .build());
+                }
             }
             return Health.up().build();
         } catch (Exception ex) {

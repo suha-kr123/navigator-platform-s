@@ -59,15 +59,11 @@ public class NotificationListener {
 
     private void publish(NotificationRecord record, String eventType) {
         try {
+            // Only publish recordId - all other details will be fetched from DB
             messagePublisherFactory.getPublisher().publish(
                     QueueType.NOTIFICATION,
                     record.getId().toString(),
-                    Map.of(
-                            "recordId", record.getId().toString(),
-                            "configId", record.getNotificationConfigId(),
-                            "eventType", eventType,
-                            "payload", record.getNotificationPayload()
-                    )
+                    Map.of("recordId", record.getId().toString())
             );
             log.info("Notification record published to queue: {}", record.getId());
         } catch (Exception ex) {

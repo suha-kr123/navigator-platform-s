@@ -48,6 +48,11 @@ public class NotificationRecord extends AuditableEntity {
     @Column(name = "notification_payload", columnDefinition = "jsonb")
     private Map<String, Object> notificationPayload;
 
+    @Type(JsonType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "details", columnDefinition = "jsonb")
+    private Map<String, Object> details;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 50)
     @Builder.Default

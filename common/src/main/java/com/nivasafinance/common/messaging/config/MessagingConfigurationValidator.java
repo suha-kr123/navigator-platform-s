@@ -17,7 +17,11 @@ public class MessagingConfigurationValidator {
             throw new IllegalStateException("messaging.sqs.region must be configured");
         }
 
-        for (QueueType queueType : QueueType.values()) {
+        // Only validate required queues for notifications
+        // AUDIT queue is optional and not required
+        QueueType[] requiredQueues = {QueueType.NOTIFICATION, QueueType.NOTIFICATION_EXECUTOR};
+        
+        for (QueueType queueType : requiredQueues) {
             String queueUrl = sqs.getQueues().get(queueType);
             if (!StringUtils.hasText(queueUrl)) {
                 throw new IllegalStateException("Queue URL missing for type: " + queueType);

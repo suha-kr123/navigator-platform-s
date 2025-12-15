@@ -11,6 +11,9 @@
     <include file="classpath:db/changelog/notification/tables/V1763000000000_04__create_notification_template_table.xml"/>
     <include file="classpath:db/changelog/notification/tables/V1763000000000_05__create_notification_record_table.xml"/>
     <include file="classpath:db/changelog/notification/tables/V1763000000000_06__create_notification_receipt_table.xml"/>
+    <include file="classpath:db/changelog/notification/tables/V1763000000000_07__add_details_to_notification_record.xml"/>
+    <include file="classpath:db/changelog/notification/tables/V1763000000000_08__create_lead_whatsapp_notification_table.xml"/>
+    <include file="classpath:db/changelog/notification/tables/V1763000000000_09__create_advisor_whatsapp_notification_table.xml"/>
 
 </databaseChangeLog>
 

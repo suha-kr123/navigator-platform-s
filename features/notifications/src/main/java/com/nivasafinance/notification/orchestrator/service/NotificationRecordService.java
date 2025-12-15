@@ -9,6 +9,7 @@ import com.nivasafinance.notification.orchestrator.repository.NotificationRecord
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
@@ -23,10 +24,12 @@ public class NotificationRecordService {
 
     private final NotificationRecordRepository notificationRecordRepository;
     private final NotificationPayloadBuilderFactory payloadBuilderFactory;
-    @Transactional
-    public Optional<NotificationRecord> createNotificationRecord(Long notificationConfigId,
-                                                                 String idempotencyKey,
-                                                                 Map<String, Object> payload) {
+    // Called internally from createNotificationRecordFromEvent, so no separate @Transactional needed
+    // The transaction is managed by the calling method
+    private Optional<NotificationRecord> createNotificationRecord(Long notificationConfigId,
+                                                                  String idempotencyKey,
+                                                                  Map<String, Object> payload,
+                                                                  Map<String, Object> details) {
         if (idempotencyKey != null) {
             Optional<NotificationRecord> existing = notificationRecordRepository.findByIdempotencyKey(idempotencyKey);
             if (existing.isPresent()) {
@@ -40,6 +43,7 @@ public class NotificationRecordService {
                 .notificationConfigId(notificationConfigId)
                 .idempotencyKey(idempotencyKey)
                 .notificationPayload(payload)
+                .details(details)
                 .status(NotificationStatus.INITIATED)
                 .build();
 
@@ -47,10 +51,16 @@ public class NotificationRecordService {
         record.setUpdatedBy("system");
 
         NotificationRecord saved = notificationRecordRepository.save(record);
+        
+        // Force immediate write to database before returning
+        // This ensures the record is visible to other transactions (like the queue consumer)
+        notificationRecordRepository.flush();
+        
+        log.debug("Notification record saved and flushed to DB: {}", saved.getId());
         return Optional.of(saved);
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Optional<NotificationRecord> createNotificationRecordFromEvent(NotificationEventMapping mapping,
                                                                           String eventCode,
                                                                           Object eventPayload) {
@@ -68,21 +78,31 @@ public class NotificationRecordService {
                 eventCode,
                 mapping.getNotificationConfig().getId());
 
+        // Store event_type in details for later retrieval
+        Map<String, Object> details = new HashMap<>();
+        details.put("event_type", eventCode);
+
         return createNotificationRecord(
                 mapping.getNotificationConfig().getId(),
                 idempotencyKey,
-                notificationPayload
+                notificationPayload,
+                details
         );
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public NotificationRecord createManualNotification(Long notificationConfigId,
                                                        String referenceId,
                                                        Map<String, Object> payload) {
         String idempotencyKey = referenceId != null
                 ? String.format("%s_MANUAL_%s", referenceId, notificationConfigId)
                 : null;
-        Optional<NotificationRecord> created = createNotificationRecord(notificationConfigId, idempotencyKey, payload);
+        
+        // Store MANUAL as event_type for manual notifications
+        Map<String, Object> details = new HashMap<>();
+        details.put("event_type", "MANUAL");
+        
+        Optional<NotificationRecord> created = createNotificationRecord(notificationConfigId, idempotencyKey, payload, details);
         if (created.isPresent()) {
             return created.get();
         }

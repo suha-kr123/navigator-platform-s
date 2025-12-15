@@ -17,5 +17,11 @@ public class WhatsAppTemplateResponse {
     private String deliveredAt;
     private String readAt;
     private String errorMessage;
+    
+    /**
+     * Raw response body from WATI API.
+     * Contains full response including receivers array with localMessageId.
+     */
+    private String rawResponseBody;
 }
 

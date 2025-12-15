@@ -18,7 +18,7 @@ public class WatiConfig {
 
     @PostConstruct
     public void init() {
-        this.watiSecrets = secretManagerService.getSecret("CUSTOMER_WATI_2");
+        this.watiSecrets = secretManagerService.getSecret("CUSTOMER_WATI");
     }
 
     public String getApiKey() {
