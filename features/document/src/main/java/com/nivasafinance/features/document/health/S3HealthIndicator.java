@@ -21,7 +21,7 @@ public class S3HealthIndicator {
     
     private final AmazonS3 amazonS3;
     
-    @Value("${aws.s3.bucket-name}")
+    @Value("${aws.s3.bucket-name:}")
     private String bucketName;
     
     public boolean checkHealth() {

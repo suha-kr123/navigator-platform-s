@@ -1,0 +1,479 @@
+package com.nivasafinance.notification.orchestrator.listener;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nivasafinance.common.enums.NotificationStatus;
+import com.nivasafinance.common.messaging.config.MessagingProperties;
+import com.nivasafinance.common.messaging.enums.MessageProvider;
+import com.nivasafinance.common.messaging.enums.QueueType;
+import com.nivasafinance.common.messaging.factory.MessagePublisherFactory;
+import com.nivasafinance.notification.orchestrator.entity.NotificationConfig;
+import com.nivasafinance.notification.orchestrator.entity.NotificationRecord;
+import com.nivasafinance.notification.orchestrator.entity.NotificationReceipt;
+import com.nivasafinance.notification.orchestrator.repository.NotificationConfigRepository;
+import com.nivasafinance.notification.orchestrator.service.DataProviderExecutor;
+import com.nivasafinance.notification.orchestrator.service.NotificationReceiptService;
+import com.nivasafinance.notification.orchestrator.service.NotificationRecordService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.TransactionTemplate;
+import software.amazon.awssdk.services.sqs.SqsClient;
+import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest;
+import software.amazon.awssdk.services.sqs.model.Message;
+import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
+import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
+
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+/**
+ * Listener that polls the NOTIFICATION queue and creates NotificationReceipts.
+ * This is responsible for the receipt construction phase:
+ * 1. Receives notification records from NOTIFICATION queue
+ * 2. Executes data providers to fetch recipient information
+ * 3. Creates NotificationReceipt entities for each recipient
+ * 4. Publishes receipts to NOTIFICATION_EXECUTOR queue for execution
+ */
+@Component
+@RequiredArgsConstructor
+@Slf4j
+public class NotificationReceiptConstructorListener {
+
+    private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {};
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
+    private static final String TIMEZONE = "Asia/Kolkata";
+
+    private final ObjectMapper objectMapper;
+    private final NotificationRecordService notificationRecordService;
+    private final NotificationConfigRepository notificationConfigRepository;
+    private final DataProviderExecutor dataProviderExecutor;
+    private final NotificationReceiptService notificationReceiptService;
+    private final MessagePublisherFactory messagePublisherFactory;
+    private final MessagingProperties messagingProperties;
+    private final ObjectProvider<SqsClient> sqsClientProvider;
+    private final PlatformTransactionManager transactionManager;
+
+    private final AtomicBoolean polling = new AtomicBoolean(false);
+
+    /**
+     * Polls the NOTIFICATION queue for notification records and creates receipts.
+     */
+    @Scheduled(fixedDelayString = "${messaging.sqs.poll-delay-ms:1000}")
+    public void pollQueue() {
+        // Only poll SQS if provider is SQS and SqsClient is available
+        if (messagingProperties.getProvider() != MessageProvider.SQS) {
+            return;
+        }
+
+        SqsClient sqsClient = sqsClientProvider.getIfAvailable();
+        if (sqsClient == null) {
+            return;
+        }
+
+        if (!polling.compareAndSet(false, true)) {
+            return;
+        }
+
+        try {
+            String queueUrl = messagingProperties.getSqs().resolveQueueUrl(QueueType.NOTIFICATION);
+            ReceiveMessageRequest request = ReceiveMessageRequest.builder()
+                    .queueUrl(queueUrl)
+                    .waitTimeSeconds(messagingProperties.getSqs().getWaitTimeSeconds())
+                    .maxNumberOfMessages(messagingProperties.getSqs().getMaxMessages())
+                    .build();
+
+            ReceiveMessageResponse response = sqsClient.receiveMessage(request);
+            for (Message message : response.messages()) {
+                boolean processed = processMessage(message.body());
+                if (processed) {
+                    deleteMessage(queueUrl, message, sqsClient);
+                }
+            }
+        } catch (Exception ex) {
+            log.error("Failed to poll NOTIFICATION queue", ex);
+        } finally {
+            polling.set(false);
+        }
+    }
+
+    /**
+     * Process a notification record directly by recordId.
+     * Useful for local testing when not using SQS.
+     * 
+     * @param recordId The UUID of the notification record to process
+     * @return true if processed successfully, false otherwise
+     */
+    public boolean processRecordById(UUID recordId) {
+        Map<String, Object> messageMap = Map.of("recordId", recordId.toString());
+        String messageBody;
+        try {
+            messageBody = objectMapper.writeValueAsString(messageMap);
+        } catch (Exception ex) {
+            log.error("Failed to serialize message for recordId: {}", recordId, ex);
+            return false;
+        }
+        return processMessage(messageBody);
+    }
+
+    private boolean processMessage(String rawMessage) {
+        TransactionTemplate template = new TransactionTemplate(transactionManager);
+        template.setIsolationLevel(TransactionDefinition.ISOLATION_DEFAULT);
+        template.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+
+        return Boolean.TRUE.equals(template.execute(status -> handleMessageWithinTransaction(rawMessage, status)));
+    }
+
+    private boolean handleMessageWithinTransaction(String rawMessage, TransactionStatus status) {
+        log.info("Processing notification receipt message: {}", rawMessage);
+
+        Map<String, Object> messageMap = parseMessage(rawMessage);
+
+        // Only recordId is published - load the full record
+        UUID recordId = UUID.fromString((String) messageMap.get("recordId"));
+
+        try {
+            // Load the notification record by recordId
+            NotificationRecord record = notificationRecordService.findById(recordId)
+                    .orElseThrow(() -> new IllegalStateException("NotificationRecord not found for id " + recordId));
+
+            notificationRecordService.updateStatus(recordId, NotificationStatus.PROCESSING);
+
+            // Get configId, eventType, and payload from the record
+            Long configId = record.getNotificationConfigId();
+            Map<String, Object> notificationPayload = record.getNotificationPayload();
+            
+            // Get eventType from details JSONB column
+            Map<String, Object> details = record.getDetails();
+            if (details == null || !details.containsKey("event_type")) {
+                throw new IllegalStateException("Notification record details missing event_type");
+            }
+            String eventType = (String) details.get("event_type");
+
+            if (notificationPayload == null || notificationPayload.isEmpty()) {
+                throw new IllegalStateException("Notification payload is empty");
+            }
+
+            // Load the notification config
+            NotificationConfig config = notificationConfigRepository.findById(configId)
+                    .orElseThrow(() -> new IllegalStateException("NotificationConfig not found for id " + configId));
+
+            Map<String, Object> configMap = config.getConfig();
+
+            // Use the payload fields directly as query parameters
+            // The parameter names in the DataProvider query must match the keys in this map
+            Map<String, Object> queryParams = new HashMap<>(notificationPayload);
+
+            // Get data provider configuration
+            Map<String, Object> dataProviderConfig = asMap(configMap.get("dataProvider"), "config.dataProvider");
+            if (dataProviderConfig == null) {
+                throw new IllegalStateException("Notification config missing dataProvider definition");
+            }
+            String providerKey = (String) dataProviderConfig.get("key");
+            if (providerKey == null) {
+                throw new IllegalStateException("Notification config missing dataProvider key");
+            }
+
+            // Execute data provider with payload fields as parameters
+            Map<String, String> dataProviderResult = dataProviderExecutor.executeDataProvider(
+                    providerKey,
+                    queryParams
+            );
+
+            // Get recipients from config - no defaults, each recipient must specify mode and channelType
+            List<Map<String, Object>> recipients = asListOfMaps(configMap.get("recipients"), "config.recipients");
+            if (recipients == null || recipients.isEmpty()) {
+                throw new IllegalStateException("Notification config must specify at least one recipient");
+            }
+
+            // Create receipt for each recipient
+            log.info("Creating receipts for {} recipient(s). Data provider result keys: {}", 
+                    recipients.size(), dataProviderResult.keySet());
+            for (Map<String, Object> recipientDefinition : recipients) {
+                log.info("Processing recipient definition: {}", recipientDefinition);
+                createReceipt(recordId, eventType, notificationPayload, dataProviderResult, recipientDefinition);
+            }
+
+            notificationRecordService.updateStatus(recordId, NotificationStatus.COMPLETED);
+            return true;
+        } catch (Exception ex) {
+            log.error("Failed to process notification record {}", recordId, ex);
+            notificationRecordService.updateStatus(recordId, NotificationStatus.FAILED);
+            status.setRollbackOnly();
+            return false;
+        }
+    }
+
+    private Map<String, Object> parseMessage(String rawMessage) {
+        try {
+            return objectMapper.readValue(rawMessage, MAP_TYPE);
+        } catch (Exception ex) {
+            throw new IllegalStateException("Failed to parse SQS message body", ex);
+        }
+    }
+
+    private void createReceipt(UUID recordId,
+                               String eventType,
+                               Map<String, Object> notificationPayload,
+                               Map<String, String> dataProviderResult,
+                               Map<String, Object> recipientDefinition) {
+
+        String recipientType = (String) recipientDefinition.get("recipient");
+        String recipientKey = (String) recipientDefinition.get("recipientKey");
+        String recipientTemplateKey = (String) recipientDefinition.get("recipientTemplateKey");
+
+        log.info("Creating receipt for recipient: type={}, key={}, templateKey={}", 
+                recipientType, recipientKey, recipientTemplateKey);
+
+        // Mode and channelType are required per recipient - no defaults
+        String mode = (String) recipientDefinition.get("mode");
+        if (mode == null || mode.isBlank()) {
+            log.error("Skipping recipient {} because mode is not specified in recipient definition: {}", 
+                    recipientKey, recipientDefinition);
+            return;
+        }
+
+        String channelType = (String) recipientDefinition.get("channelType");
+        if (channelType == null || channelType.isBlank()) {
+            log.error("Skipping recipient {} because channelType is not specified in recipient definition: {}", 
+                    recipientKey, recipientDefinition);
+            return;
+        }
+
+        log.info("Checking data provider result for recipientKey '{}'. Available keys: {}", 
+                recipientKey, dataProviderResult.keySet());
+        String recipientContact = dataProviderResult.get(recipientKey);
+        if (recipientContact == null || recipientContact.isBlank()) {
+            String valueStatus = recipientContact == null ? "null" : "empty string";
+            log.error("Skipping recipient {} because contact value is {} for key '{}'. " +
+                    "Available keys in data provider result: {}. " +
+                    "This usually means the query returned null/empty for this field (e.g., no advisor assigned, no mobile number).", 
+                    recipientKey, valueStatus, recipientKey, dataProviderResult.keySet());
+            return;
+        }
+
+        log.info("Checking data provider result for templateKey '{}'", recipientTemplateKey);
+        String templateIdentifier = dataProviderResult.get(recipientTemplateKey);
+        if (templateIdentifier == null || templateIdentifier.isBlank()) {
+            log.error("Skipping recipient {} because template identifier not found for key '{}'. " +
+                    "Available keys in data provider result: {}", 
+                    recipientKey, recipientTemplateKey, dataProviderResult.keySet());
+            return;
+        }
+
+        log.info("All validations passed. Creating receipt for recipient: contact={}, template={}, mode={}, channel={}", 
+                recipientContact, templateIdentifier, mode, channelType);
+
+        // Build message payload: combine notification payload with data provider result
+        Map<String, Object> messagePayload = new HashMap<>(notificationPayload);
+        messagePayload.putAll(dataProviderResult);
+
+        // Extract entity ID from notification payload for details
+        String entityId = notificationPayload.entrySet().stream()
+                .filter(entry -> entry.getKey().toLowerCase().endsWith("id") &&
+                        (entry.getKey().equals("leadId") || entry.getKey().equals("personId") ||
+                         entry.getKey().equals("documentId") || entry.getKey().equals("id")))
+                .map(entry -> entry.getValue() != null ? entry.getValue().toString() : null)
+                .filter(java.util.Objects::nonNull)
+                .findFirst()
+                .orElse(null);
+
+        Map<String, Object> details = new HashMap<>();
+        details.put("recipient_type", recipientType);
+        details.put("event_type", eventType);
+        if (entityId != null) {
+            details.put("entity_id", entityId);
+        }
+
+        // Build schedules from preferred times if available
+        // Schedules contain preferred_call_start_time and preferred_call_end_time as a range
+        // A job runs every 15 minutes to pick receipts within the time range
+        // Uses recipient-specific preferred times (advisor vs lead) if available
+        List<Map<String, Object>> schedules = buildSchedules(dataProviderResult, recipientDefinition, recipientType);
+
+        NotificationReceipt receipt = NotificationReceipt.builder()
+                .id(UUID.randomUUID())
+                .notificationRecordId(recordId)
+                .mode(mode)
+                .recipientContact(recipientContact)
+                .channelType(channelType)
+                .templateIdentifier(templateIdentifier)
+                .messagePayload(messagePayload)
+                .details(details)
+                .schedules(schedules)
+                .remarks(Map.of("status", NotificationStatus.INITIATED.name()))
+                .build();
+
+        receipt.setCreatedBy("system");
+        receipt.setUpdatedBy("system");
+
+        notificationReceiptService.save(receipt);
+
+        // Only publish to executor queue immediately if no schedule exists
+        // If schedule exists, the scheduled job will publish it when preferred time is reached
+        if (schedules == null || schedules.isEmpty()) {
+            // No schedule - publish immediately for immediate execution
+            messagePublisherFactory.getPublisher().publish(
+                    QueueType.NOTIFICATION_EXECUTOR,
+                    receipt.getId().toString(),
+                    Map.of("receiptId", receipt.getId().toString())
+            );
+            log.info("Created notification receipt {} for record {} and published to executor queue (immediate execution)", 
+                    receipt.getId(), recordId);
+        } else {
+            // Has schedule - don't publish yet, scheduled job will handle it
+            log.info("Created notification receipt {} for record {} with schedule. Will be published when preferred time is reached", 
+                    receipt.getId(), recordId);
+        }
+    }
+
+    /**
+     * Builds schedules from preferred times if available.
+     * Uses recipient-specific preferred times based on recipient type:
+     * - For ADVISOR: Uses advisor preferred times from n_advisor.other_details
+     * - For LEAD: Uses lead preferred times from n_lead.other_details
+     * 
+     * The data provider query should return:
+     * - For advisor: preferred times from n_advisor.other_details->>'preferredCallStartTime'
+     * - For lead: preferred times from n_lead.other_details->>'preferredCallStartTime'
+     * 
+     * The query should alias these as 'preferred_call_start_time' and 'preferred_call_end_time'
+     * (or recipient-specific like 'advisor_preferred_call_start_time' if both are returned).
+     * 
+     * If not present, returns empty list (will be executed immediately by the executor).
+     */
+    private List<Map<String, Object>> buildSchedules(Map<String, String> dataProviderResult,
+                                                      Map<String, Object> recipientDefinition,
+                                                      String recipientType) {
+        // Check if recipient definition has explicit schedules override
+        if (recipientDefinition.containsKey("schedules")) {
+            return asListOfMapsOrEmpty(recipientDefinition.get("schedules"), "recipient.schedules");
+        }
+
+        // Try to get preferred times from data provider result
+        // First try recipient-specific fields, then fall back to generic fields
+        String preferredStartTimeStr = null;
+        String preferredEndTimeStr = null;
+
+        if ("ADVISOR".equalsIgnoreCase(recipientType)) {
+            // For advisor, try advisor-specific fields first, then generic
+            preferredStartTimeStr = dataProviderResult.get("advisor_preferred_call_start_time");
+            preferredEndTimeStr = dataProviderResult.get("advisor_preferred_call_end_time");
+            
+            if (preferredStartTimeStr == null || preferredStartTimeStr.isBlank()) {
+                preferredStartTimeStr = dataProviderResult.get("preferred_call_start_time");
+                preferredEndTimeStr = dataProviderResult.get("preferred_call_end_time");
+            }
+        } else if ("LEAD".equalsIgnoreCase(recipientType)) {
+            // For lead, try lead-specific fields first, then generic
+            preferredStartTimeStr = dataProviderResult.get("lead_preferred_call_start_time");
+            preferredEndTimeStr = dataProviderResult.get("lead_preferred_call_end_time");
+            
+            if (preferredStartTimeStr == null || preferredStartTimeStr.isBlank()) {
+                preferredStartTimeStr = dataProviderResult.get("preferred_call_start_time");
+                preferredEndTimeStr = dataProviderResult.get("preferred_call_end_time");
+            }
+        } else {
+            // For other recipient types, use generic fields
+            preferredStartTimeStr = dataProviderResult.get("preferred_call_start_time");
+            preferredEndTimeStr = dataProviderResult.get("preferred_call_end_time");
+        }
+
+        if (preferredStartTimeStr != null && !preferredStartTimeStr.isBlank() &&
+            preferredEndTimeStr != null && !preferredEndTimeStr.isBlank()) {
+            try {
+                // Parse the time strings (format: "HH:mm:ss" or "HH:mm")
+                LocalTime preferredStartTime = parseTime(preferredStartTimeStr);
+                LocalTime preferredEndTime = parseTime(preferredEndTimeStr);
+
+                Map<String, Object> schedule = new HashMap<>();
+                schedule.put("preferred_call_start_time", preferredStartTime.format(TIME_FORMATTER));
+                schedule.put("preferred_call_end_time", preferredEndTime.format(TIME_FORMATTER));
+                schedule.put("timezone", TIMEZONE);
+
+                log.info("Built schedule for recipient type {}: {} - {}", 
+                        recipientType, preferredStartTime, preferredEndTime);
+                return List.of(schedule);
+            } catch (Exception ex) {
+                log.warn("Failed to parse preferred times for recipient type {}: start={}, end={}", 
+                        recipientType, preferredStartTimeStr, preferredEndTimeStr, ex);
+            }
+        } else {
+            log.debug("No preferred times found for recipient type {} in data provider result. Available keys: {}", 
+                    recipientType, dataProviderResult.keySet());
+        }
+
+        // No preferred times - return empty list (will be executed immediately)
+        return List.of();
+    }
+
+    private LocalTime parseTime(String timeStr) {
+        if (timeStr == null || timeStr.isBlank()) {
+            throw new IllegalArgumentException("Time string cannot be null or blank");
+        }
+
+        // Try HH:mm:ss format first
+        try {
+            return LocalTime.parse(timeStr, TIME_FORMATTER);
+        } catch (Exception e) {
+            // Try HH:mm format
+            try {
+                return LocalTime.parse(timeStr, DateTimeFormatter.ofPattern("HH:mm"));
+            } catch (Exception e2) {
+                throw new IllegalArgumentException("Invalid time format: " + timeStr, e2);
+            }
+        }
+    }
+
+    private void deleteMessage(String queueUrl, Message message, SqsClient sqsClient) {
+        sqsClient.deleteMessage(DeleteMessageRequest.builder()
+                .queueUrl(queueUrl)
+                .receiptHandle(message.receiptHandle())
+                .build());
+    }
+
+    private Map<String, Object> asMap(Object value, String context) {
+        if (value == null) {
+            throw new IllegalStateException(context + " is required but was null");
+        }
+        if (value instanceof Map<?, ?> map) {
+            Map<String, Object> typed = new HashMap<>();
+            map.forEach((key, val) -> typed.put(String.valueOf(key), val));
+            return typed;
+        }
+        throw new IllegalStateException(context + " must be a map but was " + value.getClass());
+    }
+
+    private List<Map<String, Object>> asListOfMaps(Object value, String context) {
+        if (value == null) {
+            throw new IllegalStateException(context + " is required but was null");
+        }
+        if (!(value instanceof List<?> list)) {
+            throw new IllegalStateException(context + " must be a list but was " + value.getClass());
+        }
+        List<Map<String, Object>> typedList = new ArrayList<>(list.size());
+        for (int i = 0; i < list.size(); i++) {
+            typedList.add(asMap(list.get(i), context + "[" + i + "]"));
+        }
+        return typedList;
+    }
+
+    private List<Map<String, Object>> asListOfMapsOrEmpty(Object value, String context) {
+        if (value == null) {
+            return List.of();
+        }
+        return asListOfMaps(value, context);
+    }
+}
+

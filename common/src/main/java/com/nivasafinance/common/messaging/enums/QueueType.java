@@ -7,8 +7,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum QueueType {
     NOTIFICATION("notification"),
-    NOTIFICATION_EXECUTOR("notification-executor"),
-    AUDIT("audit");
+    NOTIFICATION_EXECUTOR("notification-executor");
 
     private final String propertyKey;
 }
