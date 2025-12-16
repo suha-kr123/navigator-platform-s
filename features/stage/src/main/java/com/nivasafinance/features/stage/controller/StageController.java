@@ -40,5 +40,28 @@ public class StageController {
         List<UserAssignmentResponse> users = stageReadService.getAssignableUsersForStages(request.getStageKeys());
         return ResponseEntity.ok(users != null ? users : Collections.emptyList());
     }
+
+    /**
+     * Backward compatibility endpoint for getting assignable users for a single stage.
+     * GET /api/v1/stages/{stageKey}/assignable-users
+     */
+    @GetMapping("/{stageKey}/assignable-users")
+    public ResponseEntity<List<UserAssignmentResponse>> getAssignableUsersForStage(
+            @PathVariable String stageKey) {
+        List<UserAssignmentResponse> users = stageReadService.getAssignableUsersForStages(
+                Collections.singletonList(stageKey));
+        return ResponseEntity.ok(users != null ? users : Collections.emptyList());
+    }
+
+    /**
+     * Backward compatibility endpoint for getting template for a single stage.
+     * GET /api/v1/stages/{stageKey}/template
+     */
+    @GetMapping("/{stageKey}/template")
+    public ResponseEntity<StageTemplateResponse> getStageTemplate(
+            @PathVariable String stageKey) {
+        StageTemplateResponse template = stageReadService.getStageTemplate(stageKey);
+        return ResponseEntity.ok(template);
+    }
 }
 
