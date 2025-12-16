@@ -109,10 +109,28 @@ public class NotificationExecutorListener {
                 }
 
                 UUID receiptId = UUID.fromString(receiptIdStr);
+                
+                // Check if receipt exists before attempting to execute
+                if (!notificationReceiptService.findById(receiptId).isPresent()) {
+                    log.warn("Notification receipt not found: {}. This may be an old message or the receipt was deleted. Deleting message from queue.", receiptId);
+                    // Return true to delete the message from queue (don't retry forever)
+                    return true;
+                }
+                
                 log.info("Executing receipt {}", receiptId);
                 notificationReceiptService.executeReceipt(receiptId);
                 log.info("Successfully executed receipt {}", receiptId);
                 return true;
+            } catch (IllegalArgumentException ex) {
+                // Handle case where receipt doesn't exist (thrown by executeReceipt)
+                if (ex.getMessage() != null && ex.getMessage().contains("Notification receipt not found")) {
+                    log.warn("Notification receipt not found in executeReceipt. This may be an old message. Deleting from queue. Error: {}", ex.getMessage());
+                    // Return true to delete the message from queue (don't retry forever)
+                    return true;
+                }
+                log.error("Failed to process executor message: {}", rawMessage, ex);
+                status.setRollbackOnly();
+                return false;
             } catch (Exception ex) {
                 log.error("Failed to process executor message: {}", rawMessage, ex);
                 status.setRollbackOnly();
