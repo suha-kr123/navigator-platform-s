@@ -5,6 +5,7 @@ import com.nivasafinance.features.usermanagement.exception.UserExceptionFactory;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -33,6 +34,10 @@ public class UserRepositoryWrapper {
 
     public boolean existsByUsername(String username) {
         return userRepository.existsByUsername(username);
+    }
+
+    public List<User> findByPersonPhoneNumber(String phoneNumber) {
+        return userRepository.findByPersonPhoneNumber(phoneNumber);
     }
 }
 

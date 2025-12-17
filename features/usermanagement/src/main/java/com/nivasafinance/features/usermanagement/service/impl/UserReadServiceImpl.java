@@ -11,6 +11,9 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.Optional;
+
 @Service
 @AllArgsConstructor
 @Transactional(readOnly = true)
@@ -36,6 +39,16 @@ public class UserReadServiceImpl implements UserReadService {
         if(userRepositoryWrapper.existsByUsername(username)){
             throw new BadRequestException("Username is already taken");
         }
+    }
+
+    @Override
+    public Optional<User> findUserByUsername(String username) {
+        return userRepositoryWrapper.findByUsername(username);
+    }
+
+    @Override
+    public List<User> findUsersByPersonPhoneNumber(String phoneNumber) {
+        return userRepositoryWrapper.findByPersonPhoneNumber(phoneNumber);
     }
 
     private UserResponse mapToResponse(User user) {
