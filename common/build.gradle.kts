@@ -16,7 +16,6 @@ dependencies {
     implementation(libs.aws.secretsmanager)
     implementation("org.springframework.boot:spring-boot-starter-cache")
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
-    implementation("org.springframework.boot:spring-boot-starter-websocket")
     // Jackson Hibernate6 module for Redis cache serialization
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-hibernate6")
     // Micrometer Prometheus for metrics export
