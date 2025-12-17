@@ -6,9 +6,11 @@ import com.nivasafinance.common.messaging.publisher.MessagePublisher;
 import com.nivasafinance.common.messaging.publisher.impl.LocalMessagePublisher;
 import com.nivasafinance.common.messaging.publisher.impl.SqsMessagePublisher;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class MessagePublisherFactory {
@@ -31,9 +33,19 @@ public class MessagePublisherFactory {
      */
     public MessagePublisher getPublisher(MessageProvider provider) {
         return switch (provider) {
-            case SQS -> sqsMessagePublisher.getIfAvailable(() -> {
-                throw new IllegalStateException("SQS message publisher not configured for SQS provider");
-            });
+            case SQS -> {
+                MessagePublisher publisher = sqsMessagePublisher.getIfAvailable();
+                if (publisher == null) {
+                    // SQS provider is configured but SqsMessagePublisher is not available
+                    // This can happen if SqsClient bean creation failed or validation failed
+                    // Fall back to LOCAL to prevent application crashes
+                    log.warn("SQS provider is configured but SqsMessagePublisher is not available. " +
+                            "This may indicate SQS configuration is incomplete or invalid. " +
+                            "Falling back to LOCAL publisher. Check startup logs for SQS configuration errors.");
+                    yield localMessagePublisher;
+                }
+                yield publisher;
+            }
             case LOCAL -> localMessagePublisher;
             // Future providers (e.g., RABBITMQ) can be added here
         };

@@ -1,6 +1,7 @@
 package com.nivasafinance.common.messaging.config;
 
 import com.nivasafinance.common.awssecretmanager.service.SecretManagerService;
+import com.nivasafinance.common.messaging.enums.QueueType;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -61,14 +62,46 @@ public class MessagingSecretsLoader {
         try {
             log.info("Attempting to load SQS configuration from AWS Secrets Manager: {}", secretName);
             Map<String, Object> secretMap = secretManagerService.getSecret(secretName);
+            
+            if (secretMap == null || secretMap.isEmpty()) {
+                log.warn("Secret '{}' loaded but is null or empty", secretName);
+                return false;
+            }
+            
+            log.info("Secret '{}' loaded successfully. Keys in secret: {}", secretName, secretMap.keySet());
+            log.debug("Secret '{}' full content: {}", secretName, secretMap);
+            
+            // Validate secret structure before loading
+            if (!secretMap.containsKey("region")) {
+                log.warn("Secret '{}' missing required 'region' field", secretName);
+                return false;
+            }
+            if (!secretMap.containsKey("queues")) {
+                log.warn("Secret '{}' missing required 'queues' field", secretName);
+                return false;
+            }
+            
             messagingProperties.getSqs().loadFromSecretsManager(secretMap);
+            
+            // Verify configuration was loaded correctly
+            String region = messagingProperties.getSqs().getRegion();
+            Map<QueueType, String> queues = messagingProperties.getSqs().getQueues();
+            
+            if (region == null || region.isBlank()) {
+                log.warn("Region not set after loading secret '{}'", secretName);
+                return false;
+            }
+            if (queues.isEmpty()) {
+                log.warn("No queues loaded from secret '{}'", secretName);
+                return false;
+            }
+            
             log.info("Successfully loaded SQS configuration from Secrets Manager. Region: {}, Queues: {}", 
-                    messagingProperties.getSqs().getRegion(), 
-                    messagingProperties.getSqs().getQueues().keySet());
+                    region, queues.keySet());
             return true;
         } catch (Exception ex) {
-            log.debug("Failed to load SQS configuration from AWS Secrets Manager: {}. Error: {}", 
-                    secretName, ex.getMessage());
+            log.warn("Failed to load SQS configuration from AWS Secrets Manager: {}. Error: {}. Using LOCAL provider (default).", 
+                    secretName, ex.getMessage(), ex);
             return false;
         }
     }

@@ -3,7 +3,6 @@ package com.nivasafinance.common.messaging.config;
 import com.nivasafinance.common.messaging.enums.MessageProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -37,19 +36,29 @@ public class MessagingConfig {
             return null;
         }
         
-        configurationValidator.validateSqsConfiguration();
-        MessagingProperties.SqsProperties sqs = messagingProperties.getSqs();
+        try {
+            configurationValidator.validateSqsConfiguration();
+            MessagingProperties.SqsProperties sqs = messagingProperties.getSqs();
 
-        SqsClientBuilder builder = SqsClient.builder()
-                .region(Region.of(sqs.getRegion()))
-                .credentialsProvider(resolveAwsCredentials(sqs));
+            SqsClientBuilder builder = SqsClient.builder()
+                    .region(Region.of(sqs.getRegion()))
+                    .credentialsProvider(resolveAwsCredentials(sqs));
 
-        if (StringUtils.hasText(sqs.getEndpoint())) {
-            builder.endpointOverride(URI.create(sqs.getEndpoint()));
-            log.info("Using custom SQS endpoint {}", sqs.getEndpoint());
+            if (StringUtils.hasText(sqs.getEndpoint())) {
+                builder.endpointOverride(URI.create(sqs.getEndpoint()));
+                log.info("Using custom SQS endpoint {}", sqs.getEndpoint());
+            }
+
+            SqsClient client = builder.build();
+            log.info("Successfully created SqsClient for region: {}", sqs.getRegion());
+            return client;
+        } catch (Exception ex) {
+            log.error("Failed to create SqsClient bean. SQS functionality will not be available. " +
+                    "Provider is set to SQS but configuration is invalid. Error: {}", ex.getMessage(), ex);
+            // Return null instead of throwing - this allows the application to start
+            // MessagePublisherFactory will handle the fallback to LOCAL
+            return null;
         }
-
-        return builder.build();
     }
 
     private AwsCredentialsProvider resolveAwsCredentials(MessagingProperties.SqsProperties sqs) {
