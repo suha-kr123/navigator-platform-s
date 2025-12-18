@@ -1,10 +1,9 @@
 package com.nivasafinance.notification.orchestrator.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nivasafinance.common.enums.NotificationStatus;
-import com.nivasafinance.common.events.BusinessEvent;
 import com.nivasafinance.notification.orchestrator.entity.NotificationEventMapping;
 import com.nivasafinance.notification.orchestrator.entity.NotificationRecord;
-import com.nivasafinance.notification.orchestrator.payload.NotificationPayloadBuilderFactory;
 import com.nivasafinance.notification.orchestrator.repository.NotificationRecordRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,25 +22,16 @@ import java.util.UUID;
 public class NotificationRecordService {
 
     private final NotificationRecordRepository notificationRecordRepository;
-    private final NotificationPayloadBuilderFactory payloadBuilderFactory;
+    private final ObjectMapper objectMapper;
     // Called internally from createNotificationRecordFromEvent, so no separate @Transactional needed
     // The transaction is managed by the calling method
     private Optional<NotificationRecord> createNotificationRecord(Long notificationConfigId,
-                                                                  String idempotencyKey,
                                                                   Map<String, Object> payload,
                                                                   Map<String, Object> details) {
-        if (idempotencyKey != null) {
-            Optional<NotificationRecord> existing = notificationRecordRepository.findByIdempotencyKey(idempotencyKey);
-            if (existing.isPresent()) {
-                log.info("Notification record already exists for idempotencyKey={}", idempotencyKey);
-                return Optional.empty();
-            }
-        }
-
         NotificationRecord record = NotificationRecord.builder()
                 .id(UUID.randomUUID())
                 .notificationConfigId(notificationConfigId)
-                .idempotencyKey(idempotencyKey)
+                .idempotencyKey(null)
                 .notificationPayload(payload)
                 .details(details)
                 .status(NotificationStatus.INITIATED)
@@ -64,19 +54,8 @@ public class NotificationRecordService {
     public Optional<NotificationRecord> createNotificationRecordFromEvent(NotificationEventMapping mapping,
                                                                           String eventCode,
                                                                           Object eventPayload) {
-        BusinessEvent businessEvent = resolveBusinessEvent(eventCode);
-        Map<String, Object> notificationPayload = payloadBuilderFactory.build(businessEvent, eventPayload);
-
-        String entityId = extractEntityIdFromPayload(notificationPayload);
-        if (entityId == null || entityId.isBlank()) {
-            log.warn("Skipping notification record creation for event {} because entityId is missing in payload", eventCode);
-            return Optional.empty();
-        }
-
-        String idempotencyKey = String.format("%s_%s_%s",
-                entityId,
-                eventCode,
-                mapping.getNotificationConfig().getId());
+        // Convert eventPayload to Map for storage (store as-is)
+        Map<String, Object> notificationPayload = convertToMap(eventPayload);
 
         // Store event_type in details for later retrieval
         Map<String, Object> details = new HashMap<>();
@@ -84,7 +63,6 @@ public class NotificationRecordService {
 
         return createNotificationRecord(
                 mapping.getNotificationConfig().getId(),
-                idempotencyKey,
                 notificationPayload,
                 details
         );
@@ -94,23 +72,12 @@ public class NotificationRecordService {
     public NotificationRecord createManualNotification(Long notificationConfigId,
                                                        String referenceId,
                                                        Map<String, Object> payload) {
-        String idempotencyKey = referenceId != null
-                ? String.format("%s_MANUAL_%s", referenceId, notificationConfigId)
-                : null;
-        
         // Store MANUAL as event_type for manual notifications
         Map<String, Object> details = new HashMap<>();
         details.put("event_type", "MANUAL");
         
-        Optional<NotificationRecord> created = createNotificationRecord(notificationConfigId, idempotencyKey, payload, details);
-        if (created.isPresent()) {
-            return created.get();
-        }
-        if (idempotencyKey != null) {
-            return notificationRecordRepository.findByIdempotencyKey(idempotencyKey)
-                    .orElseThrow(() -> new IllegalStateException("Manual notification already exists but cannot be retrieved"));
-        }
-        throw new IllegalStateException("Manual notification already created");
+        Optional<NotificationRecord> created = createNotificationRecord(notificationConfigId, payload, details);
+        return created.orElseThrow(() -> new IllegalStateException("Failed to create manual notification"));
     }
 
     @Transactional
@@ -131,29 +98,33 @@ public class NotificationRecordService {
     }
 
     /**
-     * Extracts entity ID from notification payload map.
-     * Looks for common entity ID fields: entityId, leadId, id (in that order).
+     * Converts the eventPayload object to a Map for storage.
+     * Stores the payload as-is without transformation.
      */
-    private String extractEntityIdFromPayload(Map<String, Object> payload) {
-        if (payload == null) {
-            return null;
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> convertToMap(Object eventPayload) {
+        if (eventPayload == null) {
+            return new HashMap<>();
         }
-
-        Object id = payload.get("entityId");
-        if (id == null) {
-            id = payload.get("leadId");
+        
+        // If already a Map, return it
+        if (eventPayload instanceof Map) {
+            Map<String, Object> result = new HashMap<>();
+            ((Map<?, ?>) eventPayload).forEach((key, value) -> 
+                result.put(key != null ? key.toString() : "null", value)
+            );
+            return result;
         }
-        if (id == null) {
-            id = payload.get("id");
-        }
-        return id != null ? id.toString() : null;
-    }
-
-    private BusinessEvent resolveBusinessEvent(String eventCode) {
+        
+        // Convert POJO to Map using Jackson
         try {
-            return BusinessEvent.valueOf(eventCode);
-        } catch (IllegalArgumentException ex) {
-            throw new IllegalStateException("Unsupported business event: " + eventCode, ex);
+            return objectMapper.convertValue(eventPayload, Map.class);
+        } catch (Exception ex) {
+            log.warn("Failed to convert eventPayload to Map, storing as string representation", ex);
+            Map<String, Object> fallback = new HashMap<>();
+            fallback.put("_raw", eventPayload.toString());
+            fallback.put("_type", eventPayload.getClass().getName());
+            return fallback;
         }
     }
 }

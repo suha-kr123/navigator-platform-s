@@ -9,7 +9,8 @@ public enum NotificationStatus {
     COMPLETED,
     FAILED,
     PARTIALLY_COMPLETED,
-    CANCELLED
+    CANCELLED,
+    SKIPPED
 }
 
 

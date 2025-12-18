@@ -200,12 +200,25 @@ public class NotificationReceiptConstructorListener {
             // Create receipt for each recipient
             log.info("Creating receipts for {} recipient(s). Data provider result keys: {}", 
                     recipients.size(), dataProviderResult.keySet());
+            
+            int receiptsCreated = 0;
             for (Map<String, Object> recipientDefinition : recipients) {
                 log.info("Processing recipient definition: {}", recipientDefinition);
-                createReceipt(recordId, eventType, notificationPayload, dataProviderResult, recipientDefinition);
+                boolean receiptCreated = createReceipt(recordId, eventType, notificationPayload, dataProviderResult, recipientDefinition);
+                if (receiptCreated) {
+                    receiptsCreated++;
+                }
             }
 
-            notificationRecordService.updateStatus(recordId, NotificationStatus.COMPLETED);
+            // If no receipts were created (all recipients skipped due to missing template/contact),
+            // mark the record as SKIPPED
+            if (receiptsCreated == 0) {
+                log.warn("No receipts were created for record {} - all recipients were skipped. Marking record as SKIPPED.", recordId);
+                notificationRecordService.updateStatus(recordId, NotificationStatus.SKIPPED);
+            } else {
+                log.info("Created {} receipt(s) for record {}. Marking record as COMPLETED.", receiptsCreated, recordId);
+                notificationRecordService.updateStatus(recordId, NotificationStatus.COMPLETED);
+            }
             return true;
         } catch (Exception ex) {
             log.error("Failed to process notification record {}", recordId, ex);
@@ -223,7 +236,17 @@ public class NotificationReceiptConstructorListener {
         }
     }
 
-    private void createReceipt(UUID recordId,
+    /**
+     * Creates a notification receipt for a recipient.
+     * 
+     * @param recordId The notification record ID
+     * @param eventType The event type
+     * @param notificationPayload The notification payload
+     * @param dataProviderResult The data provider result
+     * @param recipientDefinition The recipient definition from config
+     * @return true if receipt was created, false if skipped (missing template/contact)
+     */
+    private boolean createReceipt(UUID recordId,
                                String eventType,
                                Map<String, Object> notificationPayload,
                                Map<String, String> dataProviderResult,
@@ -241,14 +264,14 @@ public class NotificationReceiptConstructorListener {
         if (mode == null || mode.isBlank()) {
             log.error("Skipping recipient {} because mode is not specified in recipient definition: {}", 
                     recipientKey, recipientDefinition);
-            return;
+            return false;
         }
 
         String channelType = (String) recipientDefinition.get("channelType");
         if (channelType == null || channelType.isBlank()) {
             log.error("Skipping recipient {} because channelType is not specified in recipient definition: {}", 
                     recipientKey, recipientDefinition);
-            return;
+            return false;
         }
 
         log.info("Checking data provider result for recipientKey '{}'. Available keys: {}", 
@@ -256,20 +279,20 @@ public class NotificationReceiptConstructorListener {
         String recipientContact = dataProviderResult.get(recipientKey);
         if (recipientContact == null || recipientContact.isBlank()) {
             String valueStatus = recipientContact == null ? "null" : "empty string";
-            log.error("Skipping recipient {} because contact value is {} for key '{}'. " +
+            log.warn("Skipping recipient {} because contact value is {} for key '{}'. " +
                     "Available keys in data provider result: {}. " +
                     "This usually means the query returned null/empty for this field (e.g., no advisor assigned, no mobile number).", 
                     recipientKey, valueStatus, recipientKey, dataProviderResult.keySet());
-            return;
+            return false;
         }
 
         log.info("Checking data provider result for templateKey '{}'", recipientTemplateKey);
         String templateIdentifier = dataProviderResult.get(recipientTemplateKey);
         if (templateIdentifier == null || templateIdentifier.isBlank()) {
-            log.error("Skipping recipient {} because template identifier not found for key '{}'. " +
+            log.warn("Skipping recipient {} because template identifier not found for key '{}'. " +
                     "Available keys in data provider result: {}", 
                     recipientKey, recipientTemplateKey, dataProviderResult.keySet());
-            return;
+            return false;
         }
 
         log.info("All validations passed. Creating receipt for recipient: contact={}, template={}, mode={}, channel={}", 
@@ -324,18 +347,26 @@ public class NotificationReceiptConstructorListener {
         // If schedule exists, the scheduled job will publish it when preferred time is reached
         if (schedules == null || schedules.isEmpty()) {
             // No schedule - publish immediately for immediate execution
-            messagePublisherFactory.getPublisher().publish(
-                    QueueType.NOTIFICATION_EXECUTOR,
-                    receipt.getId().toString(),
-                    Map.of("receiptId", receipt.getId().toString())
-            );
-            log.info("Created notification receipt {} for record {} and published to executor queue (immediate execution)", 
-                    receipt.getId(), recordId);
+            try {
+                log.info("Publishing receipt {} to NOTIFICATION_EXECUTOR queue (no schedule, immediate execution)", receipt.getId());
+                messagePublisherFactory.getPublisher().publish(
+                        QueueType.NOTIFICATION_EXECUTOR,
+                        receipt.getId().toString(),
+                        Map.of("receiptId", receipt.getId().toString())
+                );
+                log.info("Created notification receipt {} for record {} and published to executor queue (immediate execution)", 
+                        receipt.getId(), recordId);
+            } catch (Exception ex) {
+                log.error("Failed to publish receipt {} to executor queue", receipt.getId(), ex);
+                throw ex;
+            }
         } else {
             // Has schedule - don't publish yet, scheduled job will handle it
-            log.info("Created notification receipt {} for record {} with schedule. Will be published when preferred time is reached", 
-                    receipt.getId(), recordId);
+            log.info("Created notification receipt {} for record {} with schedule: {}. Will be published when preferred time is reached", 
+                    receipt.getId(), recordId, schedules);
         }
+        
+        return true; // Receipt was successfully created
     }
 
     /**
