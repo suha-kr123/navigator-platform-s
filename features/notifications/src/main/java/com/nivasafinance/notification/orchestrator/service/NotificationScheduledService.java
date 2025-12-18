@@ -82,7 +82,7 @@ public class NotificationScheduledService {
                         
                         log.info("Published receipt {} to executor queue (within preferred time range: {})", 
                                 receipt.getId(), currentTime);
-                        processedCount++;
+                processedCount++;
                     } catch (Exception ex) {
                         log.error("Failed to publish receipt {} to executor queue", receipt.getId(), ex);
                     }
