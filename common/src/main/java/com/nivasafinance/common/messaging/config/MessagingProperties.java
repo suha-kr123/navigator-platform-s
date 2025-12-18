@@ -23,6 +23,13 @@ public class MessagingProperties {
      */
     private Map<String, MessageProvider> eventProviders = new java.util.HashMap<>();
 
+    /**
+     * Optional: Name of the AWS Secrets Manager secret containing SQS configuration.
+     * If not provided, defaults to "SQS_CONFIG".
+     * If SQS provider is configured, the application will attempt to load from Secrets Manager.
+     */
+    private String sqsSecretName;
+
     private final SqsProperties sqs = new SqsProperties();
 
     @Data
@@ -42,6 +49,54 @@ public class MessagingProperties {
                 throw new IllegalStateException("Queue URL not configured for type: " + queueType);
             }
             return queueUrl;
+        }
+
+        /**
+         * Loads SQS configuration from AWS Secrets Manager secret map.
+         * Expected structure:
+         * {
+         *   "region": "us-east-1",
+         *   "accessKey": "...",
+         *   "secretKey": "...",
+         *   "queues": {
+         *     "NOTIFICATION": "https://sqs.us-east-1.amazonaws.com/123456789012/queue-name",
+         *     "NOTIFICATION_EXECUTOR": "...",
+         *     "AUDIT": "..."
+         *   }
+         * }
+         */
+        @SuppressWarnings("unchecked")
+        public void loadFromSecretsManager(Map<String, Object> secretMap) {
+            if (secretMap == null || secretMap.isEmpty()) {
+                throw new IllegalArgumentException("Secret map is null or empty");
+            }
+
+            // Load basic SQS config
+            if (secretMap.containsKey("region")) {
+                this.region = (String) secretMap.get("region");
+            }
+            if (secretMap.containsKey("accessKey")) {
+                this.accessKey = (String) secretMap.get("accessKey");
+            }
+            if (secretMap.containsKey("secretKey")) {
+                this.secretKey = (String) secretMap.get("secretKey");
+            }
+
+            // Load queue URLs and map them to QueueType enum
+            if (secretMap.containsKey("queues")) {
+                Map<String, String> queuesFromSecret = (Map<String, String>) secretMap.get("queues");
+                if (queuesFromSecret != null) {
+                    for (Map.Entry<String, String> entry : queuesFromSecret.entrySet()) {
+                        try {
+                            QueueType queueType = QueueType.valueOf(entry.getKey().toUpperCase());
+                            this.queues.put(queueType, entry.getValue());
+                        } catch (IllegalArgumentException ex) {
+                            // Ignore unknown queue types
+                            // Log warning if needed
+                        }
+                    }
+                }
+            }
         }
     }
 

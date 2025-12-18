@@ -8,6 +8,7 @@ plugins {
 
 dependencies {
     implementation(project(":features:usermanagement"))
+    implementation(project(":features:person"))
     implementation(project(":integrations"))
     implementation(project(":features:rolemanagement"))
 }

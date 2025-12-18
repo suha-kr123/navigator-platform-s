@@ -61,10 +61,15 @@ public class DataProviderExecutor {
         DataProvider provider = dataProviderRepository.findByName(providerName)
                 .orElseThrow(() -> new IllegalArgumentException("Data provider not found: " + providerName));
         Map<String, Object> result = executeQuerySafely(provider.getQuery(), params);
-        return result.entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, entry -> Optional.ofNullable(entry.getValue())
-                        .map(Object::toString)
-                        .orElse(null)));
+        
+        // Convert to Map<String, String> handling null values
+        // Collectors.toMap doesn't allow null values, so convert nulls to empty strings
+        Map<String, String> stringMap = new HashMap<>();
+        for (Map.Entry<String, Object> entry : result.entrySet()) {
+            String value = entry.getValue() != null ? entry.getValue().toString() : "";
+            stringMap.put(entry.getKey(), value);
+        }
+        return stringMap;
     }
 
     private void validateParameters(Map<String, Object> params) {

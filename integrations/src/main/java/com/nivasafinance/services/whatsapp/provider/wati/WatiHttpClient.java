@@ -26,12 +26,15 @@ public class WatiHttpClient {
     }
 
     public WhatsAppTemplateResponse sendTemplate(WatiConfiguration config, WhatsAppTemplateRequest request) {
+        ResponseEntity<String> response = null;
+        String responseBody = null;
+        
         try {
             // WATI expects phone number without + sign
             String phoneNumber = request.getPhoneNumber().replace("+", "");
             
             // Phone number goes as query parameter in URL!
-            String url = config.getApiEndpoint() + "/api/v1/sendTemplateMessage?whatsappNumber=" + phoneNumber;
+            String url = config.getApiEndpoint() + "/api/v2/sendTemplateMessage?whatsappNumber=" + phoneNumber;
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -62,7 +65,7 @@ public class WatiHttpClient {
 
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
 
-            ResponseEntity<String> response = restTemplate.exchange(
+            response = restTemplate.exchange(
                     url,
                     HttpMethod.POST,
                     entity,
@@ -70,7 +73,7 @@ public class WatiHttpClient {
             );
 
             // Parse response
-            String responseBody = response.getBody();
+            responseBody = response.getBody();
             JsonNode jsonNode = objectMapper.readTree(responseBody);
 
             boolean result = jsonNode.has("result") && jsonNode.get("result").asBoolean();
@@ -83,15 +86,22 @@ public class WatiHttpClient {
                     .phoneNumber(request.getPhoneNumber())
                     .templateName(request.getTemplateName())
                     .errorMessage(errorMessage)
+                    .rawResponseBody(responseBody) // Store raw response for full parsing
                     .build();
 
         } catch (Exception e) {
+            // Try to capture response body even on error for debugging
+            if (responseBody == null && response != null && response.getBody() != null) {
+                responseBody = response.getBody();
+            }
+            
             return WhatsAppTemplateResponse.builder()
                     .messageId(null)
                     .status("failed")
                     .phoneNumber(request.getPhoneNumber())
                     .templateName(request.getTemplateName())
                     .errorMessage(e.getMessage())
+                    .rawResponseBody(responseBody) // Capture response even on error
                     .build();
         }
     }

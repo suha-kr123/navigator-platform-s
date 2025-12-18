@@ -1,4 +1,4 @@
-package com.nivasafinance.notification.executor.entity;
+package com.nivasafinance.notification.orchestrator.entity;
 
 import com.nivasafinance.common.audit.AuditableEntity;
 import com.nivasafinance.common.enums.NotificationStatus;
@@ -78,5 +78,4 @@ public class NotificationReceipt extends AuditableEntity {
     @Column(name = "remarks", columnDefinition = "jsonb")
     private Map<String, Object> remarks;
 }
-
 
