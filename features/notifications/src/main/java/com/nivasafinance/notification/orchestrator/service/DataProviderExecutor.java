@@ -24,6 +24,7 @@ public class DataProviderExecutor {
 
     public Map<String, Object> executeQuery(String query, Map<String, Object> params) {
         log.debug("Executing data provider query: {}", query);
+        log.info("Data provider query parameters: {}", params);
         validateParameters(params);
         return namedParameterJdbcTemplate.queryForMap(query, params);
     }
@@ -60,7 +61,10 @@ public class DataProviderExecutor {
     public Map<String, String> executeDataProvider(String providerName, Map<String, Object> params) {
         DataProvider provider = dataProviderRepository.findByName(providerName)
                 .orElseThrow(() -> new IllegalArgumentException("Data provider not found: " + providerName));
+        log.info("Executing data provider '{}' with parameters: {}", providerName, params);
+        log.debug("Data provider query: {}", provider.getQuery());
         Map<String, Object> result = executeQuerySafely(provider.getQuery(), params);
+        log.info("Data provider '{}' returned {} result(s). Keys: {}", providerName, result.size(), result.keySet());
         
         // Convert to Map<String, String> handling null values
         // Collectors.toMap doesn't allow null values, so convert nulls to empty strings

@@ -54,18 +54,39 @@ public class NotificationRecordService {
     public Optional<NotificationRecord> createNotificationRecordFromEvent(NotificationEventMapping mapping,
                                                                           String eventCode,
                                                                           Object eventPayload) {
-        // Convert eventPayload to Map for storage (store as-is)
-        Map<String, Object> notificationPayload = convertToMap(eventPayload);
+        try {
+            log.debug("Creating notification record for event {} mapping {} with payload type: {}", 
+                    eventCode, mapping.getId(), eventPayload != null ? eventPayload.getClass().getName() : "null");
+            
+            // Convert eventPayload to Map for storage (store as-is)
+            Map<String, Object> notificationPayload = convertToMap(eventPayload);
+            log.info("Converted payload to map with {} keys: {} for event {} mapping {}", 
+                    notificationPayload.size(), notificationPayload.keySet(), eventCode, mapping.getId());
 
-        // Store event_type in details for later retrieval
-        Map<String, Object> details = new HashMap<>();
-        details.put("event_type", eventCode);
+            // Store event_type in details for later retrieval
+            Map<String, Object> details = new HashMap<>();
+            details.put("event_type", eventCode);
 
-        return createNotificationRecord(
-                mapping.getNotificationConfig().getId(),
-                notificationPayload,
-                details
-        );
+            Optional<NotificationRecord> result = createNotificationRecord(
+                    mapping.getNotificationConfig().getId(),
+                    notificationPayload,
+                    details
+            );
+            
+            if (result.isPresent()) {
+                log.info("Successfully created notification record {} for event {} mapping {}", 
+                        result.get().getId(), eventCode, mapping.getId());
+            } else {
+                log.warn("createNotificationRecord returned empty Optional for event {} mapping {}", 
+                        eventCode, mapping.getId());
+            }
+            
+            return result;
+        } catch (Exception ex) {
+            log.error("Exception while creating notification record for event {} mapping {}", 
+                    eventCode, mapping.getId(), ex);
+            return Optional.empty();
+        }
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -87,6 +108,23 @@ public class NotificationRecordService {
         record.setStatus(status);
         record.setUpdatedBy("system");
         return notificationRecordRepository.save(record);
+    }
+
+    @Transactional
+    public boolean updateStatusIfExists(UUID recordId, NotificationStatus status) {
+        Optional<NotificationRecord> recordOpt = notificationRecordRepository.findById(recordId);
+        if (recordOpt.isEmpty()) {
+            log.warn("Cannot update status for notification record {} - record not found", recordId);
+            return false;
+        }
+        NotificationRecord record = recordOpt.get();
+        record.setStatus(status);
+        record.setUpdatedBy("system");
+        notificationRecordRepository.save(record);
+        // Force immediate write to database to ensure status is visible to other transactions
+        notificationRecordRepository.flush();
+        log.info("Updated notification record {} status to {} and flushed to database", recordId, status);
+        return true;
     }
 
     public Optional<NotificationRecord> findById(UUID recordId) {

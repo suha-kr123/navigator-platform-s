@@ -43,8 +43,8 @@ public class MessagingConfig {
         }
         
         try {
-            configurationValidator.validateSqsConfiguration();
-            MessagingProperties.SqsProperties sqs = messagingProperties.getSqs();
+        configurationValidator.validateSqsConfiguration();
+        MessagingProperties.SqsProperties sqs = messagingProperties.getSqs();
 
             // Configure HTTP client with longer timeouts for local/network latency
             software.amazon.awssdk.http.SdkHttpClient httpClient = ApacheHttpClient.builder()
@@ -69,16 +69,16 @@ public class MessagingConfig {
                     .retryPolicy(retryPolicy)
                     .build();
 
-            SqsClientBuilder builder = SqsClient.builder()
-                    .region(Region.of(sqs.getRegion()))
+        SqsClientBuilder builder = SqsClient.builder()
+                .region(Region.of(sqs.getRegion()))
                     .credentialsProvider(resolveAwsCredentials(sqs))
                     .httpClient(httpClient)
                     .overrideConfiguration(clientConfig);
 
-            if (StringUtils.hasText(sqs.getEndpoint())) {
-                builder.endpointOverride(URI.create(sqs.getEndpoint()));
-                log.info("Using custom SQS endpoint {}", sqs.getEndpoint());
-            }
+        if (StringUtils.hasText(sqs.getEndpoint())) {
+            builder.endpointOverride(URI.create(sqs.getEndpoint()));
+            log.info("Using custom SQS endpoint {}", sqs.getEndpoint());
+        }
 
             SqsClient client = builder.build();
             log.info("Successfully created SqsClient for region: {} with extended timeouts (connection: 10s, read/write: 30s, API: 60s)", 

@@ -18,6 +18,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.scheduling.annotation.Scheduled;
+
+import java.util.Optional;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
@@ -145,10 +147,26 @@ public class NotificationReceiptConstructorListener {
 
         try {
             // Load the notification record by recordId
-            NotificationRecord record = notificationRecordService.findById(recordId)
-                    .orElseThrow(() -> new IllegalStateException("NotificationRecord not found for id " + recordId));
+            Optional<NotificationRecord> recordOpt = notificationRecordService.findById(recordId);
+            if (recordOpt.isEmpty()) {
+                log.warn("Notification record not found: {}. This may be an old message or the record was deleted. Deleting message from queue.", recordId);
+                // Return true to delete the message from queue (don't retry forever)
+                return true;
+            }
 
-            notificationRecordService.updateStatus(recordId, NotificationStatus.PROCESSING);
+            NotificationRecord record = recordOpt.get();
+            
+            // Check if record is already COMPLETED - if so, skip processing to avoid duplicate receipts
+            if (record.getStatus() == NotificationStatus.COMPLETED) {
+                log.info("Notification record {} is already COMPLETED, skipping processing to avoid duplicate receipts. Deleting message from queue.", recordId);
+                return true; // Delete message from queue, already processed
+            }
+            
+            // Use updateStatusIfExists to handle race conditions where record might be deleted
+            if (!notificationRecordService.updateStatusIfExists(recordId, NotificationStatus.PROCESSING)) {
+                log.warn("Failed to update status for record {} - record may have been deleted. Deleting message from queue.", recordId);
+                return true;
+            }
 
             // Get configId, eventType, and payload from the record
             Long configId = record.getNotificationConfigId();
@@ -214,16 +232,22 @@ public class NotificationReceiptConstructorListener {
             // mark the record as SKIPPED
             if (receiptsCreated == 0) {
                 log.warn("No receipts were created for record {} - all recipients were skipped. Marking record as SKIPPED.", recordId);
-                notificationRecordService.updateStatus(recordId, NotificationStatus.SKIPPED);
+                notificationRecordService.updateStatusIfExists(recordId, NotificationStatus.SKIPPED);
             } else {
                 log.info("Created {} receipt(s) for record {}. Marking record as COMPLETED.", receiptsCreated, recordId);
-                notificationRecordService.updateStatus(recordId, NotificationStatus.COMPLETED);
+                notificationRecordService.updateStatusIfExists(recordId, NotificationStatus.COMPLETED);
             }
             return true;
         } catch (Exception ex) {
             log.error("Failed to process notification record {}", recordId, ex);
-            notificationRecordService.updateStatus(recordId, NotificationStatus.FAILED);
+            // Try to update status, but don't fail if record doesn't exist
+            notificationRecordService.updateStatusIfExists(recordId, NotificationStatus.FAILED);
             status.setRollbackOnly();
+            // Return true to delete message from queue if it's a missing record error
+            if (ex instanceof IllegalStateException && ex.getMessage() != null && ex.getMessage().contains("not found")) {
+                log.warn("Record not found error - deleting message from queue to prevent infinite retries");
+                return true;
+            }
             return false;
         }
     }
@@ -276,7 +300,7 @@ public class NotificationReceiptConstructorListener {
 
         log.info("Checking data provider result for recipientKey '{}'. Available keys: {}", 
                 recipientKey, dataProviderResult.keySet());
-        String recipientContact = dataProviderResult.get(recipientKey);
+        String recipientContact = getCaseInsensitive(dataProviderResult, recipientKey);
         if (recipientContact == null || recipientContact.isBlank()) {
             String valueStatus = recipientContact == null ? "null" : "empty string";
             log.warn("Skipping recipient {} because contact value is {} for key '{}'. " +
@@ -287,7 +311,7 @@ public class NotificationReceiptConstructorListener {
         }
 
         log.info("Checking data provider result for templateKey '{}'", recipientTemplateKey);
-        String templateIdentifier = dataProviderResult.get(recipientTemplateKey);
+        String templateIdentifier = getCaseInsensitive(dataProviderResult, recipientTemplateKey);
         if (templateIdentifier == null || templateIdentifier.isBlank()) {
             log.warn("Skipping recipient {} because template identifier not found for key '{}'. " +
                     "Available keys in data provider result: {}", 
@@ -347,6 +371,22 @@ public class NotificationReceiptConstructorListener {
         // If schedule exists, the scheduled job will publish it when preferred time is reached
         if (schedules == null || schedules.isEmpty()) {
             // No schedule - publish immediately for immediate execution
+            // Check if receipt is already COMPLETED to avoid duplicate sends
+            if (receipt.getStatus() == NotificationStatus.COMPLETED) {
+                log.info("Receipt {} is already COMPLETED, skipping publish to executor queue", receipt.getId());
+                return true;
+            }
+            
+            // Check if already published (from remarks)
+            Map<String, Object> remarks = receipt.getRemarks();
+            boolean alreadyPublished = remarks != null && 
+                    "PUBLISHED".equals(remarks.get("executorQueueStatus"));
+            
+            if (alreadyPublished) {
+                log.info("Receipt {} already published to executor queue, skipping duplicate publish", receipt.getId());
+                return true;
+            }
+            
             try {
                 log.info("Publishing receipt {} to NOTIFICATION_EXECUTOR queue (no schedule, immediate execution)", receipt.getId());
                 messagePublisherFactory.getPublisher().publish(
@@ -354,6 +394,14 @@ public class NotificationReceiptConstructorListener {
                         receipt.getId().toString(),
                         Map.of("receiptId", receipt.getId().toString())
                 );
+                
+                // Update remarks to mark as published (prevent duplicate publishes)
+                Map<String, Object> updatedRemarks = new HashMap<>(remarks != null ? remarks : Map.of());
+                updatedRemarks.put("executorQueueStatus", "PUBLISHED");
+                updatedRemarks.put("publishedAt", System.currentTimeMillis());
+                receipt.setRemarks(updatedRemarks);
+                notificationReceiptService.save(receipt);
+                
                 log.info("Created notification receipt {} for record {} and published to executor queue (immediate execution)", 
                         receipt.getId(), recordId);
             } catch (Exception ex) {
@@ -399,26 +447,26 @@ public class NotificationReceiptConstructorListener {
 
         if ("ADVISOR".equalsIgnoreCase(recipientType)) {
             // For advisor, try advisor-specific fields first, then generic
-            preferredStartTimeStr = dataProviderResult.get("advisor_preferred_call_start_time");
-            preferredEndTimeStr = dataProviderResult.get("advisor_preferred_call_end_time");
+            preferredStartTimeStr = getCaseInsensitive(dataProviderResult, "advisor_preferred_call_start_time");
+            preferredEndTimeStr = getCaseInsensitive(dataProviderResult, "advisor_preferred_call_end_time");
             
             if (preferredStartTimeStr == null || preferredStartTimeStr.isBlank()) {
-                preferredStartTimeStr = dataProviderResult.get("preferred_call_start_time");
-                preferredEndTimeStr = dataProviderResult.get("preferred_call_end_time");
+                preferredStartTimeStr = getCaseInsensitive(dataProviderResult, "preferred_call_start_time");
+                preferredEndTimeStr = getCaseInsensitive(dataProviderResult, "preferred_call_end_time");
             }
         } else if ("LEAD".equalsIgnoreCase(recipientType)) {
             // For lead, try lead-specific fields first, then generic
-            preferredStartTimeStr = dataProviderResult.get("lead_preferred_call_start_time");
-            preferredEndTimeStr = dataProviderResult.get("lead_preferred_call_end_time");
+            preferredStartTimeStr = getCaseInsensitive(dataProviderResult, "lead_preferred_call_start_time");
+            preferredEndTimeStr = getCaseInsensitive(dataProviderResult, "lead_preferred_call_end_time");
             
             if (preferredStartTimeStr == null || preferredStartTimeStr.isBlank()) {
-                preferredStartTimeStr = dataProviderResult.get("preferred_call_start_time");
-                preferredEndTimeStr = dataProviderResult.get("preferred_call_end_time");
+                preferredStartTimeStr = getCaseInsensitive(dataProviderResult, "preferred_call_start_time");
+                preferredEndTimeStr = getCaseInsensitive(dataProviderResult, "preferred_call_end_time");
             }
         } else {
             // For other recipient types, use generic fields
-            preferredStartTimeStr = dataProviderResult.get("preferred_call_start_time");
-            preferredEndTimeStr = dataProviderResult.get("preferred_call_end_time");
+            preferredStartTimeStr = getCaseInsensitive(dataProviderResult, "preferred_call_start_time");
+            preferredEndTimeStr = getCaseInsensitive(dataProviderResult, "preferred_call_end_time");
         }
 
         if (preferredStartTimeStr != null && !preferredStartTimeStr.isBlank() &&
@@ -505,6 +553,33 @@ public class NotificationReceiptConstructorListener {
             return List.of();
         }
         return asListOfMaps(value, context);
+    }
+
+    /**
+     * Performs case-insensitive lookup in a map.
+     * First tries exact match, then case-insensitive match.
+     * 
+     * @param map The map to search in
+     * @param key The key to look for (case-insensitive)
+     * @return The value if found, null otherwise
+     */
+    private String getCaseInsensitive(Map<String, String> map, String key) {
+        if (map == null || key == null) {
+            return null;
+        }
+        
+        // First try exact match (fast path)
+        String value = map.get(key);
+        if (value != null) {
+            return value;
+        }
+        
+        // Then try case-insensitive match
+        return map.entrySet().stream()
+                .filter(entry -> entry.getKey().equalsIgnoreCase(key))
+                .map(Map.Entry::getValue)
+                .findFirst()
+                .orElse(null);
     }
 }
 
