@@ -227,7 +227,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
 
         // Get current username from UserContext
-        String currentUsername = UserContext.getUsername();
+        // String currentUsername = UserContext.getUsername(); removing the underwriter updation on credit details updation
 
         Lead.CreditRatingDetails creditDetails = lead.getCreditRatingDetails();
         if (creditDetails == null) {
@@ -272,7 +272,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
             codeValueMasterService.getCodeValueByKeyAndCodeKey(request.getCustomerProfiles(), SystemControlledMasterCodes.LEAD_CUSTOMER_PROFILE_MASTER);
             creditDetails.setCustomerProfiles(request.getCustomerProfiles());
         }
-        creditDetails.setUnderwriter(currentUsername);
+        // creditDetails.setUnderwriter(currentUsername); removing the underwriter updation on credit details updation
 
         lead.setCreditRatingDetails(creditDetails);
         leadRepositoryWrapper.saveWithException(lead);
