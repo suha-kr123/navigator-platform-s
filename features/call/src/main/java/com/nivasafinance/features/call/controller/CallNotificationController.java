@@ -1,7 +1,7 @@
 package com.nivasafinance.features.call.controller;
 
 import com.nivasafinance.common.constants.ApiConstants;
-import com.nivasafinance.services.voice.webhook.dto.CallNotificationResponse;
+import com.nivasafinance.webhooks.call.dto.CallNotificationResponse;
 import com.nivasafinance.features.call.service.CallNotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

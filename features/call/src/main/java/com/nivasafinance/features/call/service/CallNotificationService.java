@@ -1,6 +1,6 @@
 package com.nivasafinance.features.call.service;
 
-import com.nivasafinance.services.voice.webhook.dto.CallNotificationResponse;
+import com.nivasafinance.webhooks.call.dto.CallNotificationResponse;
 
 import java.util.List;
 

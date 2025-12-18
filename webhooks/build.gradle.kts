@@ -7,11 +7,12 @@ plugins {
 
 dependencies {
     implementation(project(":common"))
-    implementation(project(":features:master"))
-    implementation(project(":features:address"))
-    implementation("org.apache.commons:commons-lang3:3.18.0")
+    implementation(project(":features:usermanagement"))
+    implementation("org.springframework.boot:spring-boot-starter-websocket")
+    implementation("org.springframework.boot:spring-boot-starter-data-redis")
 }
 
 springBoot {
     mainClass.set("com.nivasafinance.NavigatorApplication")
 }
+

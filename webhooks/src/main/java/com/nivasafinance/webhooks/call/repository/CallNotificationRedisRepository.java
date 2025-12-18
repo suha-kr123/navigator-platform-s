@@ -1,7 +1,7 @@
-package com.nivasafinance.services.voice.webhook.repository;
+package com.nivasafinance.webhooks.call.repository;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nivasafinance.services.voice.webhook.dto.CallNotificationResponse;
+import com.nivasafinance.webhooks.call.dto.CallNotificationResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import jakarta.annotation.PostConstruct;
@@ -103,7 +103,6 @@ public class CallNotificationRedisRepository {
             log.warn("Failed to add notification to user key: {} (notification still saved to Redis)", userKey, e);
         }
     }
-
 
     public boolean existsByCallSidAndEventType(String callSid, String eventType) {
         if (callSid == null || callSid.isBlank()) {

@@ -2,9 +2,9 @@ package com.nivasafinance.features.call.service.impl;
 
 import com.nivasafinance.common.context.UserContext;
 import com.nivasafinance.features.person.entity.MobileNumberDetails;
-import com.nivasafinance.features.usermanagement.repository.UserRepositoryWrapper;
-import com.nivasafinance.services.voice.webhook.dto.CallNotificationResponse;
-import com.nivasafinance.services.voice.webhook.repository.CallNotificationRedisRepository;
+import com.nivasafinance.features.usermanagement.service.UserReadService;
+import com.nivasafinance.webhooks.call.dto.CallNotificationResponse;
+import com.nivasafinance.webhooks.call.repository.CallNotificationRedisRepository;
 import com.nivasafinance.features.call.service.CallNotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 public class CallNotificationServiceImpl implements CallNotificationService {
 
     private final CallNotificationRedisRepository notificationRepository;
-    private final UserRepositoryWrapper userRepositoryWrapper;
+    private final UserReadService userReadService;
 
     @Value("${call.notification.max-per-user:5}")
     private int maxNotificationsPerUser;
@@ -38,7 +38,7 @@ public class CallNotificationServiceImpl implements CallNotificationService {
         Set<String> seenCallSids = new HashSet<>();
         List<CallNotificationResponse> allNotifications = new ArrayList<>();
 
-        userRepositoryWrapper.findByUsername(username).ifPresent(user -> {
+        userReadService.findUserByUsername(username).ifPresent(user -> {
             if (user.getPerson() != null && user.getPerson().getMobileNumbers() != null) {
                 for (MobileNumberDetails mobile : user.getPerson().getMobileNumbers()) {
                     if (mobile.getNumber() != null) {

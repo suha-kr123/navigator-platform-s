@@ -1,6 +1,6 @@
-package com.nivasafinance.services.voice.webhook;
+package com.nivasafinance.webhooks.call.service;
 
-import com.nivasafinance.services.voice.webhook.dto.CallNotificationResponse;
+import com.nivasafinance.webhooks.call.dto.CallNotificationResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.simp.SimpMessagingTemplate;

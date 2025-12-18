@@ -84,8 +84,29 @@ public class MessagingProperties {
 
             // Load queue URLs and map them to QueueType enum
             if (secretMap.containsKey("queues")) {
-                Map<String, String> queuesFromSecret = (Map<String, String>) secretMap.get("queues");
-                if (queuesFromSecret != null) {
+                Object queuesObj = secretMap.get("queues");
+                if (queuesObj == null) {
+                    throw new IllegalArgumentException("Secret contains 'queues' key but value is null");
+                }
+                
+                // Handle both Map<String, String> and Map<String, Object> from JSON parsing
+                Map<String, String> queuesFromSecret;
+                if (queuesObj instanceof Map) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> queuesMap = (Map<String, Object>) queuesObj;
+                    queuesFromSecret = new java.util.HashMap<>();
+                    for (Map.Entry<String, Object> entry : queuesMap.entrySet()) {
+                        // Convert Object to String (handles both String and other types)
+                        String queueUrl = entry.getValue() != null ? entry.getValue().toString() : null;
+                        if (queueUrl != null && !queueUrl.isBlank()) {
+                            queuesFromSecret.put(entry.getKey(), queueUrl);
+                        }
+                    }
+                } else {
+                    throw new IllegalArgumentException("Secret 'queues' value is not a map. Got: " + queuesObj.getClass().getName());
+                }
+                
+                if (!queuesFromSecret.isEmpty()) {
                     for (Map.Entry<String, String> entry : queuesFromSecret.entrySet()) {
                         try {
                             QueueType queueType = QueueType.valueOf(entry.getKey().toUpperCase());

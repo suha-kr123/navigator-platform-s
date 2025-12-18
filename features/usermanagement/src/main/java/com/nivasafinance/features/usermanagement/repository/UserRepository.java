@@ -22,7 +22,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
            "JOIN n_person p ON p.id = u.person_id " +
            "WHERE EXISTS (" +
            "  SELECT 1 FROM jsonb_array_elements(COALESCE(p.mobile_numbers, '[]'::jsonb)) AS m " +
-           "  WHERE m->>'number' = :phoneNumber" +
+           "  WHERE m->>'number' = :phoneNumber " +
+           "  AND (m->>'isPrimary')::boolean = true" +
            ")", nativeQuery = true)
     List<User> findByPersonPhoneNumber(@Param("phoneNumber") String phoneNumber);
 }
