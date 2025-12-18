@@ -13,6 +13,7 @@ dependencies {
     implementation(libs.javers.spring.boot.starter.sql)
     implementation(platform("software.amazon.awssdk:bom:2.25.64"))
     implementation("software.amazon.awssdk:sqs")
+    implementation("software.amazon.awssdk:apache-client")
     implementation(libs.aws.secretsmanager)
     implementation("org.springframework.boot:spring-boot-starter-cache")
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
