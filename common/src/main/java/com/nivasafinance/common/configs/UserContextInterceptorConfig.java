@@ -20,7 +20,8 @@ public class UserContextInterceptorConfig implements WebMvcConfigurer {
                 .addPathPatterns("/**")  // Apply to all paths
                 .excludePathPatterns(
                         "/actuator/**",   // Exclude health check endpoints
-                        "/error"          // Exclude error endpoint
+                        "/error",         // Exclude error endpoint
+                        "/ws/**"          // Exclude WebSocket endpoints (handled by WebSocketHandshakeHandler)
                 );
     }
 }
