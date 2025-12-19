@@ -1,5 +1,6 @@
 package com.nivasafinance.webhooks.call.service.impl;
 
+import com.nivasafinance.common.utils.PhoneNumberUtils;
 import com.nivasafinance.features.usermanagement.service.UserReadService;
 import com.nivasafinance.webhooks.call.service.CallNotificationWebSocketService;
 import com.nivasafinance.webhooks.call.dto.CallNotificationResponse;
@@ -89,6 +90,7 @@ public class CallWebhookServiceImpl implements CallWebhookService {
         
         String callFrom = formData.getFirst("CallFrom");
         String callTo = formData.getFirst("CallTo");
+        String dialWhomNumber = formData.getFirst("DialWhomNumber");
         String callStatus = formData.getFirst("CallStatus");
         String direction = normalizeDirection(formData.getFirst("Direction"));
         String eventType = formData.getFirst("EventType");
@@ -117,14 +119,18 @@ public class CallWebhookServiceImpl implements CallWebhookService {
                 .createdAt(now)
                 .build();
         
-        notificationRepository.save(notification);
+        notificationRepository.save(notification, dialWhomNumber);
         
-        String userPhone = direction != null && "INBOUND".equals(direction)
-                ? callFrom
+        // Use DialWhomNumber (the agent number) for notifications
+        // Fallback to callTo if DialWhomNumber is not provided
+        String userPhone = (dialWhomNumber != null && !dialWhomNumber.isBlank()) 
+                ? dialWhomNumber 
                 : callTo;
         
         if (userPhone != null && !userPhone.isBlank()) {
-            getSelf().sendNotificationAsync(notification, userPhone);
+            // Normalize phone number before lookup
+            String normalizedPhone = PhoneNumberUtils.normalizePhoneNumber(userPhone);
+            getSelf().sendNotificationAsync(notification, normalizedPhone);
         }
     }
 

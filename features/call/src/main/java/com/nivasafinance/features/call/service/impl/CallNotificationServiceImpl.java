@@ -40,23 +40,26 @@ public class CallNotificationServiceImpl implements CallNotificationService {
 
         userReadService.findUserByUsername(username).ifPresent(user -> {
             if (user.getPerson() != null && user.getPerson().getMobileNumbers() != null) {
-                for (MobileNumberDetails mobile : user.getPerson().getMobileNumbers()) {
-                    if (mobile.getNumber() != null) {
-                        List<CallNotificationResponse> phoneNotifications = 
-                                notificationRepository.findByUserPhone(mobile.getNumber());
-                        for (CallNotificationResponse notification : phoneNotifications) {
-                            if (notification == null || notification.getCallSid() == null) {
-                                continue;
+                // Only check PRIMARY phone number (matches DialWhomNumber from webhook)
+                user.getPerson().getMobileNumbers().stream()
+                        .filter(mobile -> mobile.getIsPrimary() != null && mobile.getIsPrimary())
+                        .filter(mobile -> mobile.getNumber() != null && !mobile.getNumber().isBlank())
+                        .findFirst()
+                        .ifPresent(primaryMobile -> {
+                            List<CallNotificationResponse> phoneNotifications = 
+                                    notificationRepository.findByUserPhone(primaryMobile.getNumber());
+                            for (CallNotificationResponse notification : phoneNotifications) {
+                                if (notification == null || notification.getCallSid() == null) {
+                                    continue;
+                                }
+                                String eventType = notification.getEventType() != null ? notification.getEventType() : "UNKNOWN";
+                                String uniqueKey = notification.getCallSid() + ":" + eventType;
+                                if (!seenCallSids.contains(uniqueKey)) {
+                                    allNotifications.add(notification);
+                                    seenCallSids.add(uniqueKey);
+                                }
                             }
-                            String eventType = notification.getEventType() != null ? notification.getEventType() : "UNKNOWN";
-                            String uniqueKey = notification.getCallSid() + ":" + eventType;
-                            if (!seenCallSids.contains(uniqueKey)) {
-                                allNotifications.add(notification);
-                                seenCallSids.add(uniqueKey);
-                            }
-                        }
-                    }
-                }
+                        });
             }
         });
 

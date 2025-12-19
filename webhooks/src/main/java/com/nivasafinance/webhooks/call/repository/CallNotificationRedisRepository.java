@@ -1,6 +1,7 @@
 package com.nivasafinance.webhooks.call.repository;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nivasafinance.common.utils.PhoneNumberUtils;
 import com.nivasafinance.webhooks.call.dto.CallNotificationResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,7 +43,7 @@ public class CallNotificationRedisRepository {
         log.info("Call notification max-per-user configured to: {}", maxNotificationsPerUser);
     }
 
-    public void save(CallNotificationResponse notification) {
+    public void save(CallNotificationResponse notification, String dialWhomNumber) {
         if (notification == null) {
             log.error("Cannot save notification: notification is null");
             return;
@@ -69,11 +70,15 @@ public class CallNotificationRedisRepository {
             }
             
             if (notification.getTimestamp() != null) {
-                String phone = notification.getDirection() != null && "INBOUND".equals(notification.getDirection()) 
-                    ? notification.getCallFrom() 
-                    : notification.getCallTo();
-                if (phone != null) {
-                    String userPhoneKey = USER_NOTIFICATIONS_KEY_PREFIX + "phone:" + phone;
+                // Use DialWhomNumber (the agent number) for notifications
+                // Fallback to callTo if DialWhomNumber is not provided
+                String phone = (dialWhomNumber != null && !dialWhomNumber.isBlank()) 
+                        ? dialWhomNumber 
+                        : notification.getCallTo();
+                if (phone != null && !phone.isBlank()) {
+                    // Normalize phone number before saving to Redis
+                    String normalizedPhone = PhoneNumberUtils.normalizePhoneNumber(phone);
+                    String userPhoneKey = USER_NOTIFICATIONS_KEY_PREFIX + "phone:" + normalizedPhone;
                     addNotificationToUser(userPhoneKey, notificationKey);
                 }
             }
@@ -133,7 +138,9 @@ public class CallNotificationRedisRepository {
         if (phone == null || phone.isBlank()) {
             return new ArrayList<>();
         }
-        return findByUserKey(USER_NOTIFICATIONS_KEY_PREFIX + "phone:" + phone);
+        // Normalize phone number before lookup to match the format in Redis
+        String normalizedPhone = PhoneNumberUtils.normalizePhoneNumber(phone);
+        return findByUserKey(USER_NOTIFICATIONS_KEY_PREFIX + "phone:" + normalizedPhone);
     }
 
     private List<CallNotificationResponse> findByUserKey(String userKey) {
