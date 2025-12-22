@@ -8,6 +8,7 @@ import com.nivasafinance.common.events.payload.LeadCreationEventPayload;
 import com.nivasafinance.common.events.payload.LeadStatusChangeEventPayload;
 import com.nivasafinance.common.events.payload.LeadUpdateEventPayload;
 import com.nivasafinance.common.exception.BadRequestException;
+import com.nivasafinance.common.exception.ResourceNotFoundException;
 import com.nivasafinance.features.address.service.AddressDataService;
 import com.nivasafinance.features.advisor.dto.AdvisorResponse;
 import com.nivasafinance.features.advisor.service.AdvisorReadService;
@@ -444,7 +445,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         // Validate that disbursement details exist
         Lead.DisbursementDetails disbursementDetails = lead.getDisbursementDetails();
         if (disbursementDetails == null) {
-            throw new RuntimeException("Disbursement details must exist before adding tranches");
+            throw new BadRequestException("Disbursement details must exist before adding tranches");
         }
 
         // Get existing tranches or create new list
@@ -477,14 +478,14 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         // Validate that disbursement details exist
         Lead.DisbursementDetails disbursementDetails = lead.getDisbursementDetails();
         if (disbursementDetails == null || disbursementDetails.getTranches() == null) {
-            throw new RuntimeException("Tranche not found with identifier: " + trancheIdentifier);
+            throw new ResourceNotFoundException("Tranche not found with identifier: " + trancheIdentifier);
         }
 
         // Find tranche by identifier
         Lead.Tranche tranche = disbursementDetails.getTranches().stream()
                 .filter(t -> trancheIdentifier.equals(t.getIdentifier()))
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("Tranche not found with identifier: " + trancheIdentifier));
+                .orElseThrow(() -> new ResourceNotFoundException("Tranche not found with identifier: " + trancheIdentifier));
 
         // Update tranche fields (PUT semantics - full replacement)
         tranche.setAmount(request.getAmount());
@@ -504,7 +505,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         // Validate that disbursement details exist
         Lead.DisbursementDetails disbursementDetails = lead.getDisbursementDetails();
         if (disbursementDetails == null || disbursementDetails.getTranches() == null) {
-            throw new RuntimeException("Tranche not found with identifier: " + trancheIdentifier);
+            throw new ResourceNotFoundException("Tranche not found with identifier: " + trancheIdentifier);
         }
 
         // Find and remove tranche by identifier
@@ -512,7 +513,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         boolean removed = tranches.removeIf(t -> trancheIdentifier.equals(t.getIdentifier()));
 
         if (!removed) {
-            throw new RuntimeException("Tranche not found with identifier: " + trancheIdentifier);
+            throw new ResourceNotFoundException("Tranche not found with identifier: " + trancheIdentifier);
         }
 
         leadRepositoryWrapper.saveWithException(lead);

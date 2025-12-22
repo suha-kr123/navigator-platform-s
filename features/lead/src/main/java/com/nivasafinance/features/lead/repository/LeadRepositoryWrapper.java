@@ -60,7 +60,7 @@ public class LeadRepositoryWrapper {
     public Lead findByIdWithException(Long id) {
         try {
             return leadRepository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("Lead not found with id: " + id));
+                    .orElseThrow(() -> new LeadNotFoundException(id, messageSource));
         } catch (DataAccessException e) {
             RuntimeException exception = new RuntimeException("Failed to retrieve lead", e);
             exception.initCause(e);
@@ -71,7 +71,7 @@ public class LeadRepositoryWrapper {
     public Lead findByLeadIdentifierWithException(UUID leadIdentifier) {
         try {
             return leadRepository.findByLeadIdentifier(leadIdentifier)
-                    .orElseThrow(() -> new RuntimeException("Lead not found with identifier: " + leadIdentifier));
+                    .orElseThrow(() -> new LeadNotFoundException(leadIdentifier, messageSource));
         } catch (DataAccessException e) {
             RuntimeException exception = new RuntimeException("Failed to retrieve lead by identifier", e);
             exception.initCause(e);

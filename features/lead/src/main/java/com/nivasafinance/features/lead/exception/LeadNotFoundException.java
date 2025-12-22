@@ -12,6 +12,14 @@ public class LeadNotFoundException extends ResourceNotFoundException {
     @Serial
     private static final long serialVersionUID = 5619238475619283746L;
 
+    public LeadNotFoundException(Long LeadId, MessageSource messageSource) {
+        super(ExceptionUtils.createLocalizedMessage(
+                "error.lead.not.found",
+                new Object[]{LeadId.toString()},
+                messageSource
+        ));
+    }
+
     public LeadNotFoundException(UUID leadId, MessageSource messageSource) {
         super(ExceptionUtils.createLocalizedMessage(
                 "error.lead.not.found",

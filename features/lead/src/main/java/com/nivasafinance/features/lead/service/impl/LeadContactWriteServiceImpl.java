@@ -10,6 +10,7 @@ import com.nivasafinance.common.events.payload.LeadContactUpdationEventPayload;
 import com.nivasafinance.common.dto.AddressData;
 import com.nivasafinance.common.dto.IdentifierData;
 import com.nivasafinance.features.lead.dto.*;
+import com.nivasafinance.features.lead.exception.ContactNotFoundException;
 import com.nivasafinance.features.lead.exception.LeadContactValidationException;
 import com.nivasafinance.features.lead.service.LeadContactReadService;
 import com.nivasafinance.features.lead.entity.Applicant;
@@ -20,6 +21,7 @@ import com.nivasafinance.features.lead.repository.ApplicantRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.ContactRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadContactWriteService;
+import org.springframework.context.MessageSource;
 import com.nivasafinance.features.person.dto.PersonCreateRequest;
 import com.nivasafinance.features.person.dto.PersonCreateResponse;
 import com.nivasafinance.features.person.dto.PersonUpdateRequest;
@@ -49,6 +51,7 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
     private final PersonWriteService personWriteService;
     private final PersonReadService personReadService;
     private final PersonRepositoryWrapper personRepositoryWrapper;
+    private final MessageSource messageSource;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final LeadContactReadService leadContactReadService;
 
@@ -325,7 +328,7 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
     private Contact findContactByIdentifier(Lead lead, UUID contactIdentifier) {
         Contact contact = contactRepositoryWrapper.findByIdentifierWithException(contactIdentifier);
         if(lead.getContacts() == null || !lead.getContacts().contains(contact.getId())) {
-            throw new RuntimeException("Contact not found with identifier: " + contactIdentifier);
+            throw new ContactNotFoundException(contactIdentifier, messageSource);
         }
         return contact;
     }

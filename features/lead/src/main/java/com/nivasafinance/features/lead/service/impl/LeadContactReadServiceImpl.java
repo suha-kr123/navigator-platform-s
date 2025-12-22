@@ -8,10 +8,12 @@ import com.nivasafinance.features.lead.entity.Applicant;
 import com.nivasafinance.features.lead.entity.Contact;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.enums.LeadContactPersonType;
+import com.nivasafinance.features.lead.exception.ContactNotFoundException;
 import com.nivasafinance.features.lead.repository.ApplicantRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.ContactRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadContactReadService;
+import org.springframework.context.MessageSource;
 import com.nivasafinance.features.person.dto.PersonResponse;
 import com.nivasafinance.features.person.service.PersonReadService;
 import lombok.AllArgsConstructor;
@@ -32,6 +34,7 @@ public class LeadContactReadServiceImpl implements LeadContactReadService {
     private final LeadRepositoryWrapper leadRepositoryWrapper;
     private final ContactRepositoryWrapper contactRepositoryWrapper;
     private final ApplicantRepositoryWrapper applicantRepositoryWrapper;
+    private final MessageSource messageSource;
     private final PersonReadService personReadService;
 
 
@@ -109,7 +112,7 @@ public class LeadContactReadServiceImpl implements LeadContactReadService {
 
     private Contact findContactByIdentifier(Lead lead, UUID contactIdentifier) {
         if (lead.getContacts() == null) {
-            throw new RuntimeException("Contact not found with identifier: " + contactIdentifier);
+            throw new ContactNotFoundException(contactIdentifier, messageSource);
         }
 
         for (Long contactId : lead.getContacts()) {
@@ -119,7 +122,7 @@ public class LeadContactReadServiceImpl implements LeadContactReadService {
             }
         }
 
-        throw new RuntimeException("Contact not found with identifier: " + contactIdentifier);
+        throw new ContactNotFoundException(contactIdentifier, messageSource);
     }
 
     @Override
