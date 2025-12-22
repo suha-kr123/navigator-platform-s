@@ -141,38 +141,67 @@ public class LeadWhatsAppNotificationService {
     }
     
     private UUID extractLeadId(NotificationReceipt receipt) {
-        // Try to get from details first
+        // Try to get from details first (case-insensitive)
         Map<String, Object> details = receipt.getDetails();
         if (details != null) {
-            Object entityId = details.get("entity_id");
+            Object entityId = getCaseInsensitive(details, "entity_id");
             if (entityId != null) {
                 try {
                     return UUID.fromString(entityId.toString());
                 } catch (IllegalArgumentException e) {
-                    log.warn("Entity ID in details is not a valid UUID: {}", entityId);
+                    log.debug("Entity ID in details is not a valid UUID (might be numeric): {}", entityId);
                 }
             }
         }
         
-        // Try to get from message payload
+        // Try to get from message payload (case-insensitive)
         Map<String, Object> payload = receipt.getMessagePayload();
         if (payload != null) {
-            Object leadId = payload.get("leadId");
-            if (leadId == null) {
-                leadId = payload.get("lead_id");
+            // Try various key names (case-insensitive)
+            Object leadIdentifier = getCaseInsensitive(payload, "leadIdentifier");
+            if (leadIdentifier == null) {
+                leadIdentifier = getCaseInsensitive(payload, "leadidentifier");
             }
-            if (leadId == null) {
-                leadId = payload.get("leadIdentifier");
+            if (leadIdentifier == null) {
+                leadIdentifier = getCaseInsensitive(payload, "leadId");
             }
-            if (leadId != null) {
+            if (leadIdentifier == null) {
+                leadIdentifier = getCaseInsensitive(payload, "lead_id");
+            }
+            
+            if (leadIdentifier != null) {
                 try {
-                    return UUID.fromString(leadId.toString());
+                    return UUID.fromString(leadIdentifier.toString());
                 } catch (IllegalArgumentException e) {
-                    log.warn("LeadId in payload is not a valid UUID: {}", leadId);
+                    log.warn("LeadIdentifier in payload is not a valid UUID: {}", leadIdentifier);
                 }
+            } else {
+                log.warn("LeadIdentifier not found in payload. Available keys: {}", payload.keySet());
             }
+        } else {
+            log.warn("Message payload is null for receipt {}", receipt.getId());
         }
         
+        return null;
+    }
+    
+    /**
+     * Case-insensitive key lookup in a map.
+     */
+    private Object getCaseInsensitive(Map<String, Object> map, String key) {
+        if (map == null || key == null) {
+            return null;
+        }
+        // First try exact match
+        if (map.containsKey(key)) {
+            return map.get(key);
+        }
+        // Then try case-insensitive match
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            if (entry.getKey().equalsIgnoreCase(key)) {
+                return entry.getValue();
+            }
+        }
         return null;
     }
     
