@@ -4,7 +4,9 @@ import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationInfo;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.features.lead.dto.LeadNoteResponse;
+import com.nivasafinance.features.notes.exception.NotesNotFoundException;
 import lombok.AllArgsConstructor;
+import org.springframework.context.MessageSource;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -36,6 +38,7 @@ public class LeadNoteRepositoryWrapper {
               CROSS JOIN LATERAL  jsonb_array_elements(l.notes) note_id
               JOIN n_note n ON note_id::INT = n.id
             """;
+    private final MessageSource messageSource;
 
     /**
      * Private static RowMapper for mapping ResultSet to LeadNoteResponse.
@@ -119,8 +122,7 @@ public class LeadNoteRepositoryWrapper {
             return jdbcTemplate.queryForObject(sql, new LeadNoteRowMapper(),
                     leadIdentifier, noteIdentifier);
         } catch (EmptyResultDataAccessException e) {
-            throw new RuntimeException("Note not found for lead: " + leadIdentifier +
-                                       " with note identifier: " + noteIdentifier);
+            throw new NotesNotFoundException(noteIdentifier, messageSource);
         } catch (DataAccessException e) {
             throw new RuntimeException("Failed to retrieve note for lead: " + leadIdentifier, e);
         }
