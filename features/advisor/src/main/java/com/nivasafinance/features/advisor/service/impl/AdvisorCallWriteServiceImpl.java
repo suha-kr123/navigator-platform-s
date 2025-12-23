@@ -5,6 +5,7 @@ import com.nivasafinance.common.enums.SystemEntities;
 import com.nivasafinance.common.events.BusinessEvent;
 import com.nivasafinance.common.events.SystemEvent;
 import com.nivasafinance.common.events.payload.AdvisorCallLogCreationEventPayload;
+import com.nivasafinance.common.events.payload.AdvisorCallLogUpdateEventPayload;
 import com.nivasafinance.common.exception.BadRequestException;
 import com.nivasafinance.features.call.dto.CallLogResponse;
 import com.nivasafinance.features.call.dto.CreateCallLogResponse;
@@ -111,6 +112,11 @@ public class AdvisorCallWriteServiceImpl implements AdvisorCallWriteService {
             updateCallLog.setCompletionDetails(completionDetails);
         }
         callWriteService.updateCallLogByProviderId(externalId, updateCallLog);
+
+        CallLogResponse updatedCallLog = callReadService.getCallLogByProviderId(externalId)
+                .orElseThrow(() -> new BadRequestException("Call Log with povider ID" + externalId + " not found"));
+
+        publishAdvisorCallLogUpdatedEvent(advisor, updatedCallLog.getId(), updatedCallLog.getIdentifier());
     }
 
     @Override
@@ -236,5 +242,13 @@ public class AdvisorCallWriteServiceImpl implements AdvisorCallWriteService {
         applicationEventPublisher.publishEvent(
                 new SystemEvent<>(BusinessEvent.ADVISOR_CALL_LOG_CREATED.toString(), payload)
         );
+    }
+
+    private void publishAdvisorCallLogUpdatedEvent(Advisor advisor, Long callLogId, UUID callLogIdentifier) {
+        AdvisorCallLogUpdateEventPayload payload = AdvisorCallLogUpdateEventPayload.builder()
+                .advisorId(advisor.getId())
+                .callLogId(callLogId)
+                .callLogIdentifier(callLogIdentifier)
+                .build();
     }
 }

@@ -5,6 +5,7 @@ import com.nivasafinance.common.enums.SystemEntities;
 import com.nivasafinance.common.events.BusinessEvent;
 import com.nivasafinance.common.events.SystemEvent;
 import com.nivasafinance.common.events.payload.LeadCallLogCreationEventPayload;
+import com.nivasafinance.common.events.payload.LeadCallLogUpdateEventPayload;
 import com.nivasafinance.common.exception.BadRequestException;
 import com.nivasafinance.features.call.dto.CallLogResponse;
 import com.nivasafinance.features.call.dto.CreateCallLogResponse;
@@ -119,6 +120,11 @@ public class LeadCallWriteServiceImpl implements LeadCallWriteService {
             updateCallLog.setCompletionDetails(completionDetails);
         }
         callWriteService.updateCallLogByProviderId(externalId, updateCallLog);
+
+        CallLogResponse updatedCallLog = callReadService.getCallLogByProviderId(externalId)
+                .orElseThrow(()-> new BadRequestException("Call log with provider id " + externalId + " not found"));
+
+        publishLeadCallLogUpdatedEvent(lead, updatedCallLog.getId(), updatedCallLog.getIdentifier());
     }
 
     @Override
@@ -256,6 +262,18 @@ public class LeadCallWriteServiceImpl implements LeadCallWriteService {
 
         applicationEventPublisher.publishEvent(
                 new SystemEvent<>(BusinessEvent.LEAD_CALL_LOG_CREATED.toString(), payload)
+        );
+    }
+
+    private void publishLeadCallLogUpdatedEvent(Lead lead, Long callLogId, UUID callLogIdentifier){
+        LeadCallLogUpdateEventPayload payload = LeadCallLogUpdateEventPayload.builder()
+                .leadId(lead.getId())
+                .callLogId(callLogId)
+                .callLogIdentifier(callLogIdentifier)
+                .build();
+
+        applicationEventPublisher.publishEvent(
+                new SystemEvent<>(BusinessEvent.LEAD_CALL_LOG_UPDATED.toString(), payload)
         );
     }
 }

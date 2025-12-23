@@ -2,23 +2,7 @@ package com.nivasafinance.features.leadactivity.factory;
 
 import com.nivasafinance.common.context.UserContext;
 import com.nivasafinance.common.events.BusinessEvent;
-import com.nivasafinance.common.events.payload.LeadCallLogCreationEventPayload;
-import com.nivasafinance.common.events.payload.LeadContactCreationEventPayload;
-import com.nivasafinance.common.events.payload.LeadContactDeletionEventPayload;
-import com.nivasafinance.common.events.payload.LeadContactUpdationEventPayload;
-import com.nivasafinance.common.events.payload.LeadCreationEventPayload;
-import com.nivasafinance.common.events.payload.LeadDocumentCreationEventPayload;
-import com.nivasafinance.common.events.payload.LeadDocumentDeletionEventPayload;
-import com.nivasafinance.common.events.payload.LeadDocumentUpdationEventPayload;
-import com.nivasafinance.common.events.payload.LeadLenderCreationEventPayload;
-import com.nivasafinance.common.events.payload.LeadLenderRejectionEventPayload;
-import com.nivasafinance.common.events.payload.LeadLenderSubmissionEventPayload;
-import com.nivasafinance.common.events.payload.LeadLenderUpdationEventPayload;
-import com.nivasafinance.common.events.payload.LeadNoteCreationEventPayload;
-import com.nivasafinance.common.events.payload.LeadNoteDeletionEventPayload;
-import com.nivasafinance.common.events.payload.LeadNoteUpdationEventPayload;
-import com.nivasafinance.common.events.payload.LeadStatusChangeEventPayload;
-import com.nivasafinance.common.events.payload.LeadUpdateEventPayload;
+import com.nivasafinance.common.events.payload.*;
 import com.nivasafinance.features.leadactivity.dto.CreateLeadActivityRequest;
 import com.nivasafinance.features.leadactivity.enums.ResourceAction;
 import com.nivasafinance.features.leadactivity.enums.ResourceEnum;
@@ -84,6 +68,10 @@ public class LeadActivityDataFactory {
             }
             case LEAD_CALL_LOG_CREATED -> {
                 CreateLeadActivityRequest request = createLeadCallLogCreatedActivityRequest((LeadCallLogCreationEventPayload) payload);
+                writeService.createLeadActivity(request);
+            }
+            case LEAD_CALL_LOG_UPDATED -> {
+                CreateLeadActivityRequest request = createLeadCallLogUpdatedActivityRequest((LeadCallLogUpdateEventPayload) payload);
                 writeService.createLeadActivity(request);
             }
             case LEAD_LENDER_CREATED -> {
@@ -278,6 +266,20 @@ public class LeadActivityDataFactory {
                 .description("Call log created by " + UserContext.getUsername())
                 .resource(ResourceEnum.CALL_LOG)
                 .action(ResourceAction.CREATE)
+                .metadata(metadata)
+                .build();
+    }
+
+    private CreateLeadActivityRequest createLeadCallLogUpdatedActivityRequest(LeadCallLogUpdateEventPayload payload){
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("callLogIdentifier", payload.getCallLogIdentifier().toString());
+
+        return CreateLeadActivityRequest.builder()
+                .leadId(payload.getLeadId())
+                .resourceId(payload.getCallLogId())
+                .description("Call log updated by " + UserContext.getUsername())
+                .resource(ResourceEnum.CALL_LOG)
+                .action(ResourceAction.UPDATE)
                 .metadata(metadata)
                 .build();
     }

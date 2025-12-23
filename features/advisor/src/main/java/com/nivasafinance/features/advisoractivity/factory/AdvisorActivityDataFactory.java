@@ -2,13 +2,7 @@ package com.nivasafinance.features.advisoractivity.factory;
 
 import com.nivasafinance.common.context.UserContext;
 import com.nivasafinance.common.events.BusinessEvent;
-import com.nivasafinance.common.events.payload.AdvisorCallLogCreationEventPayload;
-import com.nivasafinance.common.events.payload.AdvisorCreationEventPayload;
-import com.nivasafinance.common.events.payload.AdvisorNoteCreationEventPayload;
-import com.nivasafinance.common.events.payload.AdvisorNoteDeletionEventPayload;
-import com.nivasafinance.common.events.payload.AdvisorNoteUpdationEventPayload;
-import com.nivasafinance.common.events.payload.AdvisorStatusChangeEventPayload;
-import com.nivasafinance.common.events.payload.AdvisorUpdateEventPayload;
+import com.nivasafinance.common.events.payload.*;
 import com.nivasafinance.features.advisoractivity.dto.CreateAdvisorActivityRequest;
 import com.nivasafinance.features.advisoractivity.enums.ResourceAction;
 import com.nivasafinance.features.advisoractivity.enums.ResourceEnum;
@@ -50,6 +44,10 @@ public class AdvisorActivityDataFactory {
             }
             case ADVISOR_CALL_LOG_CREATED -> {
                 CreateAdvisorActivityRequest request = createAdvisorCallLogCreatedActivityRequest((AdvisorCallLogCreationEventPayload) payload);
+                writeService.createAdvisorActivity(request);
+            }
+            case ADVISOR_CALL_LOG_UPDATED -> {
+                CreateAdvisorActivityRequest request = createAdvisorCallLogUpdatedActivityRequest((AdvisorCallLogUpdateEventPayload) payload);
                 writeService.createAdvisorActivity(request);
             }
             case ADVISOR_REJECTED, ADVISOR_DORMANT, ADVISOR_ACTIVE -> {
@@ -134,6 +132,20 @@ public class AdvisorActivityDataFactory {
                 .description("Call log created by " + UserContext.getUsername())
                 .resource(ResourceEnum.CALL_LOG)
                 .action(ResourceAction.CREATE)
+                .metadata(metadata)
+                .build();
+    }
+
+    private CreateAdvisorActivityRequest createAdvisorCallLogUpdatedActivityRequest(AdvisorCallLogUpdateEventPayload payload){
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("callLogIdentifier", payload.getCallLogIdentifier().toString());
+
+        return CreateAdvisorActivityRequest.builder()
+                .advisorId(payload.getAdvisorId())
+                .resourceId(payload.getCallLogId())
+                .description("Call log updated by " + UserContext.getUsername())
+                .resource(ResourceEnum.CALL_LOG)
+                .action(ResourceAction.UPDATE)
                 .metadata(metadata)
                 .build();
     }
