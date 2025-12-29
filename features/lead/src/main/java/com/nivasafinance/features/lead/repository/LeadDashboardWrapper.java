@@ -245,6 +245,9 @@ public class LeadDashboardWrapper {
                         .append(") ");
                 params.addAll(normalizedSubstatuses);
             }
+        } else {
+            // If substatus filter is not provided, filter by substatus IS NULL
+            whereClause.append(" AND l.substatus IS NULL ");
         }
     }
 
