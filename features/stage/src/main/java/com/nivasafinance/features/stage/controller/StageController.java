@@ -1,6 +1,7 @@
 package com.nivasafinance.features.stage.controller;
 
 import com.nivasafinance.common.constants.ApiConstants;
+import com.nivasafinance.common.annotations.RequirePermission;
 import com.nivasafinance.features.rolemanagement.role.dto.UserAssignmentResponse;
 import com.nivasafinance.features.stage.dto.StageFilterResponse;
 import com.nivasafinance.features.stage.dto.StageKeysRequest;
@@ -23,18 +24,22 @@ public class StageController {
     private final StageReadService stageReadService;
 
     @GetMapping
+    @RequirePermission(permissionName = "READ_STAGE")
     public ResponseEntity<List<StageFilterResponse>> getAllActiveStages() {
         return ResponseEntity.ok(stageReadService.getAllActiveStages());
     }
 
     @PostMapping("/template")
+    @RequirePermission(permissionName = "READ_STAGE")
     public ResponseEntity<Map<String, StageTemplateResponse>> getStageTemplates(
             @Valid @RequestBody StageKeysRequest request) {
         Map<String, StageTemplateResponse> templates = stageReadService.getStageTemplates(request.getStageKeys());
         return ResponseEntity.ok(templates != null ? templates : Collections.emptyMap());
     }
 
+    
     @PostMapping("/assignable-users")
+    @RequirePermission(permissionName = "READ_STAGE")
     public ResponseEntity<List<UserAssignmentResponse>> getAssignableUsersForStages(
             @Valid @RequestBody StageKeysRequest request) {
         List<UserAssignmentResponse> users = stageReadService.getAssignableUsersForStages(request.getStageKeys());
@@ -46,6 +51,7 @@ public class StageController {
      * GET /api/v1/stages/{stageKey}/assignable-users
      */
     @GetMapping("/{stageKey}/assignable-users")
+    @RequirePermission(permissionName = "READ_STAGE")
     public ResponseEntity<List<UserAssignmentResponse>> getAssignableUsersForStage(
             @PathVariable String stageKey) {
         List<UserAssignmentResponse> users = stageReadService.getAssignableUsersForStages(

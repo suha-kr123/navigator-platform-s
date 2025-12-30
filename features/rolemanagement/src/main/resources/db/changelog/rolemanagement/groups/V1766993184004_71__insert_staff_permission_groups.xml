@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1766993184004_71" author="system" context="default">
+        <comment>Insert STAFF module permission groups</comment>
+        
+        <!-- Insert permission groups -->
+        <insert tableName="n_permission_group">
+            <column name="name" value="STAFF_FULL_ACCESS"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+    </changeSet>
+
+</databaseChangeLog>
+

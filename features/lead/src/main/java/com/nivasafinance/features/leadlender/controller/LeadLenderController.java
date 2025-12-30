@@ -1,6 +1,7 @@
 package com.nivasafinance.features.leadlender.controller;
 
 import com.nivasafinance.common.constants.ApiConstants;
+import com.nivasafinance.common.annotations.RequirePermission;
 import com.nivasafinance.features.leadlender.dto.CreateLeadLenderRequest;
 import com.nivasafinance.features.leadlender.dto.CreateLeadLenderResponse;
 import com.nivasafinance.features.leadlender.dto.LeadLenderResponse;
@@ -33,6 +34,7 @@ public class LeadLenderController {
     private final LeadLenderWriteService leadLenderWriteService;
 
     @PostMapping
+    @RequirePermission(permissionName = "CREATE_LEAD_LENDERS")
     public CreateLeadLenderResponse createLeadLender(
         @PathVariable UUID leadIdentifier,
         @Valid @RequestBody CreateLeadLenderRequest request
@@ -42,6 +44,7 @@ public class LeadLenderController {
 
     @PutMapping("/{lenderIdentifier}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @RequirePermission(permissionName = "UPDATE_LEAD_LENDERS")
     public void updateLeadLender(
         @PathVariable UUID leadIdentifier,
         @PathVariable UUID lenderIdentifier,
@@ -52,6 +55,7 @@ public class LeadLenderController {
 
     @PostMapping("/{lenderIdentifier}/reject")
     @ResponseStatus(HttpStatus.OK)
+    @RequirePermission(permissionName = "REJECT_LEAD_LENDERS")
     public void rejectLeadLender(
         @PathVariable UUID leadIdentifier,
         @PathVariable UUID lenderIdentifier,
@@ -62,6 +66,7 @@ public class LeadLenderController {
 
     @PostMapping("/{lenderIdentifier}/submit")
     @ResponseStatus(HttpStatus.OK)
+    @RequirePermission(permissionName = "SUBMIT_LEAD_LENDERS")
     public void submitLeadLender(
         @PathVariable UUID leadIdentifier,
         @PathVariable UUID lenderIdentifier
@@ -70,6 +75,7 @@ public class LeadLenderController {
     }
 
     @GetMapping("/{lenderIdentifier}")
+    @RequirePermission(permissionName = "READ_LEAD_LENDERS")
     public LeadLenderResponse getLeadLenderByIdentifier(
         @PathVariable UUID leadIdentifier,
         @PathVariable UUID lenderIdentifier
@@ -78,6 +84,7 @@ public class LeadLenderController {
     }
 
     @GetMapping("/all")
+    @RequirePermission(permissionName = "READ_LEAD_LENDERS")
     public List<LeadLenderResponse> getLeadLenders(
         @PathVariable UUID leadIdentifier,
         @RequestParam(required = false) List<String> status

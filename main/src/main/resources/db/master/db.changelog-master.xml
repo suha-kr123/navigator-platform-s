@@ -6,6 +6,7 @@
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
     <!-- Feature modules migrations -->
+    <include file="db/changelog/rolemanagement/db.changelog-rolemanagement.xml"/>
     <include file="db/changelog/address/db.changelog-address.xml"/>
     <include file="db/changelog/advisor/db.changelog-advisor.xml"/>
     <include file="db/changelog/document/db.changelog-document.xml"/>
@@ -16,7 +17,6 @@
     <include file="db/changelog/offices/db.changelog-offices.xml"/>
     <include file="db/changelog/person/db.changelog-person.xml" />
     <include file="db/changelog/usermanagement/db.changelog-usermanagement.xml"/>
-    <include file="db/changelog/rolemanagement/db.changelog-rolemanagement.xml"/>
     <include file="db/changelog/marketing/db.changelog-marketing.xml"/>
     <include file="db/changelog/notification/db.changelog-notification.xml"/>
     <include file="db/changelog/workflow/db.changelog-workflow.xml"/>
@@ -25,6 +25,9 @@
     <include file="db/changelog/staff/db.changelog-staff.xml"/>
     <include file="db/changelog/call/db.changelog-call.xml"/>
     <include file="db/changelog/integrations/db.changelog-integrations.xml"/>
+
+    <!-- Permission group mappings - must run after all permissions and groups are inserted -->
+    <include file="db/changelog/rolemanagement/db.changelog-rolemanagement-mappings.xml"/>
 
     <!-- Common module migrations -->
     <include file="/db/changelog/tables/V1759332511000_33__create_api_audit_log_table.xml"/>

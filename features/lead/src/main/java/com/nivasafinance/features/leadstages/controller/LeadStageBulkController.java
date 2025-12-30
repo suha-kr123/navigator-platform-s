@@ -1,6 +1,7 @@
 package com.nivasafinance.features.leadstages.controller;
 
 import com.nivasafinance.common.constants.ApiConstants;
+import com.nivasafinance.common.annotations.RequirePermission;
 import com.nivasafinance.features.leadstages.dto.BulkChangeAssignmentRequest;
 import com.nivasafinance.features.leadstages.dto.BulkChangeAssignmentResponse;
 import com.nivasafinance.features.leadstages.service.LeadStageHistoryWriteService;
@@ -17,6 +18,7 @@ public class LeadStageBulkController {
     private final LeadStageHistoryWriteService leadStageHistoryWriteService;
 
     @PostMapping("/bulk-assignment")
+    @RequirePermission(permissionName = "UPDATE_LEAD_STAGES")
     public ResponseEntity<BulkChangeAssignmentResponse> bulkChangeAssignment(
             @Valid @RequestBody BulkChangeAssignmentRequest request) {
         return ResponseEntity.ok(leadStageHistoryWriteService.bulkChangeAssignment(request));

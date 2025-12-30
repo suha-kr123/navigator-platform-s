@@ -1,5 +1,6 @@
 package com.nivasafinance.features.lender.lender.controller;
 
+import com.nivasafinance.common.annotations.RequirePermission;
 import com.nivasafinance.features.lender.lender.dto.LenderWithOfficesResponse;
 import com.nivasafinance.features.lender.lender.enums.LenderStatus;
 import com.nivasafinance.features.lender.lender.service.LenderReadService;
@@ -27,6 +28,7 @@ public class LenderController {
     }
 
     @GetMapping
+    @RequirePermission(permissionName = "READ_LENDER")
     public List<LenderWithOfficesResponse> getAllLendersWithOffices() {
         return lenderReadService.getAllByStatus(LenderStatus.ACTIVE).stream()
                 .map(lender -> {

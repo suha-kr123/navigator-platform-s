@@ -5,6 +5,7 @@ import com.nivasafinance.features.advisor.dto.SourcingDetailsResponse;
 import com.nivasafinance.features.advisor.dto.UpdateSourcingDetailsRequest;
 import com.nivasafinance.features.advisor.service.AdvisorReadService;
 import com.nivasafinance.features.advisor.service.AdvisorWriteService;
+import com.nivasafinance.common.annotations.RequirePermission;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +22,7 @@ public class AdvisorSourcingDetailsController {
     private final AdvisorReadService advisorReadService;
 
     @PutMapping
+    @RequirePermission(permissionName = "UPDATE_ADVISOR")
     public ResponseEntity<Void> updateSourcingDetails(
             @PathVariable UUID identifier,
             @Valid @RequestBody UpdateSourcingDetailsRequest request) {
@@ -29,6 +31,7 @@ public class AdvisorSourcingDetailsController {
     }
 
     @GetMapping
+    @RequirePermission(permissionName = "READ_ADVISOR")
     public ResponseEntity<SourcingDetailsResponse> getSourcingDetails(
             @PathVariable UUID identifier) {
         SourcingDetailsResponse response = advisorReadService.getSourcingDetails(identifier);

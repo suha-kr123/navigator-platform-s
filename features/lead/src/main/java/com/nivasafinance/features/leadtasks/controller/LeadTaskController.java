@@ -3,6 +3,7 @@ package com.nivasafinance.features.leadtasks.controller;
 import com.nivasafinance.common.constants.ApiConstants;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
+import com.nivasafinance.common.annotations.RequirePermission;
 import com.nivasafinance.features.leadtasks.dto.CreateAdhocTaskRequest;
 import com.nivasafinance.features.leadtasks.dto.LeadCompleteTaskRequest;
 import com.nivasafinance.features.leadtasks.dto.LeadReassignTaskRequest;
@@ -27,6 +28,7 @@ public class LeadTaskController {
     private final LeadTaskWriteService leadTaskWriteService;
 
     @GetMapping
+    @RequirePermission(permissionName = "READ_LEAD_TASKS")
     public ResponseEntity<PaginatedResponse<LeadTaskResponse>> getTasks(
             @PathVariable UUID leadId,
             @Valid PaginationRequest paginationRequest) {
@@ -34,6 +36,7 @@ public class LeadTaskController {
     }
 
     @PostMapping("/complete")
+    @RequirePermission(permissionName = "UPDATE_LEAD_TASKS")
     public ResponseEntity<LeadTaskResponse> completeTask(
             @PathVariable UUID leadId,
             @Valid @RequestBody LeadCompleteTaskRequest request) {
@@ -42,6 +45,7 @@ public class LeadTaskController {
     }
 
     @PostMapping("/reassign")
+    @RequirePermission(permissionName = "UPDATE_LEAD_TASKS")
     public ResponseEntity<LeadTaskResponse> reassignTask(
             @PathVariable UUID leadId,
             @Valid @RequestBody LeadReassignTaskRequest request) {
@@ -50,6 +54,7 @@ public class LeadTaskController {
     }
 
     @PostMapping("/reschedule")
+    @RequirePermission(permissionName = "UPDATE_LEAD_TASKS")
     public ResponseEntity<LeadTaskResponse> rescheduleTask(
             @PathVariable UUID leadId,
             @Valid @RequestBody LeadRescheduleTaskRequest request) {
@@ -58,6 +63,7 @@ public class LeadTaskController {
     }
 
     @GetMapping("/adhoc")
+    @RequirePermission(permissionName = "READ_LEAD_TASKS")
     public ResponseEntity<List<String>> getAvailableAdhocTasks(
             @PathVariable UUID leadId,
             @RequestParam(required = false) String stageKey) {
@@ -66,6 +72,7 @@ public class LeadTaskController {
     }
 
     @PostMapping("/adhoc")
+    @RequirePermission(permissionName = "CREATE_LEAD_TASKS")
     public ResponseEntity<LeadTaskResponse> createAdhocTask(
             @PathVariable UUID leadId,
             @Valid @RequestBody CreateAdhocTaskRequest request) {

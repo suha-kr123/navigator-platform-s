@@ -5,6 +5,7 @@ import com.nivasafinance.features.advisor.dto.*;
 import com.nivasafinance.features.advisor.dto.BankIdentifierResponse;
 import com.nivasafinance.features.advisor.service.AdvisorBankDetailsReadService;
 import com.nivasafinance.features.advisor.service.AdvisorBankDetailsWriteService;
+import com.nivasafinance.common.annotations.RequirePermission;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -23,6 +24,7 @@ public class AdvisorBankDetailsController {
     private final AdvisorBankDetailsReadService advisorBankDetailsReadService;
 
     @PostMapping("/{identifier}/bank-details")
+    @RequirePermission(permissionName = "CREATE_ADVISOR_BANK_DETAILS")
     public ResponseEntity<BankIdentifierResponse> addBankDetails(
             @PathVariable UUID identifier,
             @Valid @RequestBody AddBankDetailsRequest request) {
@@ -31,12 +33,14 @@ public class AdvisorBankDetailsController {
     }
 
     @GetMapping("/{identifier}/bank-details")
+    @RequirePermission(permissionName = "READ_ADVISOR_BANK_DETAILS")
     public ResponseEntity<List<BankDetailsResponse>> getAllBankDetails(@PathVariable UUID identifier) {
         List<BankDetailsResponse> responses = advisorBankDetailsReadService.getAllBankDetails(identifier);
         return ResponseEntity.ok(responses);
     }
 
     @PutMapping("/{identifier}/bank-details/{bankIdentifier}")
+    @RequirePermission(permissionName = "UPDATE_ADVISOR_BANK_DETAILS")
     public ResponseEntity<Void> updateBankDetails(
             @PathVariable UUID identifier,
             @PathVariable UUID bankIdentifier,
@@ -46,6 +50,7 @@ public class AdvisorBankDetailsController {
     }
 
     @PostMapping("/{identifier}/bank-details/{bankIdentifier}/activate")
+    @RequirePermission(permissionName = "UPDATE_ADVISOR_BANK_DETAILS")
     public ResponseEntity<BankIdentifierResponse> activateBankDetails(
             @PathVariable UUID identifier,
             @PathVariable UUID bankIdentifier) {
@@ -54,6 +59,7 @@ public class AdvisorBankDetailsController {
     }
 
     @PostMapping("/{identifier}/bank-details/{bankIdentifier}/deactivate")
+    @RequirePermission(permissionName = "UPDATE_ADVISOR_BANK_DETAILS")
     public ResponseEntity<BankIdentifierResponse> deactivateBankDetails(
             @PathVariable UUID identifier,
             @PathVariable UUID bankIdentifier) {

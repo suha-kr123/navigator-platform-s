@@ -3,6 +3,7 @@ package com.nivasafinance.features.staff.controller;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.common.constants.ApiConstants;
+import com.nivasafinance.common.annotations.RequirePermission;
 import com.nivasafinance.features.staff.dto.StaffCreateRequest;
 import com.nivasafinance.features.staff.dto.StaffResponse;
 import com.nivasafinance.features.staff.service.StaffReadService;
@@ -29,6 +30,7 @@ public class StaffController {
     private final StaffWriteService staffWriteService;
 
     @GetMapping
+    @RequirePermission(permissionName = "READ_STAFF")
     public ResponseEntity<PaginatedResponse<StaffResponse>> getStaff(
             @RequestParam(value = "officeKey", required = false) String officeKey,
             @RequestParam(value = "name", required = false) String name,
@@ -39,12 +41,14 @@ public class StaffController {
     }
 
     @PostMapping
+    @RequirePermission(permissionName = "CREATE_STAFF")
     public ResponseEntity<StaffResponse> createStaff(@Valid @RequestBody StaffCreateRequest request) {
         StaffResponse response = staffWriteService.createStaff(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping("/me")
+    @RequirePermission(permissionName = "READ_STAFF")
     public ResponseEntity<StaffResponse> getCurrentStaff() {
         StaffResponse staff = staffReadService.getCurrentStaff();
         return ResponseEntity.ok(staff);

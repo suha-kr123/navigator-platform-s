@@ -3,6 +3,7 @@ package com.nivasafinance.features.lead.controller;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.common.constants.ApiConstants;
+import com.nivasafinance.common.annotations.RequirePermission;
 import com.nivasafinance.features.lead.dto.CreateExternalCallLogRequest;
 import com.nivasafinance.features.lead.dto.CreateExternalCallLogResponse;
 import com.nivasafinance.features.lead.dto.CreateLeadCallRequest;
@@ -28,6 +29,7 @@ public class LeadCallController {
     private final LeadCallReadService leadCallReadService;
 
     @PostMapping
+    @RequirePermission(permissionName = "CREATE_LEAD_CALL")
     public ResponseEntity<CreateLeadCallResponse> callLeadContact(
             @PathVariable UUID leadId,
             @Valid @RequestBody CreateLeadCallRequest request
@@ -37,6 +39,7 @@ public class LeadCallController {
     }
 
     @GetMapping("/logs")
+    @RequirePermission(permissionName = "READ_LEAD_CALL")
     public ResponseEntity<PaginatedResponse<LeadCallLogResponse>> getCallLogs(
             @PathVariable UUID leadId,
             @Valid PaginationRequest paginationRequest
@@ -46,6 +49,7 @@ public class LeadCallController {
     }
 
     @PutMapping("/external/{externalId}")
+    @RequirePermission(permissionName = "UPDATE_LEAD_CALL")
     public ResponseEntity<Void> updateCallLogByProviderId(
             @PathVariable UUID leadId,
             @PathVariable String externalId,
@@ -56,6 +60,7 @@ public class LeadCallController {
     }
 
     @PostMapping("/log/external")
+    @RequirePermission(permissionName = "CREATE_LEAD_CALL")
     public ResponseEntity<CreateExternalCallLogResponse> createExternalCallLog(
             @PathVariable UUID leadId,
             @Valid @RequestBody CreateExternalCallLogRequest request

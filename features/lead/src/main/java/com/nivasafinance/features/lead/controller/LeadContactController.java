@@ -1,6 +1,7 @@
 package com.nivasafinance.features.lead.controller;
 
 import com.nivasafinance.common.constants.ApiConstants;
+import com.nivasafinance.common.annotations.RequirePermission;
 import com.nivasafinance.common.dto.AddressData;
 import com.nivasafinance.common.dto.AddressRequest;
 import com.nivasafinance.common.dto.IdentifierData;
@@ -32,6 +33,7 @@ public class LeadContactController {
     private final LeadContactReadService leadContactReadService;
 
     @PostMapping
+    @RequirePermission(permissionName = "CREATE_LEAD_CONTACTS")
     public ResponseEntity<Void> createContact(
             @PathVariable UUID leadId,
             @Valid @RequestBody CreateLeadContactRequest request) {
@@ -40,6 +42,7 @@ public class LeadContactController {
     }
 
     @PutMapping("/{contactIdentifier}")
+    @RequirePermission(permissionName = "UPDATE_LEAD_CONTACTS")
     public ResponseEntity<Void> updateContact(
             @PathVariable UUID leadId,
             @PathVariable UUID contactIdentifier,
@@ -58,6 +61,7 @@ public class LeadContactController {
     }
 
     @DeleteMapping("/{contactIdentifier}")
+    @RequirePermission(permissionName = "DELETE_LEAD_CONTACTS")
     public ResponseEntity<Void> deleteContact(
             @PathVariable UUID leadId,
             @PathVariable UUID contactIdentifier) {
@@ -66,12 +70,14 @@ public class LeadContactController {
     }
 
     @GetMapping
+    @RequirePermission(permissionName = "READ_LEAD_CONTACTS")
     public ResponseEntity<List<LeadContactResponse>> getContacts(@PathVariable UUID leadId) {
         List<LeadContactResponse> contacts = leadContactReadService.getContacts(leadId);
         return ResponseEntity.ok(contacts);
     }
 
     @GetMapping("/{contactIdentifier}")
+    @RequirePermission(permissionName = "READ_LEAD_CONTACTS")
     public ResponseEntity<LeadContactResponse> getContactById(
             @PathVariable UUID leadId,
             @PathVariable UUID contactIdentifier) {
@@ -80,6 +86,7 @@ public class LeadContactController {
     }
 
     @PostMapping("/bulk-update")
+    @RequirePermission(permissionName = "UPDATE_LEAD_CONTACTS")
     public ResponseEntity<BulkContactsUpdateResponse> bulkUpdateContacts(
             @PathVariable UUID leadId,
             @Valid @RequestBody BulkContactsUpdateRequest request) {
@@ -90,6 +97,7 @@ public class LeadContactController {
     // Address Endpoints
 
     @PostMapping("/{contactIdentifier}/address")
+    @RequirePermission(permissionName = "CREATE_LEAD_ADDRESS")
     public ResponseEntity<AddressIdentifierResponse> addAddress(
             @PathVariable UUID contactIdentifier,
             @Valid @RequestBody AddressRequest request) {
@@ -98,12 +106,14 @@ public class LeadContactController {
     }
 
     @GetMapping("/{contactIdentifier}/addresses")
+    @RequirePermission(permissionName = "READ_LEAD_ADDRESS")
     public ResponseEntity<List<AddressData>> getAddresses(@PathVariable UUID contactIdentifier) {
         List<AddressData> addresses = leadContactReadService.getAddresses(contactIdentifier);
         return ResponseEntity.ok(addresses);
     }
 
     @GetMapping("/{contactIdentifier}/address/{addressId}")
+    @RequirePermission(permissionName = "READ_LEAD_ADDRESS")
     public ResponseEntity<AddressData> getAddress(
             @PathVariable UUID contactIdentifier,
             @PathVariable String addressId) {
@@ -112,6 +122,7 @@ public class LeadContactController {
     }
 
     @PutMapping("/{contactIdentifier}/address/{addressId}")
+    @RequirePermission(permissionName = "UPDATE_LEAD_ADDRESS")
     public ResponseEntity<Void> updateAddress(
             @PathVariable UUID contactIdentifier,
             @PathVariable String addressId,
@@ -123,6 +134,7 @@ public class LeadContactController {
     // Identifier Endpoints
 
     @PostMapping("/{contactIdentifier}/identifiers")
+    @RequirePermission(permissionName = "CREATE_LEAD_CONTACTS")
     public ResponseEntity<IdentifierData> addIdentifier(
             @PathVariable UUID leadId,
             @PathVariable UUID contactIdentifier,
@@ -132,6 +144,7 @@ public class LeadContactController {
     }
 
     @GetMapping("/{contactIdentifier}/identifiers")
+    @RequirePermission(permissionName = "READ_LEAD_CONTACTS")
     public ResponseEntity<List<IdentifierData>> getIdentifiers(
             @PathVariable UUID leadId,
             @PathVariable UUID contactIdentifier) {
@@ -140,6 +153,7 @@ public class LeadContactController {
     }
 
     @GetMapping("/{contactIdentifier}/identifiers/{identifierId}")
+    @RequirePermission(permissionName = "READ_LEAD_CONTACTS")
     public ResponseEntity<IdentifierData> getIdentifier(
             @PathVariable UUID leadId,
             @PathVariable UUID contactIdentifier,
@@ -149,6 +163,7 @@ public class LeadContactController {
     }
 
     @PutMapping("/{contactIdentifier}/identifiers/{identifierId}")
+    @RequirePermission(permissionName = "UPDATE_LEAD_CONTACTS")
     public ResponseEntity<Void> updateIdentifier(
             @PathVariable UUID leadId,
             @PathVariable UUID contactIdentifier,
@@ -159,6 +174,7 @@ public class LeadContactController {
     }
 
     @DeleteMapping("/{contactIdentifier}/identifiers/{identifierId}")
+    @RequirePermission(permissionName = "DELETE_LEAD_CONTACTS")
     public ResponseEntity<Void> deleteIdentifier(
             @PathVariable UUID leadId,
             @PathVariable UUID contactIdentifier,

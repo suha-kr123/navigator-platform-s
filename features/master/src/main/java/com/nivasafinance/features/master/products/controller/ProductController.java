@@ -3,6 +3,7 @@ package com.nivasafinance.features.master.products.controller;
 import com.nivasafinance.common.constants.ApiConstants;
 import com.nivasafinance.features.master.products.dto.ProductResponse;
 import com.nivasafinance.features.master.products.service.ProductReadService;
+import com.nivasafinance.common.annotations.RequirePermission;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,6 +20,7 @@ public class ProductController {
     }
 
     @GetMapping
+    @RequirePermission(permissionName = "READ_MASTER_PRODUCTS")
     public ResponseEntity<List<ProductResponse>> getAllProducts() {
         List<ProductResponse> responses = productReadService.getAllProducts();
         return ResponseEntity.ok(responses);

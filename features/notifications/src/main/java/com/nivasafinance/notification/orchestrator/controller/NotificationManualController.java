@@ -1,5 +1,6 @@
 package com.nivasafinance.notification.orchestrator.controller;
 
+import com.nivasafinance.common.annotations.RequirePermission;
 import com.nivasafinance.common.enums.NotificationStatus;
 import com.nivasafinance.notification.orchestrator.entity.NotificationRecord;
 import com.nivasafinance.notification.orchestrator.entity.NotificationReceipt;
@@ -27,6 +28,7 @@ public class NotificationManualController {
     private final NotificationReceiptService notificationReceiptService;
 
     @PostMapping("/trigger")
+    @RequirePermission(permissionName = "CREATE_NOTIFICATION")
     public ResponseEntity<NotificationRecord> triggerManualNotification(@RequestBody ManualNotificationRequest request) {
         NotificationRecord record = notificationRecordService.createManualNotification(
                 request.getNotificationConfigId(),
@@ -37,6 +39,7 @@ public class NotificationManualController {
     }
 
     @GetMapping("/records/{recordId}")
+    @RequirePermission(permissionName = "READ_NOTIFICATION")
     public ResponseEntity<NotificationRecord> getNotificationRecord(@PathVariable UUID recordId) {
         return notificationRecordService.findById(recordId)
                 .map(ResponseEntity::ok)
@@ -44,6 +47,7 @@ public class NotificationManualController {
     }
 
     @PatchMapping("/records/{recordId}/status")
+    @RequirePermission(permissionName = "UPDATE_NOTIFICATION")
     public ResponseEntity<NotificationRecord> updateStatus(@PathVariable UUID recordId,
                                                            @RequestParam NotificationStatus status) {
         NotificationRecord updated = notificationRecordService.updateStatus(recordId, status);

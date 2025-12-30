@@ -6,6 +6,7 @@ import com.nivasafinance.common.dto.AddressRequest;
 import com.nivasafinance.features.advisor.dto.AddressIdentifierResponse;
 import com.nivasafinance.features.advisor.service.AdvisorAddressReadService;
 import com.nivasafinance.features.advisor.service.AdvisorAddressWriteService;
+import com.nivasafinance.common.annotations.RequirePermission;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -24,6 +25,7 @@ public class AdvisorAddressController {
     private final AdvisorAddressReadService advisorAddressReadService;
 
     @PostMapping("/{identifier}/address")
+    @RequirePermission(permissionName = "CREATE_ADVISOR_ADDRESS")
     public ResponseEntity<AddressIdentifierResponse> addAddress(
             @PathVariable UUID identifier,
             @Valid @RequestBody AddressRequest request) {
@@ -32,12 +34,14 @@ public class AdvisorAddressController {
     }
 
     @GetMapping("/{identifier}/addresses")
+    @RequirePermission(permissionName = "READ_ADVISOR_ADDRESS")
     public ResponseEntity<List<AddressData>> getAddresses(@PathVariable UUID identifier) {
         List<AddressData> addresses = advisorAddressReadService.getAddresses(identifier);
         return ResponseEntity.ok(addresses);
     }
 
     @GetMapping("/{identifier}/address/{addressId}")
+    @RequirePermission(permissionName = "READ_ADVISOR_ADDRESS")
     public ResponseEntity<AddressData> getAddress(
             @PathVariable UUID identifier,
             @PathVariable String addressId) {
@@ -46,6 +50,7 @@ public class AdvisorAddressController {
     }
 
     @PutMapping("/{identifier}/address/{addressId}")
+    @RequirePermission(permissionName = "UPDATE_ADVISOR_ADDRESS")
     public ResponseEntity<Void> updateAddress(
             @PathVariable UUID identifier,
             @PathVariable String addressId,

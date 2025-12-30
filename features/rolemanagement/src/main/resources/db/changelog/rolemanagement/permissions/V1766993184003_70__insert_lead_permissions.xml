@@ -1,0 +1,428 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1766993184003_70" author="system" context="default">
+        <comment>Insert LEAD module permissions</comment>
+        
+        <!-- Lead permissions -->
+        <insert tableName="n_permissions">
+            <column name="name" value="READ_LEAD"/>
+            <column name="action" value="READ"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="READ_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="READ_LEAD_CREDIT_DETAILS"/>
+            <column name="action" value="READ"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="READ_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="READ_LEAD_DISBURSEMENT_DETAILS"/>
+            <column name="action" value="READ"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="READ_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="READ_LEAD_STAGES"/>
+            <column name="action" value="READ"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="READ_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="CREATE_LEAD"/>
+            <column name="action" value="CREATE"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="CREATE_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="UPDATE_LEAD"/>
+            <column name="action" value="UPDATE"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="UPDATE_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="UPDATE_LEAD_CREDIT_DETAILS"/>
+            <column name="action" value="UPDATE"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="UPDATE_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="UPDATE_LEAD_DISBURSEMENT_DETAILS"/>
+            <column name="action" value="UPDATE"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="UPDATE_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="REJECT_LEAD_STATUS"/>
+            <column name="action" value="REJECT"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="REJECT_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="UNDO_REJECT_LEAD_STATUS"/>
+            <column name="action" value="UNDO_REJECT"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="UNDO_REJECT_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="WITHDRAW_LEAD_STATUS"/>
+            <column name="action" value="WITHDRAW"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="WITHDRAW_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="COMPLETE_LEAD_STATUS"/>
+            <column name="action" value="COMPLETE"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="COMPLETE_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="ONHOLD_LEAD_STATUS"/>
+            <column name="action" value="ONHOLD"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="ONHOLD_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="RESUME_LEAD_STATUS"/>
+            <column name="action" value="RESUME"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="RESUME_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="DROP_LEAD_STATUS"/>
+            <column name="action" value="DROP"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="DROP_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="CREATE_LEAD_TRANCHES"/>
+            <column name="action" value="CREATE"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="CREATE_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="UPDATE_LEAD_TRANCHES"/>
+            <column name="action" value="UPDATE"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="UPDATE_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="DELETE_LEAD_TRANCHES"/>
+            <column name="action" value="DELETE"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="DELETE_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="READ_LEAD_CONTACTS"/>
+            <column name="action" value="READ"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="READ_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="CREATE_LEAD_CONTACTS"/>
+            <column name="action" value="CREATE"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="CREATE_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="UPDATE_LEAD_CONTACTS"/>
+            <column name="action" value="UPDATE"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="UPDATE_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="DELETE_LEAD_CONTACTS"/>
+            <column name="action" value="DELETE"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="DELETE_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="READ_LEAD_ADDRESS"/>
+            <column name="action" value="READ"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="READ_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="CREATE_LEAD_ADDRESS"/>
+            <column name="action" value="CREATE"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="CREATE_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="UPDATE_LEAD_ADDRESS"/>
+            <column name="action" value="UPDATE"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="UPDATE_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="READ_LEAD_DOCUMENTS"/>
+            <column name="action" value="READ"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="READ_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="CREATE_LEAD_DOCUMENTS"/>
+            <column name="action" value="CREATE"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="CREATE_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="UPDATE_LEAD_DOCUMENTS"/>
+            <column name="action" value="UPDATE"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="UPDATE_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="DELETE_LEAD_DOCUMENTS"/>
+            <column name="action" value="DELETE"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="DELETE_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="READ_LEAD_NOTES"/>
+            <column name="action" value="READ"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="READ_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="CREATE_LEAD_NOTES"/>
+            <column name="action" value="CREATE"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="CREATE_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="UPDATE_LEAD_NOTES"/>
+            <column name="action" value="UPDATE"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="UPDATE_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="DELETE_LEAD_NOTES"/>
+            <column name="action" value="DELETE"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="DELETE_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="READ_LEAD_CALL"/>
+            <column name="action" value="READ"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="READ_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="CREATE_LEAD_CALL"/>
+            <column name="action" value="CREATE"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="CREATE_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="UPDATE_LEAD_CALL"/>
+            <column name="action" value="UPDATE"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="UPDATE_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="READ_LEAD_TASKS"/>
+            <column name="action" value="READ"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="READ_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="CREATE_LEAD_TASKS"/>
+            <column name="action" value="CREATE"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="CREATE_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="UPDATE_LEAD_TASKS"/>
+            <column name="action" value="UPDATE"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="UPDATE_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="CREATE_LEAD_STAGES"/>
+            <column name="action" value="CREATE"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="CREATE_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="UPDATE_LEAD_STAGES"/>
+            <column name="action" value="UPDATE"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="UPDATE_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="READ_LEAD_LENDERS"/>
+            <column name="action" value="READ"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="READ_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="CREATE_LEAD_LENDERS"/>
+            <column name="action" value="CREATE"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="CREATE_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="UPDATE_LEAD_LENDERS"/>
+            <column name="action" value="UPDATE"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="UPDATE_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="REJECT_LEAD_LENDERS"/>
+            <column name="action" value="REJECT"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="REJECT_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="SUBMIT_LEAD_LENDERS"/>
+            <column name="action" value="SUBMIT"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="SUBMIT_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+    </changeSet>
+
+</databaseChangeLog>

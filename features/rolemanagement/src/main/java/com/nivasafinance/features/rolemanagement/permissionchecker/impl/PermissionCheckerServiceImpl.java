@@ -1,8 +1,5 @@
 package com.nivasafinance.features.rolemanagement.permissionchecker.impl;
 
-import com.nivasafinance.features.rolemanagement.enums.ActionEnum;
-import com.nivasafinance.features.rolemanagement.enums.ModuleEnum;
-import com.nivasafinance.features.rolemanagement.enums.OperationsEnum;
 import com.nivasafinance.features.rolemanagement.enums.Role;
 import com.nivasafinance.features.rolemanagement.permission.dto.PermissionResponse;
 import com.nivasafinance.features.rolemanagement.permission.service.PermissionReadService;
@@ -21,7 +18,7 @@ public class PermissionCheckerServiceImpl implements PermissionCheckerService {
     private final UserRoleService userRoleService;
     
     @Override
-    public boolean checkPermissionForUser(String username, ActionEnum action, ModuleEnum module, OperationsEnum operation) {
+    public boolean checkPermissionForUser(String username, String permissionName) {
         List<String> roles = userRoleService.getRolesByUsername(username);
         if (roles.isEmpty()) {
             return false;
@@ -35,7 +32,7 @@ public class PermissionCheckerServiceImpl implements PermissionCheckerService {
                 permissionReadService.getPermissionsByRoles(roles);
         
         return permissions.stream()
-                .anyMatch(p -> p.getAction() == action && p.getModule() == module);
+                .anyMatch(p -> p.getName().equals(permissionName));
     }
 }
 

@@ -9,6 +9,7 @@ import com.nivasafinance.features.advisor.dto.AdvisorNoteResponse;
 import com.nivasafinance.features.advisor.dto.AdvisorNoteUpdateRequest;
 import com.nivasafinance.features.advisor.service.AdvisorNoteReadService;
 import com.nivasafinance.features.advisor.service.AdvisorNoteWriteService;
+import com.nivasafinance.common.annotations.RequirePermission;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -26,6 +27,7 @@ public class AdvisorNotesController {
     private final AdvisorNoteReadService advisorNoteReadService;
 
     @PostMapping
+    @RequirePermission(permissionName = "CREATE_ADVISOR_NOTES")
     public ResponseEntity<AdvisorNoteCreateResponse> createAdvisorNote(
             @PathVariable UUID advisorId,
             @Valid @RequestBody AdvisorNoteCreateRequest request
@@ -35,6 +37,7 @@ public class AdvisorNotesController {
     }
 
     @GetMapping
+    @RequirePermission(permissionName = "READ_ADVISOR_NOTES")
     public ResponseEntity<PaginatedResponse<AdvisorNoteResponse>> getAllAdvisorNotes(
             @PathVariable UUID advisorId,
             @Valid PaginationRequest paginationRequest) {
@@ -45,6 +48,7 @@ public class AdvisorNotesController {
     }
 
     @GetMapping("/{noteId}")
+    @RequirePermission(permissionName = "READ_ADVISOR_NOTES")
     public ResponseEntity<AdvisorNoteResponse> getAdvisorNoteById(
             @PathVariable UUID advisorId,
             @PathVariable UUID noteId) {
@@ -53,6 +57,7 @@ public class AdvisorNotesController {
     }
 
     @PutMapping("/{noteId}")
+    @RequirePermission(permissionName = "UPDATE_ADVISOR_NOTES")
     public ResponseEntity<Void> updateAdvisorNote(
             @PathVariable UUID advisorId,
             @PathVariable UUID noteId,
@@ -62,6 +67,7 @@ public class AdvisorNotesController {
     }
 
     @DeleteMapping("/{noteId}")
+    @RequirePermission(permissionName = "DELETE_ADVISOR_NOTES")
     public ResponseEntity<Void> deleteAdvisorNote(
             @PathVariable UUID advisorId,
             @PathVariable UUID noteId) {

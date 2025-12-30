@@ -5,6 +5,7 @@ import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.common.constants.ApiConstants;
 import com.nivasafinance.features.advisoractivity.dto.AdvisorActivityResponse;
 import com.nivasafinance.features.advisoractivity.service.AdvisorActivityReadService;
+import com.nivasafinance.common.annotations.RequirePermission;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +24,7 @@ public class AdvisorActivityController {
     private final AdvisorActivityReadService advisorActivityReadService;
 
     @GetMapping
+    @RequirePermission(permissionName = "READ_ADVISOR")
     public ResponseEntity<PaginatedResponse<AdvisorActivityResponse>> getAdvisorActivities(
             @PathVariable UUID advisorIdentifier,
             @Valid PaginationRequest paginationRequest) {

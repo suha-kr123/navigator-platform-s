@@ -6,6 +6,7 @@ import com.nivasafinance.common.constants.ApiConstants;
 import com.nivasafinance.features.advisor.dto.*;
 import com.nivasafinance.features.advisor.service.AdvisorCallReadService;
 import com.nivasafinance.features.advisor.service.AdvisorCallWriteService;
+import com.nivasafinance.common.annotations.RequirePermission;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -23,6 +24,7 @@ public class AdvisorCallController {
     private final AdvisorCallReadService advisorCallReadService;
 
     @PostMapping
+    @RequirePermission(permissionName = "CREATE_ADVISOR_CALL")
     public ResponseEntity<CreateAdvisorCallResponse> callAdvisorPerson(
             @PathVariable UUID advisorId,
             @Valid @RequestBody CreateAdvisorCallRequest request
@@ -32,6 +34,7 @@ public class AdvisorCallController {
     }
 
     @GetMapping("/logs")
+    @RequirePermission(permissionName = "READ_ADVISOR_CALL")
     public ResponseEntity<PaginatedResponse<AdvisorCallLogResponse>> getCallLogs(
             @PathVariable UUID advisorId,
             @Valid PaginationRequest paginationRequest
@@ -41,6 +44,7 @@ public class AdvisorCallController {
     }
 
     @PutMapping("/external/{externalId}")
+    @RequirePermission(permissionName = "UPDATE_ADVISOR_CALL")
     public ResponseEntity<Void> updateCallLogByProviderId(
             @PathVariable UUID advisorId,
             @PathVariable String externalId,
@@ -51,6 +55,7 @@ public class AdvisorCallController {
     }
 
     @PostMapping("/log/external")
+    @RequirePermission(permissionName = "CREATE_ADVISOR_CALL")
     public ResponseEntity<CreateExternalCallLogResponse> createExternalCallLog(
             @PathVariable UUID advisorId,
             @Valid @RequestBody CreateExternalCallLogRequest request

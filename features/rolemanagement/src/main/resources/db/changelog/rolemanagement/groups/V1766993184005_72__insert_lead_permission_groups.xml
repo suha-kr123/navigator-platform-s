@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1766993184005_80" author="system" context="default">
+        <comment>Insert LEAD module permission groups</comment>
+        
+        <!-- Insert permission groups -->
+        <insert tableName="n_permission_group">
+            <column name="name" value="LEAD_FULL_ACCESS"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permission_group">
+            <column name="name" value="LEAD_DISBURSEMENT_DETAILS_FULL_ACCESS"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permission_group">
+            <column name="name" value="LEAD_CREDIT_DETAILS_FULL_ACCESS"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permission_group">
+            <column name="name" value="LEAD_STATUS_FULL_ACCESS"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permission_group">
+            <column name="name" value="LEAD_TRANCHES_FULL_ACCESS"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permission_group">
+            <column name="name" value="LEAD_CONTACT_FULL_ACCESS"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permission_group">
+            <column name="name" value="LEAD_ADDRESS_FULL_ACCESS"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permission_group">
+            <column name="name" value="LEAD_DOCUMENT_FULL_ACCESS"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permission_group">
+            <column name="name" value="LEAD_NOTES_FULL_ACCESS"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permission_group">
+            <column name="name" value="LEAD_CALL_FULL_ACCESS"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permission_group">
+            <column name="name" value="LEAD_TASKS_FULL_ACCESS"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permission_group">
+            <column name="name" value="LEAD_STAGES_FULL_ACCESS"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permission_group">
+            <column name="name" value="LEAD_LENDERS_FULL_ACCESS"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+    </changeSet>
+
+</databaseChangeLog>
+
