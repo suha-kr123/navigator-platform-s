@@ -4,6 +4,13 @@ public enum ModuleEnum {
     LEAD,
     DOCUMENT,
     ADVISOR,
-    MASTER
+    MASTER,
+    OFFICE,
+    NOTIFICATION,
+    STAFF,
+    TASK,
+    WORKFLOW,
+    USER_PREFERENCES,
+    STAGE,
+    LENDER
 }
-
