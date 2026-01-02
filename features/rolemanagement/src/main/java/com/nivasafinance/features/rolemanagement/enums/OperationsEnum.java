@@ -1,7 +1,6 @@
 package com.nivasafinance.features.rolemanagement.enums;
 
 public enum OperationsEnum {
-    LEAD_DOCUMENT,
     READ_ADVISOR,
     CREATE_ADVISOR,
     UPDATE_ADVISOR,
@@ -11,15 +10,6 @@ public enum OperationsEnum {
     CREATE_LEAD,
     UPDATE_LEAD,
     DELETE_LEAD,
-    REJECT_LEAD,
-    UNDO_REJECT_LEAD,
-    WITHDRAW_LEAD,
-    COMPLETE_LEAD,
-    ONHOLD_LEAD,
-    RESUME_LEAD,
-    DROP_LEAD,
-    SUBMIT_LEAD,
-    REJECT_ADVISOR,
     READ_DOCUMENT,
     READ_LENDER,
     READ_NOTIFICATION,
@@ -33,6 +23,8 @@ public enum OperationsEnum {
     READ_WORKFLOW,
     READ_TASK,
     UPDATE_TASK,
-    FULL_ACCESS_USER_PREFERENCES
+    READ_USER_PREFERENCES,
+    CREATE_USER_PREFERENCES,
+    UPDATE_USER_PREFERENCES
 }
 

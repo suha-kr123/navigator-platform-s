@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1766993185007_85" author="system" context="default">
+        <comment>Update existing permissions to use new enum values (ACTION_MODULE pattern)</comment>
+        
+        <!-- Update action enum values: REJECT -> UPDATE -->
+        <update tableName="n_permissions">
+            <column name="action" value="UPDATE"/>
+            <where>action = 'REJECT'</where>
+        </update>
+        
+        <!-- Update action enum values: UNDO_REJECT -> UPDATE -->
+        <update tableName="n_permissions">
+            <column name="action" value="UPDATE"/>
+            <where>action = 'UNDO_REJECT'</where>
+        </update>
+        
+        <!-- Update action enum values: WITHDRAW -> UPDATE -->
+        <update tableName="n_permissions">
+            <column name="action" value="UPDATE"/>
+            <where>action = 'WITHDRAW'</where>
+        </update>
+        
+        <!-- Update action enum values: COMPLETE -> UPDATE -->
+        <update tableName="n_permissions">
+            <column name="action" value="UPDATE"/>
+            <where>action = 'COMPLETE'</where>
+        </update>
+        
+        <!-- Update action enum values: ONHOLD -> UPDATE -->
+        <update tableName="n_permissions">
+            <column name="action" value="UPDATE"/>
+            <where>action = 'ONHOLD'</where>
+        </update>
+        
+        <!-- Update action enum values: RESUME -> UPDATE -->
+        <update tableName="n_permissions">
+            <column name="action" value="UPDATE"/>
+            <where>action = 'RESUME'</where>
+        </update>
+        
+        <!-- Update action enum values: DROP -> UPDATE -->
+        <update tableName="n_permissions">
+            <column name="action" value="UPDATE"/>
+            <where>action = 'DROP'</where>
+        </update>
+        
+        <!-- Update action enum values: SUBMIT -> UPDATE -->
+        <update tableName="n_permissions">
+            <column name="action" value="UPDATE"/>
+            <where>action = 'SUBMIT'</where>
+        </update>
+        
+        <!-- Update operation enum values: REJECT_LEAD -> UPDATE_LEAD -->
+        <update tableName="n_permissions">
+            <column name="operation" value="UPDATE_LEAD"/>
+            <where>operation = 'REJECT_LEAD'</where>
+        </update>
+        
+        <!-- Update operation enum values: UNDO_REJECT_LEAD -> UPDATE_LEAD -->
+        <update tableName="n_permissions">
+            <column name="operation" value="UPDATE_LEAD"/>
+            <where>operation = 'UNDO_REJECT_LEAD'</where>
+        </update>
+        
+        <!-- Update operation enum values: WITHDRAW_LEAD -> UPDATE_LEAD -->
+        <update tableName="n_permissions">
+            <column name="operation" value="UPDATE_LEAD"/>
+            <where>operation = 'WITHDRAW_LEAD'</where>
+        </update>
+        
+        <!-- Update operation enum values: COMPLETE_LEAD -> UPDATE_LEAD -->
+        <update tableName="n_permissions">
+            <column name="operation" value="UPDATE_LEAD"/>
+            <where>operation = 'COMPLETE_LEAD'</where>
+        </update>
+        
+        <!-- Update operation enum values: ONHOLD_LEAD -> UPDATE_LEAD -->
+        <update tableName="n_permissions">
+            <column name="operation" value="UPDATE_LEAD"/>
+            <where>operation = 'ONHOLD_LEAD'</where>
+        </update>
+        
+        <!-- Update operation enum values: RESUME_LEAD -> UPDATE_LEAD -->
+        <update tableName="n_permissions">
+            <column name="operation" value="UPDATE_LEAD"/>
+            <where>operation = 'RESUME_LEAD'</where>
+        </update>
+        
+        <!-- Update operation enum values: DROP_LEAD -> UPDATE_LEAD -->
+        <update tableName="n_permissions">
+            <column name="operation" value="UPDATE_LEAD"/>
+            <where>operation = 'DROP_LEAD'</where>
+        </update>
+        
+        <!-- Update operation enum values: SUBMIT_LEAD -> UPDATE_LEAD -->
+        <update tableName="n_permissions">
+            <column name="operation" value="UPDATE_LEAD"/>
+            <where>operation = 'SUBMIT_LEAD'</where>
+        </update>
+        
+        <!-- Update operation enum values: REJECT_ADVISOR -> UPDATE_ADVISOR -->
+        <update tableName="n_permissions">
+            <column name="operation" value="UPDATE_ADVISOR"/>
+            <where>operation = 'REJECT_ADVISOR'</where>
+        </update>
+        
+    </changeSet>
+
+</databaseChangeLog>
+
