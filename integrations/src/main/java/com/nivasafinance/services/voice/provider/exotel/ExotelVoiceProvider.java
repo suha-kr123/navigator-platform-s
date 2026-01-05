@@ -476,7 +476,7 @@ public class ExotelVoiceProvider implements VoiceProvider {
             case "completed" -> VoiceCampaignStatus.COMPLETED;
             case "failed" -> VoiceCampaignStatus.FAILED;
             case "in-progress", "inprogress" -> VoiceCampaignStatus.IN_PROGRESS;
-            case "cancelled", "canceled" -> VoiceCampaignStatus.CANCELLED;
+            case "cancelled", "canceled", "archived" -> VoiceCampaignStatus.CANCELLED;
             case "paused" -> VoiceCampaignStatus.PAUSED;
             case "created" -> VoiceCampaignStatus.CREATED;
             default -> VoiceCampaignStatus.CREATED;
