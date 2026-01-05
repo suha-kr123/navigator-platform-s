@@ -11,6 +11,8 @@ public interface DocumentReadService {
     
     DocumentResponse getDocumentByIdentifier(UUID id);
     
+    DocumentFileResponse getDocumentFile(Long id);
+    
     DocumentFileResponse getDocumentFile(UUID id);
 }
 
