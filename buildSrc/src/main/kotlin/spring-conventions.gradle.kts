@@ -34,6 +34,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.springframework.cloud:spring-cloud-starter-openfeign")
     implementation(libs.findLibrary("hypersistence").get())
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation(libs.findLibrary("jakarta-validation").get())
@@ -48,5 +49,8 @@ dependencyManagement {
                 useVersion(io.gitlab.arturbosch.detekt.getSupportedKotlinVersion())
             }
         }
+    }
+    imports {
+        mavenBom("org.springframework.cloud:spring-cloud-dependencies:${libs.findVersion("spring-cloud").get()}")
     }
 }
