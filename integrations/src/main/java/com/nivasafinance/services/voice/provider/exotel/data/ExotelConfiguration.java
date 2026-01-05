@@ -10,7 +10,8 @@ import lombok.NoArgsConstructor;
 public class ExotelConfiguration {
     private String accountSid;
     private String baseUrl;
-    private String webhookUrl;
+    private String callWebhookUrl;
+    private String campaignWebhookUrl;
     private String apiKey;
     private String apiToken;
 }
