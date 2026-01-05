@@ -1,10 +1,12 @@
 package com.nivasafinance.redash.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nivasafinance.redash.client.RedashClient;
 import com.nivasafinance.redash.dto.FileType;
 import com.nivasafinance.redash.dto.RedashQueryResponse;
 import com.nivasafinance.redash.dto.RedashQueryResultRequest;
 import com.nivasafinance.redash.dto.RedashReportRequest;
+import feign.FeignException;
 import feign.Response;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +23,7 @@ import java.util.concurrent.TimeoutException;
 public class RedashService {
 
     private final RedashClient redashClient;
+    private final ObjectMapper objectMapper;
     private static final int POLLING_INTERVAL_SECONDS = 2;
     private static final int MAX_TIMEOUT_SECONDS = 30;
     private static final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(2);
@@ -105,6 +108,10 @@ public class RedashService {
                 throw new RuntimeException("Query execution was interrupted", e);
             } catch (TimeoutException e) {
                 throw new RuntimeException(e.getMessage(), e);
+            } catch (FeignException e) {
+                String errorMessage = extractErrorFromFeignException(e);
+                log.error("Feign error generating Redash report: {}", errorMessage, e);
+                throw new RuntimeException(errorMessage);
             } catch (Exception e) {
                 log.error("Error generating Redash report", e);
                 throw new RuntimeException("Failed to generate report: " + e.getMessage(), e);
@@ -117,5 +124,35 @@ public class RedashService {
             throw new IllegalArgumentException("FileType cannot be null");
         }
         return fileType.name().toLowerCase();
+    }
+
+    private String extractErrorFromFeignException(FeignException e) {
+        try {
+            String responseBody = e.contentUTF8();
+            if (responseBody != null && !responseBody.isEmpty()) {
+                // Try parsing as object first
+                try {
+                    RedashQueryResponse response = objectMapper.readValue(responseBody, RedashQueryResponse.class);
+                    if (response != null && response.getJob() != null && response.getJob().getError() != null) {
+                        return response.getJob().getError();
+                    }
+                } catch (Exception objectParseException) {
+                    // If object parsing fails, try parsing as array
+                    try {
+                        RedashQueryResponse[] responses = objectMapper.readValue(responseBody, RedashQueryResponse[].class);
+                        if (responses != null && responses.length > 0 && responses[0].getJob() != null 
+                                && responses[0].getJob().getError() != null) {
+                            return responses[0].getJob().getError();
+                        }
+                    } catch (Exception arrayParseException) {
+                        log.debug("Failed to parse response as both object and array", arrayParseException);
+                    }
+                }
+            }
+        } catch (Exception parseException) {
+            log.warn("Failed to parse Feign error response, using default error message", parseException);
+        }
+        // Fallback to a generic error message if parsing fails
+        return "Failed to execute Redash query";
     }
 }
