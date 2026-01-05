@@ -25,4 +25,5 @@ include("integrations")
 include("features:call")
 include("features:identifier")
 include("webhooks")
+include("redash")
 

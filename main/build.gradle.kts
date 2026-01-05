@@ -27,6 +27,7 @@ dependencies {
     implementation(project(":features:staff"))
     implementation(project(":features:identifier"))
     implementation(project(":webhooks"))
+    implementation(project(":redash"))
 }
 
 springBoot {
