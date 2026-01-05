@@ -202,6 +202,10 @@ public class CampaignWriteServiceImpl implements CampaignWriteService {
         // Find campaign by identifier
         Campaign campaign = campaignRepositoryWrapper.findByIdentifierWithException(identifier);
 
+        if(campaign.getStatus().isTerminal()){
+            throw CampaignExceptionFactory.campaignInTerminalStatus(messageSource);
+        }
+
         // Validate campaign status allows refresh
         if (!campaign.getStatus().canRefresh()) {
             return campaignReadService.getCampaignByIdentifier(identifier);

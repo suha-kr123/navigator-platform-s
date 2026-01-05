@@ -21,6 +21,10 @@ public enum CampaignStatus {
         return this == SUBMITTED || this == IN_PROGRESS || this == PAUSED;
     }
 
+    public boolean isTerminal() {
+        return this == CANCELLED || this == FAILED || this == COMPLETED;
+    }
+
     public static CampaignStatus fromVoiceCampaignStatus(VoiceCampaignStatus voiceStatus) {
         if (voiceStatus == null) {
             return SUBMITTED; // Default to SUBMITTED if status is null

@@ -121,5 +121,13 @@ public final class CampaignExceptionFactory {
                 messageSource
         );
     }
+
+    public static CampaignValidationException campaignInTerminalStatus(MessageSource messageSource) {
+        return new CampaignValidationException(
+                "error.campaign.terminal.status",
+                null,
+                messageSource
+        );
+    }
 }
 
