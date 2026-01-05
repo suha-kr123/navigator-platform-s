@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1766734640000_16" author="system" context="default">
+        
+        <!-- Add your database changes here -->
+        <createTable tableName="n_campaign_config">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="identifier" type="UUID" defaultValueComputed="gen_random_uuid()">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="config" type="JSONB">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="VARCHAR(50)" defaultValue="ACTIVE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="VARCHAR(255)" defaultValue="system"/>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="NOW()"/>
+            <column name="updated_by" type="VARCHAR(255)"/>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="NOW()"/>
+            <column name="version" type="INT" defaultValueNumeric="1"/>
+        </createTable>
+
+        <createIndex indexName="idx_n_campaign_config_identifier" tableName="n_campaign_config">
+            <column name="identifier"/>
+        </createIndex>
+
+        <createIndex indexName="idx_n_campaign_config_name" tableName="n_campaign_config">
+            <column name="name"/>
+        </createIndex>
+
+        <createIndex indexName="idx_n_campaign_config_status" tableName="n_campaign_config">
+            <column name="status"/>
+        </createIndex>
+
+        <createIndex indexName="idx_n_campaign_config_created_at" tableName="n_campaign_config">
+            <column name="created_at"/>
+        </createIndex>
+        
+    </changeSet>
+
+</databaseChangeLog>
