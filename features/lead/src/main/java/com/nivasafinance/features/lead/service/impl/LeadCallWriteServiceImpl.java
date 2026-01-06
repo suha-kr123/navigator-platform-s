@@ -152,6 +152,7 @@ public class LeadCallWriteServiceImpl implements LeadCallWriteService {
         callLog.setDirection(request.getDirection());
         callLog.setSource(CallSource.API);
         callLog.setStatus(request.getStatus());
+        callLog.setCampaignId(request.getCampaignId());
         if (request.getCreatedAt() != null) {
             callLog.setCreatedAt(request.getCreatedAt());
         }

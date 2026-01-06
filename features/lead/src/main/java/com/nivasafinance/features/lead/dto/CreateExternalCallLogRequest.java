@@ -45,6 +45,8 @@ public class CreateExternalCallLogRequest {
 
     private LocalDateTime createdAt;
 
+    private Long campaignId;
+
     private CallLog.RecordingDetails recordingDetails;
 
     private CallLog.CompletionDetails completionDetails;

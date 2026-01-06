@@ -81,6 +81,9 @@ public class CallLog extends AuditableEntity {
     @Column(name = "completion_details", columnDefinition = "jsonb")
     private CompletionDetails completionDetails;
 
+    @Column(name = "campaign_id")
+    private Long campaignId;
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
