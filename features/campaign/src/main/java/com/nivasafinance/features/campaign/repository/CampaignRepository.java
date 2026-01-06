@@ -13,6 +13,8 @@ import java.util.UUID;
 public interface CampaignRepository extends JpaRepository<Campaign, Long> {
     Optional<Campaign> findByIdentifier(UUID identifier);
     
+    Optional<Campaign> findByProviderId(String providerId);
+    
     boolean existsByName(String name);
 }
 

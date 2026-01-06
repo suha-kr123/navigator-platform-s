@@ -50,6 +50,19 @@ public final class CampaignExceptionFactory {
         return new CampaignNotFoundException(message);
     }
 
+    public static CampaignNotFoundException notFoundByProviderId(String providerId, MessageSource messageSource) {
+        String message = ExceptionUtils.createLocalizedMessage(
+                "error.campaign.not.found.by.provider.id",
+                new Object[]{providerId},
+                messageSource
+        );
+        return new CampaignNotFoundException(message);
+    }
+
+    public static CampaignOperationException retrieveByProviderIdFailed(String providerId, MessageSource messageSource) {
+        return new CampaignOperationException("error.campaign.retrieve.by.provider.id.failed", new Object[]{providerId}, messageSource);
+    }
+
     public static CampaignValidationException duplicateName(String name, MessageSource messageSource) {
         return new CampaignValidationException(
                 "error.campaign.name.already.exists",

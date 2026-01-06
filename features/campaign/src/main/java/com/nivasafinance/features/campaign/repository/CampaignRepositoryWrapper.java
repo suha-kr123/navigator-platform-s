@@ -54,6 +54,17 @@ public class CampaignRepositoryWrapper {
         }
     }
 
+    public Campaign findByProviderIdWithException(String providerId) {
+        try {
+            return campaignRepository.findByProviderId(providerId).orElseThrow(() ->
+                    CampaignExceptionFactory.notFoundByProviderId(providerId, messageSource));
+        } catch (CampaignNotFoundException e) {
+            throw e;
+        } catch (DataAccessException e) {
+            throw CampaignExceptionFactory.retrieveByProviderIdFailed(providerId, messageSource);
+        }
+    }
+
     public boolean existsByName(String name) {
         return campaignRepository.existsByName(name);
     }

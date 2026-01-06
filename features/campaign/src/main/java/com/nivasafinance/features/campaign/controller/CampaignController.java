@@ -83,6 +83,15 @@ public class CampaignController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/provider/{providerId}")
+    @RequirePermission(permissionName = "READ_CAMPAIGN")
+    public ResponseEntity<CampaignDetailedResponse> getCampaignByProviderId(
+            @PathVariable String providerId) {
+        CampaignDetailedResponse response = 
+                campaignReadService.getCampaignByProviderId(providerId);
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping("/{identifier}/generate-document")
     @RequirePermission(permissionName = "GENERATE_CAMPAIGN_DOCUMENT")
     public ResponseEntity<Void> generateDocument(

@@ -56,4 +56,21 @@ public class CampaignReadServiceImpl implements CampaignReadService {
 
         return CampaignDetailedResponse.from(campaign, configResponse, document);
     }
+
+    @Override
+    public CampaignDetailedResponse getCampaignByProviderId(String providerId) {
+        Campaign campaign = campaignRepositoryWrapper.findByProviderIdWithException(providerId);
+
+        // Fetch config using service
+        CampaignConfigDetailedResponse configResponse =
+                campaignConfigReadService.getCampaignConfigById(campaign.getConfigId());
+
+        // Fetch document if exists
+        DocumentResponse document = null;
+        if (campaign.getDocumentDetails() != null && campaign.getDocumentDetails().getDocumentId() != null) {
+            document = documentReadService.getDocumentById(campaign.getDocumentDetails().getDocumentId());
+        }
+
+        return CampaignDetailedResponse.from(campaign, configResponse, document);
+    }
 }

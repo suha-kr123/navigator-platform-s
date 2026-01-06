@@ -11,4 +11,6 @@ public interface CampaignReadService {
     PaginatedResponse<CampaignResponse> getAllCampaigns(PaginationRequest paginationRequest);
     
     CampaignDetailedResponse getCampaignByIdentifier(UUID identifier);
+    
+    CampaignDetailedResponse getCampaignByProviderId(String providerId);
 }
