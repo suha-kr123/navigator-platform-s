@@ -490,6 +490,7 @@ public class LeadRepositoryWrapper {
             SELECT DISTINCT
                 l.lead_identifier,
                 l.requested_amount,
+                l.other_details->>'noOfCampaignCalls' as no_of_campaign_calls,
                 p.name as product_name,
                 primary_contact.identifier as primary_person_identifier,
                 primary_person.display_name as primary_person_name,
@@ -627,6 +628,9 @@ public class LeadRepositoryWrapper {
             if (productName != null) {
                 builder.productName(productName);
             }
+
+            Long noOfCampaignCalls = rs.getLong("no_of_campaign_calls");
+            builder.numberOfCampaignCalls(noOfCampaignCalls);
 
             return builder.build();
         }

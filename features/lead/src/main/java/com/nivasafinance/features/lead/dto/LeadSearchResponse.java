@@ -25,6 +25,7 @@ public class LeadSearchResponse {
     private UUID contactPersonIdentifier;
     private String contactPersonName;
     private String contactPersonNumber;
+    private Long numberOfCampaignCalls;
     private LeadStatus status;
     private LeadSubStatus subStatus;
     private LocalDateTime leadCreatedAt;
