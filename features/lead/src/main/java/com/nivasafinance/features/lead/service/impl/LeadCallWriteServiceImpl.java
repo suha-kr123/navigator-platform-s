@@ -17,6 +17,8 @@ import com.nivasafinance.features.call.enums.CallDirection;
 import com.nivasafinance.features.call.enums.CallSource;
 import com.nivasafinance.features.call.service.CallReadService;
 import com.nivasafinance.features.call.service.CallWriteService;
+import com.nivasafinance.features.campaign.dto.CampaignDetailedResponse;
+import com.nivasafinance.features.campaign.service.CampaignReadService;
 import com.nivasafinance.features.lead.dto.CreateExternalCallLogRequest;
 import com.nivasafinance.features.lead.dto.CreateExternalCallLogResponse;
 import com.nivasafinance.features.lead.dto.CreateLeadCallRequest;
@@ -55,6 +57,7 @@ public class LeadCallWriteServiceImpl implements LeadCallWriteService {
     private final CallReadService callReadService;
     private final UserReadService userReadService;
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final CampaignReadService campaignReadService;
 
     @Override
     public CreateLeadCallResponse callContact(UUID leadIdentifier, CreateLeadCallRequest request) {
@@ -152,12 +155,15 @@ public class LeadCallWriteServiceImpl implements LeadCallWriteService {
         callLog.setDirection(request.getDirection());
         callLog.setSource(CallSource.API);
         callLog.setStatus(request.getStatus());
-        callLog.setCampaignId(request.getCampaignId());
         if (request.getCreatedAt() != null) {
             callLog.setCreatedAt(request.getCreatedAt());
         }
         callLog.setRecordingDetails(request.getRecordingDetails());
         callLog.setCompletionDetails(request.getCompletionDetails());
+        if(request.getCampaignId() != null) {
+            CampaignDetailedResponse campaign = campaignReadService.getCampaignByIdentifier(request.getCampaignId());
+            callLog.setCampaignId(campaign.getCampaignId());
+        }
 
         // Save call log (duplicate check is done in CallWriteService.createCallLog)
         CreateCallLogResponse savedCallLog = callWriteService.createCallLog(callLog);

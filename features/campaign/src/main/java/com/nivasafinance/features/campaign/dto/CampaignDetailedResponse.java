@@ -14,6 +14,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CampaignDetailedResponse {
+    private Long campaignId;
     private String name;
     private String identifier;
     private CampaignConfigDetailedResponse configs;
@@ -37,6 +38,7 @@ public class CampaignDetailedResponse {
         Campaign.ProviderDetails providerDetails = entity.getProviderDetails();
 
         return CampaignDetailedResponse.builder()
+                .campaignId(entity.getId())
                 .identifier(entity.getIdentifier().toString())
                 .name(entity.getName())
                 .configs(configResponse)
