@@ -12,5 +12,6 @@ public enum ModuleEnum {
     WORKFLOW,
     USER_PREFERENCES,
     STAGE,
-    LENDER
+    LENDER,
+    CAMPAIGN
 }
