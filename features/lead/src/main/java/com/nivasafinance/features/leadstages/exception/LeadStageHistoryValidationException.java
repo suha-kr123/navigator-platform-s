@@ -1,5 +1,6 @@
 package com.nivasafinance.features.leadstages.exception;
 
+import com.nivasafinance.common.exception.BadRequestException;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 
@@ -7,7 +8,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class LeadStageHistoryValidationException extends RuntimeException {
+public class LeadStageHistoryValidationException extends BadRequestException {
 
     private static final long serialVersionUID = 1L;
 

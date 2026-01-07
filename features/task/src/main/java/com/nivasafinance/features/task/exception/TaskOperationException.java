@@ -1,12 +1,13 @@
 package com.nivasafinance.features.task.exception;
 
+import com.nivasafinance.common.exception.BadRequestException;
 import com.nivasafinance.common.exception.ExceptionUtils;
 import org.springframework.context.MessageSource;
 
 import java.io.Serial;
 import java.util.UUID;
 
-public class TaskOperationException extends RuntimeException {
+public class TaskOperationException extends BadRequestException {
 
     @Serial
     private static final long serialVersionUID = 1234567890123456792L;
