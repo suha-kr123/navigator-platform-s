@@ -24,5 +24,7 @@ include("features:staff")
 include("integrations")
 include("features:call")
 include("features:identifier")
+include("features:campaign")
 include("webhooks")
+include("redash")
 

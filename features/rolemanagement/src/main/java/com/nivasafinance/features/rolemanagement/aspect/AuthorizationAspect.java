@@ -3,7 +3,7 @@ package com.nivasafinance.features.rolemanagement.aspect;
 import com.nivasafinance.common.context.UserContext;
 import com.nivasafinance.common.exception.ForbiddenException;
 import com.nivasafinance.common.exception.UnauthorizedException;
-import com.nivasafinance.features.rolemanagement.annotation.RequirePermission;
+import com.nivasafinance.common.annotations.RequirePermission;
 import com.nivasafinance.features.rolemanagement.permissionchecker.PermissionCheckerService;
 import lombok.RequiredArgsConstructor;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -31,30 +31,27 @@ public class AuthorizationAspect {
             throw new UnauthorizedException("User not authenticated");
         }
         
+        String permissionName = requirePermission.permissionName();
         boolean hasPermission = permissionCheckerService.checkPermissionForUser(
                 userName,
-                requirePermission.action(),
-                requirePermission.module(),
-                requirePermission.operation()
+                permissionName
         );
         
         if (!hasPermission) {
             logger.warn(
-                    "Access denied for user {} to {} {}",
+                    "Access denied for user {} to permission {}",
                     userName,
-                    requirePermission.action(),
-                    requirePermission.module()
+                    permissionName
             );
             throw new ForbiddenException(
-                    "Insufficient permissions: " + requirePermission.action() + " on " + requirePermission.module()
+                    "Insufficient permissions: " + permissionName
             );
         }
         
         logger.debug(
-                "Permission granted for user {} to {} {}",
+                "Permission granted for user {} to permission {}",
                 userName,
-                requirePermission.action(),
-                requirePermission.module()
+                permissionName
         );
         return joinPoint.proceed();
     }

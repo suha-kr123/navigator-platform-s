@@ -1,0 +1,603 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1766993185002_80" author="system" context="default">
+        <comment>Map LEAD module permissions to permission groups</comment>
+
+        <!-- LEAD_FULL_ACCESS: All LEAD permissions -->
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'READ_LEAD')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'READ_LEAD_CREDIT_DETAILS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'READ_LEAD_DISBURSEMENT_DETAILS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'READ_LEAD_STAGES')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'CREATE_LEAD')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'UPDATE_LEAD')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'UPDATE_LEAD_CREDIT_DETAILS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'UPDATE_LEAD_DISBURSEMENT_DETAILS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'REJECT_LEAD_STATUS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'UNDO_REJECT_LEAD_STATUS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'WITHDRAW_LEAD_STATUS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'COMPLETE_LEAD_STATUS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'ONHOLD_LEAD_STATUS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'RESUME_LEAD_STATUS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'DROP_LEAD_STATUS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'CREATE_LEAD_TRANCHES')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'UPDATE_LEAD_TRANCHES')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'DELETE_LEAD_TRANCHES')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'READ_LEAD_CONTACTS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'CREATE_LEAD_CONTACTS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'UPDATE_LEAD_CONTACTS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'DELETE_LEAD_CONTACTS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'READ_LEAD_ADDRESS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'CREATE_LEAD_ADDRESS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'UPDATE_LEAD_ADDRESS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'READ_LEAD_DOCUMENTS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'CREATE_LEAD_DOCUMENTS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'UPDATE_LEAD_DOCUMENTS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'DELETE_LEAD_DOCUMENTS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'READ_LEAD_NOTES')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'CREATE_LEAD_NOTES')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'UPDATE_LEAD_NOTES')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'DELETE_LEAD_NOTES')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'READ_LEAD_CALL')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'CREATE_LEAD_CALL')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'UPDATE_LEAD_CALL')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'READ_LEAD_TASKS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'CREATE_LEAD_TASKS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'UPDATE_LEAD_TASKS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'CREATE_LEAD_STAGES')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'UPDATE_LEAD_STAGES')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'READ_LEAD_LENDERS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'CREATE_LEAD_LENDERS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'UPDATE_LEAD_LENDERS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'REJECT_LEAD_LENDERS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'SUBMIT_LEAD_LENDERS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <!-- LEAD_DISBURSEMENT_DETAILS_FULL_ACCESS -->
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'READ_LEAD_DISBURSEMENT_DETAILS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_DISBURSEMENT_DETAILS_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'UPDATE_LEAD_DISBURSEMENT_DETAILS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_DISBURSEMENT_DETAILS_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <!-- LEAD_CREDIT_DETAILS_FULL_ACCESS -->
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'READ_LEAD_CREDIT_DETAILS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_CREDIT_DETAILS_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'UPDATE_LEAD_CREDIT_DETAILS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_CREDIT_DETAILS_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <!-- LEAD_STATUS_FULL_ACCESS -->
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'REJECT_LEAD_STATUS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_STATUS_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'UNDO_REJECT_LEAD_STATUS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_STATUS_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'WITHDRAW_LEAD_STATUS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_STATUS_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'COMPLETE_LEAD_STATUS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_STATUS_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'ONHOLD_LEAD_STATUS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_STATUS_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'RESUME_LEAD_STATUS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_STATUS_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'DROP_LEAD_STATUS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_STATUS_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <!-- LEAD_TRANCHES_FULL_ACCESS -->
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'CREATE_LEAD_TRANCHES')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_TRANCHES_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'UPDATE_LEAD_TRANCHES')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_TRANCHES_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'DELETE_LEAD_TRANCHES')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_TRANCHES_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <!-- LEAD_CONTACT_FULL_ACCESS -->
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'READ_LEAD_CONTACTS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_CONTACT_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'CREATE_LEAD_CONTACTS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_CONTACT_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'UPDATE_LEAD_CONTACTS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_CONTACT_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'DELETE_LEAD_CONTACTS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_CONTACT_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <!-- LEAD_ADDRESS_FULL_ACCESS -->
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'READ_LEAD_ADDRESS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_ADDRESS_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'CREATE_LEAD_ADDRESS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_ADDRESS_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'UPDATE_LEAD_ADDRESS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_ADDRESS_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <!-- LEAD_DOCUMENT_FULL_ACCESS -->
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'READ_LEAD_DOCUMENTS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_DOCUMENT_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'CREATE_LEAD_DOCUMENTS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_DOCUMENT_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'UPDATE_LEAD_DOCUMENTS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_DOCUMENT_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'DELETE_LEAD_DOCUMENTS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_DOCUMENT_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <!-- LEAD_NOTES_FULL_ACCESS -->
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'READ_LEAD_NOTES')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_NOTES_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'CREATE_LEAD_NOTES')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_NOTES_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'UPDATE_LEAD_NOTES')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_NOTES_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'DELETE_LEAD_NOTES')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_NOTES_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <!-- LEAD_CALL_FULL_ACCESS -->
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'READ_LEAD_CALL')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_CALL_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'CREATE_LEAD_CALL')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_CALL_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'UPDATE_LEAD_CALL')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_CALL_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <!-- LEAD_TASKS_FULL_ACCESS -->
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'READ_LEAD_TASKS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_TASKS_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'CREATE_LEAD_TASKS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_TASKS_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'UPDATE_LEAD_TASKS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_TASKS_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'READ_TASK')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_TASKS_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'UPDATE_TASK')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_TASKS_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <!-- LEAD_STAGES_FULL_ACCESS -->
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'READ_LEAD_STAGES')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_STAGES_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'CREATE_LEAD_STAGES')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_STAGES_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'UPDATE_LEAD_STAGES')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_STAGES_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'READ_WORKFLOW')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_STAGES_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'READ_STAGE')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_STAGES_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <!-- LEAD_LENDERS_FULL_ACCESS -->
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'READ_LEAD_LENDERS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_LENDERS_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'CREATE_LEAD_LENDERS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_LENDERS_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'UPDATE_LEAD_LENDERS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_LENDERS_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'REJECT_LEAD_LENDERS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_LENDERS_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'SUBMIT_LEAD_LENDERS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_LENDERS_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'READ_LENDER')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_LENDERS_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+
+    </changeSet>
+
+</databaseChangeLog>

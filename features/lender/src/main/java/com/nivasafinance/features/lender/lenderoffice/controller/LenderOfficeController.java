@@ -1,5 +1,6 @@
 package com.nivasafinance.features.lender.lenderoffice.controller;
 
+import com.nivasafinance.common.annotations.RequirePermission;
 import com.nivasafinance.features.lender.lenderoffice.dto.LenderOfficeReponseData;
 import com.nivasafinance.features.lender.lenderoffice.enums.LenderOfficeStatus;
 import com.nivasafinance.features.lender.lenderoffice.service.LenderOfficeReadService;
@@ -24,6 +25,7 @@ public class LenderOfficeController {
     }
 
     @GetMapping
+    @RequirePermission(permissionName = "READ_LENDER")
     public List<LenderOfficeReponseData> getOfficesByLender(
             @PathVariable String lenderKey,
             @RequestParam(defaultValue = "ACTIVE") LenderOfficeStatus status) {

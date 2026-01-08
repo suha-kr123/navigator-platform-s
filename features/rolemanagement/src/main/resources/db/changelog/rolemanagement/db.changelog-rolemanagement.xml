@@ -7,5 +7,12 @@
 
     <!-- Include all table creation changesets for rolemanagement module -->
     <includeAll path="classpath:db/changelog/rolemanagement/tables"/>
+    
+    <!-- Include all permission inserts -->
+    <includeAll path="classpath:db/changelog/rolemanagement/permissions"/>
+    
+    <!-- Include all permission group inserts -->
+    <includeAll path="classpath:db/changelog/rolemanagement/groups"/>
+
 </databaseChangeLog>
 

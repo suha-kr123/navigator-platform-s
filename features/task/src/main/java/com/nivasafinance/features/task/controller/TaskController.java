@@ -3,6 +3,7 @@ package com.nivasafinance.features.task.controller;
 import com.nivasafinance.common.constants.ApiConstants;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
+import com.nivasafinance.common.annotations.RequirePermission;
 import com.nivasafinance.common.context.UserContext;
 import com.nivasafinance.common.utils.ValidationUtils;
 import com.nivasafinance.features.rolemanagement.role.dto.UserAssignmentResponse;
@@ -39,6 +40,7 @@ public class TaskController {
     private final TaskTemplateService taskTemplateService;
 
     @GetMapping("/assigned-to-me")
+    @RequirePermission(permissionName = "READ_TASK")
     public ResponseEntity<PaginatedResponse<TaskResponse>> getTasksAssignedToMe(
             @RequestParam(defaultValue = "false") boolean includeCompleted,
             @Valid PaginationRequest paginationRequest) {
@@ -47,12 +49,14 @@ public class TaskController {
     }
 
     @PostMapping("/bulk-reassign")
+    @RequirePermission(permissionName = "UPDATE_TASK")
     public ResponseEntity<BulkReassignTaskResponse> bulkReassignTasks(
             @Valid @RequestBody BulkReassignTaskRequest request) {
         return ResponseEntity.ok(taskWriteService.bulkReassignTasks(request));
     }
 
     @GetMapping("/{taskConfigKey}/template")
+    @RequirePermission(permissionName = "READ_TASK")
     public ResponseEntity<TaskTemplateResponse> getTaskTemplate(
             @PathVariable String taskConfigKey,
             @RequestParam(required = false) String officeKey) {
@@ -60,6 +64,7 @@ public class TaskController {
     }
 
     @GetMapping("/{taskConfigKey}/assignable-users")
+    @RequirePermission(permissionName = "READ_TASK")
     public ResponseEntity<List<UserAssignmentResponse>> getAssignableUsersForTask(
             @PathVariable String taskConfigKey) {
         TaskConfig taskConfig = taskConfigRepositoryWrapper.findActiveByTaskConfigKey(taskConfigKey);
@@ -70,6 +75,7 @@ public class TaskController {
     }
 
     @PutMapping("/{taskIdentifier}/due-date")
+    @RequirePermission(permissionName = "UPDATE_TASK")
     public ResponseEntity<TaskResponse> updateDueDate(
             @PathVariable UUID taskIdentifier,
             @Valid @RequestBody UpdateDueDateRequest request) {

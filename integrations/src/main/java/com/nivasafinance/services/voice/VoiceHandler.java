@@ -6,8 +6,7 @@ import com.nivasafinance.integrations.framework.config.ThirdPartyServiceList;
 import com.nivasafinance.integrations.framework.runner.ServiceRunner;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import com.nivasafinance.services.voice.dto.VoiceCallRequest;
-import com.nivasafinance.services.voice.dto.VoiceCallResponse;
+import com.nivasafinance.services.voice.dto.*;
 import com.nivasafinance.services.voice.provider.VoiceProvider;
 
 import java.util.HashMap;
@@ -63,6 +62,86 @@ public class VoiceHandler extends ThirdPartyHandler {
             return (VoiceCallResponse) runner.invokeService("getCallStatus", callSid, runConfig, businessContext);
         } catch (Exception e) {
             throw new VoiceHandlerException("Error getting call status: " + e.getMessage());
+        }
+    }
+
+    public VoiceCreateListResponse uploadCSVList(VoiceCreateListRequest request, BusinessContext businessContext) {
+        VoiceProvider primaryProvider = servicesMap.get(runConfig.getPrimaryConfig().getProvider());
+        if (primaryProvider == null) {
+            throw new VoiceHandlerException("Error fetching " + getKey().getServiceName());
+        }
+        VoiceProvider fallbackProvider = runConfig.getFallbackConfig() != null
+                ? servicesMap.get(runConfig.getFallbackConfig().getProvider())
+                : null;
+        
+        @SuppressWarnings("unchecked")
+        ServiceRunner<VoiceProvider, VoiceCreateListRequest> runner = new ServiceRunner<>(
+                primaryProvider, fallbackProvider, runConfig.getRetries());
+        
+        try {
+            return (VoiceCreateListResponse) runner.invokeService("uploadCSVList", request, runConfig, businessContext);
+        } catch (Exception e) {
+            throw new VoiceHandlerException("Error uploading CSV list: " + e.getMessage());
+        }
+    }
+
+    public VoiceCSVUploadStatusResponse getCSVUploadStatus(VoiceCSVUploadStatusRequest request, BusinessContext businessContext) {
+        VoiceProvider primaryProvider = servicesMap.get(runConfig.getPrimaryConfig().getProvider());
+        if (primaryProvider == null) {
+            throw new VoiceHandlerException("Error fetching " + getKey().getServiceName());
+        }
+        VoiceProvider fallbackProvider = runConfig.getFallbackConfig() != null
+                ? servicesMap.get(runConfig.getFallbackConfig().getProvider())
+                : null;
+        
+        @SuppressWarnings("unchecked")
+        ServiceRunner<VoiceProvider, VoiceCSVUploadStatusRequest> runner = new ServiceRunner<>(
+                primaryProvider, fallbackProvider, runConfig.getRetries());
+        
+        try {
+            return (VoiceCSVUploadStatusResponse) runner.invokeService("getCSVUploadStatus", request, runConfig, businessContext);
+        } catch (Exception e) {
+            throw new VoiceHandlerException("Error getting CSV upload status: " + e.getMessage());
+        }
+    }
+
+    public VoiceCampaignResponse createCampaign(VoiceCampaignRequest request, BusinessContext businessContext) {
+        VoiceProvider primaryProvider = servicesMap.get(runConfig.getPrimaryConfig().getProvider());
+        if (primaryProvider == null) {
+            throw new VoiceHandlerException("Error fetching " + getKey().getServiceName());
+        }
+        VoiceProvider fallbackProvider = runConfig.getFallbackConfig() != null
+                ? servicesMap.get(runConfig.getFallbackConfig().getProvider())
+                : null;
+        
+        @SuppressWarnings("unchecked")
+        ServiceRunner<VoiceProvider, VoiceCampaignRequest> runner = new ServiceRunner<>(
+                primaryProvider, fallbackProvider, runConfig.getRetries());
+        
+        try {
+            return (VoiceCampaignResponse) runner.invokeService("createCampaign", request, runConfig, businessContext);
+        } catch (Exception e) {
+            throw new VoiceHandlerException("Error creating campaign: " + e.getMessage());
+        }
+    }
+
+    public VoiceCampaignResponse getCampaignDetails(VoiceGetCampaignDetailsRequest request, BusinessContext businessContext) {
+        VoiceProvider primaryProvider = servicesMap.get(runConfig.getPrimaryConfig().getProvider());
+        if (primaryProvider == null) {
+            throw new VoiceHandlerException("Error fetching " + getKey().getServiceName());
+        }
+        VoiceProvider fallbackProvider = runConfig.getFallbackConfig() != null
+                ? servicesMap.get(runConfig.getFallbackConfig().getProvider())
+                : null;
+        
+        @SuppressWarnings("unchecked")
+        ServiceRunner<VoiceProvider, VoiceGetCampaignDetailsRequest> runner = new ServiceRunner<>(
+                primaryProvider, fallbackProvider, runConfig.getRetries());
+        
+        try {
+            return (VoiceCampaignResponse) runner.invokeService("getCampaignDetails", request, runConfig, businessContext);
+        } catch (Exception e) {
+            throw new VoiceHandlerException("Error getting campaign details: " + e.getMessage());
         }
     }
 

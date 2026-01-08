@@ -3,6 +3,7 @@ package com.nivasafinance.features.master.codemaster.controller;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import com.nivasafinance.features.master.codemaster.dto.MasterCodeWithValuesResponse;
 import com.nivasafinance.features.master.codemaster.service.CodeMasterService;
+import com.nivasafinance.common.annotations.RequirePermission;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,6 +22,7 @@ public class CodeMasterController {
     private final CodeMasterService codeMasterService;
     
     @GetMapping("/{codeKey}")
+    @RequirePermission(permissionName = "READ_MASTER_CODE")
     public ResponseEntity<List<CodeValueResponse>> getAllCodeValuesByCodeKey(
             @PathVariable String codeKey,
             @RequestParam(defaultValue = "true") Boolean onlyActive) {
@@ -29,6 +31,7 @@ public class CodeMasterController {
     }
     
     @GetMapping("/{codeKey}/childs")
+    @RequirePermission(permissionName = "READ_MASTER_CODE")
     public ResponseEntity<List<MasterCodeWithValuesResponse>> getMasterCodeChildrenWithValues(
             @PathVariable String codeKey,
             @RequestParam(defaultValue = "true") Boolean onlyActive) {

@@ -2,12 +2,14 @@ package com.nivasafinance.features.document.service.impl;
 
 import com.nivasafinance.features.document.config.DocumentStorageProperties;
 import com.nivasafinance.features.document.dto.DocumentCreateRequest;
+import com.nivasafinance.features.document.dto.DocumentCreateRequestInputStream;
 import com.nivasafinance.features.document.dto.DocumentCreateResponse;
 import com.nivasafinance.features.document.entity.Document;
 import com.nivasafinance.features.document.enums.DocumentStorageProvider;
 import com.nivasafinance.features.document.exception.DocumentExceptionFactory;
 import com.nivasafinance.features.document.repository.DocumentRepositoryWrapper;
 import com.nivasafinance.features.document.service.DocumentWriteService;
+import com.nivasafinance.features.document.storage.ContentRepository;
 import com.nivasafinance.features.document.storage.ContentRepositoryFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,24 +46,51 @@ public class DocumentWriteServiceImpl implements DocumentWriteService {
     @Transactional
     public DocumentCreateResponse createDocument(DocumentCreateRequest createRequest) {
         documentExceptionFactory.validateDocumentForCreation(createRequest);
-        com.nivasafinance.features.document.storage.ContentRepository contentRepository = 
-                contentRepositoryFactory.getRepository(documentStorageProperties.getProvider());
-        String documentPath = createRequest.getCustomPath() != null 
-                ? createRequest.getCustomPath() 
-                : generateDocumentPath(createRequest.getName());
-        
-        String storageKey;
         try {
-            storageKey = contentRepository.saveFile(createRequest.getFile().getInputStream(), documentPath);
+            return createDocumentInternal(
+                    createRequest.getName(),
+                    createRequest.getFile().getInputStream(),
+                    createRequest.getCustomPath(),
+                    createRequest.getFile().getContentType(),
+                    createRequest.getFile().getSize()
+            );
         } catch (IOException e) {
             throw documentExceptionFactory.createOperationException("upload", e);
         }
+    }
+
+    @Override
+    @Transactional
+    public DocumentCreateResponse createDocument(DocumentCreateRequestInputStream createRequest) {
+        documentExceptionFactory.validateDocumentForCreation(createRequest);
+        return createDocumentInternal(
+                createRequest.getName(),
+                createRequest.getFile(),
+                createRequest.getCustomPath(),
+                createRequest.getContentType(),
+                createRequest.getSize()
+        );
+    }
+
+    private DocumentCreateResponse createDocumentInternal(
+            String name,
+            java.io.InputStream inputStream,
+            String customPath,
+            String contentType,
+            Long size) {
+        ContentRepository contentRepository =
+                contentRepositoryFactory.getRepository(documentStorageProperties.getProvider());
+        String documentPath = customPath != null 
+                ? customPath 
+                : generateDocumentPath(name);
+        
+        String storageKey = contentRepository.saveFile(inputStream, documentPath);
         
         Document document = new Document();
         document.setIdentifier(UUID.randomUUID());
-        document.setName(createRequest.getName());
-        document.setType(createRequest.getFile().getContentType());
-        document.setSize(createRequest.getFile().getSize());
+        document.setName(name);
+        document.setType(contentType);
+        document.setSize(size);
         document.setProvider(DocumentStorageProvider.valueOf(documentStorageProperties.getProvider()));
         document.setPath(storageKey);
         
@@ -71,12 +100,12 @@ public class DocumentWriteServiceImpl implements DocumentWriteService {
                 .identifier(savedDocument.getIdentifier())
                 .build();
     }
-    
+
     @Override
     @Transactional
     public void deleteDocumentById(UUID id) {
         Document document = documentRepositoryWrapper.findByIdentifierWithException(id);
-        com.nivasafinance.features.document.storage.ContentRepository contentRepository = 
+        ContentRepository contentRepository =
                 contentRepositoryFactory.getRepository(document.getProvider().name());
         contentRepository.deleteFile(document.getPath());
         logger.debug("Successfully deleted file from storage: {}", document.getPath());

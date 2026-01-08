@@ -1,5 +1,6 @@
 package com.nivasafinance.features.usermanagement.controller;
 
+import com.nivasafinance.common.annotations.RequirePermission;
 import com.nivasafinance.common.constants.ApiConstants;
 import com.nivasafinance.features.usermanagement.dto.UserPreferencesRequest;
 import com.nivasafinance.features.usermanagement.dto.UserPreferencesResponse;
@@ -18,12 +19,14 @@ public class UserPreferencesController {
     private final UserPreferencesService userPreferencesService;
 
     @GetMapping
+    @RequirePermission(permissionName = "READ_USER_PREFERENCES")
     public ResponseEntity<UserPreferencesResponse> getPreferences() {
         UserPreferencesResponse response = userPreferencesService.getPreferencesForCurrentUser();
         return ResponseEntity.ok(response);
     }
 
     @PostMapping
+    @RequirePermission(permissionName = "CREATE_USER_PREFERENCES")
     public ResponseEntity<UserPreferencesResponse> savePreferences(
             @Valid @RequestBody UserPreferencesRequest request) {
         UserPreferencesResponse response = userPreferencesService.savePreferencesForCurrentUser(request);
@@ -31,6 +34,7 @@ public class UserPreferencesController {
     }
 
     @PatchMapping
+    @RequirePermission(permissionName = "UPDATE_USER_PREFERENCES")
     public ResponseEntity<UserPreferencesResponse> updatePreferences(
             @Valid @RequestBody UserPreferencesRequest request) {
         UserPreferencesResponse response = userPreferencesService.updatePreferencesForCurrentUser(request);

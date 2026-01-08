@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1766993184003_77" author="system" context="default">
+        <comment>Insert NOTIFICATION module permissions</comment>
+        
+        <!-- Notification permissions -->
+        <insert tableName="n_permissions">
+            <column name="name" value="CREATE_NOTIFICATION"/>
+            <column name="action" value="CREATE"/>
+            <column name="module" value="NOTIFICATION"/>
+            <column name="operation" value="CREATE_NOTIFICATION"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="READ_NOTIFICATION"/>
+            <column name="action" value="READ"/>
+            <column name="module" value="NOTIFICATION"/>
+            <column name="operation" value="READ_NOTIFICATION"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="UPDATE_NOTIFICATION"/>
+            <column name="action" value="UPDATE"/>
+            <column name="module" value="NOTIFICATION"/>
+            <column name="operation" value="UPDATE_NOTIFICATION"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+    </changeSet>
+
+</databaseChangeLog>
+

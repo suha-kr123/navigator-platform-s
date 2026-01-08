@@ -2,6 +2,7 @@ package com.nivasafinance.features.document.exception;
 
 import org.springframework.context.MessageSource;
 
+import java.util.ArrayList;
 import java.util.Locale;
 import java.util.UUID;
 
@@ -47,6 +48,19 @@ public class DocumentExceptionFactory {
     public void validateDocumentForCreation(com.nivasafinance.features.document.dto.DocumentCreateRequest createRequest) {
         java.util.ArrayList<String> validationErrors = new java.util.ArrayList<>();
         if (createRequest.getFile() == null || createRequest.getFile().isEmpty()) {
+            validationErrors.add("File is required");
+        }
+        if (createRequest.getName() == null || createRequest.getName().isBlank()) {
+            validationErrors.add("Name is required");
+        }
+        if (!validationErrors.isEmpty()) {
+            throw createValidationException(String.join(", ", validationErrors));
+        }
+    }
+    
+    public void validateDocumentForCreation(com.nivasafinance.features.document.dto.DocumentCreateRequestInputStream createRequest) {
+        ArrayList<String> validationErrors = new ArrayList<>();
+        if (createRequest.getFile() == null) {
             validationErrors.add("File is required");
         }
         if (createRequest.getName() == null || createRequest.getName().isBlank()) {

@@ -3,6 +3,7 @@ package com.nivasafinance.features.lead.controller;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.common.constants.ApiConstants;
+import com.nivasafinance.common.annotations.RequirePermission;
 import com.nivasafinance.features.lead.dto.LeadNoteCreateRequest;
 import com.nivasafinance.features.lead.dto.LeadNoteCreateResponse;
 import com.nivasafinance.features.lead.dto.LeadNoteResponse;
@@ -26,6 +27,7 @@ public class LeadNotesController {
     private final LeadNoteReadService leadNoteReadService;
 
     @PostMapping
+    @RequirePermission(permissionName = "CREATE_LEAD_NOTES")
     public ResponseEntity<LeadNoteCreateResponse> createLeadNote(
             @PathVariable UUID leadId,
             @Valid @RequestBody LeadNoteCreateRequest request
@@ -35,6 +37,7 @@ public class LeadNotesController {
     }
 
     @GetMapping
+    @RequirePermission(permissionName = "READ_LEAD_NOTES")
     public ResponseEntity<PaginatedResponse<LeadNoteResponse>> getAllLeadNotes(
             @PathVariable UUID leadId,
             @Valid PaginationRequest paginationRequest) {
@@ -45,6 +48,7 @@ public class LeadNotesController {
     }
 
     @GetMapping("/{noteId}")
+    @RequirePermission(permissionName = "READ_LEAD_NOTES")
     public ResponseEntity<LeadNoteResponse> getLeadNoteById(
             @PathVariable UUID leadId,
             @PathVariable UUID noteId) {
@@ -53,6 +57,7 @@ public class LeadNotesController {
     }
 
     @PutMapping("/{noteId}")
+    @RequirePermission(permissionName = "UPDATE_LEAD_NOTES")
     public ResponseEntity<Void> updateLeadNote(
             @PathVariable UUID leadId,
             @PathVariable UUID noteId,
@@ -62,6 +67,7 @@ public class LeadNotesController {
     }
 
     @DeleteMapping("/{noteId}")
+    @RequirePermission(permissionName = "DELETE_LEAD_NOTES")
     public ResponseEntity<Void> deleteLeadNote(
             @PathVariable UUID leadId,
             @PathVariable UUID noteId) {

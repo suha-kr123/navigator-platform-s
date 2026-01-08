@@ -1,6 +1,7 @@
 package com.nivasafinance.features.workflow.controller;
 
 import com.nivasafinance.common.constants.ApiConstants;
+import com.nivasafinance.common.annotations.RequirePermission;
 import com.nivasafinance.features.workflow.orchestrator.WorkflowOrchestratorService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,7 @@ public class WorkflowController {
     private final WorkflowOrchestratorService workflowOrchestratorService;
 
     @GetMapping("/{workflowConfigKey}/stages/{stageKey}/adhoc-tasks")
+    @RequirePermission(permissionName = "READ_WORKFLOW")
     public ResponseEntity<List<String>> getAdhocTaskKeysForStage(
             @PathVariable String workflowConfigKey,
             @PathVariable String stageKey) {

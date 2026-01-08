@@ -24,8 +24,6 @@ public class GlobalExceptionHandler {
             ResourceNotFoundException ex, WebRequest request) {
         String requestId = generateRequestId();
         String path = request.getDescription(false);
-        logger.error("Resource not found - RequestId: {}, Path: {}, Error: {}", 
-                requestId, path, ex.getLocalizedMessage(), ex);
         ApiError apiError = new ApiError();
         apiError.setError(ex.getLocalizedMessage());
         apiError.setStatusCode(HttpStatus.NOT_FOUND);
@@ -40,8 +38,6 @@ public class GlobalExceptionHandler {
             ValidationException ex, WebRequest request) {
         String requestId = generateRequestId();
         String path = request.getDescription(false);
-        logger.error("Validation error - RequestId: {}, Path: {}, Error: {}", 
-                requestId, path, ex.getLocalizedMessage(), ex);
         ApiError apiError = new ApiError();
         apiError.setError(ex.getLocalizedMessage());
         apiError.setStatusCode(HttpStatus.BAD_REQUEST);
@@ -56,8 +52,6 @@ public class GlobalExceptionHandler {
             BadRequestException ex, WebRequest request) {
         String requestId = generateRequestId();
         String path = request.getDescription(false);
-        logger.error("Bad request - RequestId: {}, Path: {}, Error: {}", 
-                requestId, path, ex.getLocalizedMessage(), ex);
         ApiError apiError = new ApiError();
         apiError.setError(ex.getLocalizedMessage());
         apiError.setStatusCode(HttpStatus.BAD_REQUEST);
@@ -72,8 +66,6 @@ public class GlobalExceptionHandler {
             ConflictException ex, WebRequest request) {
         String requestId = generateRequestId();
         String path = request.getDescription(false);
-        logger.error("Conflict error - RequestId: {}, Path: {}, Error: {}", 
-                requestId, path, ex.getLocalizedMessage(), ex);
         ApiError apiError = new ApiError();
         apiError.setError(ex.getLocalizedMessage());
         apiError.setStatusCode(HttpStatus.CONFLICT);
@@ -88,8 +80,6 @@ public class GlobalExceptionHandler {
             ResourceConflictException ex, WebRequest request) {
         String requestId = generateRequestId();
         String path = request.getDescription(false);
-        logger.error("Resource conflict - RequestId: {}, Path: {}, Error: {}", 
-                requestId, path, ex.getLocalizedMessage(), ex);
         ApiError apiError = new ApiError();
         apiError.setError(ex.getLocalizedMessage());
         apiError.setStatusCode(HttpStatus.CONFLICT);
@@ -104,8 +94,6 @@ public class GlobalExceptionHandler {
             UnauthorizedException ex, WebRequest request) {
         String requestId = generateRequestId();
         String path = request.getDescription(false);
-        logger.error("Unauthorized access - RequestId: {}, Path: {}, Error: {}", 
-                requestId, path, ex.getLocalizedMessage(), ex);
         ApiError apiError = new ApiError();
         apiError.setError(ex.getLocalizedMessage());
         apiError.setStatusCode(HttpStatus.UNAUTHORIZED);
@@ -120,8 +108,6 @@ public class GlobalExceptionHandler {
             ForbiddenException ex, WebRequest request) {
         String requestId = generateRequestId();
         String path = request.getDescription(false);
-        logger.error("Forbidden access - RequestId: {}, Path: {}, Error: {}", 
-                requestId, path, ex.getLocalizedMessage(), ex);
         ApiError apiError = new ApiError();
         apiError.setError(ex.getLocalizedMessage());
         apiError.setStatusCode(HttpStatus.FORBIDDEN);
@@ -142,8 +128,6 @@ public class GlobalExceptionHandler {
                     ? error.getDefaultMessage() 
                     : "Validation failed.")
         );
-        logger.warn("Method argument validation failed - RequestId: {}, Path: {}, FieldErrors: {}", 
-                requestId, path, errors, ex);
         
         ApiError apiError = new ApiError();
         apiError.setFieldErrors(errors);

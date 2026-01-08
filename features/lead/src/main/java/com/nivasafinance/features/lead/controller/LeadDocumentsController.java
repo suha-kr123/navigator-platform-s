@@ -3,6 +3,7 @@ package com.nivasafinance.features.lead.controller;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.common.constants.ApiConstants;
+import com.nivasafinance.common.annotations.RequirePermission;
 import com.nivasafinance.features.lead.dto.HouseFrontPhotoRequest;
 import com.nivasafinance.features.lead.dto.LeadDocumentCreateRequest;
 import com.nivasafinance.features.lead.dto.LeadDocumentCreateResponse;
@@ -29,6 +30,7 @@ public class LeadDocumentsController {
     private final LeadDocumentReadService leadDocumentReadService;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @RequirePermission(permissionName = "CREATE_LEAD_DOCUMENTS")
     public ResponseEntity<LeadDocumentCreateResponse> createLeadDocument(
             @PathVariable UUID leadId,
             @Valid @RequestPart("metadata") LeadDocumentCreateRequest request,
@@ -39,6 +41,7 @@ public class LeadDocumentsController {
     }
 
     @PostMapping(value = "/front-house-photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @RequirePermission(permissionName = "CREATE_LEAD_DOCUMENTS")
     public ResponseEntity<LeadDocumentCreateResponse> createHouseFrontPhoto(
             @PathVariable UUID leadId,
             @Valid @RequestPart("metadata") HouseFrontPhotoRequest request,
@@ -49,6 +52,7 @@ public class LeadDocumentsController {
     }
 
     @GetMapping
+    @RequirePermission(permissionName = "READ_LEAD_DOCUMENTS")
     public ResponseEntity<PaginatedResponse<LeadDocumentResponse>> getAllLeadDocuments(
             @PathVariable UUID leadId,
             @Valid PaginationRequest paginationRequest) {
@@ -59,6 +63,7 @@ public class LeadDocumentsController {
     }
 
     @GetMapping("/{documentId}")
+    @RequirePermission(permissionName = "READ_LEAD_DOCUMENTS")
     public ResponseEntity<LeadDocumentResponse> getLeadDocumentById(
             @PathVariable UUID leadId,
             @PathVariable UUID documentId) {
@@ -67,6 +72,7 @@ public class LeadDocumentsController {
     }
 
     @PutMapping("/{documentId}")
+    @RequirePermission(permissionName = "UPDATE_LEAD_DOCUMENTS")
     public ResponseEntity<Void> updateLeadDocument(
             @PathVariable UUID leadId,
             @PathVariable UUID documentId,
@@ -76,6 +82,7 @@ public class LeadDocumentsController {
     }
 
     @DeleteMapping("/{documentId}")
+    @RequirePermission(permissionName = "DELETE_LEAD_DOCUMENTS")
     public ResponseEntity<Void> deleteLeadDocument(
             @PathVariable UUID leadId,
             @PathVariable UUID documentId) {

@@ -9,6 +9,7 @@ import com.nivasafinance.features.lead.dto.LeadSearchResponse;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.enums.LeadStatus;
 import com.nivasafinance.features.lead.enums.LeadSubStatus;
+import com.nivasafinance.features.lead.exception.LeadConflictException;
 import com.nivasafinance.features.lead.exception.LeadNotFoundException;
 import com.nivasafinance.features.master.codemaster.SystemControlledMasterCodes;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
@@ -20,6 +21,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.context.MessageSource;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
@@ -49,7 +51,13 @@ public class LeadRepositoryWrapper {
 
     public Lead saveWithException(Lead lead) {
         try {
-            return leadRepository.save(lead);
+            return leadRepository.saveAndFlush(lead);
+        } catch (OptimisticLockingFailureException e) {
+            throw new LeadConflictException(
+                    "error.lead.optimistic.locking.failure",
+                    new Object[]{},
+                    messageSource
+            );
         } catch (DataAccessException e) {
             RuntimeException exception = new RuntimeException("Failed to save lead", e);
             exception.initCause(e);
@@ -490,6 +498,7 @@ public class LeadRepositoryWrapper {
             SELECT DISTINCT
                 l.lead_identifier,
                 l.requested_amount,
+                l.other_details->>'noOfCampaignCalls' as no_of_campaign_calls,
                 p.name as product_name,
                 primary_contact.identifier as primary_person_identifier,
                 primary_person.display_name as primary_person_name,
@@ -627,6 +636,9 @@ public class LeadRepositoryWrapper {
             if (productName != null) {
                 builder.productName(productName);
             }
+
+            Long noOfCampaignCalls = rs.getLong("no_of_campaign_calls");
+            builder.numberOfCampaignCalls(noOfCampaignCalls);
 
             return builder.build();
         }

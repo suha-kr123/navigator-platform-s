@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1766993184003_76" author="system" context="default">
+        <comment>Insert STAFF module permissions</comment>
+        
+        <!-- Staff permissions -->
+        <insert tableName="n_permissions">
+            <column name="name" value="READ_STAFF"/>
+            <column name="action" value="READ"/>
+            <column name="module" value="STAFF"/>
+            <column name="operation" value="READ_STAFF"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="CREATE_STAFF"/>
+            <column name="action" value="CREATE"/>
+            <column name="module" value="STAFF"/>
+            <column name="operation" value="CREATE_STAFF"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+    </changeSet>
+
+</databaseChangeLog>
+

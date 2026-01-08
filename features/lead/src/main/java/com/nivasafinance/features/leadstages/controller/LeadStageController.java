@@ -1,6 +1,7 @@
 package com.nivasafinance.features.leadstages.controller;
 
 import com.nivasafinance.common.constants.ApiConstants;
+import com.nivasafinance.common.annotations.RequirePermission;
 import com.nivasafinance.features.leadstages.dto.ChangeAssignmentRequest;
 import com.nivasafinance.features.leadstages.dto.ChangeSubStageRequest;
 import com.nivasafinance.features.leadstages.dto.LeadStageHistoryResponse;
@@ -26,6 +27,7 @@ public class LeadStageController {
     private final LeadStageHistoryReadService leadStageHistoryReadService;
 
     @PostMapping("/transition")
+    @RequirePermission(permissionName = "CREATE_LEAD_STAGES")
     public ResponseEntity<LeadStageHistoryResponse> transitionStage(
             @PathVariable UUID leadId,
             @Valid @RequestBody StageTransitionRequest request) {
@@ -35,6 +37,7 @@ public class LeadStageController {
     }
 
     @GetMapping("/history")
+    @RequirePermission(permissionName = "READ_LEAD_STAGES")
     public ResponseEntity<PaginatedResponse<LeadStageHistoryResponse>> getStageHistory(
             @PathVariable UUID leadId,
             @Valid PaginationRequest paginationRequest) {
@@ -43,6 +46,7 @@ public class LeadStageController {
     }
 
     @PutMapping("/assignment")
+    @RequirePermission(permissionName = "UPDATE_LEAD_STAGES")
     public ResponseEntity<LeadStageHistoryResponse> changeAssignment(
             @PathVariable UUID leadId,
             @Valid @RequestBody ChangeAssignmentRequest request) {
@@ -52,6 +56,7 @@ public class LeadStageController {
     }
 
     @PutMapping("/sub-stage")
+    @RequirePermission(permissionName = "UPDATE_LEAD_STAGES")
     public ResponseEntity<LeadStageHistoryResponse> changeSubStage(
             @PathVariable UUID leadId,
             @Valid @RequestBody ChangeSubStageRequest request) {

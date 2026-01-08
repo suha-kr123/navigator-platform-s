@@ -41,6 +41,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.MessageSource;
+import com.nivasafinance.features.lead.annotation.TransactionalOptimisticRetry;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -129,7 +130,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     }
 
     @Override
-    @Transactional
+    @TransactionalOptimisticRetry
     public void updateLead(UUID leadIdentifier, UpdateLeadRequest request) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
 
@@ -203,7 +204,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     }
 
     @Override
-    @Transactional
+    @TransactionalOptimisticRetry
     public void updatePreliminaryDetails(UUID leadIdentifier, UpdatePreliminaryDetailsRequest request) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
         Lead.PreliminaryDetails preliminaryDetails = lead.getPreliminaryDetails();

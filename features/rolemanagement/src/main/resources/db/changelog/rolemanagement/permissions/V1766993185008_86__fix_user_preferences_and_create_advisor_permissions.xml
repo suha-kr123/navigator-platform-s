@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1766993185008_86" author="system" context="default">
+        <comment>Fix user preferences permissions and ensure CREATE_ADVISOR permission exists</comment>
+        
+        <!-- Part 1: Fix User Preferences Permissions -->
+        <!-- Delete any mappings that reference the old permission first -->
+        <delete tableName="n_permission_group_mapping">
+            <where>permission_id IN (SELECT id FROM n_permissions WHERE name = 'USER_PREFERENCES_FULL_ACCESS')</where>
+        </delete>
+        
+        <!-- Delete old FULL_ACCESS permission if it exists -->
+        <delete tableName="n_permissions">
+            <where>name = 'USER_PREFERENCES_FULL_ACCESS'</where>
+        </delete>
+        
+        <!-- Insert the three granular permissions -->
+        <insert tableName="n_permissions">
+            <column name="name" value="READ_USER_PREFERENCES"/>
+            <column name="action" value="READ"/>
+            <column name="module" value="USER_PREFERENCES"/>
+            <column name="operation" value="READ_USER_PREFERENCES"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="CREATE_USER_PREFERENCES"/>
+            <column name="action" value="CREATE"/>
+            <column name="module" value="USER_PREFERENCES"/>
+            <column name="operation" value="CREATE_USER_PREFERENCES"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="UPDATE_USER_PREFERENCES"/>
+            <column name="action" value="UPDATE"/>
+            <column name="module" value="USER_PREFERENCES"/>
+            <column name="operation" value="UPDATE_USER_PREFERENCES"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+       
+        <!-- Insert CREATE_ADVISOR permission -->
+        <insert tableName="n_permissions">
+            <column name="name" value="CREATE_ADVISOR"/>
+            <column name="action" value="CREATE"/>
+            <column name="module" value="ADVISOR"/>
+            <column name="operation" value="CREATE_ADVISOR"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <!-- Map CREATE_ADVISOR to ADVISOR_FULL_ACCESS -->
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'CREATE_ADVISOR')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'ADVISOR_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+    </changeSet>
+
+</databaseChangeLog>
+

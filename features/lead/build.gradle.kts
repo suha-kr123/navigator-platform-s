@@ -26,7 +26,11 @@ dependencies {
     implementation(project(":features:advisor"))
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
     implementation("org.springframework.boot:spring-boot-starter-jdbc")
+    // Spring Retry for handling optimistic locking conflicts
+    implementation("org.springframework.retry:spring-retry")
+    implementation("org.springframework.boot:spring-boot-starter-aop")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    implementation(project(":features:campaign"))
     testImplementation(libs.mockk)
 }
 

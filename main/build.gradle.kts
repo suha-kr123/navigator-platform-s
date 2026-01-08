@@ -26,7 +26,9 @@ dependencies {
     implementation(project(":features:task"))
     implementation(project(":features:staff"))
     implementation(project(":features:identifier"))
+    implementation(project(":features:campaign"))
     implementation(project(":webhooks"))
+    implementation(project(":redash"))
 }
 
 springBoot {

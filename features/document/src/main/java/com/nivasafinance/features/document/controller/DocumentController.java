@@ -1,6 +1,7 @@
 package com.nivasafinance.features.document.controller;
 
 import com.nivasafinance.common.constants.ApiConstants;
+import com.nivasafinance.common.annotations.RequirePermission;
 import com.nivasafinance.features.document.service.DocumentReadService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.InputStreamResource;
@@ -22,6 +23,7 @@ public class DocumentController {
     private final DocumentReadService documentReadService;
     
     @GetMapping("/{documentId}")
+    @RequirePermission(permissionName = "READ_DOCUMENT")
     public ResponseEntity<InputStreamResource> getDocument(@PathVariable UUID documentId) {
         com.nivasafinance.features.document.dto.DocumentFileResponse documentFileResponse = 
                 documentReadService.getDocumentFile(documentId);

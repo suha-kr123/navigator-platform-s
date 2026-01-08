@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1766993184002_69" author="system" context="default">
+        <comment>Insert ADVISOR module permissions</comment>
+        
+        <!-- Advisor permissions -->
+        <insert tableName="n_permissions">
+            <column name="name" value="READ_ADVISOR"/>
+            <column name="action" value="READ"/>
+            <column name="module" value="ADVISOR"/>
+            <column name="operation" value="READ_ADVISOR"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="UPDATE_ADVISOR"/>
+            <column name="action" value="UPDATE"/>
+            <column name="module" value="ADVISOR"/>
+            <column name="operation" value="UPDATE_ADVISOR"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="REJECT_ADVISOR"/>
+            <column name="action" value="REJECT"/>
+            <column name="module" value="ADVISOR"/>
+            <column name="operation" value="REJECT_ADVISOR"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="UPDATE_ADVISOR_STATUS"/>
+            <column name="action" value="UPDATE"/>
+            <column name="module" value="ADVISOR"/>
+            <column name="operation" value="UPDATE_ADVISOR"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="READ_ADVISOR_ADDRESS"/>
+            <column name="action" value="READ"/>
+            <column name="module" value="ADVISOR"/>
+            <column name="operation" value="READ_ADVISOR"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="CREATE_ADVISOR_ADDRESS"/>
+            <column name="action" value="CREATE"/>
+            <column name="module" value="ADVISOR"/>
+            <column name="operation" value="CREATE_ADVISOR"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="UPDATE_ADVISOR_ADDRESS"/>
+            <column name="action" value="UPDATE"/>
+            <column name="module" value="ADVISOR"/>
+            <column name="operation" value="UPDATE_ADVISOR"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="READ_ADVISOR_BANK_DETAILS"/>
+            <column name="action" value="READ"/>
+            <column name="module" value="ADVISOR"/>
+            <column name="operation" value="READ_ADVISOR"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="CREATE_ADVISOR_BANK_DETAILS"/>
+            <column name="action" value="CREATE"/>
+            <column name="module" value="ADVISOR"/>
+            <column name="operation" value="CREATE_ADVISOR"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="UPDATE_ADVISOR_BANK_DETAILS"/>
+            <column name="action" value="UPDATE"/>
+            <column name="module" value="ADVISOR"/>
+            <column name="operation" value="UPDATE_ADVISOR"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="READ_ADVISOR_NOTES"/>
+            <column name="action" value="READ"/>
+            <column name="module" value="ADVISOR"/>
+            <column name="operation" value="READ_ADVISOR"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="CREATE_ADVISOR_NOTES"/>
+            <column name="action" value="CREATE"/>
+            <column name="module" value="ADVISOR"/>
+            <column name="operation" value="CREATE_ADVISOR"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="UPDATE_ADVISOR_NOTES"/>
+            <column name="action" value="UPDATE"/>
+            <column name="module" value="ADVISOR"/>
+            <column name="operation" value="UPDATE_ADVISOR"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="DELETE_ADVISOR_NOTES"/>
+            <column name="action" value="DELETE"/>
+            <column name="module" value="ADVISOR"/>
+            <column name="operation" value="DELETE_ADVISOR"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="READ_ADVISOR_CALL"/>
+            <column name="action" value="READ"/>
+            <column name="module" value="ADVISOR"/>
+            <column name="operation" value="READ_ADVISOR"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="CREATE_ADVISOR_CALL"/>
+            <column name="action" value="CREATE"/>
+            <column name="module" value="ADVISOR"/>
+            <column name="operation" value="CREATE_ADVISOR"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <insert tableName="n_permissions">
+            <column name="name" value="UPDATE_ADVISOR_CALL"/>
+            <column name="action" value="UPDATE"/>
+            <column name="module" value="ADVISOR"/>
+            <column name="operation" value="UPDATE_ADVISOR"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+    </changeSet>
+
+</databaseChangeLog>
+
