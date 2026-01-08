@@ -170,6 +170,50 @@ public class UserQueryServiceImpl implements UserQueryService, ApplicationContex
         }
     }
 
+    @Override
+    public List<UserAssignmentResponse> getUsersByOfficeAndRolesDownHierarchy(List<String> roles, String officeKey) {
+        try {
+            if (!ValidationUtils.isNonNull(roles) || roles.isEmpty()) {
+                return Collections.emptyList();
+            }
+
+            if (!ValidationUtils.isNonNull(officeKey)) {
+                return Collections.emptyList();
+            }
+
+            List<UserRoleMapping> roleMappings = userRoleMappingRepository.findByRoleIn(roles);
+            if (!ValidationUtils.isNonNull(roleMappings) || roleMappings.isEmpty()) {
+                return Collections.emptyList();
+            }
+
+            Set<String> usernames = roleMappings.stream()
+                    .map(UserRoleMapping::getUsername)
+                    .filter(ValidationUtils::isNonNull)
+                    .collect(Collectors.toSet());
+
+            if (usernames.isEmpty()) {
+                return Collections.emptyList();
+            }
+
+            // Get only child offices (down hierarchy), not parents
+            Set<String> allowedOfficeKeys = getOfficeHierarchyKeysDownOnly(officeKey);
+            return usernames.stream()
+                    .map(username -> {
+                        try {
+                            return buildUserAssignmentResponse(username, allowedOfficeKeys);
+                        } catch (Exception e) {
+                            return null;
+                        }
+                    })
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .sorted(Comparator.comparing(UserAssignmentResponse::getUsername))
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            return Collections.emptyList();
+        }
+    }
+
     private Set<String> getOfficeHierarchyKeys(String officeKey) {
         Set<String> officeKeys = new HashSet<>();
         
@@ -222,6 +266,41 @@ public class UserQueryServiceImpl implements UserQueryService, ApplicationContex
         } catch (Exception e) {
             // Return what we have so far (at least the current office)
             // This ensures the method doesn't fail completely if there's an error
+        }
+
+        return officeKeys;
+    }
+    
+    private Set<String> getOfficeHierarchyKeysDownOnly(String officeKey) {
+        Set<String> officeKeys = new HashSet<>();
+        
+        if (!ValidationUtils.isNonNull(officeKey)) {
+            return officeKeys;
+        }
+        
+        // Always include current office
+        officeKeys.add(officeKey);
+
+        try {
+            OfficeResponse currentOffice = officeReadService.getOfficeByKey(officeKey);
+            if (ValidationUtils.isNonNull(currentOffice) && 
+                ValidationUtils.isNonNull(currentOffice.getCode())) {
+
+                // Get all child offices (down the hierarchy only)
+                // This gets current office + all child offices using code prefix
+                List<OfficeResponse> childOffices = officeReadService
+                    .getOfficesByCodePrefix(currentOffice.getCode());
+                
+                childOffices.forEach(office -> {
+                    if (ValidationUtils.isNonNull(office.getKey())) {
+                        officeKeys.add(office.getKey());
+                    }
+                });
+                
+                // NOTE: We do NOT traverse up the hierarchy (no parent offices)
+            }
+        } catch (Exception e) {
+            // Return what we have so far (at least the current office)
         }
 
         return officeKeys;

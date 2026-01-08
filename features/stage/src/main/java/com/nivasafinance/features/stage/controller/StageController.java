@@ -46,22 +46,14 @@ public class StageController {
     @PostMapping("/assignable-users")
     @RequirePermission(permissionName = "READ_STAGE")
     public ResponseEntity<List<UserAssignmentResponse>> getAssignableUsersForStages(
-            @Valid @RequestBody StageKeysRequest request,
-            @RequestParam EntityType entityType,
-            @RequestParam UUID entityId) {
-        // Get entity's office to determine which users to show
-        String officeKey = entityOfficeKeyService.getOfficeKey(entityType, entityId);
-        if (!ValidationUtils.isNonNull(officeKey)) {
-            return ResponseEntity.ok(Collections.emptyList());
-        }
-        
-        List<UserAssignmentResponse> users = stageReadService.getAssignableUsersForStages(
-                request.getStageKeys(), officeKey);
+            @Valid @RequestBody StageKeysRequest request) {
+        List<UserAssignmentResponse> users = stageReadService.getAssignableUsersForStagesByCurrentUser(
+                request.getStageKeys());
         return ResponseEntity.ok(users != null ? users : Collections.emptyList());
     }
 
     /**
-     * Backward compatibility endpoint for getting assignable users for a single stage.
+     * Get assignable users for a single stage based on entity's office hierarchy.
      * GET /api/v1/stages/{stageKey}/assignable-users
      */
     @GetMapping("/{stageKey}/assignable-users")

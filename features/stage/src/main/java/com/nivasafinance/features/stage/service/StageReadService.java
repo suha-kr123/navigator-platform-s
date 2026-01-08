@@ -17,12 +17,19 @@ public interface StageReadService {
     Map<String, StageTemplateResponse> getStageTemplates(List<String> stageKeys);
     
     /**
-     * Get assignable users for stages based on provided office key.
+     * Get assignable users for stages based on provided office key (includes up and down hierarchy).
      * @param stageKeys List of stage keys
      * @param officeKey Office key to determine hierarchy
      * @return List of assignable users
      */
     List<UserAssignmentResponse> getAssignableUsersForStages(List<String> stageKeys, String officeKey);
+    
+    /**
+     * Get assignable users for stages based on current user's office (down hierarchy only).
+     * @param stageKeys List of stage keys
+     * @return List of assignable users
+     */
+    List<UserAssignmentResponse> getAssignableUsersForStagesByCurrentUser(List<String> stageKeys);
     
     List<StageFilterResponse> getAllActiveStages();
 }

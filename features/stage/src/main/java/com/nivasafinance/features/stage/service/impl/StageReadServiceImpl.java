@@ -1,5 +1,6 @@
 package com.nivasafinance.features.stage.service.impl;
 
+import com.nivasafinance.common.context.UserContext;
 import com.nivasafinance.common.exception.ResourceNotFoundException;
 import com.nivasafinance.common.utils.ValidationUtils;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
@@ -14,6 +15,9 @@ import com.nivasafinance.features.stage.repository.StageConfigRepositoryWrapper;
 import com.nivasafinance.features.stage.service.StageReadService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -25,11 +29,17 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 @Slf4j
-public class StageReadServiceImpl implements StageReadService {
+public class StageReadServiceImpl implements StageReadService, ApplicationContextAware {
 
     private final StageConfigRepositoryWrapper stageConfigRepositoryWrapper;
     private final CodeMasterService codeMasterService;
     private final UserQueryService userQueryService;
+    private ApplicationContext applicationContext;
+    
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        this.applicationContext = applicationContext;
+    }
 
     @Override
     public StageConfigResponse getStageByKey(String key) {
@@ -127,40 +137,149 @@ public class StageReadServiceImpl implements StageReadService {
             }
             
             // Collect all unique assignee roles from all stages
-            Set<String> allRoles = new HashSet<>();
-            for (String stageKey : processedStageKeys) {
-                try {
-                    StageConfigResponse stageConfig = getStageByKey(stageKey);
-                    if (stageConfig != null && !CollectionUtils.isEmpty(stageConfig.getAssigneeRoles())) {
-                        allRoles.addAll(stageConfig.getAssigneeRoles());
-                    }
-                } catch (Exception e) {
-                    // Skip invalid stage keys and continue processing others
-                    log.debug("Failed to get stage config for key: {}, error: {}", stageKey, e.getMessage());
-                    continue;
-                }
-            }
+            Set<String> allRoles = collectRolesFromStages(processedStageKeys);
             
             if (allRoles.isEmpty()) {
                 return Collections.emptyList();
             }
             
-            // Get users for all roles based on provided office key
+            // Get users for all roles based on provided office key (includes up and down hierarchy)
             List<UserAssignmentResponse> allUsers = userQueryService.getUsersByOfficeAndRoles(new ArrayList<>(allRoles), officeKey);
             
             // Deduplicate by username to avoid returning same user multiple times
-            Map<String, UserAssignmentResponse> uniqueUsers = allUsers.stream()
-                    .collect(Collectors.toMap(
-                            UserAssignmentResponse::getUsername,
-                            user -> user,
-                            (existing, replacement) -> existing
-                    ));
-            
-            return new ArrayList<>(uniqueUsers.values());
+            return deduplicateUsers(allUsers);
         } catch (Exception e) {
             log.error("Unexpected error in getAssignableUsersForStages: {}", e.getMessage(), e);
             return Collections.emptyList();
         }
+    }
+
+    @Override
+    public List<UserAssignmentResponse> getAssignableUsersForStagesByCurrentUser(List<String> stageKeys) {
+        try {
+            // Get current user's office
+            String currentUserOfficeKey = getCurrentUserOfficeKey();
+            if (!ValidationUtils.isNonNull(currentUserOfficeKey)) {
+                return Collections.emptyList();
+            }
+            
+            List<String> processedStageKeys = processStageKeys(stageKeys);
+            if (processedStageKeys.isEmpty()) {
+                return Collections.emptyList();
+            }
+            
+            // Collect all unique assignee roles from all stages
+            Set<String> allRoles = collectRolesFromStages(processedStageKeys);
+            
+            if (allRoles.isEmpty()) {
+                return Collections.emptyList();
+            }
+            
+            // Get users for all roles based on current user's office (down hierarchy only)
+            List<UserAssignmentResponse> allUsers = userQueryService.getUsersByOfficeAndRolesDownHierarchy(
+                    new ArrayList<>(allRoles), currentUserOfficeKey);
+            
+            // Deduplicate by username
+            return deduplicateUsers(allUsers);
+        } catch (Exception e) {
+            log.error("Unexpected error in getAssignableUsersForStagesByCurrentUser: {}", e.getMessage(), e);
+            return Collections.emptyList();
+        }
+    }
+    
+    private String getCurrentUserOfficeKey() {
+        try {
+            String username = UserContext.getUsername();
+            if (!ValidationUtils.isNonNull(username)) {
+                return null;
+            }
+            
+            Object user = getUserByUsername(username);
+            if (user == null) {
+                return null;
+            }
+            
+            // Get user ID using reflection
+            java.lang.reflect.Method getId = user.getClass().getMethod("getId");
+            Long userId = (Long) getId.invoke(user);
+            
+            Optional<Object> staffOpt = findStaffByUserId(userId);
+            if (staffOpt.isEmpty()) {
+                return null;
+            }
+            
+            return getStaffOfficeKey(staffOpt.get());
+        } catch (Exception e) {
+            log.warn("Failed to get current user's office key: {}", e.getMessage());
+            return null;
+        }
+    }
+    
+    private Object getUserByUsername(String username) {
+        try {
+            Object userReadService = applicationContext.getBean("userReadServiceImpl");
+            java.lang.reflect.Method getUserByUsername = userReadService.getClass()
+                    .getMethod("getUserByUsername", String.class);
+            return getUserByUsername.invoke(userReadService, username);
+        } catch (Exception e) {
+            log.warn("Failed to get user by username: {}", e.getMessage());
+            return null;
+        }
+    }
+    
+    @SuppressWarnings("unchecked")
+    private Optional<Object> findStaffByUserId(Long userId) {
+        try {
+            Object staffRepository = applicationContext.getBean("staffRepository");
+            java.lang.reflect.Method findByUserId = staffRepository.getClass().getMethod("findByUserId", Long.class);
+            Object result = findByUserId.invoke(staffRepository, userId);
+            if (result instanceof Optional) {
+                return (Optional<Object>) result;
+            }
+            return Optional.empty();
+        } catch (Exception e) {
+            return Optional.empty();
+        }
+    }
+    
+    private String getStaffOfficeKey(Object staff) {
+        try {
+            java.lang.reflect.Method getOfficeKey = staff.getClass().getMethod("getOfficeKey");
+            return (String) getOfficeKey.invoke(staff);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
+    private Set<String> collectRolesFromStages(List<String> stageKeys) {
+        Set<String> allRoles = new HashSet<>();
+        for (String stageKey : stageKeys) {
+            try {
+                StageConfigResponse stageConfig = getStageByKey(stageKey);
+                if (stageConfig != null && !CollectionUtils.isEmpty(stageConfig.getAssigneeRoles())) {
+                    allRoles.addAll(stageConfig.getAssigneeRoles());
+                }
+            } catch (Exception e) {
+                log.debug("Failed to get stage config for key: {}, error: {}", stageKey, e.getMessage());
+                continue;
+            }
+        }
+        return allRoles;
+    }
+    
+    private List<UserAssignmentResponse> deduplicateUsers(List<UserAssignmentResponse> users) {
+        if (users == null || users.isEmpty()) {
+            return Collections.emptyList();
+        }
+        
+        Map<String, UserAssignmentResponse> uniqueUsers = users.stream()
+                .collect(Collectors.toMap(
+                        UserAssignmentResponse::getUsername,
+                        user -> user,
+                        (existing, replacement) -> existing
+                ));
+        
+        return new ArrayList<>(uniqueUsers.values());
     }
 
     /**
