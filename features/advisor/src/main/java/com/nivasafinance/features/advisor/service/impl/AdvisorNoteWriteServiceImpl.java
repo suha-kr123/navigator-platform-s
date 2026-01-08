@@ -1,5 +1,6 @@
 package com.nivasafinance.features.advisor.service.impl;
 
+import com.nivasafinance.common.context.UserContext;
 import com.nivasafinance.common.events.BusinessEvent;
 import com.nivasafinance.common.events.SystemEvent;
 import com.nivasafinance.common.events.payload.AdvisorNoteCreationEventPayload;
@@ -133,8 +134,9 @@ public class AdvisorNoteWriteServiceImpl implements AdvisorNoteWriteService {
                 .noteIdentifier(notesResponse.getIdentifier())
                 .build();
 
+        String username = UserContext.getUsername();
         applicationEventPublisher.publishEvent(
-                new SystemEvent<>(BusinessEvent.ADVISOR_NOTE_CREATED.toString(), payload)
+                new SystemEvent<>(BusinessEvent.ADVISOR_NOTE_CREATED.toString(), payload, username)
         );
     }
 
@@ -145,8 +147,9 @@ public class AdvisorNoteWriteServiceImpl implements AdvisorNoteWriteService {
                 .noteIdentifier(noteIdentifier)
                 .build();
 
+        String username = UserContext.getUsername();
         applicationEventPublisher.publishEvent(
-                new SystemEvent<>(BusinessEvent.ADVISOR_NOTE_UPDATED.toString(), payload)
+                new SystemEvent<>(BusinessEvent.ADVISOR_NOTE_UPDATED.toString(), payload, username)
         );
     }
 
@@ -157,8 +160,9 @@ public class AdvisorNoteWriteServiceImpl implements AdvisorNoteWriteService {
                 .noteIdentifier(noteIdentifier)
                 .build();
 
+        String username = UserContext.getUsername();
         applicationEventPublisher.publishEvent(
-                new SystemEvent<>(BusinessEvent.ADVISOR_NOTE_DELETED.toString(), payload)
+                new SystemEvent<>(BusinessEvent.ADVISOR_NOTE_DELETED.toString(), payload, username)
         );
     }
 }

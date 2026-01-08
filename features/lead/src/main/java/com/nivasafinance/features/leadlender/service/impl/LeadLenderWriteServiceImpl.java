@@ -224,8 +224,9 @@ public class LeadLenderWriteServiceImpl implements LeadLenderWriteService {
                 .lenderIdentifier(leadLender.getLenderIdentifier())
                 .build();
 
+        String username = UserContext.getUsername();
         applicationEventPublisher.publishEvent(
-                new SystemEvent<>(BusinessEvent.LEAD_LENDER_CREATED.toString(), payload)
+                new SystemEvent<>(BusinessEvent.LEAD_LENDER_CREATED.toString(), payload, username)
         );
     }
 
@@ -236,8 +237,9 @@ public class LeadLenderWriteServiceImpl implements LeadLenderWriteService {
                 .lenderIdentifier(leadLender.getLenderIdentifier())
                 .build();
 
+        String username = UserContext.getUsername();
         applicationEventPublisher.publishEvent(
-                new SystemEvent<>(BusinessEvent.LEAD_LENDER_UPDATED.toString(), payload)
+                new SystemEvent<>(BusinessEvent.LEAD_LENDER_UPDATED.toString(), payload, username)
         );
     }
 
@@ -249,8 +251,9 @@ public class LeadLenderWriteServiceImpl implements LeadLenderWriteService {
                 .rejectionReason(rejectionReason)
                 .build();
 
+        String username = UserContext.getUsername();
         applicationEventPublisher.publishEvent(
-                new SystemEvent<>(BusinessEvent.LEAD_LENDER_REJECTED.toString(), payload)
+                new SystemEvent<>(BusinessEvent.LEAD_LENDER_REJECTED.toString(), payload, username)
         );
     }
 
@@ -261,8 +264,9 @@ public class LeadLenderWriteServiceImpl implements LeadLenderWriteService {
                 .lenderIdentifier(leadLender.getLenderIdentifier())
                 .build();
 
+        String username = UserContext.getUsername();
         applicationEventPublisher.publishEvent(
-                new SystemEvent<>(BusinessEvent.LEAD_LENDER_SUBMITTED.toString(), payload)
+                new SystemEvent<>(BusinessEvent.LEAD_LENDER_SUBMITTED.toString(), payload, username)
         );
     }
 

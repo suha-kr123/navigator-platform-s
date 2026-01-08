@@ -239,8 +239,9 @@ public class AdvisorCallWriteServiceImpl implements AdvisorCallWriteService {
                 .callLogIdentifier(callLogIdentifier)
                 .build();
 
+        String username = UserContext.getUsername();
         applicationEventPublisher.publishEvent(
-                new SystemEvent<>(BusinessEvent.ADVISOR_CALL_LOG_CREATED.toString(), payload)
+                new SystemEvent<>(BusinessEvent.ADVISOR_CALL_LOG_CREATED.toString(), payload, username)
         );
     }
 

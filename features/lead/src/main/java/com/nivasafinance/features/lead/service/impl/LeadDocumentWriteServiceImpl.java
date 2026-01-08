@@ -1,5 +1,6 @@
 package com.nivasafinance.features.lead.service.impl;
 
+import com.nivasafinance.common.context.UserContext;
 import com.nivasafinance.common.events.BusinessEvent;
 import com.nivasafinance.common.events.SystemEvent;
 import com.nivasafinance.common.events.payload.LeadDocumentCreationEventPayload;
@@ -213,8 +214,9 @@ public class LeadDocumentWriteServiceImpl implements LeadDocumentWriteService {
                 .documentIdentifier(documentResponse.getIdentifier())
                 .build();
 
+        String username = UserContext.getUsername();
         applicationEventPublisher.publishEvent(
-                new SystemEvent<>(BusinessEvent.LEAD_DOCUMENT_CREATED.toString(), payload)
+                new SystemEvent<>(BusinessEvent.LEAD_DOCUMENT_CREATED.toString(), payload, username)
         );
     }
 
@@ -225,8 +227,9 @@ public class LeadDocumentWriteServiceImpl implements LeadDocumentWriteService {
                 .documentIdentifier(documentIdentifier)
                 .build();
 
+        String username = UserContext.getUsername();
         applicationEventPublisher.publishEvent(
-                new SystemEvent<>(BusinessEvent.LEAD_DOCUMENT_UPDATED.toString(), payload)
+                new SystemEvent<>(BusinessEvent.LEAD_DOCUMENT_UPDATED.toString(), payload, username)
         );
     }
 
@@ -237,8 +240,9 @@ public class LeadDocumentWriteServiceImpl implements LeadDocumentWriteService {
                 .documentIdentifier(documentIdentifier)
                 .build();
 
+        String username = UserContext.getUsername();
         applicationEventPublisher.publishEvent(
-                new SystemEvent<>(BusinessEvent.LEAD_DOCUMENT_DELETED.toString(), payload)
+                new SystemEvent<>(BusinessEvent.LEAD_DOCUMENT_DELETED.toString(), payload, username)
         );
     }
 }

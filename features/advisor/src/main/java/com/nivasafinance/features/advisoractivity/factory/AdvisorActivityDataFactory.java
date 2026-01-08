@@ -18,40 +18,41 @@ import java.util.Map;
 public class AdvisorActivityDataFactory {
     private final AdvisorActivityWriteService writeService;
 
-    public <T> void recordEvent(String eventType, T payload) {
+    public <T> void recordEvent(String eventType, T payload, String username) {
         BusinessEvent event = BusinessEvent.valueOf(eventType);
+        String effectiveUsername = username != null ? username : UserContext.getUsername();
 
         switch (event) {
             case ADVISOR_CREATED -> {
-                CreateAdvisorActivityRequest request = createAdvisorCreatedActivityRequest((AdvisorCreationEventPayload) payload);
+                CreateAdvisorActivityRequest request = createAdvisorCreatedActivityRequest((AdvisorCreationEventPayload) payload, effectiveUsername);
                 writeService.createAdvisorActivity(request);
             }
             case ADVISOR_UPDATED -> {
-                CreateAdvisorActivityRequest request = createAdvisorUpdatedActivityRequest((AdvisorUpdateEventPayload) payload);
+                CreateAdvisorActivityRequest request = createAdvisorUpdatedActivityRequest((AdvisorUpdateEventPayload) payload, effectiveUsername);
                 writeService.createAdvisorActivity(request);
             }
             case ADVISOR_NOTE_CREATED -> {
-                CreateAdvisorActivityRequest request = createAdvisorNoteCreatedActivityRequest((AdvisorNoteCreationEventPayload) payload);
+                CreateAdvisorActivityRequest request = createAdvisorNoteCreatedActivityRequest((AdvisorNoteCreationEventPayload) payload, effectiveUsername);
                 writeService.createAdvisorActivity(request);
             }
             case ADVISOR_NOTE_UPDATED -> {
-                CreateAdvisorActivityRequest request = createAdvisorNoteUpdatedActivityRequest((AdvisorNoteUpdationEventPayload) payload);
+                CreateAdvisorActivityRequest request = createAdvisorNoteUpdatedActivityRequest((AdvisorNoteUpdationEventPayload) payload, effectiveUsername);
                 writeService.createAdvisorActivity(request);
             }
             case ADVISOR_NOTE_DELETED -> {
-                CreateAdvisorActivityRequest request = createAdvisorNoteDeletedActivityRequest((AdvisorNoteDeletionEventPayload) payload);
+                CreateAdvisorActivityRequest request = createAdvisorNoteDeletedActivityRequest((AdvisorNoteDeletionEventPayload) payload, effectiveUsername);
                 writeService.createAdvisorActivity(request);
             }
             case ADVISOR_CALL_LOG_CREATED -> {
-                CreateAdvisorActivityRequest request = createAdvisorCallLogCreatedActivityRequest((AdvisorCallLogCreationEventPayload) payload);
+                CreateAdvisorActivityRequest request = createAdvisorCallLogCreatedActivityRequest((AdvisorCallLogCreationEventPayload) payload, effectiveUsername);
                 writeService.createAdvisorActivity(request);
             }
             case ADVISOR_CALL_LOG_UPDATED -> {
-                CreateAdvisorActivityRequest request = createAdvisorCallLogUpdatedActivityRequest((AdvisorCallLogUpdateEventPayload) payload);
+                CreateAdvisorActivityRequest request = createAdvisorCallLogUpdatedActivityRequest((AdvisorCallLogUpdateEventPayload) payload, effectiveUsername);
                 writeService.createAdvisorActivity(request);
             }
             case ADVISOR_REJECTED, ADVISOR_DORMANT, ADVISOR_ACTIVE -> {
-                CreateAdvisorActivityRequest request = createAdvisorStatusChangeActivityRequest(event, (AdvisorStatusChangeEventPayload) payload);
+                CreateAdvisorActivityRequest request = createAdvisorStatusChangeActivityRequest(event, (AdvisorStatusChangeEventPayload) payload, effectiveUsername);
                 writeService.createAdvisorActivity(request);
             }
             default -> {
@@ -60,103 +61,103 @@ public class AdvisorActivityDataFactory {
         }
     }
 
-    private CreateAdvisorActivityRequest createAdvisorCreatedActivityRequest(AdvisorCreationEventPayload payload) {
+    private CreateAdvisorActivityRequest createAdvisorCreatedActivityRequest(AdvisorCreationEventPayload payload, String username) {
         return CreateAdvisorActivityRequest.builder()
                 .advisorId(payload.getId())
                 .resourceId(payload.getId())
-                .description("Advisor created by " + UserContext.getUsername())
+                .description("Advisor created by " + username)
                 .resource(ResourceEnum.ADVISOR)
                 .action(ResourceAction.CREATE)
                 .build();
     }
 
-    private CreateAdvisorActivityRequest createAdvisorUpdatedActivityRequest(AdvisorUpdateEventPayload payload) {
+    private CreateAdvisorActivityRequest createAdvisorUpdatedActivityRequest(AdvisorUpdateEventPayload payload, String username) {
         return CreateAdvisorActivityRequest.builder()
                 .advisorId(payload.getId())
                 .resourceId(payload.getId())
-                .description("Advisor updated by " + UserContext.getUsername())
+                .description("Advisor updated by " + username)
                 .resource(ResourceEnum.ADVISOR)
                 .action(ResourceAction.UPDATE)
                 .build();
     }
 
-    private CreateAdvisorActivityRequest createAdvisorNoteCreatedActivityRequest(AdvisorNoteCreationEventPayload payload) {
+    private CreateAdvisorActivityRequest createAdvisorNoteCreatedActivityRequest(AdvisorNoteCreationEventPayload payload, String username) {
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("noteIdentifier", payload.getNoteIdentifier().toString());
 
         return CreateAdvisorActivityRequest.builder()
                 .advisorId(payload.getAdvisorId())
                 .resourceId(payload.getNoteId())
-                .description("Note created by " + UserContext.getUsername())
+                .description("Note created by " + username)
                 .resource(ResourceEnum.NOTES)
                 .action(ResourceAction.CREATE)
                 .metadata(metadata)
                 .build();
     }
 
-    private CreateAdvisorActivityRequest createAdvisorNoteUpdatedActivityRequest(AdvisorNoteUpdationEventPayload payload) {
+    private CreateAdvisorActivityRequest createAdvisorNoteUpdatedActivityRequest(AdvisorNoteUpdationEventPayload payload, String username) {
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("noteIdentifier", payload.getNoteIdentifier().toString());
 
         return CreateAdvisorActivityRequest.builder()
                 .advisorId(payload.getAdvisorId())
                 .resourceId(payload.getNoteId())
-                .description("Note updated by " + UserContext.getUsername())
+                .description("Note updated by " + username)
                 .resource(ResourceEnum.NOTES)
                 .action(ResourceAction.UPDATE)
                 .metadata(metadata)
                 .build();
     }
 
-    private CreateAdvisorActivityRequest createAdvisorNoteDeletedActivityRequest(AdvisorNoteDeletionEventPayload payload) {
+    private CreateAdvisorActivityRequest createAdvisorNoteDeletedActivityRequest(AdvisorNoteDeletionEventPayload payload, String username) {
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("noteIdentifier", payload.getNoteIdentifier().toString());
 
         return CreateAdvisorActivityRequest.builder()
                 .advisorId(payload.getAdvisorId())
                 .resourceId(payload.getNoteId())
-                .description("Note deleted by " + UserContext.getUsername())
+                .description("Note deleted by " + username)
                 .resource(ResourceEnum.NOTES)
                 .action(ResourceAction.DELETE)
                 .metadata(metadata)
                 .build();
     }
 
-    private CreateAdvisorActivityRequest createAdvisorCallLogCreatedActivityRequest(AdvisorCallLogCreationEventPayload payload) {
+    private CreateAdvisorActivityRequest createAdvisorCallLogCreatedActivityRequest(AdvisorCallLogCreationEventPayload payload, String username) {
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("callLogIdentifier", payload.getCallLogIdentifier().toString());
 
         return CreateAdvisorActivityRequest.builder()
                 .advisorId(payload.getAdvisorId())
                 .resourceId(payload.getCallLogId())
-                .description("Call log created by " + UserContext.getUsername())
+                .description("Call log created by " + username)
                 .resource(ResourceEnum.CALL_LOG)
                 .action(ResourceAction.CREATE)
                 .metadata(metadata)
                 .build();
     }
 
-    private CreateAdvisorActivityRequest createAdvisorCallLogUpdatedActivityRequest(AdvisorCallLogUpdateEventPayload payload){
+    private CreateAdvisorActivityRequest createAdvisorCallLogUpdatedActivityRequest(AdvisorCallLogUpdateEventPayload payload, String username){
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("callLogIdentifier", payload.getCallLogIdentifier().toString());
 
         return CreateAdvisorActivityRequest.builder()
                 .advisorId(payload.getAdvisorId())
                 .resourceId(payload.getCallLogId())
-                .description("Call log updated by " + UserContext.getUsername())
+                .description("Call log updated by " + username)
                 .resource(ResourceEnum.CALL_LOG)
                 .action(ResourceAction.UPDATE)
                 .metadata(metadata)
                 .build();
     }
 
-    private CreateAdvisorActivityRequest createAdvisorStatusChangeActivityRequest(BusinessEvent event, AdvisorStatusChangeEventPayload payload) {
+    private CreateAdvisorActivityRequest createAdvisorStatusChangeActivityRequest(BusinessEvent event, AdvisorStatusChangeEventPayload payload, String username) {
         Map<String, Object> metadata = new HashMap<>();
         if (payload.getReason() != null) {
             metadata.put("reason", payload.getReason());
         }
 
-        String description = getStatusChangeDescription(event);
+        String description = getStatusChangeDescription(event, username);
 
         return CreateAdvisorActivityRequest.builder()
                 .advisorId(payload.getId())
@@ -168,14 +169,14 @@ public class AdvisorActivityDataFactory {
                 .build();
     }
 
-    private String getStatusChangeDescription(BusinessEvent event) {
+    private String getStatusChangeDescription(BusinessEvent event, String username) {
         String action = switch (event) {
             case ADVISOR_REJECTED -> "rejected";
             case ADVISOR_DORMANT -> "put on dormant";
             case ADVISOR_ACTIVE -> "activated";
             default -> "status changed";
         };
-        return "Advisor " + action + " by " + UserContext.getUsername();
+        return "Advisor " + action + " by " + username;
     }
 }
 

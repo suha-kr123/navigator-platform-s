@@ -21,7 +21,7 @@ public class AdvisorActivityListener {
     public void handleEvent(SystemEvent<?> event) {
         String eventType = event.getEventType();
         log.info("AdvisorActivityListener -> Received system event: {}", eventType);
-        advisorActivityDataFactory.recordEvent(eventType, event.getPayload());
+        advisorActivityDataFactory.recordEvent(eventType, event.getPayload(), event.getUsername());
     }
 }
 

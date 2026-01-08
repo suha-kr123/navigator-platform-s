@@ -1,5 +1,6 @@
 package com.nivasafinance.features.advisor.service.impl;
 
+import com.nivasafinance.common.context.UserContext;
 import com.nivasafinance.common.events.BusinessEvent;
 import com.nivasafinance.common.events.SystemEvent;
 import com.nivasafinance.common.events.payload.AdvisorUpdateEventPayload;
@@ -169,8 +170,9 @@ public class AdvisorBankDetailsWriteServiceImpl implements AdvisorBankDetailsWri
                 .mobileNumber(mobileNumber)
                 .build();
 
+        String username = UserContext.getUsername();
         applicationEventPublisher.publishEvent(
-                new SystemEvent<>(BusinessEvent.ADVISOR_UPDATED.toString(), payload)
+                new SystemEvent<>(BusinessEvent.ADVISOR_UPDATED.toString(), payload, username)
         );
     }
 }

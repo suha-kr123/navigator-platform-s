@@ -1,7 +1,6 @@
 package com.nivasafinance.common.events;
 
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 
 /**
@@ -11,7 +10,6 @@ import lombok.ToString;
  */
 @Getter
 @ToString
-@RequiredArgsConstructor
 public class SystemEvent<T> {
 
     /**
@@ -23,6 +21,22 @@ public class SystemEvent<T> {
      * Event payload containing business data needed by listeners.
      */
     private final T payload;
+
+    /**
+     * Username of the user who triggered the event.
+     * Captured at event creation time to preserve context for async handlers.
+     */
+    private final String username;
+
+    public SystemEvent(String eventType, T payload) {
+        this(eventType, payload, null);
+    }
+
+    public SystemEvent(String eventType, T payload, String username) {
+        this.eventType = eventType;
+        this.payload = payload;
+        this.username = username;
+    }
 }
 
 

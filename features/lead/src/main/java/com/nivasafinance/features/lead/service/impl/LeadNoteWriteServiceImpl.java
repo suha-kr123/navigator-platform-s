@@ -1,5 +1,6 @@
 package com.nivasafinance.features.lead.service.impl;
 
+import com.nivasafinance.common.context.UserContext;
 import com.nivasafinance.common.events.BusinessEvent;
 import com.nivasafinance.common.events.SystemEvent;
 import com.nivasafinance.common.events.payload.LeadNoteCreationEventPayload;
@@ -133,8 +134,9 @@ public class LeadNoteWriteServiceImpl implements LeadNoteWriteService {
                 .noteIdentifier(notesResponse.getIdentifier())
                 .build();
 
+        String username = UserContext.getUsername();
         applicationEventPublisher.publishEvent(
-                new SystemEvent<>(BusinessEvent.LEAD_NOTE_CREATED.toString(), payload)
+                new SystemEvent<>(BusinessEvent.LEAD_NOTE_CREATED.toString(), payload, username)
         );
     }
 
@@ -145,8 +147,9 @@ public class LeadNoteWriteServiceImpl implements LeadNoteWriteService {
                 .noteIdentifier(noteIdentifier)
                 .build();
 
+        String username = UserContext.getUsername();
         applicationEventPublisher.publishEvent(
-                new SystemEvent<>(BusinessEvent.LEAD_NOTE_UPDATED.toString(), payload)
+                new SystemEvent<>(BusinessEvent.LEAD_NOTE_UPDATED.toString(), payload, username)
         );
     }
 
@@ -157,8 +160,9 @@ public class LeadNoteWriteServiceImpl implements LeadNoteWriteService {
                 .noteIdentifier(noteIdentifier)
                 .build();
 
+        String username = UserContext.getUsername();
         applicationEventPublisher.publishEvent(
-                new SystemEvent<>(BusinessEvent.LEAD_NOTE_DELETED.toString(), payload)
+                new SystemEvent<>(BusinessEvent.LEAD_NOTE_DELETED.toString(), payload, username)
         );
     }
 }

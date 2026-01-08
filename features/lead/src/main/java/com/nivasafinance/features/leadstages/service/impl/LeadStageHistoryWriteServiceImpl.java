@@ -168,8 +168,9 @@ public class LeadStageHistoryWriteServiceImpl implements LeadStageHistoryWriteSe
                 .remarks(request.getRemarks())
                 .build();
         
+        String username = UserContext.getUsername();
         publishEventAfterCommit(
-                new SystemEvent<>(BusinessEvent.STAGE_TRANSITIONED.toString(), payload)
+                new SystemEvent<>(BusinessEvent.STAGE_TRANSITIONED.toString(), payload, username)
         );
 
         return savedHistory;

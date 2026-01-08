@@ -267,8 +267,9 @@ public class LeadCallWriteServiceImpl implements LeadCallWriteService {
                 .callLogIdentifier(callLogIdentifier)
                 .build();
 
+        String username = UserContext.getUsername();
         applicationEventPublisher.publishEvent(
-                new SystemEvent<>(BusinessEvent.LEAD_CALL_LOG_CREATED.toString(), payload)
+                new SystemEvent<>(BusinessEvent.LEAD_CALL_LOG_CREATED.toString(), payload, username)
         );
     }
 
@@ -279,8 +280,9 @@ public class LeadCallWriteServiceImpl implements LeadCallWriteService {
                 .callLogIdentifier(callLogIdentifier)
                 .build();
 
+        String username = UserContext.getUsername();
         applicationEventPublisher.publishEvent(
-                new SystemEvent<>(BusinessEvent.LEAD_CALL_LOG_UPDATED.toString(), payload)
+                new SystemEvent<>(BusinessEvent.LEAD_CALL_LOG_UPDATED.toString(), payload, username)
         );
     }
 }

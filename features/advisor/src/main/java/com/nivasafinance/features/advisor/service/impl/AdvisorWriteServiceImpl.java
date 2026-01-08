@@ -124,8 +124,9 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
                 .mobileNumber(mobileNumber)
                 .build();
 
+        String username = UserContext.getUsername();
         applicationEventPublisher.publishEvent(
-                new SystemEvent<>(BusinessEvent.ADVISOR_CREATED.toString(), payload)
+                new SystemEvent<>(BusinessEvent.ADVISOR_CREATED.toString(), payload, username)
         );
 
         return savedAdvisor.getIdentifier();
@@ -192,8 +193,9 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
                 .mobileNumber(mobileNumber)
                 .build();
 
+        String username = UserContext.getUsername();
         applicationEventPublisher.publishEvent(
-                new SystemEvent<>(BusinessEvent.ADVISOR_UPDATED.toString(), payload)
+                new SystemEvent<>(BusinessEvent.ADVISOR_UPDATED.toString(), payload, username)
         );
     }
 
@@ -446,8 +448,9 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
                 .reason(reason)
                 .build();
 
+        String username = UserContext.getUsername();
         applicationEventPublisher.publishEvent(
-                new SystemEvent<>(event.toString(), payload)
+                new SystemEvent<>(event.toString(), payload, username)
         );
     }
 

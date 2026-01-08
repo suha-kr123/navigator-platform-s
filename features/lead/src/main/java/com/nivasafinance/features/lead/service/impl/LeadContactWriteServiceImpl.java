@@ -1,5 +1,6 @@
 package com.nivasafinance.features.lead.service.impl;
 
+import com.nivasafinance.common.context.UserContext;
 import com.nivasafinance.common.dto.AddressRequest;
 import com.nivasafinance.common.dto.IdentifierRequest;
 import com.nivasafinance.common.events.BusinessEvent;
@@ -445,8 +446,9 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
                 .isPropertyOwner(contact.getIsPropertyOwner())
                 .build();
 
+        String username = UserContext.getUsername();
         applicationEventPublisher.publishEvent(
-                new SystemEvent<>(BusinessEvent.LEAD_CONTACT_CREATED.toString(), payload)
+                new SystemEvent<>(BusinessEvent.LEAD_CONTACT_CREATED.toString(), payload, username)
         );
     }
 
@@ -460,8 +462,9 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
                 .isPropertyOwner(contact.getIsPropertyOwner())
                 .build();
 
+        String username = UserContext.getUsername();
         applicationEventPublisher.publishEvent(
-                new SystemEvent<>(BusinessEvent.LEAD_CONTACT_UPDATED.toString(), payload)
+                new SystemEvent<>(BusinessEvent.LEAD_CONTACT_UPDATED.toString(), payload, username)
         );
     }
 
@@ -475,8 +478,9 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
                 .isPropertyOwner(contact.getIsPropertyOwner())
                 .build();
 
+        String username = UserContext.getUsername();
         applicationEventPublisher.publishEvent(
-                new SystemEvent<>(BusinessEvent.LEAD_CONTACT_DELETED.toString(), payload)
+                new SystemEvent<>(BusinessEvent.LEAD_CONTACT_DELETED.toString(), payload, username)
         );
     }
 

@@ -18,80 +18,81 @@ import java.util.Map;
 public class LeadActivityDataFactory {
     private final LeadActivityWriteService writeService;
 
-    public <T> void recordEvent(String eventType, T payload ){
+    public <T> void recordEvent(String eventType, T payload, String username) {
         BusinessEvent event = BusinessEvent.valueOf(eventType);
+        String effectiveUsername = username != null ? username : UserContext.getUsername();
 
         switch (event){
             case LEAD_CREATED -> {
-                CreateLeadActivityRequest request = createLeadCreatedActivityRequest((LeadCreationEventPayload) payload);
+                CreateLeadActivityRequest request = createLeadCreatedActivityRequest((LeadCreationEventPayload) payload, effectiveUsername);
                 writeService.createLeadActivity(request);
             }
             case LEAD_UPDATED -> {
-                CreateLeadActivityRequest request = createLeadUpdatedActivityRequest((LeadUpdateEventPayload) payload);
+                CreateLeadActivityRequest request = createLeadUpdatedActivityRequest((LeadUpdateEventPayload) payload, effectiveUsername);
                 writeService.createLeadActivity(request);
             }
             case LEAD_NOTE_CREATED -> {
-                CreateLeadActivityRequest request = createLeadNoteCreatedActivityRequest((LeadNoteCreationEventPayload) payload);
+                CreateLeadActivityRequest request = createLeadNoteCreatedActivityRequest((LeadNoteCreationEventPayload) payload, effectiveUsername);
                 writeService.createLeadActivity(request);
             }
             case LEAD_NOTE_UPDATED -> {
-                CreateLeadActivityRequest request = createLeadNoteUpdatedActivityRequest((LeadNoteUpdationEventPayload) payload);
+                CreateLeadActivityRequest request = createLeadNoteUpdatedActivityRequest((LeadNoteUpdationEventPayload) payload, effectiveUsername);
                 writeService.createLeadActivity(request);
             }
             case LEAD_NOTE_DELETED -> {
-                CreateLeadActivityRequest request = createLeadNoteDeletedActivityRequest((LeadNoteDeletionEventPayload) payload);
+                CreateLeadActivityRequest request = createLeadNoteDeletedActivityRequest((LeadNoteDeletionEventPayload) payload, effectiveUsername);
                 writeService.createLeadActivity(request);
             }
             case LEAD_DOCUMENT_CREATED -> {
-                CreateLeadActivityRequest request = createLeadDocumentCreatedActivityRequest((LeadDocumentCreationEventPayload) payload);
+                CreateLeadActivityRequest request = createLeadDocumentCreatedActivityRequest((LeadDocumentCreationEventPayload) payload, effectiveUsername);
                 writeService.createLeadActivity(request);
             }
             case LEAD_DOCUMENT_UPDATED -> {
-                CreateLeadActivityRequest request = createLeadDocumentUpdatedActivityRequest((LeadDocumentUpdationEventPayload) payload);
+                CreateLeadActivityRequest request = createLeadDocumentUpdatedActivityRequest((LeadDocumentUpdationEventPayload) payload, effectiveUsername);
                 writeService.createLeadActivity(request);
             }
             case LEAD_DOCUMENT_DELETED -> {
-                CreateLeadActivityRequest request = createLeadDocumentDeletedActivityRequest((LeadDocumentDeletionEventPayload) payload);
+                CreateLeadActivityRequest request = createLeadDocumentDeletedActivityRequest((LeadDocumentDeletionEventPayload) payload, effectiveUsername);
                 writeService.createLeadActivity(request);
             }
             case LEAD_CONTACT_CREATED -> {
-                CreateLeadActivityRequest request = createLeadContactCreatedActivityRequest((LeadContactCreationEventPayload) payload);
+                CreateLeadActivityRequest request = createLeadContactCreatedActivityRequest((LeadContactCreationEventPayload) payload, effectiveUsername);
                 writeService.createLeadActivity(request);
             }
             case LEAD_CONTACT_UPDATED -> {
-                CreateLeadActivityRequest request = createLeadContactUpdatedActivityRequest((LeadContactUpdationEventPayload) payload);
+                CreateLeadActivityRequest request = createLeadContactUpdatedActivityRequest((LeadContactUpdationEventPayload) payload, effectiveUsername);
                 writeService.createLeadActivity(request);
             }
             case LEAD_CONTACT_DELETED -> {
-                CreateLeadActivityRequest request = createLeadContactDeletedActivityRequest((LeadContactDeletionEventPayload) payload);
+                CreateLeadActivityRequest request = createLeadContactDeletedActivityRequest((LeadContactDeletionEventPayload) payload, effectiveUsername);
                 writeService.createLeadActivity(request);
             }
             case LEAD_CALL_LOG_CREATED -> {
-                CreateLeadActivityRequest request = createLeadCallLogCreatedActivityRequest((LeadCallLogCreationEventPayload) payload);
+                CreateLeadActivityRequest request = createLeadCallLogCreatedActivityRequest((LeadCallLogCreationEventPayload) payload, effectiveUsername);
                 writeService.createLeadActivity(request);
             }
             case LEAD_CALL_LOG_UPDATED -> {
-                CreateLeadActivityRequest request = createLeadCallLogUpdatedActivityRequest((LeadCallLogUpdateEventPayload) payload);
+                CreateLeadActivityRequest request = createLeadCallLogUpdatedActivityRequest((LeadCallLogUpdateEventPayload) payload, effectiveUsername);
                 writeService.createLeadActivity(request);
             }
             case LEAD_LENDER_CREATED -> {
-                CreateLeadActivityRequest request = createLeadLenderCreatedActivityRequest((LeadLenderCreationEventPayload) payload);
+                CreateLeadActivityRequest request = createLeadLenderCreatedActivityRequest((LeadLenderCreationEventPayload) payload, effectiveUsername);
                 writeService.createLeadActivity(request);
             }
             case LEAD_LENDER_UPDATED -> {
-                CreateLeadActivityRequest request = createLeadLenderUpdatedActivityRequest((LeadLenderUpdationEventPayload) payload);
+                CreateLeadActivityRequest request = createLeadLenderUpdatedActivityRequest((LeadLenderUpdationEventPayload) payload, effectiveUsername);
                 writeService.createLeadActivity(request);
             }
             case LEAD_LENDER_REJECTED -> {
-                CreateLeadActivityRequest request = createLeadLenderRejectedActivityRequest((LeadLenderRejectionEventPayload) payload);
+                CreateLeadActivityRequest request = createLeadLenderRejectedActivityRequest((LeadLenderRejectionEventPayload) payload, effectiveUsername);
                 writeService.createLeadActivity(request);
             }
             case LEAD_LENDER_SUBMITTED -> {
-                CreateLeadActivityRequest request = createLeadLenderSubmittedActivityRequest((LeadLenderSubmissionEventPayload) payload);
+                CreateLeadActivityRequest request = createLeadLenderSubmittedActivityRequest((LeadLenderSubmissionEventPayload) payload, effectiveUsername);
                 writeService.createLeadActivity(request);
             }
             case LEAD_REJECTED, LEAD_REJECTION_UNDO, LEAD_WITHDRAWN, LEAD_ON_HOLD, LEAD_RESUMED, LEAD_COMPLETED, LEAD_DROPOFF -> {
-                CreateLeadActivityRequest request = createLeadStatusChangeActivityRequest(event, (LeadStatusChangeEventPayload) payload);
+                CreateLeadActivityRequest request = createLeadStatusChangeActivityRequest(event, (LeadStatusChangeEventPayload) payload, effectiveUsername);
                 writeService.createLeadActivity(request);
             }
             default ->{
@@ -101,111 +102,111 @@ public class LeadActivityDataFactory {
 
     }
 
-    private CreateLeadActivityRequest createLeadCreatedActivityRequest(LeadCreationEventPayload payload){
+    private CreateLeadActivityRequest createLeadCreatedActivityRequest(LeadCreationEventPayload payload, String username){
         return CreateLeadActivityRequest.builder()
                 .leadId(payload.getId())
                 .resourceId(payload.getId())
-                .description("Lead created by " + UserContext.getUsername())
+                .description("Lead created by " + username)
                 .resource(ResourceEnum.LEAD)
                 .action(ResourceAction.CREATE)
                 .build();
     }
 
-    private CreateLeadActivityRequest createLeadUpdatedActivityRequest(LeadUpdateEventPayload payload){
+    private CreateLeadActivityRequest createLeadUpdatedActivityRequest(LeadUpdateEventPayload payload, String username){
         return CreateLeadActivityRequest.builder()
                 .leadId(payload.getLeadId())
                 .resourceId(payload.getLeadId())
-                .description("Lead updated by " + UserContext.getUsername())
+                .description("Lead updated by " + username)
                 .resource(ResourceEnum.LEAD)
                 .action(ResourceAction.UPDATE)
                 .build();
     }
 
-    private CreateLeadActivityRequest createLeadNoteCreatedActivityRequest(LeadNoteCreationEventPayload payload){
+    private CreateLeadActivityRequest createLeadNoteCreatedActivityRequest(LeadNoteCreationEventPayload payload, String username){
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("noteIdentifier", payload.getNoteIdentifier().toString());
 
         return CreateLeadActivityRequest.builder()
                 .leadId(payload.getLeadId())
                 .resourceId(payload.getNoteId())
-                .description("Note created by " + UserContext.getUsername())
+                .description("Note created by " + username)
                 .resource(ResourceEnum.NOTES)
                 .action(ResourceAction.CREATE)
                 .metadata(metadata)
                 .build();
     }
 
-    private CreateLeadActivityRequest createLeadNoteUpdatedActivityRequest(LeadNoteUpdationEventPayload payload){
+    private CreateLeadActivityRequest createLeadNoteUpdatedActivityRequest(LeadNoteUpdationEventPayload payload, String username){
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("noteIdentifier", payload.getNoteIdentifier().toString());
 
         return CreateLeadActivityRequest.builder()
                 .leadId(payload.getLeadId())
                 .resourceId(payload.getNoteId())
-                .description("Note updated by " + UserContext.getUsername())
+                .description("Note updated by " + username)
                 .resource(ResourceEnum.NOTES)
                 .action(ResourceAction.UPDATE)
                 .metadata(metadata)
                 .build();
     }
 
-    private CreateLeadActivityRequest createLeadNoteDeletedActivityRequest(LeadNoteDeletionEventPayload payload){
+    private CreateLeadActivityRequest createLeadNoteDeletedActivityRequest(LeadNoteDeletionEventPayload payload, String username){
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("noteIdentifier", payload.getNoteIdentifier().toString());
 
         return CreateLeadActivityRequest.builder()
                 .leadId(payload.getLeadId())
                 .resourceId(payload.getNoteId())
-                .description("Note deleted by " + UserContext.getUsername())
+                .description("Note deleted by " + username)
                 .resource(ResourceEnum.NOTES)
                 .action(ResourceAction.DELETE)
                 .metadata(metadata)
                 .build();
     }
 
-    private CreateLeadActivityRequest createLeadDocumentCreatedActivityRequest(LeadDocumentCreationEventPayload payload){
+    private CreateLeadActivityRequest createLeadDocumentCreatedActivityRequest(LeadDocumentCreationEventPayload payload, String username){
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("documentIdentifier", payload.getDocumentIdentifier().toString());
 
         return CreateLeadActivityRequest.builder()
                 .leadId(payload.getLeadId())
                 .resourceId(payload.getDocumentId())
-                .description("Document created by " + UserContext.getUsername())
+                .description("Document created by " + username)
                 .resource(ResourceEnum.DOCUMENTS)
                 .action(ResourceAction.CREATE)
                 .metadata(metadata)
                 .build();
     }
 
-    private CreateLeadActivityRequest createLeadDocumentUpdatedActivityRequest(LeadDocumentUpdationEventPayload payload){
+    private CreateLeadActivityRequest createLeadDocumentUpdatedActivityRequest(LeadDocumentUpdationEventPayload payload, String username){
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("documentIdentifier", payload.getDocumentIdentifier().toString());
 
         return CreateLeadActivityRequest.builder()
                 .leadId(payload.getLeadId())
                 .resourceId(payload.getDocumentId())
-                .description("Document updated by " + UserContext.getUsername())
+                .description("Document updated by " + username)
                 .resource(ResourceEnum.DOCUMENTS)
                 .action(ResourceAction.UPDATE)
                 .metadata(metadata)
                 .build();
     }
 
-    private CreateLeadActivityRequest createLeadDocumentDeletedActivityRequest(LeadDocumentDeletionEventPayload payload){
+    private CreateLeadActivityRequest createLeadDocumentDeletedActivityRequest(LeadDocumentDeletionEventPayload payload, String username){
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("documentIdentifier", payload.getDocumentIdentifier().toString());
 
         return CreateLeadActivityRequest.builder()
                 .leadId(payload.getLeadId())
                 .resourceId(payload.getDocumentId())
-                .description("Document deleted by " + UserContext.getUsername())
+                .description("Document deleted by " + username)
                 .resource(ResourceEnum.DOCUMENTS)
                 .action(ResourceAction.DELETE)
                 .metadata(metadata)
                 .build();
     }
 
-    private CreateLeadActivityRequest createLeadContactCreatedActivityRequest(LeadContactCreationEventPayload payload){
+    private CreateLeadActivityRequest createLeadContactCreatedActivityRequest(LeadContactCreationEventPayload payload, String username){
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("contactIdentifier", payload.getContactIdentifier().toString());
         metadata.put("contactType", payload.getContactType());
@@ -215,14 +216,14 @@ public class LeadActivityDataFactory {
         return CreateLeadActivityRequest.builder()
                 .leadId(payload.getLeadId())
                 .resourceId(payload.getContactId())
-                .description("Contact created by " + UserContext.getUsername())
+                .description("Contact created by " + username)
                 .resource(ResourceEnum.CONTACT)
                 .action(ResourceAction.CREATE)
                 .metadata(metadata)
                 .build();
     }
 
-    private CreateLeadActivityRequest createLeadContactUpdatedActivityRequest(LeadContactUpdationEventPayload payload){
+    private CreateLeadActivityRequest createLeadContactUpdatedActivityRequest(LeadContactUpdationEventPayload payload, String username){
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("contactIdentifier", payload.getContactIdentifier().toString());
         metadata.put("contactType", payload.getContactType());
@@ -232,14 +233,14 @@ public class LeadActivityDataFactory {
         return CreateLeadActivityRequest.builder()
                 .leadId(payload.getLeadId())
                 .resourceId(payload.getContactId())
-                .description("Contact updated by " + UserContext.getUsername())
+                .description("Contact updated by " + username)
                 .resource(ResourceEnum.CONTACT)
                 .action(ResourceAction.UPDATE)
                 .metadata(metadata)
                 .build();
     }
 
-    private CreateLeadActivityRequest createLeadContactDeletedActivityRequest(LeadContactDeletionEventPayload payload){
+    private CreateLeadActivityRequest createLeadContactDeletedActivityRequest(LeadContactDeletionEventPayload payload, String username){
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("contactIdentifier", payload.getContactIdentifier().toString());
         metadata.put("contactType", payload.getContactType());
@@ -249,48 +250,48 @@ public class LeadActivityDataFactory {
         return CreateLeadActivityRequest.builder()
                 .leadId(payload.getLeadId())
                 .resourceId(payload.getContactId())
-                .description("Contact deleted by " + UserContext.getUsername())
+                .description("Contact deleted by " + username)
                 .resource(ResourceEnum.CONTACT)
                 .action(ResourceAction.DELETE)
                 .metadata(metadata)
                 .build();
     }
 
-    private CreateLeadActivityRequest createLeadCallLogCreatedActivityRequest(LeadCallLogCreationEventPayload payload){
+    private CreateLeadActivityRequest createLeadCallLogCreatedActivityRequest(LeadCallLogCreationEventPayload payload, String username){
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("callLogIdentifier", payload.getCallLogIdentifier().toString());
 
         return CreateLeadActivityRequest.builder()
                 .leadId(payload.getLeadId())
                 .resourceId(payload.getCallLogId())
-                .description("Call log created by " + UserContext.getUsername())
+                .description("Call log created by " + username)
                 .resource(ResourceEnum.CALL_LOG)
                 .action(ResourceAction.CREATE)
                 .metadata(metadata)
                 .build();
     }
 
-    private CreateLeadActivityRequest createLeadCallLogUpdatedActivityRequest(LeadCallLogUpdateEventPayload payload){
+    private CreateLeadActivityRequest createLeadCallLogUpdatedActivityRequest(LeadCallLogUpdateEventPayload payload, String username){
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("callLogIdentifier", payload.getCallLogIdentifier().toString());
 
         return CreateLeadActivityRequest.builder()
                 .leadId(payload.getLeadId())
                 .resourceId(payload.getCallLogId())
-                .description("Call log updated by " + UserContext.getUsername())
+                .description("Call log updated by " + username)
                 .resource(ResourceEnum.CALL_LOG)
                 .action(ResourceAction.UPDATE)
                 .metadata(metadata)
                 .build();
     }
 
-    private CreateLeadActivityRequest createLeadStatusChangeActivityRequest(BusinessEvent event, LeadStatusChangeEventPayload payload){
+    private CreateLeadActivityRequest createLeadStatusChangeActivityRequest(BusinessEvent event, LeadStatusChangeEventPayload payload, String username){
         Map<String, Object> metadata = new HashMap<>();
         if (payload.getReason() != null) {
             metadata.put("reason", payload.getReason());
         }
 
-        String description = getStatusChangeDescription(event);
+        String description = getStatusChangeDescription(event, username);
 
         return CreateLeadActivityRequest.builder()
                 .leadId(payload.getLeadId())
@@ -302,7 +303,7 @@ public class LeadActivityDataFactory {
                 .build();
     }
 
-    private String getStatusChangeDescription(BusinessEvent event) {
+    private String getStatusChangeDescription(BusinessEvent event, String username) {
         String action = switch (event) {
             case LEAD_REJECTED -> "rejected";
             case LEAD_REJECTION_UNDO -> "rejection undo";
@@ -313,38 +314,38 @@ public class LeadActivityDataFactory {
             case LEAD_DROPOFF -> "put on dropoff";
             default -> "status changed";
         };
-        return "Lead " + action + " by " + UserContext.getUsername();
+        return "Lead " + action + " by " + username;
     }
 
-    private CreateLeadActivityRequest createLeadLenderCreatedActivityRequest(LeadLenderCreationEventPayload payload){
+    private CreateLeadActivityRequest createLeadLenderCreatedActivityRequest(LeadLenderCreationEventPayload payload, String username){
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("lenderIdentifier", payload.getLenderIdentifier().toString());
 
         return CreateLeadActivityRequest.builder()
                 .leadId(payload.getLeadId())
                 .resourceId(payload.getLenderId())
-                .description("Lender created by " + UserContext.getUsername())
+                .description("Lender created by " + username)
                 .resource(ResourceEnum.LENDER)
                 .action(ResourceAction.CREATE)
                 .metadata(metadata)
                 .build();
     }
 
-    private CreateLeadActivityRequest createLeadLenderUpdatedActivityRequest(LeadLenderUpdationEventPayload payload){
+    private CreateLeadActivityRequest createLeadLenderUpdatedActivityRequest(LeadLenderUpdationEventPayload payload, String username){
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("lenderIdentifier", payload.getLenderIdentifier().toString());
 
         return CreateLeadActivityRequest.builder()
                 .leadId(payload.getLeadId())
                 .resourceId(payload.getLenderId())
-                .description("Lender updated by " + UserContext.getUsername())
+                .description("Lender updated by " + username)
                 .resource(ResourceEnum.LENDER)
                 .action(ResourceAction.UPDATE)
                 .metadata(metadata)
                 .build();
     }
 
-    private CreateLeadActivityRequest createLeadLenderRejectedActivityRequest(LeadLenderRejectionEventPayload payload){
+    private CreateLeadActivityRequest createLeadLenderRejectedActivityRequest(LeadLenderRejectionEventPayload payload, String username){
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("lenderIdentifier", payload.getLenderIdentifier().toString());
         if (payload.getRejectionReason() != null) {
@@ -354,21 +355,21 @@ public class LeadActivityDataFactory {
         return CreateLeadActivityRequest.builder()
                 .leadId(payload.getLeadId())
                 .resourceId(payload.getLenderId())
-                .description("Lender rejected by " + UserContext.getUsername())
+                .description("Lender rejected by " + username)
                 .resource(ResourceEnum.LENDER)
                 .action(ResourceAction.STATUS_CHANGE)
                 .metadata(metadata)
                 .build();
     }
 
-    private CreateLeadActivityRequest createLeadLenderSubmittedActivityRequest(LeadLenderSubmissionEventPayload payload){
+    private CreateLeadActivityRequest createLeadLenderSubmittedActivityRequest(LeadLenderSubmissionEventPayload payload, String username){
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("lenderIdentifier", payload.getLenderIdentifier().toString());
 
         return CreateLeadActivityRequest.builder()
                 .leadId(payload.getLeadId())
                 .resourceId(payload.getLenderId())
-                .description("Lender submitted by " + UserContext.getUsername())
+                .description("Lender submitted by " + username)
                 .resource(ResourceEnum.LENDER)
                 .action(ResourceAction.STATUS_CHANGE)
                 .metadata(metadata)

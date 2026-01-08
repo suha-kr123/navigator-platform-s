@@ -21,7 +21,7 @@ public class LeadActivityListener {
     public void handleEvent(SystemEvent<?> event) {
         String eventType = event.getEventType();
         log.info("LeadActivityListener -> Received system event: {}", eventType);
-        leadActivityDataFactory.recordEvent(eventType, event.getPayload());
+        leadActivityDataFactory.recordEvent(eventType, event.getPayload(), event.getUsername());
     }
 }
 

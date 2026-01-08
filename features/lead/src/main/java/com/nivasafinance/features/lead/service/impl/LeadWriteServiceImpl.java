@@ -192,8 +192,9 @@ public class LeadWriteServiceImpl implements LeadWriteService {
                 .mobileNumber(mobileNumber)
                 .build();
 
+        String username = UserContext.getUsername();
         applicationEventPublisher.publishEvent(
-                new SystemEvent<>(BusinessEvent.LEAD_CREATED.toString(), payload)
+                new SystemEvent<>(BusinessEvent.LEAD_CREATED.toString(), payload, username)
         );
     }
 
@@ -778,8 +779,9 @@ public class LeadWriteServiceImpl implements LeadWriteService {
                 .reason(reason)
                 .build();
 
+        String username = UserContext.getUsername();
         applicationEventPublisher.publishEvent(
-                new SystemEvent<>(event.toString(), payload)
+                new SystemEvent<>(event.toString(), payload, username)
         );
     }
 
@@ -789,8 +791,9 @@ public class LeadWriteServiceImpl implements LeadWriteService {
                 .leadIdentifier(lead.getLeadIdentifier())
                 .build();
 
+        String username = UserContext.getUsername();
         applicationEventPublisher.publishEvent(
-                new SystemEvent<>(BusinessEvent.LEAD_UPDATED.toString(), payload)
+                new SystemEvent<>(BusinessEvent.LEAD_UPDATED.toString(), payload, username)
         );
     }
 

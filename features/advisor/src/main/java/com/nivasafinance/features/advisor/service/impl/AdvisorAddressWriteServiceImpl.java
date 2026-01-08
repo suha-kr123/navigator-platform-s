@@ -2,6 +2,7 @@ package com.nivasafinance.features.advisor.service.impl;
 
 import com.nivasafinance.common.dto.AddressData;
 import com.nivasafinance.common.dto.AddressRequest;
+import com.nivasafinance.common.context.UserContext;
 import com.nivasafinance.common.events.BusinessEvent;
 import com.nivasafinance.common.events.SystemEvent;
 import com.nivasafinance.common.events.payload.AdvisorUpdateEventPayload;
@@ -68,8 +69,9 @@ public class AdvisorAddressWriteServiceImpl implements AdvisorAddressWriteServic
                 .mobileNumber(mobileNumber)
                 .build();
 
+        String username = UserContext.getUsername();
         applicationEventPublisher.publishEvent(
-                new SystemEvent<>(BusinessEvent.ADVISOR_UPDATED.toString(), payload)
+                new SystemEvent<>(BusinessEvent.ADVISOR_UPDATED.toString(), payload, username)
         );
     }
 
