@@ -201,19 +201,26 @@ public class UserQueryServiceImpl implements UserQueryService, ApplicationContex
         if (!ValidationUtils.isNonNull(officeKey)) {
             return officeKeys;
         }
-
+        
         officeKeys.add(officeKey);
 
         try {
-            OfficeResponse office = officeReadService.getOfficeByKey(officeKey);
-            if (ValidationUtils.isNonNull(office)) {
-                OfficeResponse currentOffice = office;
-                while (ValidationUtils.isNonNull(currentOffice) && ValidationUtils.isNonNull(currentOffice.getParentId())) {
-                    break;
-                }
+            OfficeResponse currentOffice = officeReadService.getOfficeByKey(officeKey);
+            if (ValidationUtils.isNonNull(currentOffice) && 
+                ValidationUtils.isNonNull(currentOffice.getCode())) {
+
+                List<OfficeResponse> officesInHierarchy = officeReadService
+                    .getOfficesByCodePrefix(currentOffice.getCode());
+                
+                officesInHierarchy.forEach(office -> {
+                    if (ValidationUtils.isNonNull(office.getKey())) {
+                        officeKeys.add(office.getKey());
+                    }
+                });
             }
         } catch (Exception e) {
-            return officeKeys;
+            // Return what we have so far (at least the current office)
+            // This ensures the method doesn't fail completely if there's an error
         }
 
         return officeKeys;
