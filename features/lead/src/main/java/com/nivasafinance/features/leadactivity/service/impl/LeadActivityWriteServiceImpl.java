@@ -29,6 +29,11 @@ public class LeadActivityWriteServiceImpl implements LeadActivityWriteService {
         activity.setMetadata(request.getMetadata());
         activity.setResourceId(request.getResourceId());
         
+        // Explicitly set createdBy to override JPA auditing (which would use "system" in async threads)
+        if (request.getCreatedBy() != null) {
+            activity.setCreatedBy(request.getCreatedBy());
+        }
+        
         LeadActivity saved = leadActivityRepositoryWrapper.saveWithException(activity);
         return CreateLeadActivityResponse.builder()
                 .id(saved.getId())

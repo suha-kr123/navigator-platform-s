@@ -109,6 +109,7 @@ public class LeadActivityDataFactory {
                 .description("Lead created by " + username)
                 .resource(ResourceEnum.LEAD)
                 .action(ResourceAction.CREATE)
+                .createdBy(username)
                 .build();
     }
 
@@ -119,6 +120,7 @@ public class LeadActivityDataFactory {
                 .description("Lead updated by " + username)
                 .resource(ResourceEnum.LEAD)
                 .action(ResourceAction.UPDATE)
+                .createdBy(username)
                 .build();
     }
 
@@ -133,6 +135,7 @@ public class LeadActivityDataFactory {
                 .resource(ResourceEnum.NOTES)
                 .action(ResourceAction.CREATE)
                 .metadata(metadata)
+                .createdBy(username)
                 .build();
     }
 
@@ -147,6 +150,7 @@ public class LeadActivityDataFactory {
                 .resource(ResourceEnum.NOTES)
                 .action(ResourceAction.UPDATE)
                 .metadata(metadata)
+                .createdBy(username)
                 .build();
     }
 
@@ -161,6 +165,7 @@ public class LeadActivityDataFactory {
                 .resource(ResourceEnum.NOTES)
                 .action(ResourceAction.DELETE)
                 .metadata(metadata)
+                .createdBy(username)
                 .build();
     }
 
@@ -175,6 +180,7 @@ public class LeadActivityDataFactory {
                 .resource(ResourceEnum.DOCUMENTS)
                 .action(ResourceAction.CREATE)
                 .metadata(metadata)
+                .createdBy(username)
                 .build();
     }
 
@@ -189,6 +195,7 @@ public class LeadActivityDataFactory {
                 .resource(ResourceEnum.DOCUMENTS)
                 .action(ResourceAction.UPDATE)
                 .metadata(metadata)
+                .createdBy(username)
                 .build();
     }
 
@@ -203,6 +210,7 @@ public class LeadActivityDataFactory {
                 .resource(ResourceEnum.DOCUMENTS)
                 .action(ResourceAction.DELETE)
                 .metadata(metadata)
+                .createdBy(username)
                 .build();
     }
 
@@ -220,6 +228,7 @@ public class LeadActivityDataFactory {
                 .resource(ResourceEnum.CONTACT)
                 .action(ResourceAction.CREATE)
                 .metadata(metadata)
+                .createdBy(username)
                 .build();
     }
 
@@ -237,6 +246,7 @@ public class LeadActivityDataFactory {
                 .resource(ResourceEnum.CONTACT)
                 .action(ResourceAction.UPDATE)
                 .metadata(metadata)
+                .createdBy(username)
                 .build();
     }
 
@@ -254,6 +264,7 @@ public class LeadActivityDataFactory {
                 .resource(ResourceEnum.CONTACT)
                 .action(ResourceAction.DELETE)
                 .metadata(metadata)
+                .createdBy(username)
                 .build();
     }
 
@@ -268,6 +279,7 @@ public class LeadActivityDataFactory {
                 .resource(ResourceEnum.CALL_LOG)
                 .action(ResourceAction.CREATE)
                 .metadata(metadata)
+                .createdBy(username)
                 .build();
     }
 
@@ -282,6 +294,7 @@ public class LeadActivityDataFactory {
                 .resource(ResourceEnum.CALL_LOG)
                 .action(ResourceAction.UPDATE)
                 .metadata(metadata)
+                .createdBy(username)
                 .build();
     }
 
@@ -300,6 +313,7 @@ public class LeadActivityDataFactory {
                 .resource(ResourceEnum.LEAD)
                 .action(ResourceAction.STATUS_CHANGE)
                 .metadata(metadata)
+                .createdBy(username)
                 .build();
     }
 
@@ -328,6 +342,7 @@ public class LeadActivityDataFactory {
                 .resource(ResourceEnum.LENDER)
                 .action(ResourceAction.CREATE)
                 .metadata(metadata)
+                .createdBy(username)
                 .build();
     }
 
@@ -342,6 +357,7 @@ public class LeadActivityDataFactory {
                 .resource(ResourceEnum.LENDER)
                 .action(ResourceAction.UPDATE)
                 .metadata(metadata)
+                .createdBy(username)
                 .build();
     }
 
@@ -359,6 +375,7 @@ public class LeadActivityDataFactory {
                 .resource(ResourceEnum.LENDER)
                 .action(ResourceAction.STATUS_CHANGE)
                 .metadata(metadata)
+                .createdBy(username)
                 .build();
     }
 
@@ -373,6 +390,7 @@ public class LeadActivityDataFactory {
                 .resource(ResourceEnum.LENDER)
                 .action(ResourceAction.STATUS_CHANGE)
                 .metadata(metadata)
+                .createdBy(username)
                 .build();
     }
 

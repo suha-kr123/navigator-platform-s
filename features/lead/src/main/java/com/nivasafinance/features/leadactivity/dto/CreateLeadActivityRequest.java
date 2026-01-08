@@ -20,4 +20,5 @@ public class CreateLeadActivityRequest {
     private Map<String, Object> metadata;
     private Long resourceId;
     private Long leadId;
+    private String createdBy;
 }

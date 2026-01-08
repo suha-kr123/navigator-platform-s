@@ -20,5 +20,6 @@ public class CreateAdvisorActivityRequest {
     private Map<String, Object> metadata;
     private Long resourceId;
     private Long advisorId;
+    private String createdBy;
 }
 

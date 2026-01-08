@@ -68,6 +68,7 @@ public class AdvisorActivityDataFactory {
                 .description("Advisor created by " + username)
                 .resource(ResourceEnum.ADVISOR)
                 .action(ResourceAction.CREATE)
+                .createdBy(username)
                 .build();
     }
 
@@ -78,6 +79,7 @@ public class AdvisorActivityDataFactory {
                 .description("Advisor updated by " + username)
                 .resource(ResourceEnum.ADVISOR)
                 .action(ResourceAction.UPDATE)
+                .createdBy(username)
                 .build();
     }
 
@@ -92,6 +94,7 @@ public class AdvisorActivityDataFactory {
                 .resource(ResourceEnum.NOTES)
                 .action(ResourceAction.CREATE)
                 .metadata(metadata)
+                .createdBy(username)
                 .build();
     }
 
@@ -106,6 +109,7 @@ public class AdvisorActivityDataFactory {
                 .resource(ResourceEnum.NOTES)
                 .action(ResourceAction.UPDATE)
                 .metadata(metadata)
+                .createdBy(username)
                 .build();
     }
 
@@ -120,6 +124,7 @@ public class AdvisorActivityDataFactory {
                 .resource(ResourceEnum.NOTES)
                 .action(ResourceAction.DELETE)
                 .metadata(metadata)
+                .createdBy(username)
                 .build();
     }
 
@@ -134,6 +139,7 @@ public class AdvisorActivityDataFactory {
                 .resource(ResourceEnum.CALL_LOG)
                 .action(ResourceAction.CREATE)
                 .metadata(metadata)
+                .createdBy(username)
                 .build();
     }
 
@@ -148,6 +154,7 @@ public class AdvisorActivityDataFactory {
                 .resource(ResourceEnum.CALL_LOG)
                 .action(ResourceAction.UPDATE)
                 .metadata(metadata)
+                .createdBy(username)
                 .build();
     }
 
@@ -166,6 +173,7 @@ public class AdvisorActivityDataFactory {
                 .resource(ResourceEnum.ADVISOR)
                 .action(ResourceAction.STATUS_CHANGE)
                 .metadata(metadata)
+                .createdBy(username)
                 .build();
     }
 
