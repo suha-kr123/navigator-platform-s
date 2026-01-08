@@ -5,8 +5,10 @@ import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.common.annotations.RequirePermission;
 import com.nivasafinance.common.context.UserContext;
+import com.nivasafinance.common.enums.EntityType;
 import com.nivasafinance.common.utils.ValidationUtils;
 import com.nivasafinance.features.rolemanagement.role.dto.UserAssignmentResponse;
+import com.nivasafinance.features.rolemanagement.role.service.EntityOfficeKeyService;
 import com.nivasafinance.features.rolemanagement.role.service.UserQueryService;
 import com.nivasafinance.features.task.dto.BulkReassignTaskRequest;
 import com.nivasafinance.features.task.dto.BulkReassignTaskResponse;
@@ -38,6 +40,7 @@ public class TaskController {
     private final TaskConfigRepositoryWrapper taskConfigRepositoryWrapper;
     private final UserQueryService userQueryService;
     private final TaskTemplateService taskTemplateService;
+    private final EntityOfficeKeyService entityOfficeKeyService;
 
     @GetMapping("/assigned-to-me")
     @RequirePermission(permissionName = "READ_TASK")
@@ -66,12 +69,21 @@ public class TaskController {
     @GetMapping("/{taskConfigKey}/assignable-users")
     @RequirePermission(permissionName = "READ_TASK")
     public ResponseEntity<List<UserAssignmentResponse>> getAssignableUsersForTask(
-            @PathVariable String taskConfigKey) {
+            @PathVariable String taskConfigKey,
+            @RequestParam EntityType entityType,
+            @RequestParam UUID entityId) {
         TaskConfig taskConfig = taskConfigRepositoryWrapper.findActiveByTaskConfigKey(taskConfigKey);
         List<String> allowedRoles = ValidationUtils.isNonNull(taskConfig.getTaskConfigDetails()) 
                 ? taskConfig.getTaskConfigDetails().getAllowedRoles() 
                 : Collections.emptyList();
-        return ResponseEntity.ok(userQueryService.getUsersByOfficeAndRoles(allowedRoles));
+        
+        // Get entity's office to determine which users to show
+        String officeKey = entityOfficeKeyService.getOfficeKey(entityType, entityId);
+        if (!ValidationUtils.isNonNull(officeKey)) {
+            return ResponseEntity.ok(Collections.emptyList());
+        }
+        
+        return ResponseEntity.ok(userQueryService.getUsersByOfficeAndRoles(allowedRoles, officeKey));
     }
 
     @PutMapping("/{taskIdentifier}/due-date")

@@ -115,10 +115,14 @@ public class StageReadServiceImpl implements StageReadService {
     }
 
     @Override
-    public List<UserAssignmentResponse> getAssignableUsersForStages(List<String> stageKeys) {
+    public List<UserAssignmentResponse> getAssignableUsersForStages(List<String> stageKeys, String officeKey) {
         try {
             List<String> processedStageKeys = processStageKeys(stageKeys);
             if (processedStageKeys.isEmpty()) {
+                return Collections.emptyList();
+            }
+            
+            if (!ValidationUtils.isNonNull(officeKey)) {
                 return Collections.emptyList();
             }
             
@@ -141,8 +145,8 @@ public class StageReadServiceImpl implements StageReadService {
                 return Collections.emptyList();
             }
             
-            // Get users for all roles
-            List<UserAssignmentResponse> allUsers = userQueryService.getUsersByOfficeAndRoles(new ArrayList<>(allRoles));
+            // Get users for all roles based on provided office key
+            List<UserAssignmentResponse> allUsers = userQueryService.getUsersByOfficeAndRoles(new ArrayList<>(allRoles), officeKey);
             
             // Deduplicate by username to avoid returning same user multiple times
             Map<String, UserAssignmentResponse> uniqueUsers = allUsers.stream()
