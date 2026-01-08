@@ -202,6 +202,7 @@ public class UserQueryServiceImpl implements UserQueryService, ApplicationContex
             return officeKeys;
         }
         
+        // Always include current office
         officeKeys.add(officeKey);
 
         try {
@@ -209,14 +210,39 @@ public class UserQueryServiceImpl implements UserQueryService, ApplicationContex
             if (ValidationUtils.isNonNull(currentOffice) && 
                 ValidationUtils.isNonNull(currentOffice.getCode())) {
 
-                List<OfficeResponse> officesInHierarchy = officeReadService
+                // 1. Get all child offices (down the hierarchy)
+                // This gets current office + all child offices using code prefix
+                List<OfficeResponse> childOffices = officeReadService
                     .getOfficesByCodePrefix(currentOffice.getCode());
                 
-                officesInHierarchy.forEach(office -> {
+                childOffices.forEach(office -> {
                     if (ValidationUtils.isNonNull(office.getKey())) {
                         officeKeys.add(office.getKey());
                     }
                 });
+                
+                // 2. Get all parent offices (up the hierarchy)
+                // This allows reassignment back to the original assigner
+                OfficeResponse parentOffice = currentOffice;
+                while (ValidationUtils.isNonNull(parentOffice) && 
+                       ValidationUtils.isNonNull(parentOffice.getParentId())) {
+                    
+                    // Get parent office by ID using repository (via reflection to avoid circular dependency)
+                    Optional<Object> parentOfficeOpt = getOfficeById(parentOffice.getParentId());
+                    if (parentOfficeOpt.isPresent()) {
+                        Object parent = parentOfficeOpt.get();
+                        String parentKey = getOfficeKey(parent);
+                        if (ValidationUtils.isNonNull(parentKey)) {
+                            officeKeys.add(parentKey);
+                            // Get the full OfficeResponse to continue traversal up the hierarchy
+                            parentOffice = officeReadService.getOfficeByKey(parentKey);
+                        } else {
+                            break;
+                        }
+                    } else {
+                        break;
+                    }
+                }
             }
         } catch (Exception e) {
             // Return what we have so far (at least the current office)
@@ -224,6 +250,30 @@ public class UserQueryServiceImpl implements UserQueryService, ApplicationContex
         }
 
         return officeKeys;
+    }
+    
+    @SuppressWarnings("unchecked")
+    private Optional<Object> getOfficeById(Long id) {
+        try {
+            Object officeRepository = applicationContext.getBean("officeRepository");
+            java.lang.reflect.Method findById = officeRepository.getClass().getMethod("findById", Object.class);
+            Object result = findById.invoke(officeRepository, id);
+            if (result instanceof Optional) {
+                return (Optional<Object>) result;
+            }
+            return Optional.empty();
+        } catch (Exception e) {
+            return Optional.empty();
+        }
+    }
+    
+    private String getOfficeKey(Object office) {
+        try {
+            java.lang.reflect.Method getKey = office.getClass().getMethod("getKey");
+            return (String) getKey.invoke(office);
+        } catch (Exception e) {
+            return null;
+        }
     }
 }
 
