@@ -7,7 +7,6 @@ import com.nivasafinance.features.person.dto.PersonResponse;
 import com.nivasafinance.features.rolemanagement.mapping.entity.UserRoleMapping;
 import com.nivasafinance.features.rolemanagement.mapping.repository.UserRoleMappingRepository;
 import com.nivasafinance.features.rolemanagement.role.dto.UserAssignmentResponse;
-import com.nivasafinance.common.context.UserContext;
 import com.nivasafinance.features.rolemanagement.role.service.UserQueryService;
 import com.nivasafinance.features.rolemanagement.role.service.UserRoleService;
 import com.nivasafinance.features.usermanagement.dto.UserResponse;
@@ -60,38 +59,14 @@ public class UserQueryServiceImpl implements UserQueryService, ApplicationContex
         }
     }
     
-    private String getCurrentStaffOfficeKey() {
-        try {
-            String currentUsername = UserContext.getUsername();
-            if (!ValidationUtils.isNonNull(currentUsername)) {
-                return null;
-            }
-            
-            UserResponse user = userReadService.getUserByUsername(currentUsername);
-            if (!ValidationUtils.isNonNull(user)) {
-                return null;
-            }
-            
-            Optional<Object> staffOpt = findStaffByUserId(user.getId());
-            if (staffOpt.isEmpty()) {
-                return null;
-            }
-            
-            return getStaffOfficeKey(staffOpt.get());
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
     @Override
-    public List<UserAssignmentResponse> getUsersByOfficeAndRoles(List<String> roles) {
+    public List<UserAssignmentResponse> getUsersByOfficeAndRoles(List<String> roles, String officeKey) {
         try {
             if (!ValidationUtils.isNonNull(roles) || roles.isEmpty()) {
                 return Collections.emptyList();
             }
 
-            // Fetch officeKey from current staff using reflection to avoid circular dependency
-            String officeKey = getCurrentStaffOfficeKey();
+            // Use provided officeKey
             if (!ValidationUtils.isNonNull(officeKey)) {
                 return Collections.emptyList();
             }
