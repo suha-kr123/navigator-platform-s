@@ -1,113 +1,205 @@
-name: Build and Push Docker Image to UAT ECR
+name: Build and Deploy to UAT ECS
 
 on:
-  # Manual trigger 
+  # Manual trigger
   workflow_dispatch:
     inputs:
       docker_tag:
         description: 'Docker tag (leave empty to use git commit hash)'
         required: false
         type: string
-  # Automatic trigger on push to these branches
-  push:
-    branches:
-      - develop
 
-# Environment variables (
+# Environment variables
 env:
   JAVA_VERSION: '21'
   AWS_REGION: 'ap-south-1'
   AWS_ACCOUNT_ID: '600627336794'
   ECR_REPOSITORY: 'navigator-platform'
+  ECS_CLUSTER: 'navigator-cluster'  # Update with your actual cluster name
+  ECS_SERVICE: 'navigator-platform-service'  # Update with your actual service name
+  ECS_TASK_DEFINITION: 'navigator-platform'  # Update with your actual task definition family name
   # For OIDC: Replace with your IAM Role ARN after setting up OIDC
   AWS_ROLE_ARN: 'arn:aws:iam::600627336794:role/GitHubActions-ECR-Role'
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    timeout-minutes: 30 
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write  # Required for OIDC authentication
+
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+      image-uri: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{ steps.tag.outputs.tag }}
+
+    steps:
+
+      - name: 🛎️ Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Step 2: Set up Java
+      - name: ☕ Set up Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: temurin
+          cache: gradle
+
+      # Step 3: Make gradlew executable
+      - name: 🔨 Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      # Step 4: Build Java application
+      - name: 🛠️ Run Gradle build
+        run: |
+          ./gradlew clean
+          ./gradlew :main:build
+        continue-on-error: false
+
+
+      - name: ✅ Verify JAR file exists
+        run: |
+          if [ ! -f "main/build/libs/main.jar" ]; then
+            echo "❌ Error: main/build/libs/main.jar not found!"
+            exit 1
+          fi
+          echo "✅ JAR file found: main/build/libs/main.jar"
+          ls -lh main/build/libs/main.jar
+
+
+      - name: 🏷️ Determine Docker tag
+        id: tag
+        run: |
+          # Handle both workflow_dispatch (with input) and push events
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.docker_tag }}" ]; then
+            TAG="${{ github.event.inputs.docker_tag }}"
+          else
+            TAG=$(git rev-parse --short HEAD)
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Using Docker tag: $TAG"
+
+      # Step 6: Configure AWS credentials
+      - name: 🔑 Configure AWS credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+
+      - name: 🔐 Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+
+      - name: 🐳 Build Docker image
+        run: |
+          docker build --platform linux/amd64 \
+            -t ${{ env.ECR_REPOSITORY }}:${{ steps.tag.outputs.tag }} \
+            -t ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{ steps.tag.outputs.tag }} \
+            .
+        continue-on-error: false
+
+      # Step 9: Push Docker image to ECR
+      - name: 📤 Push Docker image to ECR
+        run: |
+          docker push ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{ steps.tag.outputs.tag }}
+        continue-on-error: false
+
+      - name: ✅ Success
+        run: |
+          echo "✅ Successfully built and pushed ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{ steps.tag.outputs.tag }}"
+          echo "📦 Image is now available in AWS ECR for UAT deployment"
+
+  deploy-to-ecs:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
       id-token: write  # Required for OIDC authentication
 
     steps:
-    
-    - name: 🛎️ Checkout repository
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0  
+      - name: 🛎️ Checkout repository
+        uses: actions/checkout@v4
 
-    # Step 2: Set up Java 
-    - name: ☕ Set up Java ${{ env.JAVA_VERSION }}
-      uses: actions/setup-java@v4
-      with:
-        java-version: ${{ env.JAVA_VERSION }}
-        distribution: temurin
-        cache: gradle  
+      - name: 🔑 Configure AWS credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
 
-    # Step 3: Make gradlew executable
-    - name: 🔨 Grant execute permission for gradlew
-      run: chmod +x ./gradlew
+      - name: 📥 Download current task definition
+        run: |
+          echo "📥 Downloading task definition: ${{ env.ECS_TASK_DEFINITION }}"
+          aws ecs describe-task-definition \
+            --task-definition ${{ env.ECS_TASK_DEFINITION }} \
+            --query taskDefinition > task-definition.json
+          echo "✅ Task definition downloaded"
 
-    # Step 4: Build Java application 
-    - name: 🛠️ Run Gradle build
-      run: |
-        ./gradlew clean
-        ./gradlew :main:build
-      continue-on-error: false  
+      - name: 🔄 Update task definition with new image
+        run: |
+          # Construct the image URI directly using the tag from the previous job
+          NEW_IMAGE="${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{ needs.build-and-push.outputs.tag }}"
+          echo "🔄 Updating task definition with new image: $NEW_IMAGE"
+          # Use jq to update the image in the task definition
+          cat task-definition.json | \
+            jq --arg IMAGE "$NEW_IMAGE" '.containerDefinitions[0].image = $IMAGE' | \
+            jq --arg FAMILY "${{ env.ECS_TASK_DEFINITION }}" '.family = $FAMILY' | \
+            jq 'del(.taskDefinitionArn)' | \
+            jq 'del(.revision)' | \
+            jq 'del(.status)' | \
+            jq 'del(.requiresAttributes)' | \
+            jq 'del(.placementConstraints)' | \
+            jq 'del(.compatibilities)' | \
+            jq 'del(.registeredAt)' | \
+            jq 'del(.registeredBy)' > task-definition-updated.json
+          echo "✅ Task definition updated"
+          # Debug: Show the updated image to verify
+          echo "🔍 Updated image in task definition:"
+          jq '.containerDefinitions[0].image' task-definition-updated.json
 
- 
-    - name: ✅ Verify JAR file exists
-      run: |
-        if [ ! -f "main/build/libs/main.jar" ]; then
-          echo "❌ Error: main/build/libs/main.jar not found!"
-          exit 1
-        fi
-        echo "✅ JAR file found: main/build/libs/main.jar"
-        ls -lh main/build/libs/main.jar
+      - name: 📝 Register new task definition
+        id: task-def
+        run: |
+          echo "📝 Registering new task definition..."
+          # Register once and capture both ARN and revision from the same response
+          TASK_DEF_JSON=$(aws ecs register-task-definition \
+            --cli-input-json file://task-definition-updated.json)
+          TASK_DEF_ARN=$(echo "$TASK_DEF_JSON" | jq -r '.taskDefinition.taskDefinitionArn')
+          TASK_DEF_REVISION=$(echo "$TASK_DEF_JSON" | jq -r '.taskDefinition.revision')
+          echo "task-def-arn=$TASK_DEF_ARN" >> $GITHUB_OUTPUT
+          echo "task-def-revision=$TASK_DEF_REVISION" >> $GITHUB_OUTPUT
+          echo "✅ Registered new task definition: $TASK_DEF_ARN (Revision: $TASK_DEF_REVISION)"
 
+      - name: 🚀 Update ECS service
+        run: |
+          echo "🚀 Updating ECS service: ${{ env.ECS_SERVICE }} in cluster: ${{ env.ECS_CLUSTER }}"
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service ${{ env.ECS_SERVICE }} \
+            --task-definition ${{ steps.task-def.outputs.task-def-arn }} \
+            --force-new-deployment
+          echo "✅ Service update initiated"
 
-    - name: 🏷️ Determine Docker tag
-      id: tag
-      run: |
-        # Handle both workflow_dispatch (with input) and push events
-        if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.docker_tag }}" ]; then
-          TAG="${{ github.event.inputs.docker_tag }}"
-        else
-          TAG=$(git rev-parse --short HEAD)
-        fi
-        echo "tag=$TAG" >> $GITHUB_OUTPUT
-        echo "Using Docker tag: $TAG"
+      - name: ⏳ Wait for service to stabilize
+        run: |
+          echo "⏳ Waiting for service to reach stable state..."
+          echo "This may take a few minutes..."
+          aws ecs wait services-stable \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE }}
+          echo "✅ Service deployment completed and is now stable"
 
-    # Step 6: Configure AWS credentials
-    - name: 🔑 Configure AWS credentials using OIDC
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        role-to-assume: ${{ env.AWS_ROLE_ARN }}
-        aws-region: ${{ env.AWS_REGION }}
-
-  
-    - name: 🔐 Login to Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v2
-
-    
-    - name: 🐳 Build Docker image
-      run: |
-        docker build --platform linux/amd64 \
-          -t ${{ env.ECR_REPOSITORY }}:${{ steps.tag.outputs.tag }} \
-          -t ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{ steps.tag.outputs.tag }} \
-          .
-      continue-on-error: false  
-
-    # Step 9: Push Docker image to ECR 
-    - name: 📤 Push Docker image to ECR
-      run: |
-        docker push ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{ steps.tag.outputs.tag }}
-      continue-on-error: false  
-
-    - name: ✅ Success
-      run: |
-        echo "✅ Successfully built and pushed ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{ steps.tag.outputs.tag }}"
-        echo "📦 Image is now available in AWS ECR for UAT deployment"
+      - name: ✅ Deployment Success
+        run: |
+          IMAGE_URI="${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{ needs.build-and-push.outputs.tag }}"
+          echo "🎉 Successfully deployed to UAT!"
+          echo "📦 Image: $IMAGE_URI"
+          echo "🔧 Task Definition: ${{ steps.task-def.outputs.task-def-arn }}"
+          echo "🔄 Revision: ${{ steps.task-def.outputs.task-def-revision }}"
+          echo "🏷️  Tag: ${{ needs.build-and-push.outputs.tag }}"
 
