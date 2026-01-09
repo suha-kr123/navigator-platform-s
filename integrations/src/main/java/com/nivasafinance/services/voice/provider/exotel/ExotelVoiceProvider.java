@@ -61,6 +61,7 @@ public class ExotelVoiceProvider implements VoiceProvider {
                    secretMap.get("baseUrl").toString(),
                    secretMap.get("callWebhookUrl").toString(),
                    secretMap.get("campaignWebhookUrl").toString(),
+                   secretMap.get("campaignCallWebhookUrl").toString(),
                    secretMap.get("apiKey").toString(),
                    secretMap.get("apiToken").toString()
            );
@@ -71,6 +72,7 @@ public class ExotelVoiceProvider implements VoiceProvider {
                 map.get("baseUrl"),
                 map.get("callWebhookUrl"),
                 map.get("campaignWebhookUrl"),
+                map.get("campaignCallWebhookUrl"),
                 map.get("apiKey"),
                 map.get("apiToken")
         );
@@ -523,6 +525,7 @@ public class ExotelVoiceProvider implements VoiceProvider {
                 .callerId(request.getCallerId())
                 .lists(lists)
                 .statusCallback(exotelConfig.getCampaignWebhookUrl())
+                .callStatusCallback(exotelConfig.getCampaignCallWebhookUrl())
                 .callDuplicateNumbers(false)
                 .mode("custom")
                 .throttle(request.getCpm())

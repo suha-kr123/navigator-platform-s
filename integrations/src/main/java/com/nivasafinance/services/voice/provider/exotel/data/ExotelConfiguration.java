@@ -12,6 +12,7 @@ public class ExotelConfiguration {
     private String baseUrl;
     private String callWebhookUrl;
     private String campaignWebhookUrl;
+    private String campaignCallWebhookUrl;
     private String apiKey;
     private String apiToken;
 }
