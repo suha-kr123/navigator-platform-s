@@ -225,6 +225,10 @@ public class LeadDashboardWrapper {
                         .append(") ");
                 params.addAll(normalizedStatuses);
             }
+        } else {
+            // Default: when status filter is not provided, only return ACTIVE status
+            whereClause.append(" AND l.status = ? ");
+            params.add("ACTIVE");
         }
     }
 
