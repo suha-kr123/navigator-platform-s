@@ -200,6 +200,11 @@ public class AdvisorDashboardWrapper {
                 whereClause.append(" AND a.status IN (").append(createPlaceholders(normalizedStatuses.size())).append(") ");
                 params.addAll(normalizedStatuses);
             }
+        } else {
+            // Default: when status filter is not provided, only return CREATED or ACTIVE status
+            whereClause.append(" AND a.status IN (?, ?) ");
+            params.add("CREATED");
+            params.add("ACTIVE");
         }
     }
 
