@@ -1,0 +1,125 @@
+name: Restart UAT ECS Service
+
+on:
+  workflow_dispatch:
+    inputs:
+      force_new_deployment:
+        description: 'Force new deployment (restart all tasks)'
+        required: false
+        default: true
+        type: boolean
+
+# Environment variables
+env:
+  AWS_REGION: 'ap-south-1'
+  AWS_ACCOUNT_ID: '600627336794'
+  ECS_CLUSTER: 'navigator-cluster'
+  ECS_SERVICE: 'navigator-platform-service'
+  AWS_ROLE_ARN: 'arn:aws:iam::600627336794:role/GitHubActions-ECR-Role'
+
+jobs:
+  restart-service:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write  # Required for OIDC authentication
+
+    steps:
+      - name: 🔑 Configure AWS credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: 📋 Get current service status
+        id: service-info
+        run: |
+          echo "📋 Checking service status..."
+          SERVICE_INFO=$(aws ecs describe-services \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE }} \
+            --query 'services[0]' \
+            --output json)
+          
+          CURRENT_TASK_DEF=$(echo "$SERVICE_INFO" | jq -r '.taskDefinition')
+          DESIRED_COUNT=$(echo "$SERVICE_INFO" | jq -r '.desiredCount')
+          RUNNING_COUNT=$(echo "$SERVICE_INFO" | jq -r '.runningCount')
+          STATUS=$(echo "$SERVICE_INFO" | jq -r '.status')
+          
+          echo "📊 Current Service Status:"
+          echo "   Task Definition: $CURRENT_TASK_DEF"
+          echo "   Desired Count: $DESIRED_COUNT"
+          echo "   Running Count: $RUNNING_COUNT"
+          echo "   Status: $STATUS"
+          
+          echo "task-def=$CURRENT_TASK_DEF" >> $GITHUB_OUTPUT
+          echo "desired-count=$DESIRED_COUNT" >> $GITHUB_OUTPUT
+          echo "running-count=$RUNNING_COUNT" >> $GITHUB_OUTPUT
+          echo "status=$STATUS" >> $GITHUB_OUTPUT
+
+      - name: 🔄 Restart ECS Service
+        run: |
+          echo "🔄 Restarting ECS service: ${{ env.ECS_SERVICE }}"
+          echo "📍 Cluster: ${{ env.ECS_CLUSTER }}"
+          echo "🔄 Force new deployment: ${{ github.event.inputs.force_new_deployment }}"
+          
+          if [ "${{ github.event.inputs.force_new_deployment }}" = "true" ]; then
+            echo "🚀 Using force new deployment method..."
+            aws ecs update-service \
+              --cluster ${{ env.ECS_CLUSTER }} \
+              --service ${{ env.ECS_SERVICE }} \
+              --force-new-deployment
+            echo "✅ Service restart initiated with force new deployment"
+          else
+            echo "📉 Using scale down/up method..."
+            echo "📉 Scaling service to 0..."
+            aws ecs update-service \
+              --cluster ${{ env.ECS_CLUSTER }} \
+              --service ${{ env.ECS_SERVICE }} \
+              --desired-count 0
+          
+            echo "⏳ Waiting for service to scale down..."
+            aws ecs wait services-stable \
+              --cluster ${{ env.ECS_CLUSTER }} \
+              --services ${{ env.ECS_SERVICE }}
+          
+            echo "📈 Scaling service back to ${{ steps.service-info.outputs.desired-count }}..."
+            aws ecs update-service \
+              --cluster ${{ env.ECS_CLUSTER }} \
+              --service ${{ env.ECS_SERVICE }} \
+              --desired-count ${{ steps.service-info.outputs.desired-count }}
+            echo "✅ Service restart initiated via scale down/up"
+          fi
+
+      - name: ⏳ Wait for service to stabilize
+        run: |
+          echo "⏳ Waiting for service to reach stable state..."
+          echo "This may take a few minutes..."
+          aws ecs wait services-stable \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE }}
+          echo "✅ Service restart completed and is now stable"
+
+      - name: ✅ Get final service status
+        run: |
+          echo ""
+          echo "📊 Final Service Status:"
+          SERVICE_INFO=$(aws ecs describe-services \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE }} \
+            --query 'services[0]' \
+            --output json)
+          
+          FINAL_TASK_DEF=$(echo "$SERVICE_INFO" | jq -r '.taskDefinition')
+          FINAL_DESIRED=$(echo "$SERVICE_INFO" | jq -r '.desiredCount')
+          FINAL_RUNNING=$(echo "$SERVICE_INFO" | jq -r '.runningCount')
+          FINAL_STATUS=$(echo "$SERVICE_INFO" | jq -r '.status')
+          
+          echo "✅ Task Definition: $FINAL_TASK_DEF"
+          echo "✅ Desired Count: $FINAL_DESIRED"
+          echo "✅ Running Count: $FINAL_RUNNING"
+          echo "✅ Status: $FINAL_STATUS"
+          echo ""
+          echo "🎉 Service restart completed successfully!"
+          echo "🔄 All tasks have been restarted and are now running"
