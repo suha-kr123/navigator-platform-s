@@ -45,7 +45,8 @@ public class LeadDashboardWrapper {
         SORTABLE_COLUMNS = Map.of("requestLoanAmount", "l.requested_amount",
                 "leadCreatedAt", "l.created_at",
                 "lastActivityDate", "l.updated_at",
-                "stageAssignedAt", "stage_assigned_at");
+                "stageAssignedAt", "stage_assigned_at",
+                "stageEnteredAt", "stage_entered_at");
     }
 
     private final JdbcTemplate jdbcTemplate;
