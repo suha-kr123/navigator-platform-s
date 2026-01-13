@@ -37,7 +37,8 @@ public class WebConfig implements WebMvcConfigurer {
                 .defaultContentType(MediaType.APPLICATION_JSON)
                 .mediaType("json", MediaType.APPLICATION_JSON)
                 .mediaType("xml", MediaType.APPLICATION_XML)
-                .mediaType("stream", MediaType.TEXT_EVENT_STREAM);
+                .mediaType("stream", MediaType.TEXT_EVENT_STREAM)
+                .mediaType("event-stream", MediaType.TEXT_EVENT_STREAM);
     }
 
     @Override

@@ -21,11 +21,8 @@ public class CallNotificationSseController {
     private final CallNotificationService notificationService;
 
     @GetMapping(value = "/call-events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public ResponseEntity<SseEmitter> subscribeToCallNotifications() {
-        SseEmitter emitter = sseService.subscribeToCallNotifications();
-        return ResponseEntity.ok()
-                .contentType(MediaType.TEXT_EVENT_STREAM)
-                .body(emitter);
+    public SseEmitter subscribeToCallNotifications() {
+        return sseService.subscribeToCallNotifications();
     }
 
     @DeleteMapping("/call-events")
