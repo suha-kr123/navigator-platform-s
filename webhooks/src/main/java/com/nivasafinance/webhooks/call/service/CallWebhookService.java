@@ -1,6 +1,6 @@
 package com.nivasafinance.webhooks.call.service;
 
-import com.nivasafinance.webhooks.call.dto.CallNotificationResponse;
+import com.nivasafinance.common.dto.CallNotificationResponse;
 import org.springframework.util.MultiValueMap;
 
 import java.util.Map;

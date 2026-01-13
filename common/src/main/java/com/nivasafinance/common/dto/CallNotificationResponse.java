@@ -1,4 +1,4 @@
-package com.nivasafinance.webhooks.call.dto;
+package com.nivasafinance.common.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

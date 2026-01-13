@@ -2,9 +2,9 @@ package com.nivasafinance.webhooks.call.service.impl;
 
 import com.nivasafinance.common.utils.PhoneNumberUtils;
 import com.nivasafinance.features.usermanagement.service.UserReadService;
-import com.nivasafinance.webhooks.call.service.CallNotificationWebSocketService;
-import com.nivasafinance.webhooks.call.dto.CallNotificationResponse;
-import com.nivasafinance.webhooks.call.repository.CallNotificationRedisRepository;
+import com.nivasafinance.features.call.service.CallNotificationSseService;
+import com.nivasafinance.common.dto.CallNotificationResponse;
+import com.nivasafinance.features.call.repository.CallNotificationRedisRepository;
 import com.nivasafinance.webhooks.call.service.CallWebhookService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +26,7 @@ import java.util.Map;
 public class CallWebhookServiceImpl implements CallWebhookService {
 
     private final CallNotificationRedisRepository notificationRepository;
-    private final CallNotificationWebSocketService webSocketService;
+    private final CallNotificationSseService sseService;
     private final UserReadService userReadService;
 
     @Autowired
@@ -71,9 +71,9 @@ public class CallWebhookServiceImpl implements CallWebhookService {
                     .map(user -> user.getUsername())
                     .forEach(username -> {
                         try {
-                            webSocketService.sendNotificationToUser(notification, username);
+                            sseService.sendNotificationToUser(notification, username);
                         } catch (Exception e) {
-                            log.error("Failed to send WebSocket notification to user: {}", username, e);
+                            log.error("Failed to send SSE notification to user: {}", username, e);
                         }
                     });
         } catch (Exception e) {
@@ -130,7 +130,11 @@ public class CallWebhookServiceImpl implements CallWebhookService {
         if (userPhone != null && !userPhone.isBlank()) {
             // Normalize phone number before lookup
             String normalizedPhone = PhoneNumberUtils.normalizePhoneNumber(userPhone);
-            getSelf().sendNotificationAsync(notification, normalizedPhone);
+            if (normalizedPhone != null && !normalizedPhone.isBlank()) {
+                getSelf().sendNotificationAsync(notification, normalizedPhone);
+            } else {
+                log.warn("Failed to normalize phone number: {}, skipping notification", userPhone);
+            }
         }
     }
 

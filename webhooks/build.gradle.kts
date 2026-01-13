@@ -8,8 +8,7 @@ plugins {
 dependencies {
     implementation(project(":common"))
     implementation(project(":features:usermanagement"))
-    implementation("org.springframework.boot:spring-boot-starter-websocket")
-    implementation("org.springframework.boot:spring-boot-starter-data-redis")
+    implementation(project(":features:call"))
 }
 
 springBoot {

@@ -1,10 +1,9 @@
 package com.nivasafinance.features.call.service.impl;
 
 import com.nivasafinance.common.context.UserContext;
-import com.nivasafinance.features.person.entity.MobileNumberDetails;
 import com.nivasafinance.features.usermanagement.service.UserReadService;
-import com.nivasafinance.webhooks.call.dto.CallNotificationResponse;
-import com.nivasafinance.webhooks.call.repository.CallNotificationRedisRepository;
+import com.nivasafinance.common.dto.CallNotificationResponse;
+import com.nivasafinance.features.call.repository.CallNotificationRedisRepository;
 import com.nivasafinance.features.call.service.CallNotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +40,7 @@ public class CallNotificationServiceImpl implements CallNotificationService {
         userReadService.findUserByUsername(username).ifPresent(user -> {
             if (user.getPerson() != null && user.getPerson().getMobileNumbers() != null) {
                 // Only check PRIMARY phone number (matches DialWhomNumber from webhook)
+                // Notifications are stored by phone number, not by email, since username != agentEmail
                 user.getPerson().getMobileNumbers().stream()
                         .filter(mobile -> mobile.getIsPrimary() != null && mobile.getIsPrimary())
                         .filter(mobile -> mobile.getNumber() != null && !mobile.getNumber().isBlank())
@@ -62,19 +62,6 @@ public class CallNotificationServiceImpl implements CallNotificationService {
                         });
             }
         });
-
-        List<CallNotificationResponse> emailNotifications = notificationRepository.findByUserEmail(username);
-        for (CallNotificationResponse notification : emailNotifications) {
-            if (notification == null || notification.getCallSid() == null) {
-                continue;
-            }
-            String eventType = notification.getEventType() != null ? notification.getEventType() : "UNKNOWN";
-            String uniqueKey = notification.getCallSid() + ":" + eventType;
-            if (!seenCallSids.contains(uniqueKey)) {
-                allNotifications.add(notification);
-                seenCallSids.add(uniqueKey);
-            }
-        }
 
         return allNotifications.stream()
                 .sorted((a, b) -> {

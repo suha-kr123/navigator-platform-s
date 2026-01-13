@@ -1,8 +1,8 @@
-package com.nivasafinance.webhooks.call.repository;
+package com.nivasafinance.features.call.repository;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nivasafinance.common.dto.CallNotificationResponse;
 import com.nivasafinance.common.utils.PhoneNumberUtils;
-import com.nivasafinance.webhooks.call.dto.CallNotificationResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import jakarta.annotation.PostConstruct;
@@ -64,20 +64,20 @@ public class CallNotificationRedisRepository {
             
             redisTemplate.opsForValue().set(notificationKey, notificationJson, NOTIFICATION_TTL);
             
-            if (notification.getAgentEmail() != null) {
+            if (notification.getAgentEmail() != null && !notification.getAgentEmail().isBlank()) {
                 String userKey = USER_NOTIFICATIONS_KEY_PREFIX + "email:" + notification.getAgentEmail();
                 addNotificationToUser(userKey, notificationKey);
             }
             
-            if (notification.getTimestamp() != null) {
-                // Use DialWhomNumber (the agent number) for notifications
-                // Fallback to callTo if DialWhomNumber is not provided
-                String phone = (dialWhomNumber != null && !dialWhomNumber.isBlank()) 
-                        ? dialWhomNumber 
-                        : notification.getCallTo();
-                if (phone != null && !phone.isBlank()) {
-                    // Normalize phone number before saving to Redis
-                    String normalizedPhone = PhoneNumberUtils.normalizePhoneNumber(phone);
+            // Use DialWhomNumber (the agent number) for notifications
+            // Fallback to callTo if DialWhomNumber is not provided
+            String phone = (dialWhomNumber != null && !dialWhomNumber.isBlank()) 
+                    ? dialWhomNumber 
+                    : notification.getCallTo();
+            if (phone != null && !phone.isBlank()) {
+                // Normalize phone number before saving to Redis
+                String normalizedPhone = PhoneNumberUtils.normalizePhoneNumber(phone);
+                if (normalizedPhone != null && !normalizedPhone.isBlank()) {
                     String userPhoneKey = USER_NOTIFICATIONS_KEY_PREFIX + "phone:" + normalizedPhone;
                     addNotificationToUser(userPhoneKey, notificationKey);
                 }
