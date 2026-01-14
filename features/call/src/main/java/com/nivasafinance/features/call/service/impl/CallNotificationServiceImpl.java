@@ -339,7 +339,8 @@ public class CallNotificationServiceImpl implements CallNotificationService {
                     "cl.id as call_log_id, " +
                     "cl.direction as call_direction, " +
                     "a.identifier as advisor_identifier, " +
-                    "a.status as advisor_status " +
+                    "a.status as advisor_status, " +
+                    "advisor_person.display_name as advisor_name " +
                     "FROM n_call_log cl " +
                     "JOIN n_advisor a ON EXISTS ( " +
                     "    SELECT 1 FROM jsonb_array_elements(COALESCE(a.call_logs, '[]'::jsonb)) AS log_entry " +
@@ -363,11 +364,13 @@ public class CallNotificationServiceImpl implements CallNotificationService {
                 Long callLogId = ((Number) row.get("call_log_id")).longValue();
                 UUID advisorIdentifier = (UUID) row.get("advisor_identifier");
                 String advisorStatus = (String) row.get("advisor_status");
+                String advisorName = (String) row.get("advisor_name");
                 
                 EnrichedCallNotificationResponse.AdvisorInfo advisorInfo = 
                     EnrichedCallNotificationResponse.AdvisorInfo.builder()
                         .advisorIdentifier(advisorIdentifier)
                         .advisorStatus(advisorStatus)
+                        .advisorName(advisorName)
                         .build();
                 
                 advisorInfoMap.computeIfAbsent(callLogId, k -> new ArrayList<>()).add(advisorInfo);

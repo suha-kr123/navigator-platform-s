@@ -46,6 +46,7 @@ public class EnrichedCallNotificationResponse {
     public static class AdvisorInfo {
         private UUID advisorIdentifier;
         private String advisorStatus;
+        private String advisorName;
     }
 }
 
