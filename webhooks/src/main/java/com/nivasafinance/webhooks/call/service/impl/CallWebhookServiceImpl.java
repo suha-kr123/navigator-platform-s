@@ -2,6 +2,7 @@ package com.nivasafinance.webhooks.call.service.impl;
 
 import com.nivasafinance.common.utils.PhoneNumberUtils;
 import com.nivasafinance.features.usermanagement.service.UserReadService;
+import com.nivasafinance.features.usermanagement.entity.User;
 import com.nivasafinance.features.call.service.CallNotificationSseService;
 import com.nivasafinance.common.dto.CallNotificationResponse;
 import com.nivasafinance.features.call.repository.CallNotificationRedisRepository;
@@ -67,17 +68,38 @@ public class CallWebhookServiceImpl implements CallWebhookService {
     @Async
     public void sendNotificationAsync(CallNotificationResponse notification, String userPhone) {
         try {
-            userReadService.findUsersByPersonPhoneNumber(userPhone).stream()
-                    .map(user -> user.getUsername())
+            log.info("=== SSE NOTIFICATION FLOW START ===");
+            log.info("Looking up users for phone: {}, callSid: {}", userPhone, notification.getCallSid());
+            
+            List<User> users = userReadService.findUsersByPersonPhoneNumber(userPhone);
+            log.info("Found {} users for phone: {}, callSid: {}", users.size(), userPhone, notification.getCallSid());
+            
+            if (users.isEmpty()) {
+                log.warn("⚠️ No users found for phone number: {}, notification will not be sent via SSE. CallSid: {}", 
+                        userPhone, notification.getCallSid());
+                return;
+            }
+            
+            users.stream()
+                    .map(user -> {
+                        log.info("✓ Found user: {} (username: {}) for phone: {}, callSid: {}", 
+                                user.getId(), user.getUsername(), userPhone, notification.getCallSid());
+                        return user.getUsername();
+                    })
                     .forEach(username -> {
+                        log.info("→ Attempting to send SSE notification to username: {} for call: {}", 
+                                username, notification.getCallSid());
                         try {
                             sseService.sendNotificationToUser(notification, username);
+                            log.info("✓ Successfully sent SSE notification to username: {}", username);
                         } catch (Exception e) {
-                            log.error("Failed to send SSE notification to user: {}", username, e);
+                            log.error("✗ Failed to send SSE notification to user: {}", username, e);
                         }
                     });
+            log.info("=== SSE NOTIFICATION FLOW END ===");
         } catch (Exception e) {
-            log.error("Failed to process async notification for phone: {}", userPhone, e);
+            log.error("✗ Failed to process async notification for phone: {}, callSid: {}", 
+                    userPhone, notification.getCallSid(), e);
         }
     }
 
@@ -120,6 +142,7 @@ public class CallWebhookServiceImpl implements CallWebhookService {
                 .build();
         
         notificationRepository.save(notification, dialWhomNumber);
+        log.info("💾 Notification saved to Redis for callSid: {}, dialWhomNumber: {}", callSid, dialWhomNumber);
         
         // Use DialWhomNumber (the agent number) for notifications
         // Fallback to callTo if DialWhomNumber is not provided
@@ -127,14 +150,23 @@ public class CallWebhookServiceImpl implements CallWebhookService {
                 ? dialWhomNumber 
                 : callTo;
         
+        log.info("📞 Processing webhook notification. CallSid: {}, DialWhomNumber: {}, CallTo: {}, userPhone: {}", 
+                callSid, dialWhomNumber, callTo, userPhone);
+        
         if (userPhone != null && !userPhone.isBlank()) {
             // Normalize phone number before lookup
             String normalizedPhone = PhoneNumberUtils.normalizePhoneNumber(userPhone);
             if (normalizedPhone != null && !normalizedPhone.isBlank()) {
+                log.info("🚀 Calling sendNotificationAsync for phone: {} (normalized: {}), callSid: {}", 
+                        userPhone, normalizedPhone, callSid);
                 getSelf().sendNotificationAsync(notification, normalizedPhone);
+                log.info("✅ sendNotificationAsync called for phone: {}, callSid: {}", 
+                        normalizedPhone, callSid);
             } else {
                 log.warn("Failed to normalize phone number: {}, skipping notification", userPhone);
             }
+        } else {
+            log.warn("userPhone is null or blank, skipping SSE notification. CallSid: {}", callSid);
         }
     }
 

@@ -82,17 +82,27 @@ public class CallNotificationSseService {
      */
     public void sendNotificationToUser(CallNotificationResponse notification, String username) {
         if (username == null || username.isBlank()) {
+            log.warn("⚠️ Cannot send notification: username is null or blank");
             return;
         }
 
+        log.info("🔍 Checking for active SSE connection for username: {}, callSid: {}", 
+                username, notification.getCallSid());
+        log.info("📋 Current active connections: {}", activeConnections.keySet());
+        
         SseEmitter emitter = activeConnections.get(username);
         if (emitter != null) {
+            log.info("✓ Found active SSE connection for username: {}, sending notification for callSid: {}", 
+                    username, notification.getCallSid());
             try {
                 emitter.send(SseEmitter.event()
                         .name("call-notification")
                         .data(notification));
+                log.info("✅ Successfully sent SSE notification to username: {}, callSid: {}", 
+                        username, notification.getCallSid());
             } catch (IOException e) {
-                log.error("Failed to send SSE notification to user: {}", username, e);
+                log.error("✗ Failed to send SSE notification to user: {}, callSid: {}", 
+                        username, notification.getCallSid(), e);
                 // Remove from map first to prevent race condition
                 SseEmitter removed = activeConnections.remove(username);
                 if (removed != null && removed == emitter) {
@@ -104,7 +114,9 @@ public class CallNotificationSseService {
                 }
             }
         } else {
-            log.debug("No active SSE connection found for user: {}", username);
+            log.warn("⚠️ No active SSE connection found for username: {} (callSid: {})", 
+                    username, notification.getCallSid());
+            log.warn("📋 Available connections are: {}", activeConnections.keySet());
         }
     }
 
@@ -143,8 +155,12 @@ public class CallNotificationSseService {
             return emitter;
         }
         
-        log.debug("SSE connection request from user: {}", username);
-        return createConnection(username);
+        log.info("🔌 SSE connection request from user: {}", username);
+        SseEmitter emitter = createConnection(username);
+        log.info("✅ SSE connection created for user: {}. Total active connections: {}", 
+                username, activeConnections.size());
+        log.info("📋 All active connections: {}", activeConnections.keySet());
+        return emitter;
     }
 
     /**
