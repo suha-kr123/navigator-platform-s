@@ -108,17 +108,28 @@ public class CallNotificationServiceImpl implements CallNotificationService {
     
     private long getTotalCallLogCount(String primaryPhoneOriginal, String primaryPhoneNormalized) {
         try {
+            // Extract last 10 digits from user's phone for comparison (India numbers are 10 digits)
+            String userPhoneLast10 = extractLast10Digits(primaryPhoneOriginal);
+            String normalizedLast10 = primaryPhoneNormalized != null ? extractLast10Digits(primaryPhoneNormalized) : userPhoneLast10;
+            
+            // For OUTBOUND calls: user's number should match from_number (we're making the call)
+            // For INBOUND calls: user's number should match to_number (call is coming to us)
+            // Compare last 10 digits to handle different formats (with/without country code)
             String sql = "SELECT COUNT(DISTINCT cl.id) FROM n_call_log cl " +
-                        "WHERE cl.from_number = ? OR cl.to_number = ? " +
-                        "OR cl.from_number = ? OR cl.to_number = ?";
+                        "WHERE (cl.direction = 'OUTBOUND' AND (" +
+                        "    RIGHT(REGEXP_REPLACE(cl.from_number, '[^0-9]', '', 'g'), 10) = ? " +
+                        "    OR RIGHT(REGEXP_REPLACE(cl.from_number, '[^0-9]', '', 'g'), 10) = ?)) " +
+                        "OR (cl.direction = 'INBOUND' AND (" +
+                        "    RIGHT(REGEXP_REPLACE(cl.to_number, '[^0-9]', '', 'g'), 10) = ? " +
+                        "    OR RIGHT(REGEXP_REPLACE(cl.to_number, '[^0-9]', '', 'g'), 10) = ?))";
             
             Long count = jdbcTemplate.queryForObject(
                 sql, 
                 Long.class,
-                primaryPhoneOriginal,
-                primaryPhoneOriginal,
-                primaryPhoneNormalized != null ? primaryPhoneNormalized : primaryPhoneOriginal,
-                primaryPhoneNormalized != null ? primaryPhoneNormalized : primaryPhoneOriginal
+                userPhoneLast10,
+                normalizedLast10,
+                userPhoneLast10,
+                normalizedLast10
             );
             return count != null ? count : 0L;
         } catch (Exception e) {
@@ -129,18 +140,29 @@ public class CallNotificationServiceImpl implements CallNotificationService {
     
     private List<CallLog> findCallLogsByPhoneNumber(String primaryPhoneOriginal, String primaryPhoneNormalized, PaginationRequest paginationRequest) {
         try {
+            // Extract last 10 digits from user's phone for comparison (India numbers are 10 digits)
+            String userPhoneLast10 = extractLast10Digits(primaryPhoneOriginal);
+            String normalizedLast10 = primaryPhoneNormalized != null ? extractLast10Digits(primaryPhoneNormalized) : userPhoneLast10;
+            
+            // For OUTBOUND calls: user's number should match from_number (we're making the call)
+            // For INBOUND calls: user's number should match to_number (call is coming to us)
+            // Compare last 10 digits to handle different formats (with/without country code)
             String sql = "SELECT DISTINCT cl.* FROM n_call_log cl " +
-                        "WHERE (cl.from_number = ? OR cl.to_number = ? " +
-                        "OR cl.from_number = ? OR cl.to_number = ?) " +
+                        "WHERE (cl.direction = 'OUTBOUND' AND (" +
+                        "    RIGHT(REGEXP_REPLACE(cl.from_number, '[^0-9]', '', 'g'), 10) = ? " +
+                        "    OR RIGHT(REGEXP_REPLACE(cl.from_number, '[^0-9]', '', 'g'), 10) = ?)) " +
+                        "OR (cl.direction = 'INBOUND' AND (" +
+                        "    RIGHT(REGEXP_REPLACE(cl.to_number, '[^0-9]', '', 'g'), 10) = ? " +
+                        "    OR RIGHT(REGEXP_REPLACE(cl.to_number, '[^0-9]', '', 'g'), 10) = ?)) " +
                         "ORDER BY cl.created_at DESC " +
                         "LIMIT ? OFFSET ?";
             
             List<Map<String, Object>> rows = jdbcTemplate.queryForList(
                 sql,
-                primaryPhoneOriginal,
-                primaryPhoneOriginal,
-                primaryPhoneNormalized != null ? primaryPhoneNormalized : primaryPhoneOriginal,
-                primaryPhoneNormalized != null ? primaryPhoneNormalized : primaryPhoneOriginal,
+                userPhoneLast10,
+                normalizedLast10,
+                userPhoneLast10,
+                normalizedLast10,
                 paginationRequest.getLimit(),
                 paginationRequest.getOffset()
             );
@@ -222,16 +244,40 @@ public class CallNotificationServiceImpl implements CallNotificationService {
         Map<Long, List<EnrichedCallNotificationResponse.LeadInfo>> leadInfoMap = new HashMap<>();
         
         try {
+            // Find leads where the call log phone number matches a contact's phone number
+            // For INCOMING calls: check from_number (caller is the lead contact)
+            // For OUTGOING calls: check to_number (we're calling the lead contact)
             String placeholders = callLogIds.stream().map(id -> "?").collect(Collectors.joining(","));
-            String sql = """
-                SELECT DISTINCT
-                    (log_entry->>'callLogId')::bigint as call_log_id,
-                    l.lead_identifier,
-                    l.status as lead_status,
-                    (log_entry->>'contactId')::bigint as contact_id
-                FROM n_lead l,
-                LATERAL jsonb_array_elements(COALESCE(l.call_logs, '[]'::jsonb)) AS log_entry
-                WHERE (log_entry->>'callLogId')::bigint IN (""" + placeholders + ")";
+            String sql = "SELECT DISTINCT " +
+                    "cl.id as call_log_id, " +
+                    "cl.direction as call_direction, " +
+                    "l.lead_identifier, " +
+                    "l.status as lead_status, " +
+                    "(log_entry->>'contactId')::bigint as contact_id, " +
+                    "matching_contact.id as matching_contact_id " +
+                    "FROM n_call_log cl " +
+                    "JOIN n_lead l ON EXISTS ( " +
+                    "    SELECT 1 FROM jsonb_array_elements(COALESCE(l.call_logs, '[]'::jsonb)) AS log_entry " +
+                    "    WHERE (log_entry->>'callLogId')::bigint = cl.id " +
+                    ") " +
+                    "LEFT JOIN LATERAL ( " +
+                    "    SELECT (contact_id)::bigint as id " +
+                    "    FROM jsonb_array_elements_text(COALESCE(l.contacts, '[]'::jsonb)) AS contact_id " +
+                    ") contact_ids ON true " +
+                    "LEFT JOIN n_contact matching_contact ON matching_contact.id = contact_ids.id " +
+                    "LEFT JOIN n_person matching_person ON matching_person.id = matching_contact.person_id " +
+                    "LEFT JOIN LATERAL jsonb_array_elements(COALESCE(l.call_logs, '[]'::jsonb)) AS log_entry ON " +
+                    "    (log_entry->>'callLogId')::bigint = cl.id " +
+                    "WHERE cl.id IN (" + placeholders + ") " +
+                    "AND EXISTS ( " +
+                    "    SELECT 1 FROM jsonb_array_elements(COALESCE(matching_person.mobile_numbers, '[]'::jsonb)) AS m " +
+                    "    WHERE (cl.direction = 'INBOUND' AND " +
+                    "        RIGHT(REGEXP_REPLACE(m->>'number', '[^0-9]', '', 'g'), 10) = " +
+                    "        RIGHT(REGEXP_REPLACE(cl.from_number, '[^0-9]', '', 'g'), 10)) " +
+                    "       OR (cl.direction = 'OUTBOUND' AND " +
+                    "        RIGHT(REGEXP_REPLACE(m->>'number', '[^0-9]', '', 'g'), 10) = " +
+                    "        RIGHT(REGEXP_REPLACE(cl.to_number, '[^0-9]', '', 'g'), 10)) " +
+                    ")";
             
             List<Map<String, Object>> results = jdbcTemplate.queryForList(sql, callLogIds.toArray());
             
@@ -240,19 +286,23 @@ public class CallNotificationServiceImpl implements CallNotificationService {
                 UUID leadIdentifier = (UUID) row.get("lead_identifier");
                 String leadStatus = (String) row.get("lead_status");
                 Long contactId = row.get("contact_id") != null ? ((Number) row.get("contact_id")).longValue() : null;
+                Long matchingContactId = row.get("matching_contact_id") != null ? ((Number) row.get("matching_contact_id")).longValue() : null;
+                
+                // Use matching contact ID if available, otherwise use the one from call_logs JSONB
+                Long finalContactId = matchingContactId != null ? matchingContactId : contactId;
                 
                 String contactName = null;
-                if (contactId != null) {
+                if (finalContactId != null) {
                     try {
                         String contactSql = "SELECT person_id FROM n_contact WHERE id = ?";
-                        List<Map<String, Object>> contactRows = jdbcTemplate.queryForList(contactSql, contactId);
+                        List<Map<String, Object>> contactRows = jdbcTemplate.queryForList(contactSql, finalContactId);
                         if (!contactRows.isEmpty()) {
                             Long personId = ((Number) contactRows.get(0).get("person_id")).longValue();
                             var person = personReadService.getPersonById(personId);
                             contactName = person.getDisplayName();
                         }
                     } catch (Exception e) {
-                        log.debug("Failed to get contact name for contactId: {}", contactId, e);
+                        log.debug("Failed to get contact name for contactId: {}", finalContactId, e);
                     }
                 }
                 
@@ -260,7 +310,7 @@ public class CallNotificationServiceImpl implements CallNotificationService {
                     EnrichedCallNotificationResponse.LeadInfo.builder()
                         .leadIdentifier(leadIdentifier)
                         .leadStatus(leadStatus)
-                        .contactId(contactId)
+                        .contactId(finalContactId)
                         .contactName(contactName)
                         .build();
                 
@@ -281,15 +331,31 @@ public class CallNotificationServiceImpl implements CallNotificationService {
         Map<Long, List<EnrichedCallNotificationResponse.AdvisorInfo>> advisorInfoMap = new HashMap<>();
         
         try {
+            // Find advisors where the call log phone number matches the advisor's phone number
+            // For INBOUND calls: check from_number (caller is the advisor)
+            // For OUTBOUND calls: check to_number (we're calling the advisor)
             String placeholders = callLogIds.stream().map(id -> "?").collect(Collectors.joining(","));
-            String sql = """
-                SELECT DISTINCT
-                    (log_entry->>'callLogId')::bigint as call_log_id,
-                    a.identifier as advisor_identifier,
-                    a.status as advisor_status
-                FROM n_advisor a,
-                LATERAL jsonb_array_elements(COALESCE(a.call_logs, '[]'::jsonb)) AS log_entry
-                WHERE (log_entry->>'callLogId')::bigint IN (""" + placeholders + ")";
+            String sql = "SELECT DISTINCT " +
+                    "cl.id as call_log_id, " +
+                    "cl.direction as call_direction, " +
+                    "a.identifier as advisor_identifier, " +
+                    "a.status as advisor_status " +
+                    "FROM n_call_log cl " +
+                    "JOIN n_advisor a ON EXISTS ( " +
+                    "    SELECT 1 FROM jsonb_array_elements(COALESCE(a.call_logs, '[]'::jsonb)) AS log_entry " +
+                    "    WHERE (log_entry->>'callLogId')::bigint = cl.id " +
+                    ") " +
+                    "LEFT JOIN n_person advisor_person ON advisor_person.id = a.person_id " +
+                    "WHERE cl.id IN (" + placeholders + ") " +
+                    "AND EXISTS ( " +
+                    "    SELECT 1 FROM jsonb_array_elements(COALESCE(advisor_person.mobile_numbers, '[]'::jsonb)) AS m " +
+                    "    WHERE (cl.direction = 'INBOUND' AND " +
+                    "        RIGHT(REGEXP_REPLACE(m->>'number', '[^0-9]', '', 'g'), 10) = " +
+                    "        RIGHT(REGEXP_REPLACE(cl.from_number, '[^0-9]', '', 'g'), 10)) " +
+                    "       OR (cl.direction = 'OUTBOUND' AND " +
+                    "        RIGHT(REGEXP_REPLACE(m->>'number', '[^0-9]', '', 'g'), 10) = " +
+                    "        RIGHT(REGEXP_REPLACE(cl.to_number, '[^0-9]', '', 'g'), 10)) " +
+                    ")";
             
             List<Map<String, Object>> results = jdbcTemplate.queryForList(sql, callLogIds.toArray());
             
@@ -311,6 +377,22 @@ public class CallNotificationServiceImpl implements CallNotificationService {
         }
         
         return advisorInfoMap;
+    }
+    
+    /**
+     * Extract last 10 digits from phone number (removes country code, formatting, etc.)
+     * This ensures consistent matching regardless of how phone numbers are stored.
+     */
+    private String extractLast10Digits(String phone) {
+        if (phone == null || phone.isBlank()) {
+            return phone;
+        }
+        // Remove all non-digit characters and take last 10 digits
+        String digitsOnly = phone.replaceAll("[^0-9]", "");
+        if (digitsOnly.length() >= 10) {
+            return digitsOnly.substring(digitsOnly.length() - 10);
+        }
+        return digitsOnly;
     }
 }
 
