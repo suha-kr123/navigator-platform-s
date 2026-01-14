@@ -46,6 +46,16 @@ public class CrifResponseHandler {
         }
 
         String statusCode = extractStatusCode(response);
+        if ("S09".equalsIgnoreCase(statusCode)) {
+            String errorMsg = "Stage-II no hit: CRIF returned S09";
+            log.warn(errorMsg);
+            throw new CrifNoHitException(errorMsg);
+        }
+        if ("S11".equalsIgnoreCase(statusCode)) {
+            String errorMsg = "Stage-II data mismatch: CRIF returned S11";
+            log.warn(errorMsg);
+            throw new CrifDataMismatchException(errorMsg);
+        }
         if (!"S01".equalsIgnoreCase(statusCode) && !"S10".equalsIgnoreCase(statusCode)) {
             String errorMsg = "Stage-II failed: Expected S01 or S10, got " + statusCode;
             log.error(errorMsg);

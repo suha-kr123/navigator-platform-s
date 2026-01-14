@@ -85,7 +85,7 @@ public class CreditBureauWriteServiceImpl implements CreditBureauWriteService {
 
                 var runConfig = thirdPartyServiceConfigReadService.findByService(ThirdPartyServiceList.CREDIT_BUREAU);
                 String providerName = runConfig.getPrimaryConfig().getProvider();
-                
+
                 CreditBureauHandler handler = serviceFactory.getHandler(ThirdPartyServiceList.CREDIT_BUREAU);
                 PullEnquiryRequest pullRequest = PullEnquiryRequest.builder()
                         .personId(personId)
@@ -129,9 +129,6 @@ public class CreditBureauWriteServiceImpl implements CreditBureauWriteService {
     private void updateEnquiryWithResult(CreditBureauEnquiry enquiry, CreditBureauProviderResponse response) {
         enquiry.setStatus(CreditBureauEnquiryStatus.fromCreditBureauEnquiryStatus(response.getStatus()));
         enquiry.setReportId(response.getReportId());
-        
-        // Provider name is already set from the response or can be extracted from runConfig if needed
-        // The provider name should be set before calling this method
         
         // Convert Map to ReportDetails
         CreditBureauEnquiry.ReportDetails reportDetails = null;

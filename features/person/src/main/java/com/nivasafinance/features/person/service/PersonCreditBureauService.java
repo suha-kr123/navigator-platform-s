@@ -15,8 +15,8 @@ public interface PersonCreditBureauService {
      * Initiates credit bureau enquiry for a person. Creates enquiry (INITIATED), sends consent link via
      * createAndSendConsent; does not trigger the pull. The pull runs when the user accepts via the accept API.
      *
-     * @param request The credit bureau enquiry request; must include leadIdentifier and contactIdentifier when
-     *                called from Lead (for the consent link).
+     * @param request The credit bureau enquiry request containing personId, entityType, entityId, and businessPurpose;
+     *                must include leadIdentifier and contactIdentifier when called from Lead (for the consent link).
      * @return CreditBureauEnquiryResponse containing enquiry id, identifier, and status
      */
     CreditBureauEnquiryResponse initiateCreditBureauEnquiry(CreditBureauEnquiryRequest request);

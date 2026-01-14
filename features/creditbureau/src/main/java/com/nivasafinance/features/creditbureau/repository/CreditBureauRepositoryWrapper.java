@@ -59,6 +59,5 @@ public class CreditBureauRepositoryWrapper {
         return findByIdentifier(identifier)
                 .orElseThrow(() -> CreditBureauExceptionFactory.notFoundByIdentifier(identifier, messageSource));
     }
-
 }
 

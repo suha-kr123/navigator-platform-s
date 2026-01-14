@@ -109,8 +109,6 @@ public class PersonCreditBureauServiceImpl implements PersonCreditBureauService 
         log.info("Enquiry initiated with ID: {}, identifier: {} for personId: {}",
                 enquiryId, enquiryIdentifier, personId);
 
-        CreditBureauEnquiry enquiry = creditBureauReadService.getCbEnquiryEntityById(enquiryId);
-
         // Update person's cb_enquiry_id array and latestEnquiryId
         updatePersonCbEnquiryIds(personId, personResponse, enquiryId);
 
@@ -123,6 +121,7 @@ public class PersonCreditBureauServiceImpl implements PersonCreditBureauService 
             initiateResponse.setConsentIdentifier(consentIdentifier);
             
             // Trigger credit bureau pull since consent is already available
+            CreditBureauEnquiry enquiry = creditBureauReadService.getCbEnquiryEntityById(enquiryId);
             triggerCreditBureauPull(enquiry, personId);
         } else {
             // Create new consent and send link
@@ -262,6 +261,7 @@ public class PersonCreditBureauServiceImpl implements PersonCreditBureauService 
         }
         person.setCbEnquiryId(personEnquiryIds);
 
+        // Update latestEnquiryId in cbDetails
         Person.CreditBureauDetails cbDetails = person.getCbDetails();
         if (cbDetails == null) {
             cbDetails = Person.CreditBureauDetails.builder().build();
@@ -278,8 +278,8 @@ public class PersonCreditBureauServiceImpl implements PersonCreditBureauService 
 
             Person.CreditBureauDetails cbDetails = person.getCbDetails();
             if (cbDetails == null) {
-                cbDetails = Person.CreditBureauDetails.builder().build();
-            }
+            cbDetails = Person.CreditBureauDetails.builder().build();
+        }
 
             if (CreditBureauEnquiryStatus.SUCCESS == status) {
                 cbDetails.setLatestSuccessEnquiryId(enquiryId);

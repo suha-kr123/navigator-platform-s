@@ -62,25 +62,25 @@ public class CbReportStoredListener {
                 log.warn("No Redash query sheet configs found in CB config for enquiry ID: {}, skipping CB report", enquiryId);
                 return;
             }
-            
+
             List<Long> queryIds = sheetConfigs.stream()
                     .map(RedashQuerySheetConfig::getQueryId)
                     .filter(id -> id != null)
                     .collect(Collectors.toList());
-            
+
             Map<Long, String> queryIdToSheetName = sheetConfigs.stream()
                     .filter(config -> config.getQueryId() != null && config.getSheetName() != null)
                     .collect(Collectors.toMap(RedashQuerySheetConfig::getQueryId, RedashQuerySheetConfig::getSheetName, (existing, replacement) -> existing));
-            
+
             log.info("Processing CB report stored for enquiry ID: {}, fetching Excel from Redash for query IDs: {} with sheet names: {}", enquiryId, queryIds, queryIdToSheetName);
-            
+
             Map<String, Object> parameters = Map.of("enquiryId", enquiryId);
             RedashExcelReportRequest redashRequest = RedashExcelReportRequest.builder()
                     .queryIds(queryIds)
                     .parameters(parameters)
                     .queryIdToSheetName(queryIdToSheetName)
                     .build();
-            
+
             try (InputStream excelStream = redashService.generateExcelReport(redashRequest)) {
                 byte[] excelBytes = excelStream.readAllBytes();
                 if (excelBytes == null || excelBytes.length == 0) {

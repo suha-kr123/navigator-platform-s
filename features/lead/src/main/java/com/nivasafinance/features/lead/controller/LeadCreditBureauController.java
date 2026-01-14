@@ -1,9 +1,7 @@
 package com.nivasafinance.features.lead.controller;
 
+import com.nivasafinance.common.annotations.RequirePermission;
 import com.nivasafinance.common.constants.ApiConstants;
-import com.nivasafinance.features.consent.dto.AcceptConsentResponse;
-import com.nivasafinance.features.consent.dto.WithdrawConsentResponse;
-import com.nivasafinance.features.consent.enums.ConsentStatus;
 import com.nivasafinance.features.creditbureau.dto.*;
 import com.nivasafinance.features.lead.dto.EnquiryConsentStatusResponse;
 import com.nivasafinance.features.lead.dto.InitiateCbEnquiryResponse;
@@ -19,7 +17,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @RestController
-@RequestMapping(ApiConstants.V1 + "/leads/{leadIdentifier}/contact/{contactIdentifier}")
+@RequestMapping(ApiConstants.V1 + "/leads/{leadIdentifier}/contacts/{contactIdentifier}")
 @AllArgsConstructor
 public class LeadCreditBureauController {
 
@@ -27,6 +25,7 @@ public class LeadCreditBureauController {
     private final LeadCreditBureauReadService leadCreditBureauReadService;
 
     @PostMapping("/enquiry/initiate")
+    @RequirePermission(permissionName = "CREATE_LEAD_CREDIT_DETAILS")
     public ResponseEntity<InitiateCbEnquiryResponse> initiateEnquiry(
             @PathVariable UUID leadIdentifier,
             @PathVariable UUID contactIdentifier) {
@@ -34,31 +33,8 @@ public class LeadCreditBureauController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @PostMapping("/enquiry/{enquiryIdentifier}/consent/{consentIdentifier}/accept")
-    public ResponseEntity<AcceptConsentResponse> acceptConsent(
-            @PathVariable UUID leadIdentifier,
-            @PathVariable UUID contactIdentifier,
-            @PathVariable UUID enquiryIdentifier,
-            @PathVariable UUID consentIdentifier) {
-        leadCreditBureauWriteService.acceptConsent(leadIdentifier, contactIdentifier, enquiryIdentifier, consentIdentifier);
-        return ResponseEntity.ok(AcceptConsentResponse.builder()
-                .consentStatus(ConsentStatus.RECEIVED)
-                .build());
-    }
-
-    @PostMapping("/enquiry/{enquiryIdentifier}/consent/{consentIdentifier}/withdraw")
-    public ResponseEntity<WithdrawConsentResponse> withdrawConsent(
-            @PathVariable UUID leadIdentifier,
-            @PathVariable UUID contactIdentifier,
-            @PathVariable UUID enquiryIdentifier,
-            @PathVariable UUID consentIdentifier) {
-        leadCreditBureauWriteService.withdrawConsent(leadIdentifier, contactIdentifier, enquiryIdentifier, consentIdentifier);
-        return ResponseEntity.ok(WithdrawConsentResponse.builder()
-                .consentStatus(ConsentStatus.REQUEST_FOR_WITHDRAWAL)
-                .build());
-    }
-
     @GetMapping("/enquiry/{enquiryIdentifier}/customer-enquiry")
+    @RequirePermission(permissionName = "READ_LEAD_CREDIT_DETAILS")
     public ResponseEntity<List<CustomerEnquiryResponse>> getCustomerEnquiry(
             @PathVariable UUID leadIdentifier,
             @PathVariable UUID contactIdentifier,
@@ -68,6 +44,7 @@ public class LeadCreditBureauController {
     }
 
     @GetMapping("/enquiry/{enquiryIdentifier}/summary")
+    @RequirePermission(permissionName = "READ_LEAD_CREDIT_DETAILS")
     public ResponseEntity<SummaryResponse> getSummary(
             @PathVariable UUID leadIdentifier,
             @PathVariable UUID contactIdentifier,
@@ -78,6 +55,7 @@ public class LeadCreditBureauController {
     }
 
     @GetMapping("enquiry/{enquiryIdentifier}/status")
+    @RequirePermission(permissionName = "READ_LEAD_CREDIT_DETAILS")
     public ResponseEntity<EnquiryStatusResponse> getEnquiryStatus(
             @PathVariable UUID leadIdentifier,
             @PathVariable UUID contactIdentifier,
@@ -88,6 +66,7 @@ public class LeadCreditBureauController {
     }
 
     @GetMapping("/enquiry/{enquiryIdentifier}/consent-status")
+    @RequirePermission(permissionName = "READ_LEAD_CREDIT_DETAILS")
     public ResponseEntity<EnquiryConsentStatusResponse> getConsentStatus(
             @PathVariable UUID leadIdentifier,
             @PathVariable UUID contactIdentifier,
@@ -99,6 +78,7 @@ public class LeadCreditBureauController {
     }
 
     @GetMapping("/enquiry/{enquiryIdentifier}/score-trends")
+    @RequirePermission(permissionName = "READ_LEAD_CREDIT_DETAILS")
     public ResponseEntity<List<TrendsResponse>> getScoreTrends(
             @PathVariable UUID leadIdentifier,
             @PathVariable UUID contactIdentifier,
@@ -108,6 +88,7 @@ public class LeadCreditBureauController {
     }
 
     @GetMapping("/enquiry/{enquiryIdentifier}/demographic-variations")
+    @RequirePermission(permissionName = "READ_LEAD_CREDIT_DETAILS")
     public ResponseEntity<List<DemographicVariationResponse>> getDemographicVariations(
             @PathVariable UUID leadIdentifier,
             @PathVariable UUID contactIdentifier,

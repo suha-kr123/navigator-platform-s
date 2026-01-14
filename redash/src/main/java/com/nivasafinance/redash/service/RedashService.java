@@ -146,7 +146,7 @@ public class RedashService {
         if (request == null || request.getQueryIds() == null || request.getQueryIds().isEmpty()) {
             throw new IllegalArgumentException("request and queryIds must not be null or empty");
         }
-        
+
         List<Long> queryIds = request.getQueryIds();
         Map<String, Object> params = request.getParameters() != null ? request.getParameters() : Map.of();
         Map<Long, String> queryIdToSheetName = request.getQueryIdToSheetName();
@@ -196,14 +196,13 @@ public class RedashService {
                 Response response = responses.get(i);
                 Long queryId = i < queryIds.size() ? queryIds.get(i) : null;
 
-                // Determine sheet name: use mapping if available, otherwise default to Sheet{i+1}
                 String sheetName;
                 if (queryIdToSheetName != null && queryId != null && queryIdToSheetName.containsKey(queryId)) {
                     sheetName = queryIdToSheetName.get(queryId);
                 } else {
                     sheetName = SHEET_NAME_PREFIX + (i + 1);
                 }
-                
+
                 if (response == null || response.body() == null) {
                     log.warn("Skipping sheet '{}': null response body", sheetName);
                     continue;
