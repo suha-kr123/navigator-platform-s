@@ -12,6 +12,7 @@ dependencies {
     implementation(project(":integrations"))
     implementation(project(":features:rolemanagement"))
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
+    implementation("org.springframework.boot:spring-boot-starter-jdbc")
 }
 
 springBoot {
