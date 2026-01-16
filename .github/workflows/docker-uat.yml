@@ -5,8 +5,8 @@ on:
   workflow_dispatch:
     inputs:
       docker_tag:
-        description: 'Docker tag (leave empty to use git commit hash)'
-        required: false
+        description: 'Tag'
+        required: true
         type: string
 
 # Environment variables
