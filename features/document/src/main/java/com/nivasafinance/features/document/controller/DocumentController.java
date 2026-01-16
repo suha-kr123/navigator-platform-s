@@ -23,7 +23,7 @@ public class DocumentController {
     private final DocumentReadService documentReadService;
     
     @GetMapping("/{documentId}")
-    @RequirePermission(permissionName = "READ_DOCUMENT")
+    @RequirePermission(permissionName = "READ_LEAD_DOCUMENTS")
     public ResponseEntity<InputStreamResource> getDocument(@PathVariable UUID documentId) {
         com.nivasafinance.features.document.dto.DocumentFileResponse documentFileResponse = 
                 documentReadService.getDocumentFile(documentId);

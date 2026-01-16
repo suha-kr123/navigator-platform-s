@@ -225,6 +225,7 @@ public class LeadController {
     }
 
     @PostMapping("/{leadId}/status/undo-reject")
+    @RequirePermission(permissionName = "UNDO_REJECT_LEAD_STATUS")
     public ResponseEntity<Void> undoRejectLead(
             @PathVariable UUID leadId) {
         leadWriteService.undoRejectLead(leadId);
