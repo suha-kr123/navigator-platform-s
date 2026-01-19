@@ -12,6 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import jakarta.servlet.http.HttpServletResponse;
+
 @RestController
 @RequestMapping(ApiConstants.V1 + "/notifications")
 @RequiredArgsConstructor
@@ -21,7 +23,15 @@ public class CallNotificationSseController {
     private final CallNotificationService notificationService;
 
     @GetMapping(value = "/call-events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter subscribeToCallNotifications() {
+    public SseEmitter subscribeToCallNotifications(HttpServletResponse response) {
+        // Set headers explicitly to improve HTTP/2 compatibility
+        response.setContentType(MediaType.TEXT_EVENT_STREAM_VALUE);
+        response.setCharacterEncoding("UTF-8");
+        response.setHeader("Cache-Control", "no-cache, no-transform");
+        response.setHeader("Connection", "keep-alive");
+        response.setHeader("X-Accel-Buffering", "no"); // Disable nginx buffering
+        response.setHeader("X-Content-Type-Options", "nosniff");
+        
         return sseService.subscribeToCallNotifications();
     }
 

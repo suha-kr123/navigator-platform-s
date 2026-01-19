@@ -154,9 +154,10 @@ public class CallNotificationSseService {
             }
             
             try {
+                // Use comment-based heartbeat for better HTTP/2 compatibility
+                // Comments are more reliable than named events with HTTP/2
                 emitter.send(SseEmitter.event()
-                        .name("ping")
-                        .data("keep-alive"));
+                        .comment("keep-alive"));
                 log.debug("Sent heartbeat to user: {}", username);
             } catch (IOException e) {
                 log.debug("Failed to send heartbeat to user: {} (connection may be closed)", username);
