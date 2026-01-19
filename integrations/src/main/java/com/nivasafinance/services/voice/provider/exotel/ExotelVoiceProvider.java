@@ -496,7 +496,7 @@ public class ExotelVoiceProvider implements VoiceProvider {
                 .mechanism("Exponential")
                 .noOfRetries(request.getNoOfRetries())
                 .intervalMins(request.getRetryIntervalMins())
-                .onStatus(Arrays.asList("busy", "no-answer", "failed"))
+                .onStatus(Arrays.asList("busy", "no-answer"))
                 .build();
         
         // Build custom field JSON
