@@ -80,6 +80,11 @@ public class VoiceCampaignService {
             builder.cpm(configVoiceConfigs.getDefaultCpm());
         }
 
+        // Override scheduledAt if provided in request
+        if (requestVoiceDetails != null && requestVoiceDetails.getScheduledAt() != null) {
+            builder.scheduledAt(requestVoiceDetails.getScheduledAt());
+        }
+
         return builder.build();
     }
 
@@ -122,13 +127,19 @@ public class VoiceCampaignService {
                 .retryInterval(existingVoiceDetails.getRetryInterval())
                 .listId(existingVoiceDetails.getListId())
                 .documentUploadId(existingVoiceDetails.getDocumentUploadId())
-                .documentStatus(existingVoiceDetails.getDocumentStatus());
+                .documentStatus(existingVoiceDetails.getDocumentStatus())
+                .scheduledAt(existingVoiceDetails.getScheduledAt());
 
         // Override CPM if provided in request, otherwise keep existing value
         if (requestVoiceDetails != null && requestVoiceDetails.getCpm() != null) {
             builder.cpm(requestVoiceDetails.getCpm());
         } else {
             builder.cpm(existingVoiceDetails.getCpm());
+        }
+
+        // Override scheduledAt if provided in request, otherwise keep existing value
+        if (requestVoiceDetails != null && requestVoiceDetails.getScheduledAt() != null) {
+            builder.scheduledAt(requestVoiceDetails.getScheduledAt());
         }
 
         return builder.build();
@@ -248,6 +259,7 @@ public class VoiceCampaignService {
                         .listId(listId)
                         .documentUploadId(requestId)
                         .documentStatus(CampaignProviderDocumentStatus.UPLOADED)
+                        .scheduledAt(voiceDetails.getScheduledAt())
                         .build();
 
                 if (campaign.getProviderDetails() == null) {
@@ -266,7 +278,8 @@ public class VoiceCampaignService {
                         voiceDetails.getRetryInterval(),
                         voiceDetails.getCpm(),
                         null, // file is null since we're using listId
-                        new VoiceCampaignRequest.CallBackData(SystemEntities.CAMPAIGN, campaign.getIdentifier().toString())  // callBackData is null for now
+                        new VoiceCampaignRequest.CallBackData(SystemEntities.CAMPAIGN, campaign.getIdentifier().toString()),
+                        voiceDetails.getScheduledAt()
                 );
 
                 BusinessContext submitContext = new BusinessContext(
