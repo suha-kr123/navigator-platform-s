@@ -26,8 +26,9 @@ public class CallNotificationSseService {
     // Maximum connections allowed per user to prevent resource exhaustion
     private static final int MAX_CONNECTIONS_PER_USER = 10;
     
-    // Heartbeat interval in seconds (20 seconds - keeps connection alive through proxies/LBs)
-    private static final long HEARTBEAT_INTERVAL_SECONDS = 20;
+    // Heartbeat interval in seconds (15 seconds - keeps connection alive through proxies/LBs)
+    // Reduced from 20s to be more aggressive and prevent timeout issues
+    private static final long HEARTBEAT_INTERVAL_SECONDS = 15;
 
     // Store active SSE connections by username - supports multiple connections per user
     private final Map<String, List<SseEmitter>> activeConnections = new ConcurrentHashMap<>();
@@ -154,25 +155,28 @@ public class CallNotificationSseService {
             }
             
             try {
-                // Use comment-based heartbeat for better HTTP/2 compatibility
-                // Comments are more reliable than named events with HTTP/2
+                // Use data-based heartbeat with named event - more reliable across HTTP/1.1 and HTTP/2
+                // Data events are better supported than comments in most SSE implementations
                 emitter.send(SseEmitter.event()
-                        .comment("keep-alive"));
-                log.debug("Sent heartbeat to user: {}", username);
+                        .name("heartbeat")
+                        .data("keep-alive"));
+                log.debug("💓 Sent heartbeat to user: {}", username);
             } catch (IOException e) {
-                log.debug("Failed to send heartbeat to user: {} (connection may be closed)", username);
-                // Connection is dead, cancel heartbeat and remove connection
+                // Only remove connection on IOException (actual connection closed)
+                log.info("⚠️ Failed to send heartbeat to user: {} (connection closed): {}", username, e.getMessage());
                 cancelHeartbeat(emitter);
                 removeConnection(username, emitter);
             } catch (Exception e) {
-                log.warn("Unexpected error sending heartbeat to user: {}", username, e);
-                cancelHeartbeat(emitter);
-                removeConnection(username, emitter);
+                // Log but don't remove connection for other exceptions - might be transient
+                // Let it retry on next heartbeat interval
+                log.warn("⚠️ Error sending heartbeat to user: {} (will retry next interval): {}", 
+                        username, e.getMessage());
+                // Don't remove connection - allow retry on next heartbeat
             }
         }, HEARTBEAT_INTERVAL_SECONDS, HEARTBEAT_INTERVAL_SECONDS, TimeUnit.SECONDS);
         
         heartbeatTasks.put(emitter, heartbeatTask);
-        log.debug("Started heartbeat for user: {} (interval: {}s)", username, HEARTBEAT_INTERVAL_SECONDS);
+        log.info("✅ Started heartbeat for user: {} (interval: {}s)", username, HEARTBEAT_INTERVAL_SECONDS);
     }
 
     /**

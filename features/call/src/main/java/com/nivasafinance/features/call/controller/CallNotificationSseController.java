@@ -28,7 +28,7 @@ public class CallNotificationSseController {
         response.setContentType(MediaType.TEXT_EVENT_STREAM_VALUE);
         response.setCharacterEncoding("UTF-8");
         response.setHeader("Cache-Control", "no-cache, no-transform");
-        response.setHeader("Connection", "keep-alive");
+        // Note: Connection header is not used in HTTP/2, removed for better compatibility
         response.setHeader("X-Accel-Buffering", "no"); // Disable nginx buffering
         response.setHeader("X-Content-Type-Options", "nosniff");
         
