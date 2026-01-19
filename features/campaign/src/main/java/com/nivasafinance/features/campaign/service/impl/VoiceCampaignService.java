@@ -219,7 +219,7 @@ public class VoiceCampaignService {
                 // Upload CSV
                 log.info("Uploading CSV for campaign: {}", campaign.getId());
                 VoiceCreateListRequest createListRequest = new VoiceCreateListRequest(
-                        campaign.getName() + "_list_" + System.currentTimeMillis(),
+                        campaign.getName(),
                         documentFile.getFile()
                 );
 
