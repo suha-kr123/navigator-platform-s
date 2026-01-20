@@ -78,6 +78,7 @@ public class StageController {
      * GET /api/v1/stages/{stageKey}/template
      */
     @GetMapping("/{stageKey}/template")
+    @RequirePermission(permissionName = "READ_STAGE")
     public ResponseEntity<StageTemplateResponse> getStageTemplate(
             @PathVariable String stageKey) {
         StageTemplateResponse template = stageReadService.getStageTemplate(stageKey);

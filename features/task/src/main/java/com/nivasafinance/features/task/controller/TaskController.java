@@ -98,6 +98,7 @@ public class TaskController {
     }
 
     @PutMapping("/{taskIdentifier}/name")
+    @RequirePermission(permissionName = "UPDATE_TASK")
     public ResponseEntity<TaskResponse> updateTaskName(
             @PathVariable UUID taskIdentifier,
             @Valid @RequestBody UpdateTaskNameRequest request) {

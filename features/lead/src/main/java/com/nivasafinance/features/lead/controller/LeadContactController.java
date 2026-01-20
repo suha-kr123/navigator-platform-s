@@ -52,6 +52,7 @@ public class LeadContactController {
     }
 
     @PatchMapping("/{contactIdentifier}/name")
+    @RequirePermission(permissionName = "UPDATE_LEAD_CONTACTS")
     public ResponseEntity<Void> updateContactName(
             @PathVariable UUID leadId,
             @PathVariable UUID contactIdentifier,

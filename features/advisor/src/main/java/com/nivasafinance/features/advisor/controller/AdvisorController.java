@@ -137,6 +137,7 @@ public class AdvisorController {
     }
 
     @PostMapping("/{identifier}/out-of-geo")
+    @RequirePermission(permissionName = "UPDATE_ADVISOR_STATUS")
     public ResponseEntity<Void> outOfGeoAdvisor(
             @PathVariable UUID identifier,
             @Valid @RequestBody OutOfGeoAdvisorRequest request) {

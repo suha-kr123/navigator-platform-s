@@ -285,6 +285,7 @@ public class LeadController {
     }
 
     @PutMapping("/{leadId}/call-details")
+    @RequirePermission(permissionName = "UPDATE_LEAD_CALL")
     public ResponseEntity<Void> updateCallDetails(
             @PathVariable UUID leadId,
             @Valid @RequestBody UpdateCallDetailsRequest request) {
