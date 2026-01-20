@@ -27,7 +27,7 @@ public class LeadController {
     private final LeadReadService leadReadService;
 
     @GetMapping("/dashboard")
-    @RequirePermission(permissionName = "READ_LEAD")
+    @RequirePermission(permissionName = "READ_LEAD_DASHBOARD")
     public ResponseEntity<PaginatedResponse<LeadDashboardResponse>> getLeadDashboard(
             @Valid PaginationRequest paginationRequest,
             @ModelAttribute LeadDashboardFilters filters
@@ -38,7 +38,7 @@ public class LeadController {
     }
 
     @GetMapping("/dashboard/filters")
-    @RequirePermission(permissionName = "READ_LEAD")
+    @RequirePermission(permissionName = "READ_LEAD_DASHBOARD")
     public ResponseEntity<LeadDashboardFiltersResponse> getLeadDashboardFilters(
             @ModelAttribute LeadDashboardFiltersFilters filters
     ) {
@@ -115,7 +115,7 @@ public class LeadController {
     }
 
     @PutMapping("/{leadId}/proposed-details")
-    @RequirePermission(permissionName = "UPDATE_LEAD")
+    @RequirePermission(permissionName = "UPDATE_LEAD_PROPOSED_DETAILS")
     public ResponseEntity<Void> updateProposedDetails(
             @PathVariable UUID leadId,
             @Valid @RequestBody UpdateProposedDetailsRequest request) {
@@ -131,7 +131,7 @@ public class LeadController {
     }
 
     @PutMapping("/{leadId}/property-details")
-    @RequirePermission(permissionName = "UPDATE_LEAD")
+    @RequirePermission(permissionName = "UPDATE_LEAD_PROPERTY_DETAILS")
     public ResponseEntity<Void> updatePropertyDetails(
             @PathVariable UUID leadId,
             @Valid @RequestBody UpdatePropertyDetailsRequest request) {
@@ -147,7 +147,7 @@ public class LeadController {
     }
 
     @PutMapping("/{leadId}/sourcing-details")
-    @RequirePermission(permissionName = "UPDATE_LEAD")
+    @RequirePermission(permissionName = "UPDATE_LEAD_SOURCING_DETAILS")
     public ResponseEntity<Void> updateSourcingDetails(
             @PathVariable UUID leadId,
             @Valid @RequestBody UpdateSourcingDetailsRequest request) {
@@ -225,6 +225,7 @@ public class LeadController {
     }
 
     @PostMapping("/{leadId}/status/undo-reject")
+    @RequirePermission(permissionName = "UNDO_REJECT_LEAD_STATUS")
     public ResponseEntity<Void> undoRejectLead(
             @PathVariable UUID leadId) {
         leadWriteService.undoRejectLead(leadId);
@@ -284,6 +285,7 @@ public class LeadController {
     }
 
     @PutMapping("/{leadId}/call-details")
+    @RequirePermission(permissionName = "UPDATE_LEAD_CALL")
     public ResponseEntity<Void> updateCallDetails(
             @PathVariable UUID leadId,
             @Valid @RequestBody UpdateCallDetailsRequest request) {

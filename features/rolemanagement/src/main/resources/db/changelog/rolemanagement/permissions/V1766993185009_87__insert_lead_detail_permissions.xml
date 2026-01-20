@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1766993185009_87" author="system" context="default">
+        <comment>Insert LEAD detail update permissions</comment>
+        
+        <!-- Update Lead Proposed Details permission -->
+        <insert tableName="n_permissions">
+            <column name="name" value="UPDATE_LEAD_PROPOSED_DETAILS"/>
+            <column name="action" value="UPDATE"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="UPDATE_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <!-- Update Lead Property Details permission -->
+        <insert tableName="n_permissions">
+            <column name="name" value="UPDATE_LEAD_PROPERTY_DETAILS"/>
+            <column name="action" value="UPDATE"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="UPDATE_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+        <!-- Update Lead Sourcing Details permission -->
+        <insert tableName="n_permissions">
+            <column name="name" value="UPDATE_LEAD_SOURCING_DETAILS"/>
+            <column name="action" value="UPDATE"/>
+            <column name="module" value="LEAD"/>
+            <column name="operation" value="UPDATE_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        
+    </changeSet>
+
+</databaseChangeLog>
+

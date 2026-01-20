@@ -24,6 +24,8 @@ import com.nivasafinance.services.voice.provider.exotel.data.ExotelCSVUploadStat
 import com.nivasafinance.services.voice.provider.exotel.data.ExotelGetCampaignResponse;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import org.springframework.core.io.ByteArrayResource;
 import lombok.RequiredArgsConstructor;
@@ -494,7 +496,7 @@ public class ExotelVoiceProvider implements VoiceProvider {
                 .mechanism("Exponential")
                 .noOfRetries(request.getNoOfRetries())
                 .intervalMins(request.getRetryIntervalMins())
-                .onStatus(Arrays.asList("busy", "no-answer", "failed"))
+                .onStatus(Arrays.asList("busy", "no-answer"))
                 .build();
         
         // Build custom field JSON
@@ -516,6 +518,20 @@ public class ExotelVoiceProvider implements VoiceProvider {
         // Build lists array
         List<String> lists = Collections.singletonList(request.getListId());
         
+        // Build schedule if scheduledAt is provided
+        ExotelCreateCampaignRequest.Schedule schedule = null;
+        if (request.getScheduledAt() != null) {
+            // Format LocalDateTime to ISO-8601 with timezone offset (e.g., "2022-08-08T16:34:22+05:30")
+            // Using Asia/Kolkata timezone (IST) which is +05:30
+            ZoneId zoneId = ZoneId.of("Asia/Kolkata");
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
+            String sendAt = request.getScheduledAt().atZone(zoneId).format(formatter);
+            
+            schedule = ExotelCreateCampaignRequest.Schedule.builder()
+                    .sendAt(sendAt)
+                    .build();
+        }
+        
         // Build campaign object
         ExotelCreateCampaignRequest.Campaign campaign = ExotelCreateCampaignRequest.Campaign.builder()
                 .name(request.getName())
@@ -531,6 +547,7 @@ public class ExotelVoiceProvider implements VoiceProvider {
                 .throttle(request.getCpm())
                 .retries(retries)
                 .customField(customField)
+                .schedule(schedule)
                 .build();
         
         // Wrap campaign in campaigns array

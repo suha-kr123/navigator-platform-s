@@ -43,6 +43,16 @@ public class ExotelCreateCampaignRequest {
         private ExotelRetries retries;
         @JsonProperty("custom_field")
         private String customField;
+        private Schedule schedule;
+    }
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Builder
+    public static class Schedule {
+        @JsonProperty("send_at")
+        private String sendAt;
     }
 
     @Data

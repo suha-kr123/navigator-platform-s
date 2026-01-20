@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -23,5 +25,6 @@ public class UpdateCampaignDraftRequest {
     @AllArgsConstructor
     public static class VoiceDetails {
         private Integer cpm;
+        private LocalDateTime scheduledAt;
     }
 }

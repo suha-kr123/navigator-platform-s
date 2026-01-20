@@ -6,6 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
+
 
 // Either send listId or file depending on the provider
 @Data
@@ -21,6 +23,7 @@ public class VoiceCampaignRequest {
     private Integer cpm; // Calls per minute (throttle)
     private MultipartFile file;
     private CallBackData callBackData;
+    private LocalDateTime scheduledAt;
 
     @AllArgsConstructor
     @NoArgsConstructor

@@ -137,6 +137,7 @@ public class AdvisorController {
     }
 
     @PostMapping("/{identifier}/out-of-geo")
+    @RequirePermission(permissionName = "UPDATE_ADVISOR_STATUS")
     public ResponseEntity<Void> outOfGeoAdvisor(
             @PathVariable UUID identifier,
             @Valid @RequestBody OutOfGeoAdvisorRequest request) {
@@ -155,7 +156,7 @@ public class AdvisorController {
     }
 
     @GetMapping("/dashboard")
-    @RequirePermission(permissionName = "READ_ADVISOR")
+    @RequirePermission(permissionName = "READ_ADVISOR_DASHBOARD")
     public ResponseEntity<PaginatedResponse<AdvisorDashboardResponse>> getAdvisorDashboard(
             @Valid PaginationRequest paginationRequest,
             @ModelAttribute AdvisorDashboardFilters filters) {
