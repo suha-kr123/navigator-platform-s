@@ -155,7 +155,7 @@ public class AdvisorController {
     }
 
     @GetMapping("/dashboard")
-    @RequirePermission(permissionName = "READ_ADVISOR")
+    @RequirePermission(permissionName = "READ_ADVISOR_DASHBOARD")
     public ResponseEntity<PaginatedResponse<AdvisorDashboardResponse>> getAdvisorDashboard(
             @Valid PaginationRequest paginationRequest,
             @ModelAttribute AdvisorDashboardFilters filters) {
