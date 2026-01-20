@@ -23,12 +23,13 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class CallNotificationSseService {
 
-    // Maximum connections allowed per user to prevent resource exhaustion
-    private static final int MAX_CONNECTIONS_PER_USER = 10;
+    // Maximum connections allowed per user - reduced to prevent HTTP/2 stream exhaustion
+    // 3 is reasonable (main tab, mobile, backup) - too many connections create too many HTTP/2 streams
+    private static final int MAX_CONNECTIONS_PER_USER = 3;
     
-    // Heartbeat interval in seconds (15 seconds - keeps connection alive through proxies/LBs)
-    // Reduced from 20s to be more aggressive and prevent timeout issues
-    private static final long HEARTBEAT_INTERVAL_SECONDS = 15;
+    // Heartbeat interval in seconds - increased to reduce traffic and HTTP/2 stream pressure
+    // 30 seconds is still frequent enough to keep connections alive through proxies/LBs
+    private static final long HEARTBEAT_INTERVAL_SECONDS = 30;
 
     // Store active SSE connections by username - supports multiple connections per user
     private final Map<String, List<SseEmitter>> activeConnections = new ConcurrentHashMap<>();
@@ -36,8 +37,13 @@ public class CallNotificationSseService {
     // Store heartbeat tasks for each connection to allow cancellation
     private final Map<SseEmitter, ScheduledFuture<?>> heartbeatTasks = new ConcurrentHashMap<>();
     
-    // Executor service for scheduling heartbeats
-    private final ScheduledExecutorService heartbeatExecutor = Executors.newScheduledThreadPool(2);
+    // Executor service for scheduling heartbeats - increased thread pool to handle more concurrent heartbeats
+    // Use larger pool based on expected connections (e.g., 50 connections = ~2 heartbeats/sec)
+    private final ScheduledExecutorService heartbeatExecutor = Executors.newScheduledThreadPool(10);
+    
+    // Locks per emitter to prevent concurrent writes (HTTP/2 requirement)
+    // HTTP/2 requires serialized writes per stream to avoid protocol errors
+    private final Map<SseEmitter, Object> emitterLocks = new ConcurrentHashMap<>();
 
     /**
      * Register a new SSE connection for a user
@@ -55,6 +61,8 @@ public class CallNotificationSseService {
             log.warn("⚠️ User {} has reached max connections ({}). Closing oldest connection.", 
                     username, MAX_CONNECTIONS_PER_USER);
             SseEmitter oldest = connections.remove(0);
+            cancelHeartbeat(oldest);
+            emitterLocks.remove(oldest);
             try {
                 oldest.complete();
                 log.info("Closed oldest connection for user: {}", username);
@@ -66,6 +74,9 @@ public class CallNotificationSseService {
         // Create new SSE emitter with infinite timeout (0L)
         // Heartbeats will keep the connection alive through proxies/LBs
         SseEmitter emitter = new SseEmitter(0L);
+        
+        // Create lock for this emitter to prevent concurrent writes (HTTP/2 requirement)
+        emitterLocks.put(emitter, new Object());
         
         // Handle completion - remove from list and cancel heartbeat
         emitter.onCompletion(() -> {
@@ -108,17 +119,20 @@ public class CallNotificationSseService {
         log.info("Added SSE connection for user: {}. Total connections for user: {}", 
                 username, connections.size());
         
-        // Send initial connection event
-        try {
-            emitter.send(SseEmitter.event()
-                    .name("connected")
-                    .data("Connection established"));
-        } catch (IOException e) {
-            log.error("Failed to send initial SSE event to user: {}", username, e);
-            cancelHeartbeat(emitter);
-            removeConnection(username, emitter);
-            emitter.completeWithError(e);
-            return emitter;
+        // Send initial connection event with synchronization to prevent concurrent writes
+        Object lock = emitterLocks.get(emitter);
+        synchronized (lock) {
+            try {
+                emitter.send(SseEmitter.event()
+                        .name("connected")
+                        .data("Connection established"));
+            } catch (IOException e) {
+                log.error("Failed to send initial SSE event to user: {}", username, e);
+                cancelHeartbeat(emitter);
+                removeConnection(username, emitter);
+                emitter.completeWithError(e);
+                return emitter;
+            }
         }
         
         // Start heartbeat to keep connection alive through proxies/LBs
@@ -134,6 +148,8 @@ public class CallNotificationSseService {
         List<SseEmitter> connections = activeConnections.get(username);
         if (connections != null) {
             connections.remove(emitter);
+            // Remove lock when connection is removed
+            emitterLocks.remove(emitter);
             // Remove user entry if no connections left
             if (connections.isEmpty()) {
                 activeConnections.remove(username);
@@ -154,24 +170,40 @@ public class CallNotificationSseService {
                 return;
             }
             
-            try {
-                // Use data-based heartbeat with named event - more reliable across HTTP/1.1 and HTTP/2
-                // Data events are better supported than comments in most SSE implementations
-                emitter.send(SseEmitter.event()
-                        .name("heartbeat")
-                        .data("keep-alive"));
-                log.debug("💓 Sent heartbeat to user: {}", username);
-            } catch (IOException e) {
-                // Only remove connection on IOException (actual connection closed)
-                log.info("⚠️ Failed to send heartbeat to user: {} (connection closed): {}", username, e.getMessage());
+            // Get lock for this emitter
+            Object lock = emitterLocks.get(emitter);
+            if (lock == null) {
+                // Emitter was removed, cancel heartbeat
                 cancelHeartbeat(emitter);
-                removeConnection(username, emitter);
-            } catch (Exception e) {
-                // Log but don't remove connection for other exceptions - might be transient
-                // Let it retry on next heartbeat interval
-                log.warn("⚠️ Error sending heartbeat to user: {} (will retry next interval): {}", 
-                        username, e.getMessage());
-                // Don't remove connection - allow retry on next heartbeat
+                return;
+            }
+            
+            // Synchronize to prevent concurrent writes (HTTP/2 requirement)
+            synchronized (lock) {
+                // Double-check connection is still active after acquiring lock
+                connections = activeConnections.get(username);
+                if (connections == null || !connections.contains(emitter)) {
+                    cancelHeartbeat(emitter);
+                    return;
+                }
+                
+                try {
+                    // Use comment-based heartbeat - simpler and better for HTTP/2
+                    // Comments don't create event boundaries, reducing HTTP/2 stream overhead
+                    emitter.send(SseEmitter.event().comment("keep-alive"));
+                    log.debug("💓 Sent heartbeat to user: {}", username);
+                } catch (IOException e) {
+                    // Only remove connection on IOException (actual connection closed)
+                    log.info("⚠️ Failed to send heartbeat to user: {} (connection closed): {}", username, e.getMessage());
+                    cancelHeartbeat(emitter);
+                    removeConnection(username, emitter);
+                } catch (Exception e) {
+                    // Log but don't remove connection for other exceptions - might be transient
+                    // Let it retry on next heartbeat interval
+                    log.warn("⚠️ Error sending heartbeat to user: {} (will retry next interval): {}", 
+                            username, e.getMessage());
+                    // Don't remove connection - allow retry on next heartbeat
+                }
             }
         }, HEARTBEAT_INTERVAL_SECONDS, HEARTBEAT_INTERVAL_SECONDS, TimeUnit.SECONDS);
         
@@ -216,16 +248,26 @@ public class CallNotificationSseService {
         int successCount = 0;
 
         for (SseEmitter emitter : connections) {
-            try {
-                emitter.send(SseEmitter.event()
-                        .name("call-notification")
-                        .data(notification));
-                successCount++;
-                log.debug("✅ Sent notification to connection for user: {}", username);
-            } catch (IOException e) {
-                log.warn("⚠️ Failed to send to one connection for user: {} (connection may be closed), callSid: {}",
-                        username, notification.getCallSid());
+            Object lock = emitterLocks.get(emitter);
+            if (lock == null) {
+                // Emitter was removed, mark as dead
                 deadConnections.add(emitter);
+                continue;
+            }
+            
+            // Synchronize to prevent concurrent writes with heartbeat
+            synchronized (lock) {
+                try {
+                    emitter.send(SseEmitter.event()
+                            .name("call-notification")
+                            .data(notification));
+                    successCount++;
+                    log.debug("✅ Sent notification to connection for user: {}", username);
+                } catch (IOException e) {
+                    log.warn("⚠️ Failed to send to one connection for user: {} (connection may be closed), callSid: {}",
+                            username, notification.getCallSid());
+                    deadConnections.add(emitter);
+                }
             }
         }
 
@@ -233,6 +275,8 @@ public class CallNotificationSseService {
         if (!deadConnections.isEmpty()) {
             connections.removeAll(deadConnections);
             for (SseEmitter dead : deadConnections) {
+                cancelHeartbeat(dead);
+                emitterLocks.remove(dead);
                 try {
                     dead.completeWithError(new IOException("Connection closed"));
                 } catch (Exception e) {
@@ -264,6 +308,7 @@ public class CallNotificationSseService {
             log.info("Closing {} connection(s) for user: {}", connections.size(), username);
             for (SseEmitter emitter : connections) {
                 cancelHeartbeat(emitter);
+                emitterLocks.remove(emitter);
                 try {
                     emitter.complete();
                 } catch (Exception e) {

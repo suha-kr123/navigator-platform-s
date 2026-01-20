@@ -4,9 +4,11 @@ import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationInfo;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.common.context.UserContext;
+import com.nivasafinance.common.dto.CallNotificationResponse;
 import com.nivasafinance.common.dto.EnrichedCallNotificationResponse;
 import com.nivasafinance.common.utils.PhoneNumberUtils;
 import com.nivasafinance.features.call.entity.CallLog;
+import com.nivasafinance.features.call.repository.CallNotificationRedisRepository;
 import com.nivasafinance.features.call.service.CallNotificationService;
 import com.nivasafinance.features.person.service.PersonReadService;
 import com.nivasafinance.features.usermanagement.entity.User;
@@ -27,6 +29,7 @@ public class CallNotificationServiceImpl implements CallNotificationService {
     private final UserReadService userReadService;
     private final PersonReadService personReadService;
     private final JdbcTemplate jdbcTemplate;
+    private final CallNotificationRedisRepository redisRepository;
 
     @Override
     public PaginatedResponse<EnrichedCallNotificationResponse> getNotificationsForCurrentUser(PaginationRequest paginationRequest) {
@@ -396,6 +399,130 @@ public class CallNotificationServiceImpl implements CallNotificationService {
             return digitsOnly.substring(digitsOnly.length() - 10);
         }
         return digitsOnly;
+    }
+
+    /**
+     * Get the most recent call notification from Redis for the current user (for reconnection scenarios).
+     * 
+     * Fetches the most recent notification that is immediately available in Redis. Notifications are saved to Redis
+     * instantaneously when received, while database writes happen asynchronously later. This method
+     * is specifically designed for catching missed notifications when SSE reconnects after a disconnect.
+     * 
+     * <p><strong>Use Case:</strong></p>
+     * <ul>
+     *   <li>Client disconnects from SSE (network issue, stream ended, etc.)</li>
+     *   <li>Notifications are sent to Redis immediately during the disconnect period</li>
+     *   <li>Client reconnects and fetches from this method</li>
+     *   <li>DB writes may not have completed yet (async write with delay)</li>
+     *   <li>Fetching from DB would miss these notifications, but Redis has them instantly</li>
+     * </ul>
+     * 
+     * <p><strong>Important:</strong> This method should only be called on SSE reconnection, not as
+     * a primary notification source. Use the SSE stream for real-time delivery.</p>
+     * 
+     * <p><strong>Note:</strong> Returns only the most recent notification. Older notifications will be
+     * available in the database and can be fetched from there.</p>
+     * 
+     * <p><strong>Limitations:</strong> Redis has a TTL of 24 hours and limited count per user (default: 5).
+     * This is a temporary buffer for missed notifications during disconnection, not a long-term storage solution.</p>
+     * 
+     * @return Optional containing the most recent notification from Redis, or empty if none found
+     */
+    @Override
+    public Optional<CallNotificationResponse> getRecentNotificationsFromRedis() {
+        String username = UserContext.getUsername();
+        if (username == null || username.isBlank()) {
+            log.debug("Missing username in UserContext - returning empty");
+            return Optional.empty();
+        }
+
+        Optional<User> userOpt = userReadService.findUserByUsername(username);
+        if (userOpt.isEmpty() || userOpt.get().getPerson() == null) {
+            log.debug("User not found or has no person associated: {}", username);
+            return Optional.empty();
+        }
+
+        User user = userOpt.get();
+        
+        // Get user's primary phone number - try both normalized and original formats
+        // Following the same structure as getNotificationsForCurrentUser
+        String primaryPhoneOriginal = user.getPerson().getMobileNumbers().stream()
+                .filter(mobile -> mobile.getIsPrimary() != null && mobile.getIsPrimary())
+                .filter(mobile -> mobile.getNumber() != null && !mobile.getNumber().isBlank())
+                .map(mobile -> mobile.getNumber())
+                .findFirst()
+                .orElse(null);
+
+        if (primaryPhoneOriginal == null) {
+            log.debug("No primary phone number found for user: {}", username);
+            return Optional.empty();
+        }
+
+        String primaryPhoneNormalized = PhoneNumberUtils.normalizePhoneNumber(primaryPhoneOriginal);
+        
+        // Fetch from Redis - try both original and normalized formats
+        // Notifications are stored in Redis by phone number (DialWhomNumber or callTo)
+        List<CallNotificationResponse> notifications = new ArrayList<>();
+        Set<String> seenKeys = new HashSet<>(); // Track duplicates by callSid + eventType
+        
+        // Try original phone number first
+        try {
+            List<CallNotificationResponse> phoneNotifications = redisRepository.findByUserPhone(primaryPhoneOriginal);
+            for (CallNotificationResponse notification : phoneNotifications) {
+                String key = notification.getCallSid() + ":" + 
+                            (notification.getEventType() != null ? notification.getEventType() : "UNKNOWN");
+                if (!seenKeys.contains(key)) {
+                    seenKeys.add(key);
+                    notifications.add(notification);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to fetch notifications from Redis by original phone for user: {}", username, e);
+        }
+        
+        // Try normalized phone number (might match if stored differently)
+        if (primaryPhoneNormalized != null && !primaryPhoneNormalized.equals(primaryPhoneOriginal)) {
+            try {
+                List<CallNotificationResponse> normalizedNotifications = redisRepository.findByUserPhone(primaryPhoneNormalized);
+                for (CallNotificationResponse notification : normalizedNotifications) {
+                    String key = notification.getCallSid() + ":" + 
+                                (notification.getEventType() != null ? notification.getEventType() : "UNKNOWN");
+                    if (!seenKeys.contains(key)) {
+                        seenKeys.add(key);
+                        notifications.add(notification);
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Failed to fetch notifications from Redis by normalized phone for user: {}", username, e);
+            }
+        }
+
+        if (notifications.isEmpty()) {
+            log.debug("No notifications found in Redis for user: {}", username);
+            return Optional.empty();
+        }
+
+        // Sort by createdAt descending (most recent first)
+        notifications.sort((a, b) -> {
+            if (a.getCreatedAt() == null && b.getCreatedAt() == null) {
+                return 0;
+            }
+            if (a.getCreatedAt() == null) {
+                return 1; // nulls last
+            }
+            if (b.getCreatedAt() == null) {
+                return -1; // nulls last
+            }
+            return b.getCreatedAt().compareTo(a.getCreatedAt()); // descending order
+        });
+
+        // Return only the most recent notification (last 1 call)
+        // Others will be stored in the database and can be fetched from there
+        CallNotificationResponse mostRecent = notifications.get(0);
+        log.info("Returning most recent notification from Redis for user: {} (callSid: {}, total in Redis: {})", 
+                username, mostRecent.getCallSid(), notifications.size());
+        
+        return Optional.of(mostRecent);
     }
 }
 
