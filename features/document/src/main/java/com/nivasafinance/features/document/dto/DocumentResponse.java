@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Data
 @NoArgsConstructor
@@ -14,6 +15,7 @@ import java.time.LocalDateTime;
 @Builder
 public class DocumentResponse {
     private Long id;
+    private UUID identifier;
     private String name;
     private String type;
     private Long size;
@@ -34,6 +36,7 @@ public class DocumentResponse {
         }
         return DocumentResponse.builder()
                 .id(document.getId())
+                .identifier(document.getIdentifier())
                 .name(document.getName())
                 .type(document.getType())
                 .size(document.getSize())
