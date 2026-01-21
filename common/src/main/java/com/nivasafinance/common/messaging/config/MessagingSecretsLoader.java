@@ -34,6 +34,13 @@ public class MessagingSecretsLoader {
 
     @PostConstruct
     public void loadSqsSecrets() {
+        // Check if auto-detection is disabled
+        if (!messagingProperties.isAutoDetectSqs()) {
+            log.info("SQS auto-detection is disabled. Using explicitly configured provider: {}", 
+                    messagingProperties.getProvider());
+            return;
+        }
+
         // If provider is explicitly set to SQS via property, use that
         // Otherwise, try to auto-detect by loading QUEUE_SECRET
         if (messagingProperties.getProvider() == com.nivasafinance.common.messaging.enums.MessageProvider.SQS) {

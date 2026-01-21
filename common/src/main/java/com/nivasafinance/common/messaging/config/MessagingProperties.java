@@ -30,6 +30,14 @@ public class MessagingProperties {
      */
     private String sqsSecretName;
 
+    /**
+     * Whether to auto-detect SQS configuration from AWS Secrets Manager.
+     * If false, the application will not attempt to load SQS configuration from Secrets Manager
+     * and will use the explicitly configured provider (defaults to LOCAL).
+     * Set to false for local development to prevent connecting to production AWS resources.
+     */
+    private boolean autoDetectSqs = true;
+
     private final SqsProperties sqs = new SqsProperties();
 
     @Data

@@ -2,7 +2,8 @@ package com.nivasafinance.integrations.framework.config;
 
 public enum ThirdPartyProviderList {
     EXOTEL("exotel"),
-    WATI("wati");
+    WATI("wati"),
+    GALLABOX("gallabox");
 
 
     private final String provideName;

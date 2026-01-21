@@ -5,9 +5,8 @@ import com.nivasafinance.integrations.framework.config.BusinessContext;
 import com.nivasafinance.integrations.framework.core.data.ThirdPartyConfig;
 import com.nivasafinance.services.whatsapp.dto.WhatsAppTemplateRequest;
 import com.nivasafinance.services.whatsapp.dto.WhatsAppTemplateResponse;
-import com.nivasafinance.services.whatsapp.provider.wati.data.WatiConfiguration;
 
-public interface WhatsAppProvider extends ThirdPartyProvider<WatiConfiguration> {
+public interface WhatsAppProvider<T> extends ThirdPartyProvider<T> {
     
     WhatsAppTemplateResponse sendTemplate(
         WhatsAppTemplateRequest request,
