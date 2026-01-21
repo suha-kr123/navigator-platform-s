@@ -241,16 +241,41 @@ public class LeadDashboardWrapper {
 
     private void appendSubstatusFilter(LeadDashboardFilters filters, StringBuilder whereClause, List<Object> params) {
         if (!CollectionUtils.isEmpty(filters.getSubstatus())) {
-            List<String> normalizedSubstatuses = filters.getSubstatus()
-                    .stream()
-                    .filter(Objects::nonNull)
-                    .map(substatus -> substatus.toUpperCase(Locale.ROOT))
-                    .toList();
-            if (!normalizedSubstatuses.isEmpty()) {
-                whereClause.append(" AND l.substatus IN (").append(createPlaceholders(normalizedSubstatuses.size()))
-                        .append(") ");
-                params.addAll(normalizedSubstatuses);
+            // Normalize and separate NULL from actual substatuses in a single pass
+            List<String> actualSubstatuses = new ArrayList<>();
+            boolean includeNull = false;
+            
+            for (String substatus : filters.getSubstatus()) {
+                if (substatus == null) {
+                    continue;
+                }
+                String normalized = substatus.toUpperCase(Locale.ROOT).trim();
+                if (normalized.isEmpty()) {
+                    continue;
+                }
+                if ("NULL".equals(normalized)) {
+                    includeNull = true;
+                } else {
+                    actualSubstatuses.add(normalized);
+                }
             }
+            
+            // Build SQL condition based on what was requested
+            if (actualSubstatuses.isEmpty() && includeNull) {
+                // Only NULL filter requested
+                whereClause.append(" AND l.substatus IS NULL ");
+            } else if (!actualSubstatuses.isEmpty() && includeNull) {
+                // Both specific substatuses and NULL requested
+                whereClause.append(" AND (l.substatus IN (").append(createPlaceholders(actualSubstatuses.size()))
+                        .append(") OR l.substatus IS NULL) ");
+                params.addAll(actualSubstatuses);
+            } else if (!actualSubstatuses.isEmpty()) {
+                // Only specific substatuses requested (NULL not in list)
+                whereClause.append(" AND l.substatus IN (").append(createPlaceholders(actualSubstatuses.size()))
+                        .append(") ");
+                params.addAll(actualSubstatuses);
+            }
+            // If both lists are empty after filtering (edge case), don't add any filter
         } else {
             // If substatus filter is not provided, filter by substatus IS NULL
             whereClause.append(" AND l.substatus IS NULL ");
