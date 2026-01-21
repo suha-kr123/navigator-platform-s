@@ -330,18 +330,36 @@ public class LeadDashboardWrapper {
     }
 
     private void appendLastCallDirectionFilter(LeadDashboardFilters filters, StringBuilder whereClause, List<Object> params) {
-        if (filters.getLastCallDirection() != null && !filters.getLastCallDirection().trim().isEmpty()) {
-            String normalizedDirection = filters.getLastCallDirection().toUpperCase(Locale.ROOT);
-            whereClause.append(" AND latest_call.direction = ? ");
-            params.add(normalizedDirection);
+        if (!CollectionUtils.isEmpty(filters.getLastCallDirection())) {
+            List<String> normalizedDirections = filters.getLastCallDirection()
+                    .stream()
+                    .filter(Objects::nonNull)
+                    .map(direction -> direction.toUpperCase(Locale.ROOT).trim())
+                    .filter(direction -> !direction.isEmpty())
+                    .toList();
+            if (!normalizedDirections.isEmpty()) {
+                whereClause.append(" AND latest_call.direction IN (")
+                        .append(createPlaceholders(normalizedDirections.size()))
+                        .append(") ");
+                params.addAll(normalizedDirections);
+            }
         }
     }
 
     private void appendLastCallStatusFilter(LeadDashboardFilters filters, StringBuilder whereClause, List<Object> params) {
-        if (filters.getLastCallStatus() != null && !filters.getLastCallStatus().trim().isEmpty()) {
-            String normalizedStatus = filters.getLastCallStatus().toUpperCase(Locale.ROOT);
-            whereClause.append(" AND latest_call.status = ? ");
-            params.add(normalizedStatus);
+        if (!CollectionUtils.isEmpty(filters.getLastCallStatus())) {
+            List<String> normalizedStatuses = filters.getLastCallStatus()
+                    .stream()
+                    .filter(Objects::nonNull)
+                    .map(status -> status.toUpperCase(Locale.ROOT).trim())
+                    .filter(status -> !status.isEmpty())
+                    .toList();
+            if (!normalizedStatuses.isEmpty()) {
+                whereClause.append(" AND latest_call.status IN (")
+                        .append(createPlaceholders(normalizedStatuses.size()))
+                        .append(") ");
+                params.addAll(normalizedStatuses);
+            }
         }
     }
 

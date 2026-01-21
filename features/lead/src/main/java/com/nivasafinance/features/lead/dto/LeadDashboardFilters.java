@@ -26,8 +26,8 @@ public class LeadDashboardFilters {
     BigDecimal minAmount;
     BigDecimal maxAmount;
     List<String> branch;
-    String lastCallDirection;
-    String lastCallStatus;
+    List<String> lastCallDirection;
+    List<String> lastCallStatus;
     List<String> stageKey;
     List<String> subStageKey;
     List<String> stageAssignedTo;
