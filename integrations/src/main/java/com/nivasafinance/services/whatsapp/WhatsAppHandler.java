@@ -18,25 +18,25 @@ import java.util.Set;
 @Service
 public class WhatsAppHandler extends ThirdPartyHandler {
     
-    private final Map<String, WhatsAppProvider> servicesMap = new HashMap<>();
+    private final Map<String, WhatsAppProvider<?>> servicesMap = new HashMap<>();
 
     @Autowired
-    public WhatsAppHandler(Set<WhatsAppProvider> services) {
-        for (WhatsAppProvider provider : services) {
+    public WhatsAppHandler(Set<WhatsAppProvider<?>> services) {
+        for (WhatsAppProvider<?> provider : services) {
             servicesMap.put(provider.getKey().getProvideName(), provider);
         }
     }
     
     public WhatsAppTemplateResponse sendTemplate(WhatsAppTemplateRequest request, BusinessContext businessContext) {
-        WhatsAppProvider primaryProvider = servicesMap.get(runConfig.getPrimaryConfig().getProvider());
+        WhatsAppProvider<?> primaryProvider = servicesMap.get(runConfig.getPrimaryConfig().getProvider());
         if (primaryProvider == null) {
             throw new ServiceInvocationException("Error fetching " + getKey().getServiceName());
         }
-        WhatsAppProvider fallbackProvider = null;
+        WhatsAppProvider<?> fallbackProvider = null;
         if (runConfig.getFallbackConfig() != null) {
             fallbackProvider = servicesMap.get(runConfig.getFallbackConfig().getProvider());
         }
-        ServiceRunner<WhatsAppProvider, WhatsAppTemplateRequest> runner = 
+        ServiceRunner<WhatsAppProvider<?>, WhatsAppTemplateRequest> runner = 
             new ServiceRunner<>(primaryProvider, fallbackProvider, runConfig.getRetries());
         return (WhatsAppTemplateResponse) runner.invokeService(
             "sendTemplate",
@@ -47,15 +47,15 @@ public class WhatsAppHandler extends ThirdPartyHandler {
     }
     
     public WhatsAppTemplateResponse getTemplateStatus(String phoneNumber, BusinessContext businessContext) {
-        WhatsAppProvider primaryProvider = servicesMap.get(runConfig.getPrimaryConfig().getProvider());
+        WhatsAppProvider<?> primaryProvider = servicesMap.get(runConfig.getPrimaryConfig().getProvider());
         if (primaryProvider == null) {
             throw new ServiceInvocationException("Error fetching " + getKey().getServiceName());
         }
-        WhatsAppProvider fallbackProvider = null;
+        WhatsAppProvider<?> fallbackProvider = null;
         if (runConfig.getFallbackConfig() != null) {
             fallbackProvider = servicesMap.get(runConfig.getFallbackConfig().getProvider());
         }
-        ServiceRunner<WhatsAppProvider, String> runner = 
+        ServiceRunner<WhatsAppProvider<?>, String> runner = 
             new ServiceRunner<>(primaryProvider, fallbackProvider, runConfig.getRetries());
         return (WhatsAppTemplateResponse) runner.invokeService(
             "getTemplateStatus",

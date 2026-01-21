@@ -1,4 +1,4 @@
-package com.nivasafinance.services.whatsapp.provider.wati;
+package com.nivasafinance.services.whatsapp.provider.gallabox;
 
 import com.nivasafinance.integrations.framework.config.BusinessContext;
 import com.nivasafinance.integrations.framework.config.ThirdPartyProviderList;
@@ -7,29 +7,37 @@ import org.springframework.stereotype.Component;
 import com.nivasafinance.services.whatsapp.dto.WhatsAppTemplateRequest;
 import com.nivasafinance.services.whatsapp.dto.WhatsAppTemplateResponse;
 import com.nivasafinance.services.whatsapp.provider.WhatsAppProvider;
-import com.nivasafinance.services.whatsapp.provider.wati.data.WatiConfiguration;
+import com.nivasafinance.services.whatsapp.provider.gallabox.data.GallaboxConfiguration;
 
 @Component
-public class WatiWhatsAppProvider implements WhatsAppProvider<WatiConfiguration> {
+public class GallaboxWhatsAppProvider implements WhatsAppProvider<GallaboxConfiguration> {
     
-    private final WatiApiClient apiClient;
+    private final GallaboxApiClient apiClient;
     
-    public WatiWhatsAppProvider() {
-        this.apiClient = new WatiApiClient();
+    public GallaboxWhatsAppProvider() {
+        this.apiClient = new GallaboxApiClient();
     }
     
     @Override
     public ThirdPartyProviderList getKey() {
-        return ThirdPartyProviderList.WATI;
+        return ThirdPartyProviderList.GALLABOX;
     }
     
     @Override
-    public WatiConfiguration setupConfiguration(java.util.Map<String, String> map) {
-        String apiEndpoint = map.getOrDefault("api_endpoint", "https://live-server.wati.io");
-        String accessToken = map.get("access_token");
+    public GallaboxConfiguration setupConfiguration(java.util.Map<String, String> map) {
+        String apiEndpoint = map.getOrDefault("api_endpoint", "https://server.gallabox.com/devapi/messages/whatsapp");
+        String apiKey = map.get("api_key");
+        String apiSecret = map.get("api_secret");
+        String channelId = map.get("channel_id");
         
-        if (accessToken == null || accessToken.isEmpty()) {
-            throw new IllegalArgumentException("WATI access token is required");
+        if (apiKey == null || apiKey.isEmpty()) {
+            throw new IllegalArgumentException("Gallabox API key is required");
+        }
+        if (apiSecret == null || apiSecret.isEmpty()) {
+            throw new IllegalArgumentException("Gallabox API secret is required");
+        }
+        if (channelId == null || channelId.isEmpty()) {
+            throw new IllegalArgumentException("Gallabox channel ID is required");
         }
         
         int timeout = 30;
@@ -49,18 +57,12 @@ public class WatiWhatsAppProvider implements WhatsAppProvider<WatiConfiguration>
                 retryAttempts = 3;
             }
         }
-        
-        String clientId = null;
-        if (map.containsKey("client_id")) {
-            clientId = map.get("client_id");
-        } else if (map.containsKey("clientId")) {
-            clientId = map.get("clientId");
-        }
 
-        return WatiConfiguration.builder()
+        return GallaboxConfiguration.builder()
                 .apiEndpoint(apiEndpoint)
-                .accessToken(accessToken)
-                .clientId(clientId)
+                .apiKey(apiKey)
+                .apiSecret(apiSecret)
+                .channelId(channelId)
                 .timeout(timeout)
                 .retryAttempts(retryAttempts)
                 .build();
@@ -72,7 +74,7 @@ public class WatiWhatsAppProvider implements WhatsAppProvider<WatiConfiguration>
         ThirdPartyConfig config,
         BusinessContext businessContext
     ) {
-        WatiConfiguration watiConfig = setupConfiguration(config.getConfigurations());
+        GallaboxConfiguration gallaboxConfig = setupConfiguration(config.getConfigurations());
         
         if (request.getPhoneNumber() == null || request.getPhoneNumber().isBlank()) {
             throw new IllegalArgumentException("Phone number cannot be empty");
@@ -81,9 +83,9 @@ public class WatiWhatsAppProvider implements WhatsAppProvider<WatiConfiguration>
             throw new IllegalArgumentException("Template name cannot be empty");
         }
         
-        WhatsAppTemplateResponse watiResponse = apiClient.sendTemplate(watiConfig, request);
+        WhatsAppTemplateResponse gallaboxResponse = apiClient.sendTemplate(gallaboxConfig, request);
         
-        return watiResponse;
+        return gallaboxResponse;
     }
     
     @Override
@@ -92,11 +94,15 @@ public class WatiWhatsAppProvider implements WhatsAppProvider<WatiConfiguration>
         ThirdPartyConfig config,
         BusinessContext businessContext
     ) {
-        WatiConfiguration watiConfig = setupConfiguration(config.getConfigurations());
-        
-        WhatsAppTemplateResponse watiResponse = apiClient.getTemplateStatus(watiConfig, phoneNumber);
-        
-        return watiResponse;
+        // Gallabox may not have a status endpoint, return a placeholder response
+        return WhatsAppTemplateResponse.builder()
+                .phoneNumber(phoneNumber)
+                .status("unknown")
+                .messageId(null)
+                .templateName(null)
+                .deliveredAt(null)
+                .readAt(null)
+                .errorMessage("Template status check not implemented for Gallabox")
+                .build();
     }
 }
-
