@@ -38,7 +38,7 @@ public class GallaboxConfig {
             if (advisorGallaboxSecrets == null) {
                 synchronized (lock) {
                     if (advisorGallaboxSecrets == null) {
-                        advisorGallaboxSecrets = secretManagerService.getSecret("ADVISOR_GALLABOX");
+                         advisorGallaboxSecrets = secretManagerService.getSecret("ADVISOR_GALLABOX");
                     }
                 }
             }
