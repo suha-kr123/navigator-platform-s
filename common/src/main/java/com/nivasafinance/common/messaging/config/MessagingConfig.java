@@ -36,8 +36,13 @@ public class MessagingConfig {
 
     @Bean
     @DependsOn("messagingSecretsLoader")
-    @ConditionalOnProperty(name = "messaging.provider", havingValue = "SQS")
     public SqsClient sqsClient() {
+        // Check provider at runtime (after secrets are loaded) instead of using @ConditionalOnProperty
+        if (messagingProperties.getProvider() != MessageProvider.SQS) {
+            log.debug("SQS provider not configured, skipping SqsClient bean creation. Current provider: {}", 
+                    messagingProperties.getProvider());
+            return null;
+        }
         
         try {
         configurationValidator.validateSqsConfiguration();
