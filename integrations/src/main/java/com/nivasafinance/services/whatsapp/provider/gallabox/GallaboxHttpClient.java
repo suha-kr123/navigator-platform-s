@@ -84,7 +84,7 @@ public class GallaboxHttpClient {
             
             // If HTTP error, return error response immediately
             if (httpError) {
-                String errorMsg = "HTTP " + response.getStatusCode().value() + " " + response.getStatusCode().getReasonPhrase();
+                String errorMsg = "HTTP " + response.getStatusCode().value();
                 if (responseBody != null) {
                     try {
                         JsonNode jsonNode = objectMapper.readTree(responseBody);
@@ -94,7 +94,7 @@ public class GallaboxHttpClient {
                             errorMsg = jsonNode.get("error").asText();
                         }
                     } catch (Exception e) {
-                        // Use HTTP error message if JSON parsing fails
+                        // Use HTTP error code if JSON parsing fails
                     }
                 }
                 
