@@ -60,8 +60,13 @@ public class GallaboxNotificationExecutor implements NotificationExecutor {
         }
 
         // Load template to get variables definition
-        NotificationTemplate template = notificationTemplateRepository.findByIdentifier(templateIdentifier)
-                .orElseThrow(() -> new IllegalStateException("NotificationTemplate not found: " + templateIdentifier));
+        // Try case-insensitive lookup first, then exact match
+        NotificationTemplate template = notificationTemplateRepository.findByIdentifierIgnoreCase(templateIdentifier)
+                .orElseGet(() -> notificationTemplateRepository.findByIdentifier(templateIdentifier)
+                        .orElseThrow(() -> {
+                            log.error("NotificationTemplate not found: '{}'. Please check if the template exists in n_notification_template table with this identifier.", templateIdentifier);
+                            return new IllegalStateException("NotificationTemplate not found: " + templateIdentifier + ". Please ensure the template is created in the database.");
+                        }));
 
         // Load notification record to get idempotency key
         NotificationRecord record = notificationRecordRepository.findById(receipt.getNotificationRecordId())
@@ -94,9 +99,14 @@ public class GallaboxNotificationExecutor implements NotificationExecutor {
                 gallaboxWhatsAppProvider.sendTemplate(request, gallaboxConfig, businessContext);
         
         // Check if send was successful
-        if (response == null || !"sent".equalsIgnoreCase(response.getStatus())) {
+        // Gallabox returns "ACCEPTED" status for successful sends (not "sent")
+        String responseStatus = response != null ? response.getStatus() : null;
+        boolean isSuccess = response != null && 
+                ("ACCEPTED".equalsIgnoreCase(responseStatus) || "sent".equalsIgnoreCase(responseStatus));
+        
+        if (response == null || !isSuccess) {
             String errorMsg = "Unknown error from Gallabox";
-            String status = response != null ? response.getStatus() : "null";
+            String status = responseStatus != null ? responseStatus : "null";
             String messageId = response != null ? response.getMessageId() : null;
             
             // Try to extract more detailed error information

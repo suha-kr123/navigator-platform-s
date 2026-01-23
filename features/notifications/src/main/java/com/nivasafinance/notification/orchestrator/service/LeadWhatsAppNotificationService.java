@@ -73,6 +73,51 @@ public class LeadWhatsAppNotificationService {
     }
     
     /**
+     * Creates a notification record from Gallabox send template response.
+     * Extracts leadIdentifier from notification receipt details or message payload.
+     */
+    @Transactional
+    public LeadWhatsAppNotification createFromGallaboxResponse(
+            NotificationReceipt receipt,
+            String messageId,
+            String status,
+            String templateName,
+            String phoneNumber) {
+        
+        // Extract leadIdentifier (UUID) from receipt details or message payload
+        UUID leadIdentifier = extractLeadId(receipt);
+        if (leadIdentifier == null) {
+            throw new IllegalStateException("LeadIdentifier not found in receipt details or message payload");
+        }
+        
+        // Use messageId as localMessageId for Gallabox (or generate one if not available)
+        String localMessageId = messageId != null ? messageId : java.util.UUID.randomUUID().toString();
+        
+        LeadWhatsAppNotification notification = LeadWhatsAppNotification.builder()
+                .leadIdentifier(leadIdentifier)
+                .receiptId(receipt.getId())
+                .notificationRecordId(receipt.getNotificationRecordId())
+                .templateName(templateName)
+                .templateId(templateName) // Using template name as template ID
+                .localMessageId(localMessageId)
+                .whatsappMessageId(messageId) // Gallabox messageId goes here
+                .waId(phoneNumber != null ? phoneNumber.replace("+", "") : null)
+                .status("sent".equalsIgnoreCase(status) ? WhatsAppMessageStatus.SENT : WhatsAppMessageStatus.FAILED)
+                .isReplied(false)
+                .sentTimestamp(Instant.now())
+                .build();
+        
+        notification.setCreatedBy("system");
+        notification.setUpdatedBy("system");
+        
+        LeadWhatsAppNotification saved = repository.save(notification);
+        log.info("Created lead WhatsApp notification record from Gallabox: id={}, leadIdentifier={}, messageId={}",
+                saved.getId(), saved.getLeadIdentifier(), saved.getWhatsappMessageId());
+        
+        return saved;
+    }
+    
+    /**
      * Updates notification status from WATI webhook.
      */
     @Transactional

@@ -73,6 +73,51 @@ public class AdvisorWhatsAppNotificationService {
     }
     
     /**
+     * Creates a notification record from Gallabox send template response.
+     * Extracts advisorIdentifier from notification receipt details or message payload.
+     */
+    @Transactional
+    public AdvisorWhatsAppNotification createFromGallaboxResponse(
+            NotificationReceipt receipt,
+            String messageId,
+            String status,
+            String templateName,
+            String phoneNumber) {
+        
+        // Extract advisorIdentifier (UUID) from receipt details or message payload
+        UUID advisorIdentifier = extractAdvisorId(receipt);
+        if (advisorIdentifier == null) {
+            throw new IllegalStateException("AdvisorIdentifier not found in receipt details or message payload");
+        }
+        
+        // Use messageId as localMessageId for Gallabox (or generate one if not available)
+        String localMessageId = messageId != null ? messageId : java.util.UUID.randomUUID().toString();
+        
+        AdvisorWhatsAppNotification notification = AdvisorWhatsAppNotification.builder()
+                .advisorIdentifier(advisorIdentifier)
+                .receiptId(receipt.getId())
+                .notificationRecordId(receipt.getNotificationRecordId())
+                .templateName(templateName)
+                .templateId(templateName) // Using template name as template ID
+                .localMessageId(localMessageId)
+                .whatsappMessageId(messageId) // Gallabox messageId goes here
+                .waId(phoneNumber != null ? phoneNumber.replace("+", "") : null)
+                .status("sent".equalsIgnoreCase(status) ? WhatsAppMessageStatus.SENT : WhatsAppMessageStatus.FAILED)
+                .isReplied(false)
+                .sentTimestamp(Instant.now())
+                .build();
+        
+        notification.setCreatedBy("system");
+        notification.setUpdatedBy("system");
+        
+        AdvisorWhatsAppNotification saved = repository.save(notification);
+        log.info("Created advisor WhatsApp notification record from Gallabox: id={}, advisorIdentifier={}, messageId={}",
+                saved.getId(), saved.getAdvisorIdentifier(), saved.getWhatsappMessageId());
+        
+        return saved;
+    }
+    
+    /**
      * Updates notification status from WATI webhook.
      */
     @Transactional

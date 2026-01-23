@@ -65,8 +65,13 @@ public class WhatsAppNotificationExecutor implements NotificationExecutor {
         }
 
         // Load template to get variables definition
-        NotificationTemplate template = notificationTemplateRepository.findByIdentifier(templateIdentifier)
-                .orElseThrow(() -> new IllegalStateException("NotificationTemplate not found: " + templateIdentifier));
+        // Try case-insensitive lookup first, then exact match
+        NotificationTemplate template = notificationTemplateRepository.findByIdentifierIgnoreCase(templateIdentifier)
+                .orElseGet(() -> notificationTemplateRepository.findByIdentifier(templateIdentifier)
+                        .orElseThrow(() -> {
+                            log.error("NotificationTemplate not found: '{}'. Please check if the template exists in n_notification_template table with this identifier.", templateIdentifier);
+                            return new IllegalStateException("NotificationTemplate not found: " + templateIdentifier + ". Please ensure the template is created in the database.");
+                        }));
 
         // Load notification record to get idempotency key
         NotificationRecord record = notificationRecordRepository.findById(receipt.getNotificationRecordId())

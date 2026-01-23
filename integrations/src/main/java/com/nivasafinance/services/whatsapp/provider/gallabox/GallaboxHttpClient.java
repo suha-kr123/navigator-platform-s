@@ -78,20 +78,74 @@ public class GallaboxHttpClient {
                     String.class
             );
 
-            // Parse response
+            // Check HTTP status code first
+            boolean httpError = response.getStatusCode().isError();
             responseBody = response.getBody();
+            
+            // If HTTP error, return error response immediately
+            if (httpError) {
+                String errorMsg = "HTTP " + response.getStatusCode().value() + " " + response.getStatusCode().getReasonPhrase();
+                if (responseBody != null) {
+                    try {
+                        JsonNode jsonNode = objectMapper.readTree(responseBody);
+                        if (jsonNode.has("message")) {
+                            errorMsg = jsonNode.get("message").asText();
+                        } else if (jsonNode.has("error")) {
+                            errorMsg = jsonNode.get("error").asText();
+                        }
+                    } catch (Exception e) {
+                        // Use HTTP error message if JSON parsing fails
+                    }
+                }
+                
+                return WhatsAppTemplateResponse.builder()
+                        .messageId(null)
+                        .status("failed")
+                        .phoneNumber(request.getPhoneNumber())
+                        .templateName(request.getTemplateName())
+                        .errorMessage(errorMsg)
+                        .rawResponseBody(responseBody)
+                        .build();
+            }
+
+            // Parse response body
             JsonNode jsonNode = objectMapper.readTree(responseBody);
 
-            // Gallabox response structure may vary, adjust based on actual API response
-            boolean result = jsonNode.has("success") && jsonNode.get("success").asBoolean();
-            String messageId = jsonNode.has("messageId") ? jsonNode.get("messageId").asText() : 
-                             (jsonNode.has("id") ? jsonNode.get("id").asText() : null);
-            String errorMessage = jsonNode.has("error") ? jsonNode.get("error").asText() : 
-                                (jsonNode.has("message") ? jsonNode.get("message").asText() : null);
+            // Gallabox response formats:
+            // Success: {"id": "...", "status": "ACCEPTED", "message": "...", "warnings": []}
+            // Error: {"status": "UNPROCESSABLE_ENTITY", "message": "Template bodyValues contains invalid values"}
+            String messageId = jsonNode.has("id") ? jsonNode.get("id").asText() : null;
+            String status = jsonNode.has("status") ? jsonNode.get("status").asText() : null;
+            String message = jsonNode.has("message") ? jsonNode.get("message").asText() : null;
+            
+            // Determine if this is a success or error response
+            boolean isSuccess = "ACCEPTED".equalsIgnoreCase(status);
+            boolean isError = status != null && 
+                             (status.toUpperCase().contains("ERROR") || 
+                              status.toUpperCase().contains("FAIL") ||
+                              status.toUpperCase().contains("UNPROCESSABLE") ||
+                              status.toUpperCase().contains("BAD_REQUEST") ||
+                              status.toUpperCase().contains("NOT_FOUND"));
+            
+            // Map Gallabox status to our internal status
+            String mappedStatus;
+            String errorMessage;
+            
+            if (isSuccess) {
+                mappedStatus = "ACCEPTED";
+                errorMessage = null;
+            } else if (isError) {
+                mappedStatus = "failed";
+                errorMessage = message != null ? message : ("Gallabox returned status: " + status);
+            } else {
+                // Unknown status - treat as failed for safety
+                mappedStatus = "failed";
+                errorMessage = message != null ? message : ("Unknown Gallabox status: " + status);
+            }
 
             return WhatsAppTemplateResponse.builder()
                     .messageId(messageId)
-                    .status(result ? "sent" : "failed")
+                    .status(mappedStatus)
                     .phoneNumber(request.getPhoneNumber())
                     .templateName(request.getTemplateName())
                     .errorMessage(errorMessage)
