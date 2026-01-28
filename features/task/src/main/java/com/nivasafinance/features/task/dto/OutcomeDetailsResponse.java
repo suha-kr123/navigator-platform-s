@@ -3,6 +3,7 @@ package com.nivasafinance.features.task.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,5 +25,7 @@ public class OutcomeDetailsResponse {
     private String completedBy;
     
     private String rescheduleReasonCodeValueKey;
+
+    private Map<String, Object> locationDetails;
 }
 

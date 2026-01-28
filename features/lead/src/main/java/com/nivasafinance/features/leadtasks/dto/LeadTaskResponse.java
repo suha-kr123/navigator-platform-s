@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.UUID;
 
 @Data
@@ -46,6 +47,7 @@ public class LeadTaskResponse {
         private LocalDateTime completedAt;
         private String completedBy;
         private String rescheduleReasonCodeValueKey;
+        private Map<String, Object> locationDetails;
     }
     
     @Data
@@ -78,6 +80,7 @@ public class LeadTaskResponse {
                     .completedAt(taskResponse.getOutcomeDetails().getCompletedAt())
                     .completedBy(taskResponse.getOutcomeDetails().getCompletedBy())
                     .rescheduleReasonCodeValueKey(taskResponse.getOutcomeDetails().getRescheduleReasonCodeValueKey())
+                    .locationDetails(taskResponse.getOutcomeDetails().getLocationDetails())
                     .build();
         }
         
@@ -129,6 +132,7 @@ public class LeadTaskResponse {
                         .completedAt(taskResponse.getOutcomeDetails().getCompletedAt())
                         .completedBy(taskResponse.getOutcomeDetails().getCompletedBy())
                         .rescheduleReasonCodeValueKey(taskResponse.getOutcomeDetails().getRescheduleReasonCodeValueKey())
+                        .locationDetails(taskResponse.getOutcomeDetails().getLocationDetails())
                         .build();
             }
             

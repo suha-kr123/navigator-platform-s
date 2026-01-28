@@ -185,11 +185,14 @@ public class LeadTaskReadServiceImpl implements LeadTaskReadService {
             LeadTaskResponse.OutcomeDetails outcomeDetails = null;
             if (ValidationUtils.isNonNull(outcomeDetailsMap) && !outcomeDetailsMap.isEmpty()) {
                 Object completedAt = outcomeDetailsMap.get("completedAt");
+                @SuppressWarnings("unchecked")
+                Map<String, Object> locationDetails = (Map<String, Object>) outcomeDetailsMap.get("locationDetails");
                 outcomeDetails = LeadTaskResponse.OutcomeDetails.builder()
                         .remarks((String) outcomeDetailsMap.get("remarks"))
                         .completedAt(ValidationUtils.isNonNull(completedAt) ? getLocalDateTime(completedAt) : null)
                         .completedBy((String) outcomeDetailsMap.get("completedBy"))
                         .rescheduleReasonCodeValueKey((String) outcomeDetailsMap.get("rescheduleReasonCodeValueKey"))
+                        .locationDetails(locationDetails)
                         .build();
             }
             

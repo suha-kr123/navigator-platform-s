@@ -1,5 +1,6 @@
 package com.nivasafinance.features.task.dto;
 
+import java.util.Map;
 import java.util.UUID;
 
 import lombok.AllArgsConstructor;
@@ -30,6 +31,7 @@ public class CompleteTaskRequest {
     @Builder
     public static class OutcomeDetailsRequest {
         private String remarks;
+        private Map<String, Object> locationDetails;
     }
 }
 

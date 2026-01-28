@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.UUID;
 
 import jakarta.validation.constraints.NotNull;
@@ -30,5 +31,7 @@ public class RescheduleTaskRequest {
     private String creatorRemarks;
     
     private UUID rescheduledFromTaskIdentifier;
+
+    private Map<String, Object> locationDetails;
 }
 
