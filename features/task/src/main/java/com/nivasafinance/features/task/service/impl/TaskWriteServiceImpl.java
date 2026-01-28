@@ -307,6 +307,7 @@ public class TaskWriteServiceImpl implements TaskWriteService {
     private void closeTaskWithRescheduledOutcome(Task task, RescheduleTaskRequest request) {
         Task.OutcomeDetails outcomeDetails = Task.OutcomeDetails.builder()
                 .rescheduleReasonCodeValueKey(request.getReasonCodeValueKey())
+                .locationDetails(request.getLocationDetails())
                 .build();
         updateTaskOutcome(task, OUTCOME_RESCHEDULED, outcomeDetails);
     }
