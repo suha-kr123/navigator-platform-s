@@ -1,7 +1,10 @@
 package com.nivasafinance.features.advisor.service.impl;
 
 import com.nivasafinance.common.base.model.PaginatedResponse;
+import com.nivasafinance.common.base.model.PaginationInfo;
 import com.nivasafinance.common.base.model.PaginationRequest;
+import com.nivasafinance.common.context.UserContext;
+import com.nivasafinance.common.utils.ValidationUtils;
 import com.nivasafinance.features.advisor.dto.AdvisorDashboardFilters;
 import com.nivasafinance.features.advisor.dto.AdvisorDashboardResponse;
 import com.nivasafinance.features.advisor.dto.AdvisorLeadResponse;
@@ -12,6 +15,8 @@ import com.nivasafinance.features.advisor.dto.AdvisorTemplateResponse;
 import com.nivasafinance.features.advisor.dto.PersonalDetails;
 import com.nivasafinance.features.advisor.dto.SourcingDetailsResponse;
 import com.nivasafinance.features.advisor.entity.Advisor;
+import com.nivasafinance.features.advisor.exception.AdvisorExceptionFactory;
+import com.nivasafinance.features.advisor.mapper.AdvisorRowMapper;
 import com.nivasafinance.features.advisor.repository.AdvisorDashboardWrapper;
 import com.nivasafinance.features.advisor.repository.AdvisorRepositoryWrapper;
 import com.nivasafinance.features.advisor.service.AdvisorReadService;
@@ -26,6 +31,9 @@ import com.nivasafinance.features.person.repository.PersonRepositoryWrapper;
 import com.nivasafinance.features.sourcechannel.dto.SourcingChannelResponse;
 import com.nivasafinance.features.sourcechannel.repository.SourcingChannelRepositoryWrapper;
 import lombok.AllArgsConstructor;
+
+import org.springframework.context.MessageSource;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,7 +53,9 @@ public class AdvisorReadServiceImpl implements AdvisorReadService {
     private final AdvisorLeadMappingRepositoryWrapper advisorLeadMappingRepositoryWrapper;
     private final OfficeReadService officeReadService;
     private final AdvisorDashboardWrapper advisorDashboardWrapper;
-
+    private final MessageSource messageSource;
+    private final JdbcTemplate jdbcTemplate;
+    
     @Override
     public AdvisorResponse getAdvisorByIdentifier(UUID identifier) {
         Advisor advisor = advisorRepositoryWrapper.findByIdentifierWithException(identifier);
@@ -166,5 +176,62 @@ public class AdvisorReadServiceImpl implements AdvisorReadService {
         }
 
         return response;
+    }
+
+    @Override
+    public PaginatedResponse<AdvisorBasicResponse> getMyAdvisors(PaginationRequest paginationRequest) {
+        String username = UserContext.getUsername();
+        if (!ValidationUtils.isNonNull(username)) {
+            throw AdvisorExceptionFactory.noCurrentUser(messageSource);
+        }
+        AdvisorRowMapper advisorRowMapper = new AdvisorRowMapper();
+        StringBuilder query = buildMyAdvisorsQuery(username, paginationRequest);
+        String sql = query.toString();
+        StringBuilder countQuery = buildMyAdvisorsCountQuery(username);
+        String countSql = countQuery.toString();
+        List<AdvisorBasicResponse> advisors = jdbcTemplate.query(sql, advisorRowMapper, username, paginationRequest.getLimit(), paginationRequest.getOffset());
+        long total = jdbcTemplate.queryForObject(countSql, Long.class, username);
+        PaginationInfo paginationInfo = buildPaginationInfo(paginationRequest, total);
+        return new PaginatedResponse<>(advisors, paginationInfo);  
+    }
+    
+    private StringBuilder buildMyAdvisorsQuery(String username, PaginationRequest paginationRequest) {
+        StringBuilder query = new StringBuilder();
+    
+        query.append("SELECT a.identifier AS advisor_identifier, ");
+        query.append("p.display_name AS person_name, ");
+        query.append("(jsonb_path_query_first(COALESCE(p.mobile_numbers, '[]'::jsonb), ");
+        query.append("'$[*] ? (@.isPrimary == true)') ->> 'number') AS mobile_number, ");
+        query.append("a.status, ");
+        query.append("a.created_at, ");
+        query.append("a.updated_at, ");
+        query.append("a.office_key AS office_key, ");
+        query.append("a.owner AS owner ");
+        query.append("FROM n_advisor a ");
+        query.append("LEFT JOIN n_person p ON p.id = a.person_id ");
+        query.append("WHERE a.owner = ? ");
+        query.append("ORDER BY a.updated_at DESC ");
+        query.append("LIMIT ? OFFSET ?");
+    
+        return query;
+    }
+    
+
+    private StringBuilder buildMyAdvisorsCountQuery(String username) {
+        StringBuilder query = new StringBuilder();
+        query.append("Select count(*) ");
+        query.append("from n_advisor a ");
+        query.append("left join n_person p on p.id = a.person_id ");
+        query.append("where a.owner = ?");
+        return query;
+    }
+    private PaginationInfo buildPaginationInfo(PaginationRequest paginationRequest, long total) {
+        int limit = paginationRequest.getLimit();
+        int offset = paginationRequest.getOffset();
+        int totalPages = limit == 0 ? 0 : (int) Math.ceil((double) total / limit);
+        int currentPage = limit == 0 ? 0 : offset / limit;
+        boolean hasNext = offset + limit < total;
+        boolean hasPrevious = offset > 0;
+        return new PaginationInfo(offset, limit, total, totalPages, currentPage, hasNext, hasPrevious);
     }
 }

@@ -111,6 +111,9 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
             advisor.setOtherDetails(otherDetails);
         }
 
+        //set sales owner as the current user
+        advisor.setOwner(UserContext.getUsername());
+
         Advisor savedAdvisor = advisorRepositoryWrapper.saveWithException(advisor);
 
         // Publish ADVISOR_CREATED event

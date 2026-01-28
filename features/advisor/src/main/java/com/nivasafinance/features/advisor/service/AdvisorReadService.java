@@ -23,4 +23,6 @@ public interface AdvisorReadService {
     PaginatedResponse<AdvisorDashboardResponse> getAdvisorDashboard(
             PaginationRequest paginationRequest,
             AdvisorDashboardFilters filters);
+
+    PaginatedResponse<AdvisorBasicResponse> getMyAdvisors(PaginationRequest paginationRequest);
 }

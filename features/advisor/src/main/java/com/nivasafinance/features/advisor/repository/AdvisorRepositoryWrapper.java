@@ -25,7 +25,6 @@ import org.springframework.util.StringUtils;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -353,7 +352,7 @@ public class AdvisorRepositoryWrapper {
                 builder.advisorIdentifier(UUID.fromString(advisorIdentifierStr));
             }
 
-            builder.Name(rs.getString("person_name"));
+            builder.name(rs.getString("person_name"));
             builder.mobileNumber(rs.getString("mobile_number"));
 
             String status = rs.getString("status");
