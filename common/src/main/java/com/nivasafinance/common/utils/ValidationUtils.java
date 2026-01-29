@@ -1,6 +1,7 @@
 package com.nivasafinance.common.utils;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.function.Supplier;
 
 public class ValidationUtils {
@@ -99,6 +100,12 @@ public class ValidationUtils {
         }
         return collection;
     }
+
+    public static boolean isNullOrEmpty(List<?> list) {
+        return list == null || list.isEmpty();
+    }
+
+
 }
 
 
