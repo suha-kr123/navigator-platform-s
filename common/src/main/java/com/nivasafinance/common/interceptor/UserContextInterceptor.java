@@ -1,7 +1,6 @@
 package com.nivasafinance.common.interceptor;
 
 import com.nivasafinance.common.context.UserContext;
-import com.nivasafinance.common.validator.UserStatusValidator;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -21,8 +20,6 @@ public class UserContextInterceptor implements HandlerInterceptor {
     private static final Logger logger = LoggerFactory.getLogger(UserContextInterceptor.class);
     private static final String USERNAME_HEADER = "X-Username";
     private static final String SYSTEM_USERNAME = "system";
-
-    private final UserStatusValidator userStatusValidator;
 
     @Override
     public boolean preHandle(

@@ -8,9 +8,6 @@ import com.nivasafinance.common.events.payload.LeadLenderRejectionEventPayload;
 import com.nivasafinance.common.events.payload.LeadLenderSubmissionEventPayload;
 import com.nivasafinance.common.events.payload.LeadLenderUpdationEventPayload;
 import com.nivasafinance.features.lead.dto.LeadBasicResponse;
-import com.nivasafinance.features.lead.dto.LeadResponse;
-import com.nivasafinance.features.lead.entity.Lead;
-import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadReadService;
 import com.nivasafinance.features.lead.service.LeadWriteService;
 import com.nivasafinance.features.leadlender.dto.*;
@@ -25,7 +22,6 @@ import com.nivasafinance.features.lender.lender.service.LenderReadService;
 import com.nivasafinance.features.lender.lenderoffice.dto.LenderOfficeReponseData;
 import com.nivasafinance.features.lender.lenderoffice.service.LenderOfficeReadService;
 import com.nivasafinance.features.master.codemaster.SystemControlledMasterCodes;
-import com.nivasafinance.features.master.codemaster.service.CodeMasterService;
 import com.nivasafinance.features.master.codemaster.service.CodeValueMasterService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -44,7 +40,6 @@ public class LeadLenderWriteServiceImpl implements LeadLenderWriteService {
     private final LeadReadService leadReadService;
     private final LenderReadService lenderReadService;
     private final LenderOfficeReadService lenderOfficeReadService;
-    private final CodeMasterService codeMasterService;
     private final CodeValueMasterService codeValueMasterService;
     private final ApplicationEventPublisher applicationEventPublisher;
 

@@ -3,13 +3,10 @@ package com.nivasafinance.features.staff.service.impl;
 import com.nivasafinance.features.staff.dto.StaffCreateRequest;
 import com.nivasafinance.features.staff.dto.StaffResponse;
 import com.nivasafinance.features.staff.entity.Staff;
-import com.nivasafinance.features.staff.exception.StaffExceptionFactory;
 import com.nivasafinance.features.staff.repository.StaffRepositoryWrapper;
 import com.nivasafinance.features.staff.service.StaffWriteService;
 import com.nivasafinance.features.usermanagement.dto.UserResponse;
 import com.nivasafinance.features.usermanagement.enums.UserStatus;
-import com.nivasafinance.features.usermanagement.exception.UserExceptionFactory;
-import com.nivasafinance.features.usermanagement.exception.UserNotFoundException;
 import com.nivasafinance.features.usermanagement.dto.UserCreateRequest;
 import com.nivasafinance.features.usermanagement.service.UserReadService;
 import com.nivasafinance.features.usermanagement.service.UserWriteService;
@@ -18,7 +15,6 @@ import com.nivasafinance.features.rolemanagement.role.service.UserRoleService;
 import com.nivasafinance.features.staff.dto.StaffCreateRequest.Role;
 import com.nivasafinance.common.exception.ValidationException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,8 +31,6 @@ public class StaffWriteServiceImpl implements StaffWriteService {
     private final UserWriteService userWriteService;
     private final OfficeReadService officeReadService;
     private final UserRoleService userRoleService;
-    private final MessageSource messageSource;
-
     @Override
     public StaffResponse createStaff(StaffCreateRequest request) {
         officeReadService.getOfficeByKey(request.getOfficeKey());

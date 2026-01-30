@@ -34,7 +34,6 @@ public class VoiceHandler extends ThirdPartyHandler {
                 ? servicesMap.get(runConfig.getFallbackConfig().getProvider())
                 : null;
         
-        @SuppressWarnings("unchecked")
         ServiceRunner<VoiceProvider, VoiceCallRequest> runner = new ServiceRunner<>(
                 primaryProvider, fallbackProvider, runConfig.getRetries());
         
@@ -54,7 +53,6 @@ public class VoiceHandler extends ThirdPartyHandler {
                 ? servicesMap.get(runConfig.getFallbackConfig().getProvider())
                 : null;
         
-        @SuppressWarnings("unchecked")
         ServiceRunner<VoiceProvider, String> runner = new ServiceRunner<>(
                 primaryProvider, fallbackProvider, runConfig.getRetries());
         
@@ -74,7 +72,6 @@ public class VoiceHandler extends ThirdPartyHandler {
                 ? servicesMap.get(runConfig.getFallbackConfig().getProvider())
                 : null;
         
-        @SuppressWarnings("unchecked")
         ServiceRunner<VoiceProvider, VoiceCreateListRequest> runner = new ServiceRunner<>(
                 primaryProvider, fallbackProvider, runConfig.getRetries());
         
@@ -94,7 +91,6 @@ public class VoiceHandler extends ThirdPartyHandler {
                 ? servicesMap.get(runConfig.getFallbackConfig().getProvider())
                 : null;
         
-        @SuppressWarnings("unchecked")
         ServiceRunner<VoiceProvider, VoiceCSVUploadStatusRequest> runner = new ServiceRunner<>(
                 primaryProvider, fallbackProvider, runConfig.getRetries());
         
@@ -114,7 +110,6 @@ public class VoiceHandler extends ThirdPartyHandler {
                 ? servicesMap.get(runConfig.getFallbackConfig().getProvider())
                 : null;
         
-        @SuppressWarnings("unchecked")
         ServiceRunner<VoiceProvider, VoiceCampaignRequest> runner = new ServiceRunner<>(
                 primaryProvider, fallbackProvider, runConfig.getRetries());
         
@@ -134,7 +129,6 @@ public class VoiceHandler extends ThirdPartyHandler {
                 ? servicesMap.get(runConfig.getFallbackConfig().getProvider())
                 : null;
         
-        @SuppressWarnings("unchecked")
         ServiceRunner<VoiceProvider, VoiceGetCampaignDetailsRequest> runner = new ServiceRunner<>(
                 primaryProvider, fallbackProvider, runConfig.getRetries());
         

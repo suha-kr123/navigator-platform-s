@@ -8,7 +8,6 @@ import com.nivasafinance.common.events.payload.LeadLenderRejectionEventPayload;
 import com.nivasafinance.common.events.payload.LeadLenderSubmissionEventPayload;
 import com.nivasafinance.common.events.payload.LeadLenderUpdationEventPayload;
 import com.nivasafinance.features.lead.dto.LeadBasicResponse;
-import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadReadService;
 import com.nivasafinance.features.lead.service.LeadWriteService;
 import com.nivasafinance.features.leadlender.dto.*;
@@ -16,7 +15,6 @@ import com.nivasafinance.features.leadlender.entity.LeadLender;
 import com.nivasafinance.features.leadlender.enums.LeadLenderStatus;
 import com.nivasafinance.features.leadlender.exception.InvalidLeadLenderStatusException;
 import com.nivasafinance.features.leadlender.exception.InvalidLenderOfficeException;
-import com.nivasafinance.features.leadlender.exception.LeadLenderAlreadyExistsException;
 import com.nivasafinance.features.leadlender.repository.LeadLenderRepositoryWrapper;
 import com.nivasafinance.features.lender.lender.dto.LenderResponseData;
 import com.nivasafinance.features.lender.lender.service.LenderReadService;
@@ -38,12 +36,10 @@ import org.springframework.context.ApplicationEventPublisher;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)

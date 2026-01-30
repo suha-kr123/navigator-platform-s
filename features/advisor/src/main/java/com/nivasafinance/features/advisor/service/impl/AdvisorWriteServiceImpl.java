@@ -19,7 +19,6 @@ import com.nivasafinance.features.person.repository.PersonRepositoryWrapper;
 import com.nivasafinance.features.person.service.PersonWriteService;
 import com.nivasafinance.features.sourcechannel.dto.SourcingChannelRequest;
 import com.nivasafinance.features.sourcechannel.dto.SourcingChannelResponse;
-import com.nivasafinance.features.sourcechannel.repository.SourcingChannelRepositoryWrapper;
 import com.nivasafinance.features.sourcechannel.service.SourcingChannelWriteService;
 import com.nivasafinance.features.master.codemaster.SystemControlledMasterCodes;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
@@ -36,7 +35,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.ArrayList;
@@ -52,7 +50,6 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
     private final PersonWriteService personWriteService;
     private final PersonRepositoryWrapper personRepositoryWrapper;
     private final SourcingChannelWriteService sourcingChannelWriteService;
-    private final SourcingChannelRepositoryWrapper sourcingChannelRepositoryWrapper;
     private final CodeMasterService codeMasterService;
     private final OfficeReadService officeReadService;
     private final ApplicationEventPublisher applicationEventPublisher;

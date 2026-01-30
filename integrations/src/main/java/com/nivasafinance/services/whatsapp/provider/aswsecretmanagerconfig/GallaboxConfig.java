@@ -1,7 +1,6 @@
 package com.nivasafinance.services.whatsapp.provider.aswsecretmanagerconfig;
 
 import com.nivasafinance.common.awssecretmanager.service.SecretManagerService;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
