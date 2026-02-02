@@ -29,6 +29,7 @@ dependencies {
     implementation(project(":features:campaign"))
     implementation(project(":webhooks"))
     implementation(project(":redash"))
+    implementation(project(":features:bulk-operations"))
 }
 
 springBoot {

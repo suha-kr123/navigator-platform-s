@@ -1,0 +1,202 @@
+package com.nivasafinance.features.bulkoperations.service.impl;
+
+import com.nivasafinance.common.base.model.PaginationInfo;
+import com.nivasafinance.common.base.model.PaginatedResponse;
+import com.nivasafinance.common.base.model.PaginationRequest;
+import com.nivasafinance.common.context.UserContext;
+import com.nivasafinance.common.utils.DigestUtils;
+import com.nivasafinance.common.utils.ValidationUtils;
+import com.nivasafinance.features.bulkoperations.common.dto.BulkOperationResponse;
+import com.nivasafinance.features.bulkoperations.common.entity.BulkOperation;
+import com.nivasafinance.features.bulkoperations.common.enums.BulkOperationStatus;
+import com.nivasafinance.features.bulkoperations.common.exception.BulkOperationExceptionFactory;
+import com.nivasafinance.features.bulkoperations.common.exception.BulkOperationNotFoundException;
+import com.nivasafinance.features.bulkoperations.engine.BulkOperationType;
+import com.nivasafinance.features.bulkoperations.repository.BulkOperationRepository;
+import com.nivasafinance.features.bulkoperations.service.BulkOperationProcessingService;
+import com.nivasafinance.features.bulkoperations.service.BulkOperationService;
+import com.nivasafinance.features.bulkoperations.storage.BulkOperationFileStorageService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import com.nivasafinance.features.bulkoperations.storage.StoredFileMultipartFile;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class BulkOperationServiceImpl implements BulkOperationService {
+
+    private static final String BULK_OPERATION_CREATED = "Bulk operation created: {} (dryRun={})";
+    private static final String BULK_OPERATION_CANCELLED = "Bulk operation cancelled: {}";
+    private static final String BULK_OPERATION_SUMMARY_REPORT_READ = "Summary report read for operation {}";
+    private static final String FAILED_TO_READ_UPLOAD_FILE = "Failed to read upload file";
+    private static final String FILE = "file";
+    private static final String SYSTEM = "system";      
+
+    private final BulkOperationRepository bulkOperationRepository;
+    private final BulkOperationFileStorageService fileStorageService;
+    private final BulkOperationProcessingService processingService;
+    private final BulkOperationExceptionFactory exceptionFactory;
+
+    @org.springframework.beans.factory.annotation.Value("${bulk.operations.duplicate-upload-window-minutes:30}")
+    private int duplicateUploadWindowMinutes;
+
+    @Override
+    @Transactional
+    public BulkOperationResponse uploadCsv(MultipartFile file, BulkOperationType operationType, boolean dryRun) {
+        byte[] fileBytes;
+        try {
+            fileBytes = file.getBytes();
+        } catch (Exception e) {
+            log.error(FAILED_TO_READ_UPLOAD_FILE, e);
+            throw exceptionFactory.storageSaveFailedException(null, e);
+        }
+
+        String fileHash = DigestUtils.sha256Hex(fileBytes);
+        String createdBy = UserContext.getUsername();
+        if (ValidationUtils.isNullOrEmpty(createdBy)) {
+            createdBy = SYSTEM;
+        }
+
+        // Duplicate check: same user + same file content (hash) within the last N minutes → reject.
+        // Only completed operations count as duplicates; failed/cancelled/validation_failed do not block re-upload.
+        LocalDateTime duplicateWindowStart = LocalDateTime.now().minusMinutes(duplicateUploadWindowMinutes);
+        List<BulkOperationStatus> completedStatuses = List.of(
+                BulkOperationStatus.COMPLETED,
+                BulkOperationStatus.PARTIALLY_COMPLETED,
+                BulkOperationStatus.DRY_RUN_COMPLETED);
+        List<BulkOperation> existingWithSameHash = bulkOperationRepository
+                .findByCreatedByAndFileHashAndCreatedAtAfterAndStatusIn(createdBy, fileHash, duplicateWindowStart, completedStatuses);
+        if (!ValidationUtils.isNullOrEmpty(existingWithSameHash)) {
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime mostRecentCreatedAt = existingWithSameHash.stream()
+                    .map(BulkOperation::getCreatedAt)
+                    .filter(Objects::nonNull)
+                    .max(Comparator.naturalOrder())
+                    .orElse(now);
+            LocalDateTime retryAfter = mostRecentCreatedAt.plusMinutes(duplicateUploadWindowMinutes);
+            long minutesRemaining = ChronoUnit.MINUTES.between(now, retryAfter);
+            int displayMinutes = (int) Math.max(1, minutesRemaining);
+            throw exceptionFactory.duplicateUploadException(displayMinutes);
+        }
+
+        BulkOperation operation = BulkOperation.builder()
+                .operationType(operationType)
+                .status(BulkOperationStatus.UPLOADED)
+                .isDryRun(dryRun)
+                .fileName(file.getOriginalFilename())
+                .fileSize(file.getSize() > 0 ? file.getSize() : (long) fileBytes.length)
+                .fileHash(fileHash)
+                .build();
+        operation.setCreatedBy(createdBy);
+        operation = bulkOperationRepository.save(operation);
+
+        MultipartFile fileToSave = new StoredFileMultipartFile(
+                FILE,
+                file.getOriginalFilename(),
+                file.getContentType(),
+                fileBytes.length,
+                fileBytes
+        );
+        String storageKey = fileStorageService.saveFile(fileToSave, operation.getOperationIdentifier());
+        operation.setFileStorageKey(storageKey);
+        operation = bulkOperationRepository.save(operation);
+
+        log.info(BULK_OPERATION_CREATED, operation.getOperationIdentifier(), dryRun);
+        return BulkOperationResponse.from(operation);
+    }
+
+    @Override
+    public BulkOperationResponse getOperationStatus(UUID operationId) {
+        BulkOperation operation = bulkOperationRepository.findByOperationIdentifier(operationId)
+                .orElseThrow(() -> exceptionFactory.bulkOperationNotFoundException(operationId));
+        return BulkOperationResponse.from(operation);
+    }
+
+    @Override
+    @Transactional
+    public void cancelOperation(UUID operationId) {
+        BulkOperation operation = bulkOperationRepository.findByOperationIdentifier(operationId)
+                .orElseThrow(() -> exceptionFactory.bulkOperationNotFoundException(operationId));
+        if (!operation.getStatus().canCancel()) {
+            throw exceptionFactory.bulkOperationNotCancellableException(operationId);
+        }
+        operation.setStatus(BulkOperationStatus.CANCELLED);
+        operation.setCancelledAt(LocalDateTime.now());
+        bulkOperationRepository.save(operation);
+        log.info(BULK_OPERATION_CANCELLED, operationId);
+    }
+
+    @Override
+    public String getSummaryReportCsv(UUID operationId) {
+        BulkOperation operation = bulkOperationRepository.findByOperationIdentifier(operationId)
+                .orElseThrow(() -> exceptionFactory.bulkOperationNotFoundException(operationId));
+        if (ValidationUtils.isNullOrEmpty(operation.getSummaryStorageKey())) {
+            throw exceptionFactory.bulkOperationReportNotAvailableException(operationId);
+        }
+        try (InputStream in = fileStorageService.fetchFile(operation.getSummaryStorageKey())) {
+            return new String(in.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            log.error(BULK_OPERATION_SUMMARY_REPORT_READ, operationId, e);
+            throw new BulkOperationNotFoundException(e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public PaginatedResponse<BulkOperationResponse> getOperationHistory(PaginationRequest paginationRequest) {
+        String username = UserContext.getUsername();
+        if (ValidationUtils.isNullOrEmpty(username)) {
+            return new PaginatedResponse<>(List.of(), new PaginationInfo(0, 0, 0, 0, 0, false, false));
+        }
+        int offset = Math.max(0, paginationRequest.getOffset());
+        int limit = Math.max(1, paginationRequest.getLimit());
+        Pageable pageable = PageRequest.of(offset / limit, limit);
+        Page<BulkOperation> page = bulkOperationRepository.findByCreatedByOrderByCreatedAtDesc(username, pageable);
+
+        List<BulkOperationResponse> content = page.getContent().stream()
+                .map(BulkOperationResponse::from)
+                .collect(Collectors.toList());
+        PaginationInfo paginationInfo = new PaginationInfo(
+                offset,
+                limit,
+                page.getTotalElements(),
+                page.getTotalPages(),
+                page.getNumber(),
+                page.hasNext(),
+                page.hasPrevious());
+        return new PaginatedResponse<>(content, paginationInfo);
+    }
+
+    @Override
+    @Transactional
+    public BulkOperationResponse executeDryRunOperation(UUID dryRunOperationId) {
+        BulkOperation operation = bulkOperationRepository.findByOperationIdentifier(dryRunOperationId)
+                .orElseThrow(() -> exceptionFactory.bulkOperationNotFoundException(dryRunOperationId));
+        if (!Boolean.TRUE.equals(operation.getIsDryRun())) {
+            throw exceptionFactory.bulkOperationNotFoundException(dryRunOperationId);
+        }
+        if (operation.getStatus() != BulkOperationStatus.DRY_RUN_COMPLETED) {
+            throw exceptionFactory.dryRunOperationNotCompletedException(dryRunOperationId);
+        }
+        processingService.process(operation);
+        operation = bulkOperationRepository.findByOperationIdentifier(dryRunOperationId)
+                .orElseThrow(() -> exceptionFactory.bulkOperationNotFoundException(dryRunOperationId));
+        return BulkOperationResponse.from(operation);
+    }
+}
