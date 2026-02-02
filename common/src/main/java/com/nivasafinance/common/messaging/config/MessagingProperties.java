@@ -100,7 +100,6 @@ public class MessagingProperties {
                 // Handle both Map<String, String> and Map<String, Object> from JSON parsing
                 Map<String, String> queuesFromSecret;
                 if (queuesObj instanceof Map) {
-                    @SuppressWarnings("unchecked")
                     Map<String, Object> queuesMap = (Map<String, Object>) queuesObj;
                     queuesFromSecret = new java.util.HashMap<>();
                     for (Map.Entry<String, Object> entry : queuesMap.entrySet()) {

@@ -38,4 +38,8 @@ public final class AdvisorExceptionFactory {
                 messageSource
         ));
     }
+
+    public static AdvisorOperationException noCurrentUser(MessageSource messageSource) {
+        return new AdvisorOperationException("error.advisor.operation.no.current.user", messageSource);
+    }
 }

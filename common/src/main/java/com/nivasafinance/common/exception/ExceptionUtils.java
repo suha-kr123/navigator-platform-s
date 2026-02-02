@@ -73,5 +73,44 @@ public class ExceptionUtils {
             throw new ValidationException(createLocalizedMessage(messageKey, args, messageSource));
         }
     }
+
+    private static final String ROLLBACK_PHRASE = "rollback";
+    private static final String ROLLBACK_ONLY_PHRASE = "rollback-only";
+
+    /**
+     * Returns a user-facing message from the exception chain, skipping generic
+     * transaction/rollback messages so that validation or business errors (e.g.
+     * "Only Active Lead can be put on dropoff") are shown instead of
+     * "Transaction silently rolled back because it has been marked as rollback-only".
+     */
+    public static String getRootCauseMessage(Throwable t) {
+        if (t == null) {
+            return "";
+        }
+        // Prefer the first message in the chain that looks like a real error, not a transaction wrapper.
+        Throwable current = t;
+        while (current != null) {
+            String msg = current.getMessage();
+            if (msg != null && !msg.isBlank() && !isGenericTransactionMessage(msg)) {
+                return msg;
+            }
+            current = current.getCause();
+        }
+        // Fallback: root cause message or class name
+        Throwable root = t;
+        while (root.getCause() != null) {
+            root = root.getCause();
+        }
+        String msg = root.getMessage();
+        return (msg != null && !msg.isBlank()) ? msg : root.getClass().getSimpleName();
+    }
+
+    private static boolean isGenericTransactionMessage(String message) {
+        if (message == null) {
+            return true;
+        }
+        String lower = message.toLowerCase();
+        return lower.contains(ROLLBACK_PHRASE) || lower.contains(ROLLBACK_ONLY_PHRASE);
+    }
 }
 

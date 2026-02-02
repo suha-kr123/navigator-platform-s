@@ -1,6 +1,7 @@
 package com.nivasafinance.features.lead.dto;
 
 import com.nivasafinance.features.lead.enums.LeadStatus;
+import com.nivasafinance.features.lead.enums.LeadSubStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,6 +23,7 @@ public class LeadBasicResponse {
     BigDecimal requestedAmount;
     String currentStage;
     LeadStatus status;
+    LeadSubStatus substatus;
     LocalDateTime createdAt;
     String office;
 }

@@ -1,9 +1,20 @@
 package com.nivasafinance.common.utils;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 import java.util.function.Supplier;
+import java.io.IOException;
+import com.fasterxml.jackson.databind.JavaType;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nivasafinance.common.exception.ValidationException;
 
 public class ValidationUtils {
+
+
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private ValidationUtils() {
         // Private constructor to prevent instantiation
@@ -99,6 +110,40 @@ public class ValidationUtils {
         }
         return collection;
     }
+
+    public static boolean isNullOrEmpty(List<?> list) {
+        return list == null || list.isEmpty();
+    }
+
+    public static boolean isNullOrEmpty(String str) {
+        return str == null || str.trim().isEmpty();
+    }
+
+    public static <T> List<T> parseJsonArray(String jsonArray, Class<T> elementType) {
+        if (jsonArray == null || jsonArray.isBlank()) {
+            return Collections.emptyList();
+        }
+
+        try {
+            JavaType type = OBJECT_MAPPER
+                    .getTypeFactory()
+                    .constructCollectionType(List.class, elementType);
+
+            return OBJECT_MAPPER.readValue(jsonArray, type);
+        } catch (IOException e) {
+            throw new ValidationException("Failed to parse JSON array");
+        }
+    }
+
+    public static boolean isEmpty(Object obj) {
+        return obj == null;
+    }
+
+    public static boolean equals(Object obj1, Object obj2) {
+        return Objects.equals(obj1, obj2);
+    }
+
+
 }
 
 

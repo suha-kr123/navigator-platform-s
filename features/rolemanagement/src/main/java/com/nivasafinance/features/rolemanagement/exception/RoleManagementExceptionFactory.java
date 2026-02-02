@@ -13,5 +13,11 @@ public final class RoleManagementExceptionFactory {
         String message = ExceptionUtils.createLocalizedMessage(messageKey, new Object[]{id.toString()}, messageSource);
         return new RoleManagementNotFoundException(message);
     }
+
+    public static RoleManagementUnauthorizedException unauthorized(MessageSource messageSource) {
+        String messageKey = "error.rolemanagement.unauthorized";
+        String message = ExceptionUtils.createLocalizedMessage(messageKey, new Object[]{}, messageSource);
+        return new RoleManagementUnauthorizedException(message);
+    }
 }
 

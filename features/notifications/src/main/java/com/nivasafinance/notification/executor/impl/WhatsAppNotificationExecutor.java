@@ -12,7 +12,6 @@ import com.nivasafinance.notification.orchestrator.service.WhatsAppNotificationT
 import com.nivasafinance.services.whatsapp.dto.TemplateParameter;
 import com.nivasafinance.services.whatsapp.dto.WhatsAppTemplateRequest;
 import com.nivasafinance.services.whatsapp.dto.WhatsAppTemplateResponse;
-import com.nivasafinance.services.whatsapp.provider.WhatsAppProvider;
 import com.nivasafinance.services.whatsapp.provider.wati.WatiWhatsAppProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

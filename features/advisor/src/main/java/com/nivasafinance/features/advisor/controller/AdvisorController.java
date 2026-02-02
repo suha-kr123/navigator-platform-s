@@ -165,4 +165,12 @@ public class AdvisorController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/my-advisors/basic-info")
+    @RequirePermission(permissionName = "READ_MY_ADVISORS_BASIC_INFO")
+    public ResponseEntity<PaginatedResponse<AdvisorBasicResponse>> getMyAdvisors(
+            @Valid PaginationRequest paginationRequest) {
+        PaginatedResponse<AdvisorBasicResponse> response = advisorReadService.getMyAdvisors(paginationRequest);
+        return ResponseEntity.ok(response);
+    }
+
 }

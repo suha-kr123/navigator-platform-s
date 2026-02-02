@@ -21,6 +21,7 @@ import org.hibernate.annotations.Type;
 import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.UUID;
 
 @Entity
@@ -81,6 +82,7 @@ public class Task extends AuditableEntity {
         private LocalDateTime completedAt;
         private String completedBy;
         private String rescheduleReasonCodeValueKey;
+        private Map<String, Object> locationDetails;
     }
 
     @Data

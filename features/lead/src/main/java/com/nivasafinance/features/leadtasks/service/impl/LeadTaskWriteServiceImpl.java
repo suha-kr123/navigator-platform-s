@@ -5,14 +5,13 @@ import com.nivasafinance.common.utils.ValidationUtils;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.workflow.LeadWorkflowAdapter;
-import com.nivasafinance.features.leadstages.entity.LeadStageHistory;
-import com.nivasafinance.features.leadstages.repository.LeadStageHistoryRepositoryWrapper;
 import com.nivasafinance.features.leadtasks.dto.CreateAdhocTaskRequest;
 import com.nivasafinance.features.leadtasks.dto.LeadCompleteTaskRequest;
 import com.nivasafinance.features.leadtasks.dto.LeadReassignTaskRequest;
 import com.nivasafinance.features.leadtasks.dto.LeadRescheduleTaskRequest;
 import com.nivasafinance.features.leadtasks.dto.LeadTaskResponse;
 import com.nivasafinance.features.leadtasks.entity.LeadTask;
+import com.nivasafinance.features.leadtasks.exception.LeadTasksExceptionFactory;
 import com.nivasafinance.features.leadtasks.repository.LeadTaskRepositoryWrapper;
 import com.nivasafinance.features.leadtasks.service.LeadTaskWriteService;
 import com.nivasafinance.features.task.dto.CompleteTaskRequest;
@@ -24,55 +23,221 @@ import com.nivasafinance.features.task.dto.TaskResponse;
 import com.nivasafinance.features.task.entity.Task;
 import com.nivasafinance.features.task.repository.TaskRepositoryWrapper;
 import com.nivasafinance.features.task.service.TaskWriteService;
-import com.nivasafinance.features.lead.workflow.LeadWorkflowAdapter;
 import com.nivasafinance.features.workflow.constants.WorkflowConstants;
-import com.nivasafinance.features.workflow.orchestrator.WorkflowOrchestratorService;
-import org.springframework.context.annotation.Lazy;
+import lombok.RequiredArgsConstructor;
+
+import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class LeadTaskWriteServiceImpl implements LeadTaskWriteService {
 
     private final LeadRepositoryWrapper leadRepositoryWrapper;
-    private final LeadStageHistoryRepositoryWrapper leadStageHistoryRepositoryWrapper;
     private final LeadTaskRepositoryWrapper leadTaskRepositoryWrapper;
     private final TaskWriteService taskWriteService;
     private final TaskRepositoryWrapper taskRepositoryWrapper;
-    private final WorkflowOrchestratorService workflowOrchestratorService;
     private final LeadWorkflowAdapter leadWorkflowAdapter;
-    
-    public LeadTaskWriteServiceImpl(
-            LeadRepositoryWrapper leadRepositoryWrapper,
-            LeadStageHistoryRepositoryWrapper leadStageHistoryRepositoryWrapper,
-            LeadTaskRepositoryWrapper leadTaskRepositoryWrapper,
-            TaskWriteService taskWriteService,
-            TaskRepositoryWrapper taskRepositoryWrapper,
-            WorkflowOrchestratorService workflowOrchestratorService,
-            @Lazy LeadWorkflowAdapter leadWorkflowAdapter) {
-        this.leadRepositoryWrapper = leadRepositoryWrapper;
-        this.leadStageHistoryRepositoryWrapper = leadStageHistoryRepositoryWrapper;
-        this.leadTaskRepositoryWrapper = leadTaskRepositoryWrapper;
-        this.taskWriteService = taskWriteService;
-        this.taskRepositoryWrapper = taskRepositoryWrapper;
-        this.workflowOrchestratorService = workflowOrchestratorService;
-        this.leadWorkflowAdapter = leadWorkflowAdapter;
-    }
+    private final MessageSource messageSource;
 
     @Override
     public LeadTaskResponse createAdhocTask(UUID leadIdentifier, CreateAdhocTaskRequest request) {
-        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
-        
-        // Get current stage from lead workflow details or use provided stageKey
-        String stageKey = getStageKey(lead, request.getStageKey());
-        
-        // Update request with validated stageKey and preserve all fields including creatorRemarks
-        CreateAdhocTaskRequest fullRequest = CreateAdhocTaskRequest.builder()
+        Lead lead = getLead(leadIdentifier);
+
+        String stageKey = getCurrentStageKey(lead, request.getStageKey());
+
+        CreateAdhocTaskRequest fullRequest = buildCreateAdhocTaskRequest(request, lead, stageKey);
+
+        Object result = leadWorkflowAdapter.createAdhocTask(leadIdentifier, fullRequest);
+
+        return (LeadTaskResponse) result;
+    }
+
+    @Override
+    public LeadTaskResponse createTaskAndAssociateWithLead(Long leadId, CreateTaskRequest request,
+            Map<String, Object> taskDetails) {
+        TaskResponse taskResponse = taskWriteService.createTask(request);
+
+        String stageKey = (String) taskDetails.get(WorkflowConstants.TaskDetails.STAGE_KEY);
+
+        return LeadTaskResponse.from(
+                leadTaskRepositoryWrapper.save(buildLeadTask(leadId, taskResponse.getId(), stageKey)),
+                getLead(leadId).getLeadIdentifier(), taskResponse);
+    }
+
+    @Override
+    public LeadTaskResponse completeTask(UUID leadIdentifier, LeadCompleteTaskRequest request) {
+        Lead lead = getLead(leadIdentifier);
+
+        CompleteTaskRequest completeTaskRequest = LeadCompleteTaskRequest.toCompleteTaskRequest(request);
+
+        TaskResponse taskResponse = taskWriteService.completeTask(completeTaskRequest);
+
+        LeadTask leadTask = leadTaskRepositoryWrapper.findByTaskId(taskResponse.getId())
+                .orElseThrow(() -> LeadTasksExceptionFactory.leadTaskNotFound(taskResponse.getId(), lead.getId(),
+                        messageSource));
+
+        return LeadTaskResponse.from(leadTask, leadIdentifier, taskResponse);
+    }
+
+    @Override
+    public LeadTaskResponse reassignTask(UUID leadIdentifier, LeadReassignTaskRequest request) {
+        Lead lead = getLead(leadIdentifier);
+
+        ReassignTaskRequest reassignTaskRequest = buildReassignTaskRequest(request);
+
+        TaskResponse taskResponse = taskWriteService.reassignTask(reassignTaskRequest);
+
+        LeadTask leadTask = leadTaskRepositoryWrapper.findByTaskId(taskResponse.getId())
+                .orElseThrow(() -> LeadTasksExceptionFactory.leadTaskNotFound(taskResponse.getId(), lead.getId(),
+                        messageSource));
+
+        return LeadTaskResponse.from(leadTask, leadIdentifier, taskResponse);
+    }
+
+    @Override
+    public LeadTaskResponse rescheduleTask(UUID leadIdentifier, LeadRescheduleTaskRequest request) {
+        Lead lead = getLead(leadIdentifier);
+        Task oldTask = getTask(request.getTaskIdentifier());
+
+        UUID rescheduledFromTaskId = computeRescheduledFromTaskIdentifier(oldTask, request);
+        RescheduleTaskRequest rescheduleTaskRequest = buildRescheduleTaskRequest(request, rescheduledFromTaskId);
+
+        TaskResponse taskResponse = taskWriteService.rescheduleTask(rescheduleTaskRequest);
+
+        if (shouldCreateFollowUpTask(oldTask)) {
+            createFollowUpTaskForLead(oldTask, request, rescheduledFromTaskId, lead);
+        }
+
+        LeadTask leadTask = findLeadTaskByTaskId(taskResponse.getId(), lead.getId());
+        return LeadTaskResponse.from(leadTask, leadIdentifier, taskResponse);
+    }
+
+    private Task getTask(UUID taskIdentifier) {
+        return taskRepositoryWrapper.findByTaskIdentifierWithException(taskIdentifier);
+    }
+
+    private UUID computeRescheduledFromTaskIdentifier(Task oldTask, LeadRescheduleTaskRequest request) {
+        return ValidationUtils.isNonNull(request.getRescheduledFromTaskIdentifier())
+                ? request.getRescheduledFromTaskIdentifier()
+                : oldTask.getTaskIdentifier();
+    }
+
+    private RescheduleTaskRequest buildRescheduleTaskRequest(LeadRescheduleTaskRequest request, UUID rescheduledFromTaskId) {
+        RescheduleTaskRequest rescheduleTaskRequest = LeadRescheduleTaskRequest.toRescheduleTaskRequest(request);
+        rescheduleTaskRequest.setRescheduledFromTaskIdentifier(rescheduledFromTaskId);
+        return rescheduleTaskRequest;
+    }
+
+    private boolean shouldCreateFollowUpTask(Task oldTask) {
+        return ValidationUtils.isNonNull(oldTask.getTaskDetails())
+                && ValidationUtils.isNonNull(oldTask.getTaskDetails().getEntityType())
+                && ValidationUtils.isNonNull(oldTask.getTaskDetails().getEntityId())
+                && oldTask.getTaskDetails().getEntityType() == EntityType.LEAD;
+    }
+
+    private void createFollowUpTaskForLead(Task oldTask, LeadRescheduleTaskRequest request, UUID rescheduledFromTaskId, Lead lead) {
+        String rescheduledFromTaskRemarks = computeRescheduledFromTaskRemarks(oldTask);
+        TaskDetailsRequest.PreferredCallWindow preferredCallWindow = LeadRescheduleTaskRequest.buildPreferredCallWindow(oldTask, request);
+        CreateTaskRequest createTaskRequest = LeadRescheduleTaskRequest.buildCreateTaskRequest(
+                oldTask, request, rescheduledFromTaskId, rescheduledFromTaskRemarks, preferredCallWindow);
+
+        String stageKey = getStageKeyFromOldLeadTask(oldTask, lead.getLeadIdentifier());
+        if (ValidationUtils.isNonNull(stageKey)) {
+            createTaskAndAssociateWithLead(lead.getId(), createTaskRequest, buildTaskDetailsMap(stageKey));
+        } else {
+            taskWriteService.createTask(createTaskRequest);
+        }
+    }
+
+    private String computeRescheduledFromTaskRemarks(Task oldTask) {
+        if (!ValidationUtils.isNonNull(oldTask.getTaskDetails())) {
+            return null;
+        }
+        if (ValidationUtils.isNonNullOrEmpty(oldTask.getTaskDetails().getRescheduledFromTaskRemarks())) {
+            return oldTask.getTaskDetails().getRescheduledFromTaskRemarks();
+        }
+        if (ValidationUtils.isNonNullOrEmpty(oldTask.getTaskDetails().getCreatorRemarks())) {
+            return oldTask.getTaskDetails().getCreatorRemarks();
+        }
+        return getRemarksFromPreviousTask(oldTask);
+    }
+
+    private String getRemarksFromPreviousTask(Task oldTask) {
+        if (!ValidationUtils.isNonNull(oldTask.getTaskDetails().getRescheduledFromTaskIdentifier())) {
+            return null;
+        }
+        try {
+            Task previousTask = taskRepositoryWrapper.findByTaskIdentifierWithException(
+                    oldTask.getTaskDetails().getRescheduledFromTaskIdentifier());
+            if (ValidationUtils.isNonNull(previousTask)
+                    && ValidationUtils.isNonNull(previousTask.getOutcomeDetails())
+                    && ValidationUtils.isNonNullOrEmpty(previousTask.getOutcomeDetails().getRemarks())) {
+                return previousTask.getOutcomeDetails().getRemarks();
+            }
+        } catch (Exception e) {
+            // If previous task not found or any error, leave remarks as null
+        }
+        return null;
+    }
+
+    private String getStageKeyFromOldLeadTask(Task oldTask, UUID leadIdentifier) {
+        LeadTask oldLeadTask = leadTaskRepositoryWrapper.findByTaskId(oldTask.getId())
+                .orElseThrow(() -> LeadTasksExceptionFactory.invalidTaskDetails(oldTask.getId(), leadIdentifier, messageSource));
+        return oldLeadTask.getTaskDetails() != null ? oldLeadTask.getTaskDetails().getStageKey() : null;
+    }
+
+    private Map<String, Object> buildTaskDetailsMap(String stageKey) {
+        Map<String, Object> taskDetails = new java.util.HashMap<>();
+        taskDetails.put(WorkflowConstants.TaskDetails.STAGE_KEY, stageKey);
+        return taskDetails;
+    }
+
+    private LeadTask findLeadTaskByTaskId(Long taskId, Long leadId) {
+        return leadTaskRepositoryWrapper.findByTaskId(taskId)
+                .orElseThrow(() -> LeadTasksExceptionFactory.leadTaskNotFound(taskId, leadId, messageSource));
+    }
+
+    private Lead getLead(UUID leadIdentifier) {
+        return leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+    }
+
+    private Lead getLead(Long leadId) {
+        return leadRepositoryWrapper.findByIdWithException(leadId);
+    }
+
+    private LeadTask buildLeadTask(Long leadId, Long taskId, String stageKey) {
+        return LeadTask.builder()
+                .leadId(leadId)
+                .taskId(taskId)
+                .taskDetails(LeadTask.TaskDetails.builder()
+                        .stageKey(stageKey)
+                        .build())
+                .build();
+    }
+
+    private ReassignTaskRequest buildReassignTaskRequest(LeadReassignTaskRequest request) {
+        return ReassignTaskRequest.builder()
+                .taskIdentifier(request.getTaskIdentifier())
+                .newAssignedTo(request.getNewAssignedTo())
+                .build();
+    }
+
+    private String getCurrentStageKey(Lead lead, String providedStageKey) {
+        if (ValidationUtils.isNonNull(providedStageKey)) {
+            return providedStageKey;
+        } 
+        throw LeadTasksExceptionFactory.stageNotFound(messageSource);
+    }
+
+    private CreateAdhocTaskRequest buildCreateAdhocTaskRequest(CreateAdhocTaskRequest request, Lead lead,
+            String stageKey) {
+        return CreateAdhocTaskRequest.builder()
                 .taskConfigKey(request.getTaskConfigKey())
                 .assignedTo(request.getAssignedTo())
                 .dueAt(request.getDueAt())
@@ -81,238 +246,5 @@ public class LeadTaskWriteServiceImpl implements LeadTaskWriteService {
                 .preferredCallWindowStart(request.getPreferredCallWindowStart())
                 .preferredCallWindowEnd(request.getPreferredCallWindowEnd())
                 .build();
-        
-        // Call adapter directly with full request to preserve all fields including creatorRemarks
-        // Note: We skip createAdhocTaskForStage because it creates a task with incomplete data (missing creatorRemarks, etc.)
-        // The adapter will create the task properly with all fields preserved
-        // Using @Lazy to break circular dependency: LeadTaskWriteService -> LeadWorkflowAdapter -> LeadTaskWriteService
-        Object result = leadWorkflowAdapter.createAdhocTask(leadIdentifier, fullRequest);
-        
-        return (LeadTaskResponse) result;
-    }
-
-    @Override
-    public LeadTaskResponse createTaskAndAssociateWithLead(Long leadId, CreateTaskRequest request, Map<String, Object> taskDetails) {
-        // Create the task
-        TaskResponse taskResponse = taskWriteService.createTask(request);
-        
-        // Extract stageKey from taskDetails
-        String stageKey = (String) taskDetails.get(WorkflowConstants.TaskDetails.STAGE_KEY);
-        
-        // Create LeadTask association
-        LeadTask.TaskDetails leadTaskDetails = LeadTask.TaskDetails.builder()
-                .stageKey(stageKey)
-                .build();
-        
-        LeadTask leadTask = LeadTask.builder()
-                .leadId(leadId)
-                .taskId(taskResponse.getId())
-                .taskDetails(leadTaskDetails)
-                .build();
-        
-        LeadTask savedLeadTask = leadTaskRepositoryWrapper.save(leadTask);
-        
-        return LeadTaskResponse.from(savedLeadTask, leadRepositoryWrapper.findByIdWithException(leadId).getLeadIdentifier(), taskResponse);
-    }
-
-    private String getStageKey(Lead lead, String providedStageKey) {
-        if (ValidationUtils.isNonNull(providedStageKey)) {
-            return providedStageKey;
-        }
-        
-        Lead.WorkflowDetails workflowDetails = lead.getWorkflowDetails();
-        if (ValidationUtils.isNonNull(workflowDetails) 
-                && ValidationUtils.isNonNull(workflowDetails.getCurrentStageDetails())) {
-            String stageKey = workflowDetails.getCurrentStageDetails().getStageKey();
-            if (ValidationUtils.isNonNull(stageKey)) {
-                return stageKey;
-            }
-        }
-        
-        // Fallback to latest stage history
-        Optional<LeadStageHistory> latestEntry = leadStageHistoryRepositoryWrapper.findLatestEntry(lead.getId());
-        if (latestEntry.isPresent()) {
-            return latestEntry.get().getStageKey();
-        }
-        
-        throw new IllegalStateException("Cannot determine stage for lead: " + lead.getLeadIdentifier());
-    }
-
-    @Override
-    public LeadTaskResponse completeTask(UUID leadIdentifier, LeadCompleteTaskRequest request) {
-        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
-        
-        // Convert LeadCompleteTaskRequest to CompleteTaskRequest
-        CompleteTaskRequest completeTaskRequest = CompleteTaskRequest.builder()
-                .taskIdentifier(request.getTaskIdentifier())
-                .outcomeCodeValueKey(request.getOutcomeCodeValueKey())
-                .outcomeDetails(request.getRemarks() != null 
-                        ? CompleteTaskRequest.OutcomeDetailsRequest.builder()
-                                .remarks(request.getRemarks())
-                                .build()
-                        : null)
-                .build();
-        
-        // Complete the task directly (avoiding circular dependency with orchestrator)
-        TaskResponse taskResponse = taskWriteService.completeTask(completeTaskRequest);
-        
-        // Find the associated LeadTask
-        LeadTask leadTask = leadTaskRepositoryWrapper.findByTaskId(taskResponse.getId())
-                .orElseThrow(() -> new IllegalStateException(
-                        "LeadTask not found for taskId: " + taskResponse.getId() + " and leadId: " + lead.getId()));
-        
-        // Return LeadTaskResponse
-        return LeadTaskResponse.from(leadTask, leadIdentifier, taskResponse);
-    }
-
-    @Override
-    public LeadTaskResponse reassignTask(UUID leadIdentifier, LeadReassignTaskRequest request) {
-        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
-        
-        // Convert LeadReassignTaskRequest to ReassignTaskRequest
-        ReassignTaskRequest reassignTaskRequest = ReassignTaskRequest.builder()
-                .taskIdentifier(request.getTaskIdentifier())
-                .newAssignedTo(request.getNewAssignedTo())
-                .build();
-        
-        // Reassign the task directly (avoiding circular dependency with orchestrator)
-        TaskResponse taskResponse = taskWriteService.reassignTask(reassignTaskRequest);
-        
-        // Find the associated LeadTask
-        LeadTask leadTask = leadTaskRepositoryWrapper.findByTaskId(taskResponse.getId())
-                .orElseThrow(() -> new IllegalStateException(
-                        "LeadTask not found for taskId: " + taskResponse.getId() + " and leadId: " + lead.getId()));
-        
-        // Return LeadTaskResponse
-        return LeadTaskResponse.from(leadTask, leadIdentifier, taskResponse);
-    }
-
-    @Override
-    public LeadTaskResponse rescheduleTask(UUID leadIdentifier, LeadRescheduleTaskRequest request) {
-        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
-        
-        // Get the old task before rescheduling (to extract details for new task creation)
-        Task oldTask = taskRepositoryWrapper.findByTaskIdentifierWithException(request.getTaskIdentifier());
-        
-        // Convert LeadRescheduleTaskRequest to RescheduleTaskRequest
-        // Use rescheduledFromTaskIdentifier from request if provided, otherwise use old task's identifier
-        UUID rescheduledFromTaskId = ValidationUtils.isNonNull(request.getRescheduledFromTaskIdentifier()) 
-                ? request.getRescheduledFromTaskIdentifier() 
-                : oldTask.getTaskIdentifier();
-        
-        RescheduleTaskRequest rescheduleTaskRequest = RescheduleTaskRequest.builder()
-                .taskIdentifier(request.getTaskIdentifier())
-                .preferredStartTime(request.getPreferredStartTime())
-                .preferredEndTime(request.getPreferredEndTime())
-                .reasonCodeValueKey(request.getReasonCodeValueKey())
-                .creatorRemarks(request.getCreatorRemarks())
-                .rescheduledFromTaskIdentifier(rescheduledFromTaskId)
-                .build();
-        
-        // Reschedule the task (closes old task)
-        TaskResponse taskResponse = taskWriteService.rescheduleTask(rescheduleTaskRequest);
-        
-        // Get remarks from the last rescheduled task if it exists
-        // Priority: 1) rescheduledFromTaskRemarks from old task's TaskDetails, 2) creatorRemarks from old task's TaskDetails, 3) remarks from previous task's OutcomeDetails
-        String rescheduledFromTaskRemarks = null;
-        if (ValidationUtils.isNonNull(oldTask.getTaskDetails())) {
-            // First check if old task has rescheduledFromTaskRemarks in its TaskDetails (preserves the chain)
-            if (ValidationUtils.isNonNullOrEmpty(oldTask.getTaskDetails().getRescheduledFromTaskRemarks())) {
-                rescheduledFromTaskRemarks = oldTask.getTaskDetails().getRescheduledFromTaskRemarks();
-            } 
-            // Otherwise, use creatorRemarks from the old task (remarks provided when old task was created/rescheduled)
-            else if (ValidationUtils.isNonNullOrEmpty(oldTask.getTaskDetails().getCreatorRemarks())) {
-                rescheduledFromTaskRemarks = oldTask.getTaskDetails().getCreatorRemarks();
-            }
-            // If old task was rescheduled from another task, try to get remarks from that previous task's OutcomeDetails
-            else if (ValidationUtils.isNonNull(oldTask.getTaskDetails().getRescheduledFromTaskIdentifier())) {
-                try {
-                    Task previousTask = taskRepositoryWrapper.findByTaskIdentifierWithException(
-                            oldTask.getTaskDetails().getRescheduledFromTaskIdentifier());
-                    if (ValidationUtils.isNonNull(previousTask) 
-                            && ValidationUtils.isNonNull(previousTask.getOutcomeDetails())
-                            && ValidationUtils.isNonNullOrEmpty(previousTask.getOutcomeDetails().getRemarks())) {
-                        rescheduledFromTaskRemarks = previousTask.getOutcomeDetails().getRemarks();
-                    }
-                } catch (Exception e) {
-                    // If previous task not found or any error, leave remarks as null
-                    rescheduledFromTaskRemarks = null;
-                }
-            }
-        }
-        
-        // Create new task synchronously with same config, new preferred times, iteration+1
-        if (ValidationUtils.isNonNull(oldTask.getTaskDetails()) 
-                && ValidationUtils.isNonNull(oldTask.getTaskDetails().getEntityType())
-                && ValidationUtils.isNonNull(oldTask.getTaskDetails().getEntityId())
-                && oldTask.getTaskDetails().getEntityType() == EntityType.LEAD) {
-            
-            // Build preferred call window from request or use old task's window
-            TaskDetailsRequest.PreferredCallWindow preferredCallWindow = null;
-            if (ValidationUtils.isNonNull(request.getPreferredStartTime()) 
-                    && ValidationUtils.isNonNull(request.getPreferredEndTime())) {
-                preferredCallWindow = TaskDetailsRequest.PreferredCallWindow.builder()
-                        .start(request.getPreferredStartTime())
-                        .end(request.getPreferredEndTime())
-                        .build();
-            } else if (ValidationUtils.isNonNull(oldTask.getTaskDetails().getPreferredCallWindow())) {
-                preferredCallWindow = TaskDetailsRequest.PreferredCallWindow.builder()
-                        .start(oldTask.getTaskDetails().getPreferredCallWindow().getStart())
-                        .end(oldTask.getTaskDetails().getPreferredCallWindow().getEnd())
-                        .build();
-            }
-            
-            // Use user-provided creator remarks, or null if not provided
-            String creatorRemarks = request.getCreatorRemarks();
-            
-            // Increment iteration count
-            Integer oldIterationCount = oldTask.getTaskDetails().getIterationCount();
-            Integer newIterationCount = (ValidationUtils.isNonNull(oldIterationCount) ? oldIterationCount : 0) + 1;
-            
-            // Get stage key from old LeadTask
-            LeadTask oldLeadTask = leadTaskRepositoryWrapper.findByTaskId(oldTask.getId())
-                    .orElseThrow(() -> new IllegalStateException("LeadTask not found for old taskId: " + oldTask.getId()));
-            String stageKey = oldLeadTask.getTaskDetails() != null 
-                    ? oldLeadTask.getTaskDetails().getStageKey() 
-                    : null;
-            
-            // Create new task
-            // Reuse rescheduledFromTaskId that was already calculated above
-            TaskDetailsRequest taskDetails = TaskDetailsRequest.builder()
-                    .entityId(oldTask.getTaskDetails().getEntityId())
-                    .entityType(oldTask.getTaskDetails().getEntityType())
-                    .preferredCallWindow(preferredCallWindow)
-                    .creatorRemarks(creatorRemarks)
-                    .iterationCount(newIterationCount)
-                    .rescheduledFromTaskIdentifier(rescheduledFromTaskId)
-                    .rescheduleReasonCodeValueKey(request.getReasonCodeValueKey())
-                    .rescheduledFromTaskRemarks(rescheduledFromTaskRemarks)
-                    .build();
-            
-            CreateTaskRequest createTaskRequest = CreateTaskRequest.builder()
-                    .taskConfigKey(oldTask.getTaskConfigKey())
-                    .assignedTo(oldTask.getAssignedTo())
-                    .dueAt(request.getPreferredEndTime() != null ? request.getPreferredEndTime() : oldTask.getDueAt())
-                    .taskDetails(taskDetails)
-                    .build();
-            
-            // Create and associate new task with lead
-            if (ValidationUtils.isNonNull(stageKey)) {
-                Map<String, Object> newTaskDetails = new java.util.HashMap<>();
-                newTaskDetails.put(WorkflowConstants.TaskDetails.STAGE_KEY, stageKey);
-                createTaskAndAssociateWithLead(lead.getId(), createTaskRequest, newTaskDetails);
-            } else {
-                // If no stage key, just create the task
-                taskWriteService.createTask(createTaskRequest);
-            }
-        }
-        
-        // Find the associated LeadTask for the old (now closed) task
-        LeadTask leadTask = leadTaskRepositoryWrapper.findByTaskId(taskResponse.getId())
-                .orElseThrow(() -> new IllegalStateException(
-                        "LeadTask not found for taskId: " + taskResponse.getId() + " and leadId: " + lead.getId()));
-        
-        // Return LeadTaskResponse
-        return LeadTaskResponse.from(leadTask, leadIdentifier, taskResponse);
     }
 }

@@ -1,0 +1,360 @@
+package com.nivasafinance.features.bulkoperations.listener;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nivasafinance.common.context.UserContext;
+import com.nivasafinance.common.exception.ExceptionUtils;
+import com.nivasafinance.common.messaging.config.MessagingProperties;
+import com.nivasafinance.common.messaging.enums.MessageProvider;
+import com.nivasafinance.common.messaging.enums.QueueType;
+import com.nivasafinance.common.messaging.factory.MessagePublisherFactory;
+import com.nivasafinance.common.utils.ValidationUtils;
+import com.nivasafinance.features.bulkoperations.common.entity.BulkOperation;
+import com.nivasafinance.features.bulkoperations.common.enums.BulkOperationStatus;
+import com.nivasafinance.common.exception.ValidationException;
+import com.nivasafinance.features.bulkoperations.common.exception.BulkOperationCsvValidationException;
+import com.nivasafinance.features.bulkoperations.common.exception.BulkOperationExceptionFactory;
+import com.nivasafinance.features.bulkoperations.common.exception.BulkOperationNotFoundException;
+import com.nivasafinance.features.bulkoperations.common.exception.BulkOperationValidatorNotFoundException;
+import com.nivasafinance.features.bulkoperations.common.exception.InvalidBulkOperationTypeException;
+import com.nivasafinance.features.bulkoperations.repository.BulkOperationRepository;
+import com.nivasafinance.features.bulkoperations.service.BulkValidationService;
+import com.nivasafinance.features.bulkoperations.storage.BulkOperationFileStorageService;
+import com.nivasafinance.features.bulkoperations.storage.StoredFileMultipartFile;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
+
+import software.amazon.awssdk.services.sqs.SqsClient;
+import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest;
+import software.amazon.awssdk.services.sqs.model.Message;
+import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
+import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
+
+import jakarta.annotation.PostConstruct;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+@Component
+@RequiredArgsConstructor
+@Slf4j
+public class BulkOperationValidationListener {
+
+    private static final String OPERATION_ID = "operationId";
+    private static final String MESSAGE_ID = "messageId";
+    private static final String DEFAULT_USER = "system";
+    private static final String FILE = "file";
+    private static final String FILE_CONTENT_TYPE = "text/csv";
+
+    private static final String LOG_INIT = "BulkOperationValidationListener initialized. Provider: {}, Poll delay: {}ms";
+    private static final String LOG_POLL_FAILED = "Failed to poll BULK_OPERATION_VALIDATION queue";
+    private static final String LOG_UPLOADED_OPERATION_FAILED = "Failed to process UPLOADED operation {}";
+    private static final String LOG_LOAD_FILE_FAILED = "Failed to load file for bulk operation {}";
+    private static final String LOG_PUBLISH_FAILED = "Failed to publish bulk operation {} to processing queue";
+    private static final String LOG_PARSE_OPERATION_ID_FAILED = "Failed to parse operationId from message: {}";
+    private static final String LOG_DELETE_MESSAGE_FAILED = "Failed to delete message from queue {}";
+    private static final String LOG_UPDATE_VALIDATION_FAILURE_FAILED = "Cannot update validation failure: operation {} not found";
+
+    private static final int PROCESSING_TIMEOUT_HOURS = 24;
+
+    @org.springframework.beans.factory.annotation.Value("${bulk.operations.validation-timeout-hours:2}")
+    private int validationTimeoutHours;
+
+    private final MessagingProperties messagingProperties;
+    private final ObjectProvider<SqsClient> sqsClientProvider;
+    private final BulkOperationRepository bulkOperationRepository;
+    private final BulkValidationService validationService;
+    private final BulkOperationFileStorageService fileStorageService;
+    private final MessagePublisherFactory messagePublisherFactory;
+    private final BulkOperationExceptionFactory exceptionFactory;
+    private final ObjectMapper objectMapper;
+    private final AtomicBoolean polling = new AtomicBoolean(false);
+
+    @PostConstruct
+    public void init() {
+        log.info(LOG_INIT, messagingProperties.getProvider(), messagingProperties.getSqs().getPollDelayMs());
+    }
+
+    @Scheduled(fixedDelayString = "${messaging.sqs.poll-delay-ms:1000}")
+    public void pollValidationQueue() {
+        if (!polling.compareAndSet(false, true))
+            return;
+
+        try {
+            if (isSqsProvider()) {
+                List<Message> messages = receiveValidationMessages();
+                polling.set(false); // release lock so next poll can start while we process
+                for (Message message : messages) {
+                    String queueUrl = messagingProperties.getSqs().resolveQueueUrl(QueueType.BULK_OPERATION_VALIDATION);
+                    boolean processed = processValidationMessage(message.body());
+                    if (processed) {
+                        SqsClient sqsClient = sqsClientProvider.getIfAvailable();
+                        if (sqsClient != null)
+                            deleteMessage(queueUrl, message, sqsClient);
+                    }
+                }
+            } else {
+                pollLocalDatabase();
+            }
+        } catch (Exception ex) {
+            log.error(LOG_POLL_FAILED, ex);
+        } finally {
+            polling.set(false);
+        }
+    }
+
+    private boolean isSqsProvider() {
+        return ValidationUtils.equals(messagingProperties.getProvider(), MessageProvider.SQS);
+    }
+
+    /**
+     * Receives messages from the validation queue. Caller must hold polling lock only during this call.
+     */
+    private List<Message> receiveValidationMessages() {
+        SqsClient sqsClient = sqsClientProvider.getIfAvailable();
+        if (ValidationUtils.isEmpty(sqsClient))
+            return List.of();
+        String queueUrl = messagingProperties.getSqs().resolveQueueUrl(QueueType.BULK_OPERATION_VALIDATION);
+        ReceiveMessageResponse response = sqsClient.receiveMessage(buildReceiveMessageRequest(queueUrl));
+        return response.messages();
+    }
+
+    private ReceiveMessageRequest buildReceiveMessageRequest(String queueUrl) {
+        return ReceiveMessageRequest.builder()
+                .queueUrl(queueUrl)
+                .waitTimeSeconds(messagingProperties.getSqs().getWaitTimeSeconds())
+                .maxNumberOfMessages(messagingProperties.getSqs().getMaxMessages())
+                .build();
+    }
+
+    private void pollLocalDatabase() {
+        List<BulkOperation> operationsToValidate = bulkOperationRepository
+                .findByStatusInOrderByCreatedAtAsc(List.of(
+                        BulkOperationStatus.UPLOADED,
+                        BulkOperationStatus.VALIDATION_IN_PROGRESS
+                ));
+
+        for (BulkOperation operation : operationsToValidate) {
+            try {
+                String messageBody = serializeOperationToMessage(operation);
+                processValidationMessage(messageBody);
+            } catch (Exception ex) {
+                log.error(LOG_UPLOADED_OPERATION_FAILED, operation.getOperationIdentifier(), ex);
+            }
+        }
+    }
+
+    private String serializeOperationToMessage(BulkOperation operation) throws Exception {
+        Map<String, Object> messageMap = Map.of(OPERATION_ID, operation.getOperationIdentifier().toString());
+        return objectMapper.writeValueAsString(messageMap);
+    }
+
+    private boolean processValidationMessage(String rawMessage) {
+        UUID operationId = extractOperationId(rawMessage);
+        if (ValidationUtils.isEmpty(operationId))
+            return false;
+        BulkOperation bulkOperation = bulkOperationRepository.findByOperationIdentifier(operationId).orElse(null);
+        if (ValidationUtils.isEmpty(bulkOperation))
+            return true; // delete message – operation no longer exists
+        // Skip if already in a terminal state or already validated – avoid re-running validation and overwriting VALIDATION_FAILED
+        if (bulkOperation.getStatus() != BulkOperationStatus.UPLOADED && bulkOperation.getStatus() != BulkOperationStatus.VALIDATION_IN_PROGRESS) {
+            log.debug("Skipping validation for operation {} – status already {}", operationId, bulkOperation.getStatus());
+            return true; // delete message – already handled
+        }
+        return executeValidationWithUserContext(bulkOperation);
+    }
+
+    private boolean executeValidationWithUserContext(BulkOperation bulkOperation) {
+        setUserContext(bulkOperation);
+        try {
+            markValidationInProgressIfNeeded(bulkOperation);
+            bulkOperation = bulkOperationRepository.findByOperationIdentifier(bulkOperation.getOperationIdentifier())
+                    .orElse(bulkOperation);
+
+            MultipartFile file = loadFileFromStorage(bulkOperation);
+            if (ValidationUtils.isEmpty(file)) {
+                applyFileLoadFailure(bulkOperation);
+                return true;
+            }
+
+            validationService.validateAndUpdateOperation(bulkOperation, file);
+            bulkOperation = bulkOperationRepository.findByOperationIdentifier(bulkOperation.getOperationIdentifier())
+                    .orElse(bulkOperation);
+
+            publishToProcessingQueueIfValidated(bulkOperation);
+            return true;
+        } catch (Exception ex) {
+            handleValidationFailure(bulkOperation, ex);
+            return false;
+        } finally {
+            UserContext.clear();
+        }
+    }
+
+    private void markValidationInProgressIfNeeded(BulkOperation bulkOperation) {
+        if (ValidationUtils.equals(bulkOperation.getStatus(), BulkOperationStatus.UPLOADED)) {
+            bulkOperation.setStatus(BulkOperationStatus.VALIDATION_IN_PROGRESS);
+            bulkOperation.setValidationStartedAt(LocalDateTime.now());
+            bulkOperation.setTimeoutAt(LocalDateTime.now().plus(validationTimeoutHours, ChronoUnit.HOURS));
+            bulkOperationRepository.save(bulkOperation);
+        }
+    }
+
+    private void applyFileLoadFailure(BulkOperation bulkOperation) {
+        bulkOperation.setStatus(BulkOperationStatus.VALIDATION_FAILED);
+        bulkOperation.setValidationCompletedAt(LocalDateTime.now());
+        bulkOperationRepository.save(bulkOperation);
+    }
+
+    private void publishToProcessingQueueIfValidated(BulkOperation bulkOperation) {
+        boolean hasValidRows = bulkOperation.getValidRows() != null && bulkOperation.getValidRows() > 0;
+        boolean hasWorkingFile = ValidationUtils.isNonNullOrEmpty(bulkOperation.getWorkingFileStorageKey());
+        if (ValidationUtils.equals(bulkOperation.getStatus(), BulkOperationStatus.VALIDATED)
+                && !Boolean.TRUE.equals(bulkOperation.getIsDryRun())
+                && hasValidRows
+                && hasWorkingFile) {
+            bulkOperation.setTimeoutAt(LocalDateTime.now().plus(PROCESSING_TIMEOUT_HOURS, ChronoUnit.HOURS));
+            bulkOperationRepository.save(bulkOperation);
+            publishToProcessingQueue(bulkOperation.getOperationIdentifier());
+        }
+    }
+
+    private void setUserContext(BulkOperation bulkOperation) {
+        String username = bulkOperation.getCreatedBy();
+        UserContext.setUsername(ValidationUtils.isNullOrEmpty(username) ? DEFAULT_USER : username);
+    }
+
+    private MultipartFile loadFileFromStorage(BulkOperation bulkOperation) {
+        try {
+            var inputStream = fileStorageService.fetchFile(bulkOperation.getFileStorageKey());
+            byte[] content = inputStream.readAllBytes();
+            inputStream.close();
+
+            long fileSize = bulkOperation.getFileSize() != null
+                    ? bulkOperation.getFileSize()
+                    : content.length;
+
+            return new StoredFileMultipartFile(
+                    FILE,
+                    bulkOperation.getFileName(),
+                    FILE_CONTENT_TYPE,
+                    fileSize,
+                    content
+            );
+        } catch (Exception ex) {
+            log.error(LOG_LOAD_FILE_FAILED, bulkOperation.getOperationIdentifier(), ex);
+            return null;
+        }
+    }
+
+    private void handleValidationFailure(BulkOperation bulkOperation, Exception ex) {
+        UUID operationId = bulkOperation.getOperationIdentifier();
+        BulkOperation fresh = bulkOperationRepository.findByOperationIdentifier(operationId).orElse(null);
+        if (ValidationUtils.isEmpty(fresh)) {
+            log.warn(LOG_UPDATE_VALIDATION_FAILURE_FAILED, operationId);
+            return;
+        }
+
+        if (isValidationOrBusinessError(ex)) {
+            fresh.setStatus(BulkOperationStatus.VALIDATION_FAILED);
+            fresh.setErrorMessage(ExceptionUtils.getRootCauseMessage(ex));
+            fresh.setValidationCompletedAt(LocalDateTime.now());
+            bulkOperationRepository.save(fresh);
+            return;
+        }
+
+        int retries = fresh.getRetryCount() != null ? fresh.getRetryCount() : 0;
+        fresh.setRetryCount(retries + 1);
+        fresh.setLastRetryAt(LocalDateTime.now());
+
+        if (fresh.getRetryCount() >= fresh.getMaxRetryCount()) {
+            fresh.setStatus(BulkOperationStatus.VALIDATION_FAILED);
+            String errorMessage = exceptionFactory.createValidationFailedAfterRetriesMessage(
+                    fresh.getRetryCount(),
+                    fresh.getMaxRetryCount(),
+                    ExceptionUtils.getRootCauseMessage(ex)
+            );
+            fresh.setErrorMessage(errorMessage);
+            fresh.setValidationCompletedAt(LocalDateTime.now());
+        }
+
+        bulkOperationRepository.save(fresh);
+    }
+
+    private boolean isValidationOrBusinessError(Throwable ex) {
+        Throwable t = ex;
+        while (t != null) {
+            if (t instanceof BulkOperationCsvValidationException
+                    || t instanceof ValidationException
+                    || t instanceof InvalidBulkOperationTypeException
+                    || t instanceof BulkOperationValidatorNotFoundException
+                    || t instanceof BulkOperationNotFoundException) {
+                return true;
+            }
+            t = t.getCause();
+        }
+        return false;
+    }
+
+    private void publishToProcessingQueue(UUID operationId) {
+        try {
+            messagePublisherFactory.getPublisher().publish(
+                    QueueType.BULK_OPERATION_PROCESSING,
+                    operationId.toString(),
+                    Map.of(OPERATION_ID, operationId.toString())
+            );
+        } catch (Exception ex) {
+            log.error(LOG_PUBLISH_FAILED, operationId, ex);
+        }
+    }
+
+    private UUID extractOperationId(String rawMessage) {
+        try {
+            Map<String, Object> messageMap = parseMessageBody(rawMessage);
+            String idStr = getOperationIdFromMessageMap(messageMap);
+            if (ValidationUtils.isNullOrEmpty(idStr))
+                return null;
+            return parseUuid(idStr);
+        } catch (Exception ex) {
+            log.error(LOG_PARSE_OPERATION_ID_FAILED, rawMessage, ex);
+            return null;
+        }
+    }
+
+    private Map<String, Object> parseMessageBody(String rawMessage) throws Exception {
+        return objectMapper.readValue(rawMessage, new TypeReference<>() {});
+    }
+
+    private String getOperationIdFromMessageMap(Map<String, Object> messageMap) {
+        Object value = messageMap.getOrDefault(OPERATION_ID, messageMap.get(MESSAGE_ID));
+        return value != null ? value.toString() : null;
+    }
+
+    private UUID parseUuid(String idStr) {
+        try {
+            return UUID.fromString(idStr);
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
+    }
+
+    private void deleteMessage(String queueUrl, Message message, SqsClient sqsClient) {
+        try {
+            sqsClient.deleteMessage(DeleteMessageRequest.builder()
+                    .queueUrl(queueUrl)
+                    .receiptHandle(message.receiptHandle())
+                    .build());
+        } catch (Exception ex) {
+            log.error(LOG_DELETE_MESSAGE_FAILED, queueUrl, ex);
+        }
+    }
+}

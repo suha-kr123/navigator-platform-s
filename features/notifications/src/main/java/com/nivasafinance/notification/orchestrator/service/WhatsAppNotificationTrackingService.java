@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nivasafinance.notification.orchestrator.dto.WatiSendTemplateResponse;
 import com.nivasafinance.notification.orchestrator.entity.NotificationReceipt;
-import com.nivasafinance.services.whatsapp.dto.WhatsAppTemplateResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

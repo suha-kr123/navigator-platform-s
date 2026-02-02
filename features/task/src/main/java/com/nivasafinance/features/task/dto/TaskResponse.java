@@ -59,6 +59,7 @@ public class TaskResponse {
                     .completedAt(task.getOutcomeDetails().getCompletedAt())
                     .completedBy(task.getOutcomeDetails().getCompletedBy())
                     .rescheduleReasonCodeValueKey(task.getOutcomeDetails().getRescheduleReasonCodeValueKey())
+                    .locationDetails(task.getOutcomeDetails().getLocationDetails())
                     .build();
         }
         

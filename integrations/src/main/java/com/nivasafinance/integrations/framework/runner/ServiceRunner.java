@@ -42,7 +42,6 @@ public class ServiceRunner<S, A> {
         return tryFallbackService(methodName, argument, runConfig, businessContext, lastServerException);
     }
 
-    @SuppressWarnings("unchecked")
     private Object tryPrimaryService(
             String methodName,
             A argument,
@@ -73,7 +72,6 @@ public class ServiceRunner<S, A> {
         }
     }
 
-    @SuppressWarnings("unchecked")
     private Object tryFallbackService(
             String methodName,
             A argument,

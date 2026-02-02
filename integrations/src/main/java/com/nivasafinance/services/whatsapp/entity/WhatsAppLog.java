@@ -3,7 +3,6 @@ package com.nivasafinance.services.whatsapp.entity;
 import com.nivasafinance.common.annotations.NoArg;
 import com.nivasafinance.common.audit.AuditableEntity;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 

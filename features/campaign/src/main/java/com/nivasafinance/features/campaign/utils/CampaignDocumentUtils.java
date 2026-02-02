@@ -1,8 +1,5 @@
 package com.nivasafinance.features.campaign.utils;
 
-import com.nivasafinance.redash.dto.FileType;
-
-import java.util.UUID;
 import java.util.regex.Pattern;
 
 public final class CampaignDocumentUtils {

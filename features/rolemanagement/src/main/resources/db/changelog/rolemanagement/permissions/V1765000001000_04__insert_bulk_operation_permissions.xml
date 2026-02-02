@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1765000001000-04-insert-bulk-operation-permissions" author="system" context="default">
+        <comment>Insert BULK_OPERATION module permissions</comment>
+
+        <insert tableName="n_permissions">
+            <column name="name" value="VIEW_BULK_OPERATION_TYPES"/>
+            <column name="action" value="READ"/>
+            <column name="module" value="BULK_OPERATION"/>
+            <column name="operation" value="READ_BULK_OPERATION"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permissions">
+            <column name="name" value="BULK_UPDATE_LEAD"/>
+            <column name="action" value="UPDATE"/>
+            <column name="module" value="BULK_OPERATION"/>
+            <column name="operation" value="BULK_UPDATE_LEAD"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permissions">
+            <column name="name" value="VIEW_BULK_OPERATION_STATUS"/>
+            <column name="action" value="READ"/>
+            <column name="module" value="BULK_OPERATION"/>
+            <column name="operation" value="READ_BULK_OPERATION"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permissions">
+            <column name="name" value="CANCEL_BULK_OPERATION"/>
+            <column name="action" value="UPDATE"/>
+            <column name="module" value="BULK_OPERATION"/>
+            <column name="operation" value="CANCEL_BULK_OPERATION"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permissions">
+            <column name="name" value="DOWNLOAD_BULK_OPERATION_REPORTS"/>
+            <column name="action" value="READ"/>
+            <column name="module" value="BULK_OPERATION"/>
+            <column name="operation" value="READ_BULK_OPERATION"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permissions">
+            <column name="name" value="PREVIEW_BULK_OPERATION"/>
+            <column name="action" value="READ"/>
+            <column name="module" value="BULK_OPERATION"/>
+            <column name="operation" value="READ_BULK_OPERATION"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>

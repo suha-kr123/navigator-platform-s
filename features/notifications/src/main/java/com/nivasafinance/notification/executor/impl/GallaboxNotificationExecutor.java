@@ -4,9 +4,7 @@ import com.nivasafinance.integrations.framework.config.BusinessContext;
 import com.nivasafinance.integrations.framework.core.data.ThirdPartyConfig;
 import com.nivasafinance.notification.executor.NotificationExecutor;
 import com.nivasafinance.notification.orchestrator.entity.NotificationReceipt;
-import com.nivasafinance.notification.orchestrator.entity.NotificationRecord;
 import com.nivasafinance.notification.orchestrator.entity.NotificationTemplate;
-import com.nivasafinance.notification.orchestrator.repository.NotificationRecordRepository;
 import com.nivasafinance.notification.orchestrator.repository.NotificationTemplateRepository;
 import com.nivasafinance.notification.orchestrator.service.WhatsAppNotificationTrackingService;
 import com.nivasafinance.services.whatsapp.dto.TemplateParameter;
@@ -33,7 +31,6 @@ public class GallaboxNotificationExecutor implements NotificationExecutor {
 
     private final GallaboxWhatsAppProvider gallaboxWhatsAppProvider;
     private final GallaboxConfigProvider gallaboxConfigProvider;
-    private final NotificationRecordRepository notificationRecordRepository;
     private final NotificationTemplateRepository notificationTemplateRepository;
     private final WhatsAppNotificationTrackingService trackingService;
 
@@ -67,10 +64,6 @@ public class GallaboxNotificationExecutor implements NotificationExecutor {
                             log.error("NotificationTemplate not found: '{}'. Please check if the template exists in n_notification_template table with this identifier.", templateIdentifier);
                             return new IllegalStateException("NotificationTemplate not found: " + templateIdentifier + ". Please ensure the template is created in the database.");
                         }));
-
-        // Load notification record to get idempotency key
-        NotificationRecord record = notificationRecordRepository.findById(receipt.getNotificationRecordId())
-                .orElseThrow(() -> new IllegalStateException("NotificationRecord not found: " + receipt.getNotificationRecordId()));
 
         // Get Gallabox config based on recipient type
         ThirdPartyConfig gallaboxConfig = gallaboxConfigProvider.getConfigForRecipient(recipientType);

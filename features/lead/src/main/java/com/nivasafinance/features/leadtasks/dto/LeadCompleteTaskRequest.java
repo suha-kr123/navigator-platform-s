@@ -7,7 +7,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Map;
 import java.util.UUID;
+
+import com.nivasafinance.common.utils.ValidationUtils;
+import com.nivasafinance.features.task.dto.CompleteTaskRequest;
 
 @Data
 @NoArgsConstructor
@@ -22,6 +26,23 @@ public class LeadCompleteTaskRequest {
     private String outcomeCodeValueKey;
 
     private String remarks;
-    
+
+    private Map<String, Object> locationDetails;
+
+
+    public static CompleteTaskRequest toCompleteTaskRequest(LeadCompleteTaskRequest request) {
+        return CompleteTaskRequest.builder()
+                .taskIdentifier(request.getTaskIdentifier())
+                .outcomeCodeValueKey(request.getOutcomeCodeValueKey())
+                .outcomeDetails(request.getRemarks() != null
+                        ? CompleteTaskRequest.OutcomeDetailsRequest.builder()
+                                .remarks(request.getRemarks())
+                                .locationDetails(ValidationUtils.isNonNull(request.getLocationDetails()) 
+                                        ? request.getLocationDetails()
+                                        : null)
+                                .build()
+                        : null)
+                .build();
+    }
 }
 

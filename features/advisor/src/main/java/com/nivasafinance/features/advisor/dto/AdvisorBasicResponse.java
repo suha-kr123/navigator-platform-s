@@ -15,11 +15,12 @@ import java.util.UUID;
 @AllArgsConstructor
 public class AdvisorBasicResponse {
     private UUID advisorIdentifier;
-    private String Name;
+    private String name;
     private String mobileNumber;
     private AdvisorStatus status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private String officeKey;
+    private String owner;
 }
 

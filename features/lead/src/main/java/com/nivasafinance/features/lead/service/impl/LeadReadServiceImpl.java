@@ -257,7 +257,12 @@ public class LeadReadServiceImpl implements LeadReadService {
     @Override
     public LeadBasicResponse getLeadBasicByIdentifier(UUID leadIdentifier) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
-        return LeadBasicResponse.builder().id(lead.getId()).leadIdentifier(leadIdentifier).build();
+        return LeadBasicResponse.builder()
+                .id(lead.getId())
+                .leadIdentifier(leadIdentifier)
+                .status(lead.getStatus())
+                .substatus(lead.getSubstatus())
+                .build();
     }
 
     @Override

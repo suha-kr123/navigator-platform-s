@@ -246,7 +246,7 @@ public class AdvisorCallWriteServiceImpl implements AdvisorCallWriteService {
     }
 
     private void publishAdvisorCallLogUpdatedEvent(Advisor advisor, Long callLogId, UUID callLogIdentifier) {
-        AdvisorCallLogUpdateEventPayload payload = AdvisorCallLogUpdateEventPayload.builder()
+        AdvisorCallLogUpdateEventPayload.builder()
                 .advisorId(advisor.getId())
                 .callLogId(callLogId)
                 .callLogIdentifier(callLogIdentifier)

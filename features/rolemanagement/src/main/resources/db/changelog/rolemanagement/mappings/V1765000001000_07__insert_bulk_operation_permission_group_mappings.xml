@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1765000001000-07-insert-bulk-operation-permission-group-mappings" author="system" context="default">
+        <comment>Map BULK_OPERATION permissions to permission groups</comment>
+
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'VIEW_BULK_OPERATION_TYPES')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'BULK_OPERATION_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'BULK_UPDATE_LEAD')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'BULK_OPERATION_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'VIEW_BULK_OPERATION_STATUS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'BULK_OPERATION_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'CANCEL_BULK_OPERATION')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'BULK_OPERATION_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'DOWNLOAD_BULK_OPERATION_REPORTS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'BULK_OPERATION_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'PREVIEW_BULK_OPERATION')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'BULK_OPERATION_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>

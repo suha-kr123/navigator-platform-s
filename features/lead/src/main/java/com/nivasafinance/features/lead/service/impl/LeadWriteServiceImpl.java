@@ -30,7 +30,6 @@ import com.nivasafinance.features.leadstages.service.LeadStageHistoryWriteServic
 import com.nivasafinance.features.master.codemaster.SystemControlledMasterCodes;
 import com.nivasafinance.features.master.codemaster.service.CodeValueMasterService;
 import com.nivasafinance.features.master.products.service.ProductReadService;
-import com.nivasafinance.features.person.dto.PersonCreateRequest;
 import com.nivasafinance.features.person.entity.MobileNumberDetails;
 import com.nivasafinance.features.person.entity.Person;
 import com.nivasafinance.features.person.repository.PersonRepositoryWrapper;
@@ -337,30 +336,6 @@ public class LeadWriteServiceImpl implements LeadWriteService {
 
         // Publish event
         publishLeadUpdatedEvent(lead);
-    }
-
-    private PersonCreateRequest getPersonCreateRequest(CreateLeadRequest request) {
-        List<MobileNumberDetails> mobileNumbers = getMobileNumberDetails(request);
-        return new PersonCreateRequest(
-                null, // firstName
-                null, // middleName
-                null, // lastName
-                mobileNumbers,
-                null, // dateOfBirth
-                null // gender
-        );
-    }
-
-    private List<MobileNumberDetails> getMobileNumberDetails(CreateLeadRequest request) {
-        // Create person with phoneNo
-        MobileNumberDetails mobileNumber = new MobileNumberDetails();
-        mobileNumber.setNumber(request.getPhoneNumber().getMobileNumber());
-        mobileNumber.setIsPrimary(true);
-        mobileNumber.setIsWhatsappAvailable(request.getPhoneNumber().isWhatsapp());
-
-        List<MobileNumberDetails> mobileNumbers = new ArrayList<>();
-        mobileNumbers.add(mobileNumber);
-        return mobileNumbers;
     }
 
     @Override
