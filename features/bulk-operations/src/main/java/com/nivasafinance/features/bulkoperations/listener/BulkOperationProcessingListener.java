@@ -78,13 +78,11 @@ public class BulkOperationProcessingListener {
             return;
 
         try {
-            // Hybrid approach: poll SQS first (if available), then poll DB as fallback
             if (isSqsProvider()) {
                 pollSqsQueue();
+            } else {
+                pollLocalDatabase();
             }
-            // Always poll database for VALIDATED operations as fallback/self-healing
-            // This ensures stuck operations are retried regardless of SQS state
-            pollLocalDatabase();
         } catch (Exception ex) {
             log.error(LOG_POLL_FAILED, ex);
         } finally {
