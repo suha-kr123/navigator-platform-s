@@ -28,7 +28,8 @@ aws-sdk-v2-secretsmanager = "2.20.26"
 # Protobuf - patched version to fix CVE-2024-7254
 protobuf-java = "4.28.2"
 
-
+# versions
+commons-csv = "1.14.1"
 
 [plugins]
 
@@ -71,6 +72,8 @@ kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotl
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
 # Lombok
 lombok = { module = "org.projectlombok:lombok", version.ref = "lombok-ver" }
+# csv
+commons-csv = { module = "org.apache.commons:commons-csv", version.ref = "commons-csv" }
 
 
 [bundles]

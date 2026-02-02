@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1765000000000-01-create-bulk-operation-table" author="system" context="default">
+        <comment>Create n_bulk_operation table</comment>
+        <createTable tableName="n_bulk_operation">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="operation_identifier" type="uuid">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="operation_type" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_dry_run" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="file_name" type="varchar(255)"/>
+            <column name="file_size" type="bigint"/>
+            <column name="file_hash" type="varchar(64)"/>
+            <column name="file_storage_key" type="varchar(500)"/>
+            <column name="total_rows" type="int"/>
+            <column name="valid_rows" type="int"/>
+            <column name="invalid_rows" type="int"/>
+            <column name="processed_rows" type="int" defaultValueNumeric="0"/>
+            <column name="successful_rows" type="int" defaultValueNumeric="0"/>
+            <column name="failed_rows" type="int" defaultValueNumeric="0"/>
+            <column name="current_batch" type="int" defaultValueNumeric="0"/>
+            <column name="total_batches" type="int" defaultValueNumeric="0"/>
+            <column name="summary_storage_key" type="varchar(500)"/>
+            <column name="validation_started_at" type="timestamp"/>
+            <column name="validation_completed_at" type="timestamp"/>
+            <column name="processing_started_at" type="timestamp"/>
+            <column name="processing_completed_at" type="timestamp"/>
+            <column name="cancelled_at" type="timestamp"/>
+            <column name="retry_count" type="int" defaultValueNumeric="0"/>
+            <column name="max_retry_count" type="int" defaultValueNumeric="3"/>
+            <column name="last_retry_at" type="timestamp"/>
+            <column name="timeout_at" type="timestamp"/>
+            <column name="error_message" type="text"/>
+            <column name="meta_data" type="jsonb"/>
+            <column name="working_file_storage_key" type="varchar(500)"/>
+            <column name="created_by" type="varchar(255)"/>
+            <column name="created_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="updated_by" type="varchar(255)"/>
+            <column name="updated_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="version" type="bigint" defaultValueNumeric="0"/>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>
