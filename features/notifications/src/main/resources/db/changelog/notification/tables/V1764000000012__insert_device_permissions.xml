@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1764000000012_insert_device_permissions" author="system">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">SELECT COUNT(*) FROM n_permissions WHERE name = 'REGISTER_DEVICE'</sqlCheck>
+        </preConditions>
+        <insert tableName="n_permissions">
+            <column name="name" value="REGISTER_DEVICE"/>
+            <column name="action" value="CREATE"/>
+            <column name="module" value="DEVICE"/>
+            <column name="operation" value="REGISTER_DEVICE"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

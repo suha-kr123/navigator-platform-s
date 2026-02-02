@@ -21,9 +21,14 @@ import com.nivasafinance.features.task.repository.TaskRepositoryWrapper;
 import com.nivasafinance.features.task.service.DueDateCalculatorService;
 import com.nivasafinance.features.task.service.TaskConfigValidationService;
 import com.nivasafinance.features.task.service.TaskWriteService;
-import com.nivasafinance.common.utils.ValidationUtils;
 import com.nivasafinance.common.context.UserContext;
+import com.nivasafinance.common.events.BusinessEvent;
+import com.nivasafinance.common.events.SystemEvent;
+import com.nivasafinance.common.enums.EntityType;
+import com.nivasafinance.common.events.payload.LeadTaskAssignedEventPayload;
+import com.nivasafinance.common.utils.ValidationUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,6 +56,7 @@ public class TaskWriteServiceImpl implements TaskWriteService {
     private final DueDateCalculatorService dueDateCalculatorService;
     private final MessageSource messageSource;
     private final ObjectMapper objectMapper;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     public TaskResponse createTask(CreateTaskRequest request) {
@@ -59,6 +65,7 @@ public class TaskWriteServiceImpl implements TaskWriteService {
         request.setDueAt(calculateDueDate(request, taskConfig));
         Task task = buildTaskFromRequest(request, taskConfig);
         Task savedTask = taskRepositoryWrapper.saveWithException(task);
+        publishTaskAssignedIfAssigned(savedTask);
         return TaskResponse.from(savedTask, taskConfig, objectMapper);
     }
 
@@ -67,6 +74,7 @@ public class TaskWriteServiceImpl implements TaskWriteService {
         Task task = validateReassignTaskRequest(request);
         updateTaskAssignment(task, request.getNewAssignedTo());
         Task savedTask = taskRepositoryWrapper.saveWithException(task);
+        publishTaskAssignedIfAssigned(savedTask);
         TaskConfig taskConfig = getActiveTaskConfig(task.getTaskConfigKey());
         return TaskResponse.from(savedTask, taskConfig, objectMapper);
     }
@@ -302,6 +310,27 @@ public class TaskWriteServiceImpl implements TaskWriteService {
 
     private void updateTaskAssignment(Task task, String assignedTo) {
         task.setAssignedTo(assignedTo);
+    }
+
+    private void publishTaskAssignedIfAssigned(Task task) {
+        String assignedTo = task.getAssignedTo();
+        if (ValidationUtils.isNonNullOrEmpty(assignedTo)) {
+            UUID leadIdentifier = null;
+            if (task.getTaskDetails() != null
+                    && task.getTaskDetails().getEntityType() == EntityType.LEAD
+                    && task.getTaskDetails().getEntityId() != null) {
+                leadIdentifier = task.getTaskDetails().getEntityId();
+            }
+            LeadTaskAssignedEventPayload payload = LeadTaskAssignedEventPayload.builder()
+                    .username(assignedTo)
+                    .taskIdentifier(task.getTaskIdentifier())
+                    .taskName(task.getName())
+                    .taskConfigKey(task.getTaskConfigKey())
+                    .leadIdentifier(leadIdentifier)
+                    .build();
+            applicationEventPublisher.publishEvent(
+                    new SystemEvent<>(BusinessEvent.LEAD_TASK_ASSIGNED.toString(), payload, assignedTo));
+        }
     }
 
     private void closeTaskWithRescheduledOutcome(Task task, RescheduleTaskRequest request) {
