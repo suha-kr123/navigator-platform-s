@@ -5,6 +5,7 @@ import com.nivasafinance.common.dto.AddressData;
 import com.nivasafinance.common.events.BusinessEvent;
 import com.nivasafinance.common.events.SystemEvent;
 import com.nivasafinance.common.events.payload.LeadCreationEventPayload;
+import com.nivasafinance.common.events.payload.LeadPreliminaryDetailsUpdateEventPayload;
 import com.nivasafinance.common.events.payload.LeadStatusChangeEventPayload;
 import com.nivasafinance.common.events.payload.LeadUpdateEventPayload;
 import com.nivasafinance.common.exception.BadRequestException;
@@ -221,7 +222,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         leadRepositoryWrapper.saveWithException(lead);
 
         // Publish event
-        publishLeadUpdatedEvent(lead);
+        publishLeadPreliminaryDetailsUpdatedEvent(lead, preliminaryDetails);
     }
 
     @Override
@@ -794,6 +795,18 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         String username = UserContext.getUsername();
         applicationEventPublisher.publishEvent(
                 new SystemEvent<>(BusinessEvent.LEAD_UPDATED.toString(), payload, username)
+        );
+    }
+
+    private void publishLeadPreliminaryDetailsUpdatedEvent(Lead lead, Lead.PreliminaryDetails preliminaryDetails) {
+        LeadPreliminaryDetailsUpdateEventPayload payload = LeadPreliminaryDetailsUpdateEventPayload.builder()
+                .leadId(lead.getId())
+                .leadIdentifier(lead.getLeadIdentifier())
+                .build();
+
+        String username = UserContext.getUsername();
+        applicationEventPublisher.publishEvent(
+                new SystemEvent<>(BusinessEvent.LEAD_PRELIMINARY_DETAILS_UPDATED.toString(), payload, username)
         );
     }
 
