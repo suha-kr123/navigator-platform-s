@@ -16,6 +16,8 @@ import com.nivasafinance.features.bulkoperations.repository.BulkOperationReposit
 import com.nivasafinance.features.bulkoperations.service.BulkOperationProcessingService;
 import com.nivasafinance.features.bulkoperations.service.BulkOperationService;
 import com.nivasafinance.features.bulkoperations.storage.BulkOperationFileStorageService;
+import com.nivasafinance.common.messaging.factory.MessagePublisherFactory;
+import com.nivasafinance.common.messaging.enums.QueueType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -33,6 +35,7 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -56,6 +59,7 @@ public class BulkOperationServiceImpl implements BulkOperationService {
     private final BulkOperationFileStorageService fileStorageService;
     private final BulkOperationProcessingService processingService;
     private final EntityManager entityManager;
+    private final MessagePublisherFactory messagePublisherFactory;
 
     @org.springframework.beans.factory.annotation.Value("${bulk.operations.duplicate-upload-window-minutes:30}")
     private int duplicateUploadWindowMinutes;
@@ -120,6 +124,8 @@ public class BulkOperationServiceImpl implements BulkOperationService {
         String storageKey = fileStorageService.saveFile(fileToSave, operation.getOperationIdentifier());
         operation.setFileStorageKey(storageKey);
         operation = bulkOperationRepository.save(operation);
+
+        publishToValidationQueue(operation.getOperationIdentifier());
 
         log.info(BULK_OPERATION_CREATED, operation.getOperationIdentifier(), dryRun);
         return BulkOperationResponse.from(operation);
@@ -204,5 +210,22 @@ public class BulkOperationServiceImpl implements BulkOperationService {
         BulkOperation updated = bulkOperationRepository.findByOperationIdentifier(dryRunOperationId)
                 .orElseThrow(() -> exceptionFactory.bulkOperationNotFoundException(dryRunOperationId));
         return BulkOperationResponse.from(updated);
+    }
+
+    /**
+     * Publishes to BULK_OPERATION_VALIDATION queue so the listener can pick it up immediately.
+     * If publish fails, DB polling will still pick up the UPLOADED operation.
+     */
+    private void publishToValidationQueue(UUID operationId) {
+        try {
+            messagePublisherFactory.getPublisher().publish(
+                    QueueType.BULK_OPERATION_VALIDATION,
+                    operationId.toString(),
+                    Map.of("operationId", operationId.toString()));
+            log.debug("Published bulk operation {} to validation queue", operationId);
+        } catch (Exception e) {
+            log.warn("Failed to publish bulk operation {} to validation queue: {}. Will be picked up by DB polling.",
+                    operationId, e.getMessage());
+        }
     }
 }

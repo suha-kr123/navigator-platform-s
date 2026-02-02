@@ -50,6 +50,9 @@ public class BulkOperationProcessingListener {
     private static final String LOG_INIT = "BulkOperationProcessingListener initialized. Provider: {}";
     private static final String LOG_POLL_FAILED = "Failed to poll processing queue";
     private static final String LOG_VALIDATED_OPERATION_FAILED = "Failed to process VALIDATED operation {}";
+    private static final String LOG_FAILED_TO_POLL_SQS_PROCESSING_QUEUE = "Failed to poll SQS processing queue: {}";
+    private static final String LOG_PROCESSING_FAILED = "Processing failed for bulk operation (transaction will roll back): {}";
+    private static final String LOG_INTERRUPTED_WHILE_WAITING_FOR_PROCESSING_PERMIT = "Interrupted while waiting for processing permit";
 
     private final MessagingProperties messagingProperties;
     private final ObjectProvider<SqsClient> sqsClientProvider;
@@ -75,23 +78,35 @@ public class BulkOperationProcessingListener {
             return;
 
         try {
+            // Hybrid approach: poll SQS first (if available), then poll DB as fallback
             if (isSqsProvider()) {
-                List<Message> messages = receiveProcessingMessages();
-                polling.set(false); // release lock so next poll can start while we process
-                String queueUrl = messagingProperties.getSqs().resolveQueueUrl(QueueType.BULK_OPERATION_PROCESSING);
-                SqsClient sqsClient = sqsClientProvider.getIfAvailable();
-                for (Message message : messages) {
-                    boolean processed = processProcessingMessage(message.body());
-                    if (processed && sqsClient != null)
-                        deleteMessage(queueUrl, message, sqsClient);
-                }
-            } else {
-                pollLocalDatabase();
+                pollSqsQueue();
             }
+            // Always poll database for VALIDATED operations as fallback/self-healing
+            // This ensures stuck operations are retried regardless of SQS state
+            pollLocalDatabase();
         } catch (Exception ex) {
             log.error(LOG_POLL_FAILED, ex);
         } finally {
             polling.set(false);
+        }
+    }
+
+    /**
+     * Polls SQS queue for processing messages.
+     */
+    private void pollSqsQueue() {
+        try {
+            List<Message> messages = receiveProcessingMessages();
+            String queueUrl = messagingProperties.getSqs().resolveQueueUrl(QueueType.BULK_OPERATION_PROCESSING);
+            SqsClient sqsClient = sqsClientProvider.getIfAvailable();
+            for (Message message : messages) {
+                boolean processed = processProcessingMessage(message.body());
+                if (processed && sqsClient != null)
+                    deleteMessage(queueUrl, message, sqsClient);
+            }
+        } catch (Exception ex) {
+            log.warn(LOG_FAILED_TO_POLL_SQS_PROCESSING_QUEUE, ex.getMessage());
         }
     }
 
@@ -154,7 +169,7 @@ public class BulkOperationProcessingListener {
 
                 return executeWithUserContext(bulkOperation);
             } catch (Exception ex) {
-                log.error("Processing failed for bulk operation (transaction will roll back): {}", ex.getMessage(), ex);
+                log.error(LOG_PROCESSING_FAILED, ex.getMessage(), ex);
                 status.setRollbackOnly();
                 return false;
             }
@@ -190,7 +205,7 @@ public class BulkOperationProcessingListener {
             processingSemaphore.acquire();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            log.warn("Interrupted while waiting for processing permit");
+            log.warn(LOG_INTERRUPTED_WHILE_WAITING_FOR_PROCESSING_PERMIT);
             return false;
         }
         try {
