@@ -161,14 +161,10 @@ public List<String> buildReportRow(CsvReportRow row, String rowStatus) {
 
 No extra wiring needed: validators, processors, and report layouts are discovered via `@Component` and registered by type.
 
-## Reference Implementation
+## Reference Implementations
 
-See the **DROPOFF** operation in `operations/dropoff/`:
-
-- `DropoffRowKeys.java`
-- `DropoffCsvValidator.java`
-- `DropoffProcessor.java`
-- `DropoffReportLayout.java`
+- **DROPOFF** (`operations/dropoff/`): lead_identifier, reason_code.
+- **ONHOLD** (`operations/onhold/`): lead_identifier, reason_code, follow_up_date (on-hold reason and follow-up date; CSV date format yyyy-MM-dd).
 
 ## Module Structure
 
