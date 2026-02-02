@@ -2,6 +2,7 @@ package com.nivasafinance.features.bulkoperations.service.impl;
 
 import com.nivasafinance.features.bulkoperations.common.entity.BulkOperation;
 import com.nivasafinance.features.bulkoperations.common.enums.BulkOperationStatus;
+import com.nivasafinance.common.exception.ExceptionUtils;
 import com.nivasafinance.features.bulkoperations.common.exception.BulkOperationExceptionFactory;
 import com.nivasafinance.features.bulkoperations.repository.BulkOperationRepository;
 import com.nivasafinance.features.bulkoperations.service.BulkOperationFailureRecorder;
@@ -41,18 +42,19 @@ public class BulkOperationFailureRecorderImpl implements BulkOperationFailureRec
 		operation.setRetryCount(retries + 1);
 		operation.setLastRetryAt(LocalDateTime.now());
 
+		String causeDetail = cause != null ? ExceptionUtils.getRootCauseMessage(cause) : "";
 		if (operation.getRetryCount() >= maxRetries) {
 			operation.setStatus(BulkOperationStatus.FAILED);
 			String errorMessage = exceptionFactory.createProcessingFailedAfterRetriesMessage(
 					operation.getRetryCount(),
 					maxRetries,
-					cause != null && cause.getMessage() != null ? cause.getMessage() : "");
+					causeDetail);
 			operation.setErrorMessage(errorMessage);
 			operation.setProcessingCompletedAt(LocalDateTime.now());
-			log.error(LOG_PROCESSING_FAILED, operationId, operation.getRetryCount(), maxRetries, cause != null ? cause.getMessage() : "");
+			log.error(LOG_PROCESSING_FAILED, operationId, operation.getRetryCount(), maxRetries, causeDetail);
 		} else {
 			operation.setStatus(BulkOperationStatus.VALIDATED);
-			log.warn(LOG_PROCESSING_FAILED, operationId, operation.getRetryCount(), maxRetries, cause != null ? cause.getMessage() : "");
+			log.warn(LOG_PROCESSING_FAILED, operationId, operation.getRetryCount(), maxRetries, causeDetail);
 		}
 
 		bulkOperationRepository.save(operation);

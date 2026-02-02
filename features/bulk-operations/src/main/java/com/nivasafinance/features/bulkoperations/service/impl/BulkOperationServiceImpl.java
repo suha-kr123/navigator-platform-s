@@ -25,6 +25,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import jakarta.persistence.EntityManager;
+
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
@@ -47,12 +49,13 @@ public class BulkOperationServiceImpl implements BulkOperationService {
     private static final String BULK_OPERATION_SUMMARY_REPORT_READ = "Summary report read for operation {}";
     private static final String FAILED_TO_READ_UPLOAD_FILE = "Failed to read upload file";
     private static final String FILE = "file";
-    private static final String SYSTEM = "system";      
+    private static final String SYSTEM = "system";
 
     private final BulkOperationRepository bulkOperationRepository;
+    private final BulkOperationExceptionFactory exceptionFactory;
     private final BulkOperationFileStorageService fileStorageService;
     private final BulkOperationProcessingService processingService;
-    private final BulkOperationExceptionFactory exceptionFactory;
+    private final EntityManager entityManager;
 
     @org.springframework.beans.factory.annotation.Value("${bulk.operations.duplicate-upload-window-minutes:30}")
     private int duplicateUploadWindowMinutes;
@@ -191,12 +194,15 @@ public class BulkOperationServiceImpl implements BulkOperationService {
         if (!Boolean.TRUE.equals(operation.getIsDryRun())) {
             throw exceptionFactory.bulkOperationNotFoundException(dryRunOperationId);
         }
-        if (operation.getStatus() != BulkOperationStatus.DRY_RUN_COMPLETED) {
+        // Allow execution only when validation is done and ready to process (dry run is not auto-queued).
+        if (operation.getStatus() != BulkOperationStatus.VALIDATED) {
             throw exceptionFactory.dryRunOperationNotCompletedException(dryRunOperationId);
         }
+        // Detach so the outer transaction does not hold this entity; process() updates the same row in REQUIRES_NEW transactions.
+        entityManager.detach(operation);
         processingService.process(operation);
-        operation = bulkOperationRepository.findByOperationIdentifier(dryRunOperationId)
+        BulkOperation updated = bulkOperationRepository.findByOperationIdentifier(dryRunOperationId)
                 .orElseThrow(() -> exceptionFactory.bulkOperationNotFoundException(dryRunOperationId));
-        return BulkOperationResponse.from(operation);
+        return BulkOperationResponse.from(updated);
     }
 }

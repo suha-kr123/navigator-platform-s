@@ -1,5 +1,6 @@
 package com.nivasafinance.features.bulkoperations.engine;
 
+import com.nivasafinance.common.exception.ExceptionUtils;
 import com.nivasafinance.common.utils.ValidationUtils;
 import com.nivasafinance.features.bulkoperations.common.dto.CsvReportRow;
 import com.nivasafinance.features.bulkoperations.common.config.BulkOperationCsvProperties;
@@ -91,7 +92,7 @@ public abstract class BaseBulkOperationProcessor implements BulkOperationProcess
                 try {
                     result = rowTransactionRunner.runInNewTransaction(() -> processRow(bulkOperation, row));
                 } catch (Exception e) {
-                    result = ProcessingResult.failed(e.getMessage(), toOriginalMap(row));
+                    result = ProcessingResult.failed(ExceptionUtils.getRootCauseMessage(e), toOriginalMap(row));
                 }
                 CsvReportRow reportRow = toCsvReportRow(row, result);
                 if (result.status() == RowProcessingStatus.SUCCESS) {

@@ -6,7 +6,11 @@ import com.nivasafinance.features.bulkoperations.common.dto.ValidationOutcome;
 import com.nivasafinance.features.bulkoperations.common.exception.BulkOperationExceptionFactory;
 import com.nivasafinance.features.bulkoperations.common.utils.RowDataKeys;
 import com.nivasafinance.features.bulkoperations.engine.AbstractBulkOperationCsvValidator;
+import com.nivasafinance.common.exception.ResourceNotFoundException;
 import com.nivasafinance.features.bulkoperations.engine.BulkOperationType;
+import com.nivasafinance.features.lead.enums.LeadStatus;
+import com.nivasafinance.features.lead.enums.LeadSubStatus;
+import com.nivasafinance.features.lead.service.LeadReadService;
 import com.nivasafinance.features.master.codemaster.service.CodeValueMasterService;
 import com.nivasafinance.features.master.codemaster.SystemControlledMasterCodes;
 import org.apache.commons.csv.CSVParser;
@@ -15,6 +19,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -22,18 +27,22 @@ import java.util.UUID;
 /**
  * CSV validator for DROPOFF bulk operations.
  * Required columns: lead_identifier, reason_code.
+ * Validates: format (UUID, reason code in master), lead exists, and lead is ACTIVE (only active leads can be put on dropoff).
  */
 @Component
 public class DropoffCsvValidator extends AbstractBulkOperationCsvValidator {
 
     private final CodeValueMasterService codeValueMasterService;
+    private final LeadReadService leadReadService;
 
     public DropoffCsvValidator(
             BulkOperationCsvProperties bulkOperationCsvProperties,
             BulkOperationExceptionFactory bulkOperationExceptionFactory,
-            CodeValueMasterService codeValueMasterService) {
+            CodeValueMasterService codeValueMasterService,
+            LeadReadService leadReadService) {
         super(bulkOperationCsvProperties, bulkOperationExceptionFactory);
         this.codeValueMasterService = codeValueMasterService;
+        this.leadReadService = leadReadService;
     }
 
     @Override
@@ -76,6 +85,7 @@ public class DropoffCsvValidator extends AbstractBulkOperationCsvValidator {
         String leadId = getString(row, DropoffRowKeys.LEAD_IDENTIFIER);
         String reasonCode = getString(row, DropoffRowKeys.REASON_CODE);
 
+        Map<String, String> rowDataMap = rowToDataMap(row);
         if (leadId == null || leadId.isBlank()) {
             return CsvValidationError.builder()
                     .rowNumber(rowNum)
@@ -84,6 +94,7 @@ public class DropoffCsvValidator extends AbstractBulkOperationCsvValidator {
                     .errorMessage("lead_identifier is required")
                     .rowReference(null)
                     .rowData(formatRowData(row))
+                    .rowDataMap(rowDataMap)
                     .build();
         }
         try {
@@ -96,6 +107,7 @@ public class DropoffCsvValidator extends AbstractBulkOperationCsvValidator {
                     .errorMessage("lead_identifier must be a valid UUID")
                     .rowReference(leadId)
                     .rowData(formatRowData(row))
+                    .rowDataMap(rowDataMap)
                     .build();
         }
         if (reasonCode == null || reasonCode.isBlank()) {
@@ -106,6 +118,7 @@ public class DropoffCsvValidator extends AbstractBulkOperationCsvValidator {
                     .errorMessage("reason_code is required")
                     .rowReference(leadId)
                     .rowData(formatRowData(row))
+                    .rowDataMap(rowDataMap)
                     .build();
         }
         try {
@@ -118,9 +131,58 @@ public class DropoffCsvValidator extends AbstractBulkOperationCsvValidator {
                     .errorMessage("reason_code '" + reasonCode + "' is not valid")
                     .rowReference(leadId)
                     .rowData(formatRowData(row))
+                    .rowDataMap(rowDataMap)
+                    .build();
+        }
+        // Validate lead exists and can transition to dropoff (only ACTIVE leads, not already on dropoff)
+        UUID leadIdentifier = UUID.fromString(leadId.trim());
+        try {
+            var lead = leadReadService.getLeadBasicByIdentifier(leadIdentifier);
+            if (lead.getStatus() == null || !LeadStatus.ACTIVE.equals(lead.getStatus())) {
+                return CsvValidationError.builder()
+                        .rowNumber(rowNum)
+                        .columnName(DropoffRowKeys.LEAD_IDENTIFIER)
+                        .errorCode("INVALID_STATUS")
+                        .errorMessage("Only Active Lead can be put on dropoff")
+                        .rowReference(leadId)
+                        .rowData(formatRowData(row))
+                        .rowDataMap(rowDataMap)
+                        .build();
+            }
+            if (LeadSubStatus.DROPOFF.equals(lead.getSubstatus())) {
+                return CsvValidationError.builder()
+                        .rowNumber(rowNum)
+                        .columnName(DropoffRowKeys.LEAD_IDENTIFIER)
+                        .errorCode("ALREADY_DROPOFF")
+                        .errorMessage("Lead is already on dropoff")
+                        .rowReference(leadId)
+                        .rowData(formatRowData(row))
+                        .rowDataMap(rowDataMap)
+                        .build();
+            }
+        } catch (ResourceNotFoundException e) {
+            return CsvValidationError.builder()
+                    .rowNumber(rowNum)
+                    .columnName(DropoffRowKeys.LEAD_IDENTIFIER)
+                    .errorCode("NOT_FOUND")
+                    .errorMessage("Lead not found")
+                    .rowReference(leadId)
+                    .rowData(formatRowData(row))
+                    .rowDataMap(rowDataMap)
                     .build();
         }
         return null;
+    }
+
+    private static Map<String, String> rowToDataMap(Map<String, Object> row) {
+        Map<String, String> map = new LinkedHashMap<>();
+        map.put(DropoffRowKeys.LEAD_IDENTIFIER, toStringOrEmpty(row.get(DropoffRowKeys.LEAD_IDENTIFIER)));
+        map.put(DropoffRowKeys.REASON_CODE, toStringOrEmpty(row.get(DropoffRowKeys.REASON_CODE)));
+        return map;
+    }
+
+    private static String toStringOrEmpty(Object v) {
+        return v != null ? v.toString().trim() : "";
     }
 
     private static Integer getRowNumber(Map<String, Object> row) {

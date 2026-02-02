@@ -27,7 +27,6 @@ public class BulkOperationResponse {
     private Statistics statistics;
     private Progress progress;
     private Timestamps timestamps;
-    private FileUrls files;
     private String createdBy;
     private Boolean canCancel;
     private String errorMessage;
@@ -83,14 +82,6 @@ public class BulkOperationResponse {
         private LocalDateTime cancelledAt;
     }
 
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    public static class FileUrls {
-        private String summaryReportStorageKey;
-    }
-
     public static BulkOperationResponse from(BulkOperation bulkOperation) {
         return BulkOperationResponse.builder()
                 .operationId(bulkOperation.getOperationIdentifier())
@@ -119,9 +110,6 @@ public class BulkOperationResponse {
                         .processingStartedAt(bulkOperation.getProcessingStartedAt())
                         .processingCompletedAt(bulkOperation.getProcessingCompletedAt())
                         .cancelledAt(bulkOperation.getCancelledAt())
-                        .build())
-                .files(FileUrls.builder()
-                        .summaryReportStorageKey(bulkOperation.getSummaryStorageKey())
                         .build())
                 .createdBy(bulkOperation.getCreatedBy())
                 .canCancel(bulkOperation.getStatus().canCancel())

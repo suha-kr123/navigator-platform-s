@@ -1,6 +1,7 @@
 package com.nivasafinance.features.bulkoperations.service.impl;
 
 import com.nivasafinance.features.bulkoperations.common.dto.CsvReportRow;
+import com.nivasafinance.features.bulkoperations.common.dto.CsvValidationError;
 import com.nivasafinance.features.bulkoperations.common.dto.OperationProcessingResult;
 import com.nivasafinance.features.bulkoperations.common.entity.BulkOperation;
 import com.nivasafinance.features.bulkoperations.common.exception.BulkOperationExceptionFactory;
@@ -11,6 +12,7 @@ import com.nivasafinance.features.bulkoperations.service.BulkOperationFailureRec
 import com.nivasafinance.features.bulkoperations.service.BulkOperationProcessingPersistence;
 import com.nivasafinance.features.bulkoperations.service.BulkOperationProcessingService;
 import com.nivasafinance.features.bulkoperations.service.BulkOperationReportService;
+import com.nivasafinance.features.bulkoperations.storage.BulkOperationFileStorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -35,6 +37,7 @@ public class BulkOperationProcessingServiceImpl implements BulkOperationProcessi
 	private final BulkOperationFailureRecorder failureRecorder;
 	private final BulkOperationProcessingPersistence persistence;
 	private final BulkOperationReportService reportService;
+	private final BulkOperationFileStorageService fileStorageService;
 
 	@Override
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -67,20 +70,33 @@ public class BulkOperationProcessingServiceImpl implements BulkOperationProcessi
 	}
 
 	private void generateReportAfterCommit(UUID operationId, List<CsvReportRow> successRows, List<CsvReportRow> failedRows) {
+		if (successRows.isEmpty() && failedRows.isEmpty()) {
+			return;
+		}
 		BulkOperation operation = bulkOperationRepository.findByOperationIdentifier(operationId).orElse(null);
 		if (operation == null) return;
+		List<CsvValidationError> validationErrors = fileStorageService.fetchValidationErrors(operation.getValidationErrorsStorageKey());
 		try {
-			String storageKey = reportService.buildAndSaveUnifiedReport(operation, List.of(), successRows, failedRows);
+			String storageKey = reportService.buildAndSaveUnifiedReport(operation, validationErrors, successRows, failedRows);
 			persistence.persistReportKey(operationId, storageKey);
+			deleteValidationErrorsFileAndClearKey(operationId, operation.getValidationErrorsStorageKey());
 		} catch (Exception e) {
 			log.warn("Failed to generate report after commit for operation {}: {}", operationId, e.getMessage(), e);
 			try {
-				String storageKey = reportService.buildAndSaveUnifiedReport(operation, List.of(), successRows, failedRows);
+				String storageKey = reportService.buildAndSaveUnifiedReport(operation, validationErrors, successRows, failedRows);
 				persistence.persistReportKey(operationId, storageKey);
+				deleteValidationErrorsFileAndClearKey(operationId, operation.getValidationErrorsStorageKey());
 			} catch (Exception retryEx) {
 				log.error("Report generation failed after retry for operation {}: {}", operationId, retryEx.getMessage(), retryEx);
 				persistence.persistReportFailure(operationId, retryEx.getMessage() != null ? retryEx.getMessage() : retryEx.getClass().getSimpleName());
 			}
+		}
+	}
+
+	private void deleteValidationErrorsFileAndClearKey(UUID operationId, String validationErrorsStorageKey) {
+		if (validationErrorsStorageKey != null && !validationErrorsStorageKey.isBlank()) {
+			fileStorageService.deleteFile(validationErrorsStorageKey);
+			persistence.clearValidationErrorsStorageKey(operationId);
 		}
 	}
 

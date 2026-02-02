@@ -3,6 +3,7 @@ package com.nivasafinance.features.bulkoperations.listener;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nivasafinance.common.context.UserContext;
+import com.nivasafinance.common.exception.ExceptionUtils;
 import com.nivasafinance.common.messaging.config.MessagingProperties;
 import com.nivasafinance.common.messaging.enums.MessageProvider;
 import com.nivasafinance.common.messaging.enums.QueueType;
@@ -136,10 +137,13 @@ public class BulkOperationValidationListener {
     }
 
     private void pollLocalDatabase() {
-        List<BulkOperation> uploadedOperations = bulkOperationRepository
-                .findByStatusOrderByCreatedAtAsc(BulkOperationStatus.UPLOADED);
+        List<BulkOperation> operationsToValidate = bulkOperationRepository
+                .findByStatusInOrderByCreatedAtAsc(List.of(
+                        BulkOperationStatus.UPLOADED,
+                        BulkOperationStatus.VALIDATION_IN_PROGRESS
+                ));
 
-        for (BulkOperation operation : uploadedOperations) {
+        for (BulkOperation operation : operationsToValidate) {
             try {
                 String messageBody = serializeOperationToMessage(operation);
                 processValidationMessage(messageBody);
@@ -212,8 +216,12 @@ public class BulkOperationValidationListener {
     }
 
     private void publishToProcessingQueueIfValidated(BulkOperation bulkOperation) {
+        boolean hasValidRows = bulkOperation.getValidRows() != null && bulkOperation.getValidRows() > 0;
+        boolean hasWorkingFile = ValidationUtils.isNonNullOrEmpty(bulkOperation.getWorkingFileStorageKey());
         if (ValidationUtils.equals(bulkOperation.getStatus(), BulkOperationStatus.VALIDATED)
-                && !Boolean.TRUE.equals(bulkOperation.getIsDryRun())) {
+                && !Boolean.TRUE.equals(bulkOperation.getIsDryRun())
+                && hasValidRows
+                && hasWorkingFile) {
             bulkOperation.setTimeoutAt(LocalDateTime.now().plus(PROCESSING_TIMEOUT_HOURS, ChronoUnit.HOURS));
             bulkOperationRepository.save(bulkOperation);
             publishToProcessingQueue(bulkOperation.getOperationIdentifier());
@@ -258,7 +266,7 @@ public class BulkOperationValidationListener {
 
         if (isValidationOrBusinessError(ex)) {
             fresh.setStatus(BulkOperationStatus.VALIDATION_FAILED);
-            fresh.setErrorMessage(ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName());
+            fresh.setErrorMessage(ExceptionUtils.getRootCauseMessage(ex));
             fresh.setValidationCompletedAt(LocalDateTime.now());
             bulkOperationRepository.save(fresh);
             return;
@@ -273,7 +281,7 @@ public class BulkOperationValidationListener {
             String errorMessage = exceptionFactory.createValidationFailedAfterRetriesMessage(
                     fresh.getRetryCount(),
                     fresh.getMaxRetryCount(),
-                    ex.getMessage() != null ? ex.getMessage() : ""
+                    ExceptionUtils.getRootCauseMessage(ex)
             );
             fresh.setErrorMessage(errorMessage);
             fresh.setValidationCompletedAt(LocalDateTime.now());

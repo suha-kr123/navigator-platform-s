@@ -4,7 +4,9 @@ import com.nivasafinance.features.bulkoperations.common.dto.CsvReportRow;
 import com.nivasafinance.features.bulkoperations.common.dto.CsvValidationError;
 
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Defines report structure (headers and row format) per bulk operation type.
@@ -27,17 +29,21 @@ public interface BulkOperationReportLayout {
     }
 
     /**
-     * Builds CsvReportRow for a validation error. Uses {@link #getRowReferenceColumnName()} for rowData.
+     * Builds CsvReportRow for a validation error. Uses {@link #getRowReferenceColumnName()} for rowData when
+     * rowDataMap is null; otherwise uses error.getRowDataMap() so each invalid row shows full CSV column data.
      */
     default CsvReportRow toCsvReportRowForValidationError(CsvValidationError error) {
         String rowRef = error.getRowReference();
+        Map<String, String> rowData = error.getRowDataMap() != null && !error.getRowDataMap().isEmpty()
+                ? new LinkedHashMap<>(error.getRowDataMap())
+                : Collections.singletonMap(getRowReferenceColumnName(), rowRef != null ? rowRef : "");
         return CsvReportRow.builder()
                 .rowNumber(error.getRowNumber() != null ? error.getRowNumber() : 0)
                 .rowReference(rowRef)
                 .errorMessage(error.getErrorMessage())
                 .originalValues(Collections.emptyMap())
                 .newValues(Collections.emptyMap())
-                .rowData(Collections.singletonMap(getRowReferenceColumnName(), rowRef != null ? rowRef : ""))
+                .rowData(rowData)
                 .build();
     }
 }

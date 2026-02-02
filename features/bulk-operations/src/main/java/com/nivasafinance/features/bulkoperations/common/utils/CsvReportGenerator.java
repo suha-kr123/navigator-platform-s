@@ -8,19 +8,13 @@ import com.nivasafinance.features.bulkoperations.common.exception.BulkOperationC
 import com.nivasafinance.features.bulkoperations.engine.BulkOperationReportLayout;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVPrinter;
 
-import java.io.IOException;
-import java.io.StringWriter;
-import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
 public final class CsvReportGenerator {
 
     private static final String REPORT_GENERATION_FAILED_MESSAGE = "Failed to generate CSV report";
-    private static final String VALIDATION_FAILED = "VALIDATION_FAILED";
     private static final String SUCCESS = "SUCCESS";
     private static final String FAILED = "FAILED";
     private static final String ERROR_GENERATING_UNIFIED_REPORT = "Error generating unified report: {}";
@@ -30,8 +24,8 @@ public final class CsvReportGenerator {
     }
 
     /**
-     * Generates a unified CSV report using the layout for the operation type.
-     * Report structure is driven by {@link BulkOperationReportLayout}; no generator changes needed for new types.
+     * Generates a unified CSV report by streaming rows one-by-one (validation errors, then success, then failed).
+     * No combined list or sort; rows are written in order so we avoid holding all entries in memory.
      */
     public static String generateUnifiedReport(
             BulkOperation bulkOperation,
@@ -44,43 +38,40 @@ public final class CsvReportGenerator {
         ValidationUtils.requireNonNull(layout,
                 () -> new BulkOperationCsvValidationException(REPORT_GENERATION_FAILED_MESSAGE));
 
-        List<UnifiedReportEntry> entries = new ArrayList<>();
-        if (!ValidationUtils.isNullOrEmpty(validationErrors)) {
-            for (CsvValidationError err : validationErrors) {
-                CsvReportRow row = layout.toCsvReportRowForValidationError(err);
-                entries.add(new UnifiedReportEntry(row, VALIDATION_FAILED));
-            }
-        }
-        if (!ValidationUtils.isNullOrEmpty(successRows)) {
-            for (CsvReportRow row : successRows) {
-                entries.add(new UnifiedReportEntry(row, SUCCESS));
-            }
-        }
-        if (!ValidationUtils.isNullOrEmpty(failedRows)) {
-            for (CsvReportRow row : failedRows) {
-                entries.add(new UnifiedReportEntry(row, FAILED));
-            }
-        }
-        entries.sort((a, b) -> Integer.compare(a.row().getRowNumber(), b.row().getRowNumber()));
+        CsvReportStreamWriter streamWriter = new CsvReportStreamWriter(layout);
+        try {
+            streamWriter.writeHeader();
 
-        List<String> headers = layout.getReportHeaders();
-        if (ValidationUtils.isNullOrEmpty(headers)) {
-            throw new BulkOperationCsvValidationException(REPORT_GENERATION_FAILED_MESSAGE);
-        }
-
-        try (StringWriter writer = new StringWriter();
-                CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT)) {
-            csvPrinter.printRecord(headers);
-            for (UnifiedReportEntry entry : entries) {
-                csvPrinter.printRecord(layout.buildReportRow(entry.row(), entry.status()));
+            if (!ValidationUtils.isNullOrEmpty(validationErrors)) {
+                for (CsvValidationError err : validationErrors) {
+                    streamWriter.writeValidationError(err);
+                }
             }
-            csvPrinter.flush();
-            return writer.toString();
-        } catch (IOException e) {
+            if (!ValidationUtils.isNullOrEmpty(successRows)) {
+                for (CsvReportRow row : successRows) {
+                    streamWriter.writeReportRow(row, SUCCESS);
+                }
+            }
+            if (!ValidationUtils.isNullOrEmpty(failedRows)) {
+                for (CsvReportRow row : failedRows) {
+                    streamWriter.writeReportRow(row, FAILED);
+                }
+            }
+            if (streamWriter.getRowCount() == 0) {
+                streamWriter.writeValidationError(CsvValidationError.builder()
+                        .rowNumber(1)
+                        .errorCode("NO_ROWS")
+                        .errorMessage("No rows to report")
+                        .rowReference("")
+                        .build());
+            }
+
+            return streamWriter.getContent();
+        } catch (Exception e) {
             log.error(ERROR_GENERATING_UNIFIED_REPORT, bulkOperation.getId(), e);
             throw new BulkOperationCsvValidationException(REPORT_GENERATION_FAILED_MESSAGE, e);
+        } finally {
+            streamWriter.close();
         }
     }
-
-    private record UnifiedReportEntry(CsvReportRow row, String status) {}
 }

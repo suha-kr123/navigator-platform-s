@@ -43,7 +43,13 @@ public interface BulkOperationRepository extends JpaRepository<BulkOperation, Lo
     );
     
     List<BulkOperation> findByStatusOrderByCreatedAtAsc(BulkOperationStatus status);
-    
+
+    /**
+     * Find operations by status in given list, ordered by created date ascending.
+     * Used by validation listener to poll both UPLOADED and VALIDATION_IN_PROGRESS so stuck operations are retried.
+     */
+    List<BulkOperation> findByStatusInOrderByCreatedAtAsc(List<BulkOperationStatus> statuses);
+
     @Query("SELECT COUNT(b) FROM BulkOperation b WHERE b.createdBy = :username AND b.status IN :statuses")
     long countByCreatedByAndStatusIn(@Param("username") String username, @Param("statuses") List<BulkOperationStatus> statuses);
     
@@ -59,10 +65,11 @@ public interface BulkOperationRepository extends JpaRepository<BulkOperation, Lo
     Page<BulkOperation> findByCreatedByOrderByCreatedAtDesc(String username, Pageable pageable);
     
     /**
-     * Find operations that need file cleanup (completed and older than retention period).
-     * Includes operations with either upload file or report file to clean.
+     * Find operations that need file cleanup (terminal status and older than retention period).
+     * Includes any operation that has at least one storage key (upload, working file, validation errors, or report).
      */
     @Query("SELECT b FROM BulkOperation b WHERE b.status IN :terminalStatuses AND b.createdAt < :cutoffDate " +
-            "AND (b.fileStorageKey IS NOT NULL OR b.summaryStorageKey IS NOT NULL)")
+            "AND (b.fileStorageKey IS NOT NULL OR b.workingFileStorageKey IS NOT NULL " +
+            "OR b.validationErrorsStorageKey IS NOT NULL OR b.summaryStorageKey IS NOT NULL)")
     List<BulkOperation> findOperationsForFileCleanup(@Param("terminalStatuses") List<BulkOperationStatus> terminalStatuses, @Param("cutoffDate") LocalDateTime cutoffDate);
 }

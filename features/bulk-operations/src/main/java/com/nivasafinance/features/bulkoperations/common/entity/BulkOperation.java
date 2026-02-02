@@ -128,6 +128,10 @@ public class BulkOperation extends AuditableEntity {
     @Column(name = "working_file_storage_key", length = 500)
     private String workingFileStorageKey;
 
+    /** Storage key for validation errors JSON file (object storage); used when building unified report, then file can be deleted. */
+    @Column(name = "validation_errors_storage_key", length = 500)
+    private String validationErrorsStorageKey;
+
     @PrePersist
     void prePersist() {
         if (operationIdentifier == null) {

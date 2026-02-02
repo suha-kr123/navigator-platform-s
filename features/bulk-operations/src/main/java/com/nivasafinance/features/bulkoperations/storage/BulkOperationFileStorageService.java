@@ -1,6 +1,9 @@
 package com.nivasafinance.features.bulkoperations.storage;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nivasafinance.common.utils.ValidationUtils;
+import com.nivasafinance.features.bulkoperations.common.dto.CsvValidationError;
 import com.nivasafinance.features.bulkoperations.common.exception.BulkOperationExceptionFactory;
 import com.nivasafinance.features.document.storage.ContentRepository;
 import com.nivasafinance.features.document.storage.ContentRepositoryFactory;
@@ -13,6 +16,10 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -31,12 +38,14 @@ public class BulkOperationFileStorageService {
     private static final String FAILED_TO_DELETE_BULK_OPERATION_CSV_FILE_FROM_STORAGE = "Failed to delete bulk operation CSV file from storage: {}: {}";
     private static final String SAVED_CSV_REPORT_FOR_OPERATION = "Saved CSV report for operation {} to storage: {}";
     private static final String FAILED_TO_SAVE_CSV_REPORT_FOR_OPERATION = "Failed to save CSV report for operation {}: {}";
+    private static final String VALIDATION_ERRORS_FILE_NAME = "validation_errors.json";
 
     @Value("${document.storage.provider:LOCAL}")
     private String storageProvider;
 
     private final ContentRepositoryFactory contentRepositoryFactory;
     private final BulkOperationExceptionFactory exceptionFactory;
+    private final ObjectMapper objectMapper;
 
     public String saveFile(MultipartFile file, UUID operationId) {
         ValidationUtils.requireNonNull(operationId, () -> exceptionFactory.operationIdRequiredException());
@@ -93,6 +102,44 @@ public class BulkOperationFileStorageService {
         } catch (Exception e) {
             log.error(FAILED_TO_SAVE_CSV_REPORT_FOR_OPERATION, operationId, e);
             throw exceptionFactory.storageSaveReportFailedException(operationId, e);
+        }
+    }
+
+    /**
+     * Saves validation errors to object storage as JSON. Returns storage key to store on BulkOperation
+     * (e.g. validationErrorsStorageKey). Caller persists the key; nothing is stored in metadata.
+     */
+    public String saveValidationErrors(UUID operationId, List<CsvValidationError> errors) {
+        if (ValidationUtils.isNullOrEmpty(errors)) {
+            return null;
+        }
+        try {
+            List<Map<String, Object>> list = new ArrayList<>();
+            for (CsvValidationError err : errors) {
+                list.add(err.toMap());
+            }
+            String json = objectMapper.writeValueAsString(list);
+            return saveCsvContent(json, operationId, VALIDATION_ERRORS_FILE_NAME);
+        } catch (Exception e) {
+            log.error("Failed to save validation errors for operation {}: {}", operationId, e.getMessage(), e);
+            throw exceptionFactory.storageSaveReportFailedException(operationId, e);
+        }
+    }
+
+    /**
+     * Fetches validation errors from object storage. Returns empty list if key is null/empty or file cannot be read.
+     */
+    public List<CsvValidationError> fetchValidationErrors(String storageKey) {
+        if (ValidationUtils.isNullOrEmpty(storageKey)) {
+            return Collections.emptyList();
+        }
+        try (InputStream in = fetchFile(storageKey)) {
+            String json = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+            List<Map<String, Object>> list = objectMapper.readValue(json, new TypeReference<>() {});
+            return CsvValidationError.fromMapList(list != null ? list : Collections.emptyList());
+        } catch (Exception e) {
+            log.warn("Failed to fetch validation errors from storage {}: {}", storageKey, e.getMessage());
+            return Collections.emptyList();
         }
     }
 

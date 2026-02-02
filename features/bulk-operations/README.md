@@ -5,9 +5,11 @@ Asynchronous CSV-based bulk operations for leads and other entities. Users uploa
 ## Architecture
 
 - **Upload** → File saved, operation created, message published to validation queue
-- **Validation** → CSV parsed and validated; validation outcomes persisted on BulkOperation; row-level results written to the working CSV (valid rows are not stored in DB—they are either rewritten into the working CSV or kept transiently during validation)
-- **Processing** → Each valid row processed by a type-specific processor; report generated
+- **Validation** → CSV parsed and validated; validation outcomes persisted on BulkOperation in separate `REQUIRES_NEW` transactions (so commit-phase failures do not mark the validation transaction rollback-only); working file and report are externalized after commit
+- **Processing** → Each valid row processed by a type-specific processor; report generated after commit via `TransactionSynchronization.afterCommit()`
 - **Dry-run** → Same flow, but processors skip domain calls and return simulated success
+
+**Safe streaming model:** (1) Stream & process rows inside a transaction; (2) accumulate results transaction-locally; (3) externalize results (file storage, report) only after commit. Report generation uses `CsvReportStreamWriter` to write rows one-by-one (validation errors, then success, then failed) without building a full list in memory.
 
 ## Implementing a New Operation Type
 
@@ -61,7 +63,7 @@ Validators are pure: they parse and validate only. Persistence is handled by the
   - `parseRows(CSVParser parser)` → read each `CSVRecord`, put values in a `Map<String, Object>`, set `RowDataKeys.ROW_NUMBER` (header = 1, first data row = 2)
   - `validateBusinessRules(List<Map<String, Object>> parsedRows)` → return `ValidationOutcome.of(validRows, errors)` (in-memory only; no persistence)
 
-For invalid rows, add `CsvValidationError` with `rowNumber`, `columnName`, `errorCode`, `errorMessage`, `rowReference`, `rowData`. Validators are auto-registered by `BulkOperationCsvValidatorRegistry` via `getType()`.
+For invalid rows, add `CsvValidationError` with `rowNumber`, `columnName`, `errorCode`, `errorMessage`, `rowReference`, `rowData`, and `rowDataMap`. Set `rowDataMap` (e.g. via `rowToDataMap(row)`) so each invalid row shows full CSV column data in the summary report. Validators are auto-registered by `BulkOperationCsvValidatorRegistry` via `getType()`.
 
 **Example (parsing):**
 ```java
@@ -72,6 +74,7 @@ row.put(OnholdRowKeys.REASON_CODE, getString(record, OnholdRowKeys.REASON_CODE))
 
 **Example (validation error):**
 ```java
+Map<String, String> rowDataMap = rowToDataMap(row);  // e.g. lead_identifier, reason_code
 return CsvValidationError.builder()
     .rowNumber(rowNum)
     .columnName(OnholdRowKeys.REASON_CODE)
@@ -79,6 +82,7 @@ return CsvValidationError.builder()
     .errorMessage("reason_code '" + reasonCode + "' is not valid")
     .rowReference(leadId)
     .rowData(formatRowData(row))
+    .rowDataMap(rowDataMap)
     .build();
 ```
 
@@ -100,6 +104,8 @@ Processors and the domain services they call (e.g. `leadWriteService.dropoffLead
 
 **Example:**
 ```java
+import com.nivasafinance.common.exception.ExceptionUtils;
+
 if (Boolean.TRUE.equals(bulkOperation.getIsDryRun())) {
     return ProcessingResult.success(original, Map.of("status", "ONHOLD (dry-run)"));
 }
@@ -107,9 +113,10 @@ try {
     leadWriteService.onholdLead(leadId, request);
     return ProcessingResult.success(original, Map.of("status", "ONHOLD"));
 } catch (Exception e) {
-    return ProcessingResult.failed(e.getMessage(), original);
+    return ProcessingResult.failed(ExceptionUtils.getRootCauseMessage(e), original);
 }
 ```
+Use `ExceptionUtils.getRootCauseMessage(e)` for failed results so users see the real error (e.g. "Lead is already on dropoff") instead of generic transaction messages.
 
 ### 5. Report Layout
 
@@ -192,7 +199,39 @@ If non-lead operations grow, consider splitting by domain (e.g. `operations-lead
 | GET | `/api/v1/bulk-operations/operations` | VIEW_BULK_OPERATION_STATUS |
 | GET | `/api/v1/bulk-operations/operations/{id}/summary` | DOWNLOAD_BULK_OPERATION_REPORTS |
 
+## Design trade-offs
+
+| Decision | Benefit | Trade-off |
+|----------|---------|-----------|
+| **Async validation + processing via queues** | Upload returns immediately; validation and processing run in background. Scales with queue workers. | UI must poll by `operationId`; no long-lived connection. Eventual consistency: status/report appear after workers run. |
+| **Dual transport (SQS vs DB polling)** | Works with or without AWS; local/dev uses DB polling for `UPLOADED` and `VALIDATION_IN_PROGRESS`. | Two code paths to maintain; local polling delay and single-consumer behaviour when not using SQS. |
+| **Validation errors in object storage (not DB metadata)** | Avoids large JSON in DB; no metadata bloat; file deleted after report generation. | Extra storage read when building report; transient file lifecycle (create → use → delete). |
+| **Report generated after commit (`TransactionSynchronization.afterCommit`)** | DB state (status, counts) is committed first; report build failures do not roll back processing. | Report appears slightly after status; if report build fails, status is final but `reportAvailable` stays false and `errorMessage` is set. |
+| **Persistence in separate `REQUIRES_NEW` transactions** | Commit-phase failures (e.g. Javers, auditing) in a small transaction do not mark the main validation/processing transaction rollback-only. | More DB round-trips; possible brief inconsistency if persistence succeeds but main transaction fails (mitigated by reloading entity in each persistence call). |
+| **Working file (valid rows only)** | Processing reads only valid rows; no re-parse of original CSV. | Two files per operation until cleanup: original upload + working CSV; storage and cleanup complexity. |
+| **Unified report (validation + success + failed)** | Single download for the user; one CSV with all outcomes. | Report build needs validation errors (from storage) + in-memory success/failed lists; processing keeps success/failed rows in memory for the run (bounded by batch size and row count limit). |
+| **Streaming report write (`CsvReportStreamWriter`)** | Report rows written one-by-one; no full report list in memory. | Validation errors and success/failed rows are still held in memory during processing; only the final CSV write is streamed. |
+| **Row processing in per-row `REQUIRES_NEW`** | One row failure does not roll back others; clear per-row success/failure. | Higher transaction overhead; domain must tolerate retries and be idempotent. |
+| **No storage key in API response** | Internal storage keys not exposed; download by `operationId` only. | UI cannot construct a direct storage URL; must use `GET .../operations/{id}/summary` and rely on `reportAvailable`. |
+| **Timeout + cleanup schedulers** | Stuck operations are auto-cancelled; old files are removed after retention. | Fixed schedule (e.g. 5 min timeout check, daily cleanup); not in a dedicated job framework yet (noted in TODOs). |
+| **Idempotent processors** | Safe retries and replay when messages are redelivered or DB polling reprocesses. | Domain layer must implement idempotency; no engine-level dedup key. |
+
 ## Design notes
 
 - **Upload limits**: Each operation type returned by `GET /operation-types` includes `uploadLimits` (max rows, max file size in bytes). Clients should validate file size and row count before upload to avoid validation errors.
 - **Report availability**: Operation status responses include `reportAvailable` (true when the summary CSV can be downloaded). It is false if report generation failed after commit (see `errorMessage`) or the report is not yet generated.
+- **Validation errors in report**: Validation errors are saved to object storage (JSON file) at validation time; the storage key is stored on `BulkOperation.validationErrorsStorageKey`. When the unified report is built after processing, errors are read from storage and included in the report. The file is deleted and the key cleared after report generation (nothing is stored in metadata).
+- **Storage keys and cleanup**: There are four storage keys per operation. All are deleted by the cleanup job for terminal operations older than `bulk.operations.temp-file-retention-days` (default 30). `validation_errors_storage_key` is also deleted immediately after the unified report is built (so it is short-lived); the cleanup job still clears it if present (e.g. if report build failed before delete).
+- **Local polling**: When not using SQS, the validation listener polls operations with status `UPLOADED` or `VALIDATION_IN_PROGRESS` so stuck operations are retried.
+- **Publish to processing**: An operation is published to the processing queue only when status is `VALIDATED`, not dry run, has valid rows, and has a working file key.
+
+### Storage keys (per operation)
+
+| Key | Purpose | When deleted |
+|-----|---------|--------------|
+| **file_storage_key** | Original uploaded CSV | Cleanup job (terminal + older than retention) |
+| **working_file_storage_key** | Valid rows only (used for processing) | Cleanup job |
+| **validation_errors_storage_key** | Validation errors JSON (used to build report) | Deleted right after report is built; cleanup job clears key/file if still present |
+| **summary_storage_key** | Unified report CSV (user download) | Cleanup job |
+
+So: **yes**, all four keys correspond to files that are deleted. The validation-errors file is removed as soon as the report is generated; the other three (upload, working file, report) are removed by the **file cleanup job** for operations in a terminal status that are older than the configured retention (e.g. 30 days).

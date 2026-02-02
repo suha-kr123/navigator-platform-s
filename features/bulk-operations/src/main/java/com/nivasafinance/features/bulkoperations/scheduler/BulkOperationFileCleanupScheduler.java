@@ -67,6 +67,16 @@ public class BulkOperationFileCleanupScheduler {
                         operation.setFileStorageKey(null);
                         deleted = true;
                     }
+                    if (operation.getWorkingFileStorageKey() != null && !operation.getWorkingFileStorageKey().isBlank()) {
+                        fileStorageService.deleteFile(operation.getWorkingFileStorageKey());
+                        operation.setWorkingFileStorageKey(null);
+                        deleted = true;
+                    }
+                    if (operation.getValidationErrorsStorageKey() != null && !operation.getValidationErrorsStorageKey().isBlank()) {
+                        fileStorageService.deleteFile(operation.getValidationErrorsStorageKey());
+                        operation.setValidationErrorsStorageKey(null);
+                        deleted = true;
+                    }
                     if (operation.getSummaryStorageKey() != null && !operation.getSummaryStorageKey().isBlank()) {
                         fileStorageService.deleteFile(operation.getSummaryStorageKey());
                         operation.setSummaryStorageKey(null);

@@ -1,5 +1,6 @@
 package com.nivasafinance.features.bulkoperations.operations.dropoff;
 
+import com.nivasafinance.common.exception.ExceptionUtils;
 import com.nivasafinance.features.bulkoperations.common.config.BulkOperationCsvProperties;
 import com.nivasafinance.features.bulkoperations.common.config.BulkOperationProcessingProperties;
 import com.nivasafinance.features.bulkoperations.common.exception.BulkOperationExceptionFactory;
@@ -78,7 +79,7 @@ public class DropoffProcessor extends BaseBulkOperationProcessor {
             newValues.put(STATUS, DROPOFF);
             return ProcessingResult.success(original, newValues);
         } catch (Exception e) {
-            return ProcessingResult.failed(e.getMessage(), original);
+            return ProcessingResult.failed(ExceptionUtils.getRootCauseMessage(e), original);
         }
     }
 
