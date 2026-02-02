@@ -23,6 +23,13 @@ public enum BulkOperationType {
             "On Hold Lead",
             "Bulk put leads on hold with reason and follow-up date",
             Arrays.asList("lead_identifier", "reason_code", "follow_up_date"),
+            Collections.emptyList()),
+
+    REJECTED(
+            "REJECTED",
+            "Reject Lead",
+            "Bulk reject leads with reason codes",
+            Arrays.asList("lead_identifier", "reason_code"),
             Collections.emptyList());
 
     private final String identifier;

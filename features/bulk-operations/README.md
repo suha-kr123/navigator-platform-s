@@ -165,6 +165,7 @@ No extra wiring needed: validators, processors, and report layouts are discovere
 
 - **DROPOFF** (`operations/dropoff/`): lead_identifier, reason_code.
 - **ONHOLD** (`operations/onhold/`): lead_identifier, reason_code, follow_up_date (on-hold reason and follow-up date; CSV date format yyyy-MM-dd).
+- **REJECTED** (`operations/rejected/`): lead_identifier, reason_code (reject reason from LEAD_REJECT_REASON_MASTER).
 
 ## Module Structure
 
