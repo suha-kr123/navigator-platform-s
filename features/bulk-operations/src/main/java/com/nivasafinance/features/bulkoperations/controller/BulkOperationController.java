@@ -43,9 +43,17 @@ public class BulkOperationController {
     @RequirePermission(permissionName = "BULK_UPDATE_LEAD")
     public BulkOperationResponse uploadCsv(
             @RequestParam("file") MultipartFile file,
-            @RequestParam("operationType") BulkOperationType operationType,
-            @RequestParam(defaultValue = "false") boolean dryRun) {
-        return bulkOperationService.uploadCsv(file, operationType, dryRun);
+            @RequestParam("operationType") BulkOperationType operationType) {
+        return bulkOperationService.uploadCsv(file, operationType);
+    }
+
+    @PostMapping(value = "/dry-run/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    @RequirePermission(permissionName = "PREVIEW_BULK_OPERATION")
+    public BulkOperationResponse uploadCsvDryRun(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("operationType") BulkOperationType operationType) {
+        return bulkOperationService.uploadCsvDryRun(file, operationType);
     }
 
     @GetMapping("/operations/{operationId}")

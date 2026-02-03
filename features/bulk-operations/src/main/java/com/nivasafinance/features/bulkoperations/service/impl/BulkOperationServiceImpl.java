@@ -47,7 +47,7 @@ import com.nivasafinance.features.bulkoperations.storage.StoredFileMultipartFile
 @Slf4j
 public class BulkOperationServiceImpl implements BulkOperationService {
 
-    private static final String BULK_OPERATION_CREATED = "Bulk operation created: {} (dryRun={})";
+    private static final String BULK_OPERATION_CREATED = "Bulk operation created: {}";
     private static final String BULK_OPERATION_CANCELLED = "Bulk operation cancelled: {}";
     private static final String BULK_OPERATION_SUMMARY_REPORT_READ = "Summary report read for operation {}";
     private static final String FAILED_TO_READ_UPLOAD_FILE = "Failed to read upload file";
@@ -66,7 +66,18 @@ public class BulkOperationServiceImpl implements BulkOperationService {
 
     @Override
     @Transactional
-    public BulkOperationResponse uploadCsv(MultipartFile file, BulkOperationType operationType, boolean dryRun) {
+    public BulkOperationResponse uploadCsv(MultipartFile file, BulkOperationType operationType) {
+        return uploadCsvInternal(file, operationType, BulkOperationStatus.UPLOADED);
+    }
+
+    @Override
+    @Transactional
+    public BulkOperationResponse uploadCsvDryRun(MultipartFile file, BulkOperationType operationType) {
+        return uploadCsvInternal(file, operationType, BulkOperationStatus.UPLOADED_DRY_RUN);
+    }
+
+    private BulkOperationResponse uploadCsvInternal(MultipartFile file, BulkOperationType operationType,
+                                                   BulkOperationStatus initialStatus) {
         byte[] fileBytes;
         try {
             fileBytes = file.getBytes();
@@ -81,8 +92,6 @@ public class BulkOperationServiceImpl implements BulkOperationService {
             createdBy = SYSTEM;
         }
 
-        // Duplicate check: same user + same file content (hash) within the last N minutes → reject.
-        // Only completed operations count as duplicates; failed/cancelled/validation_failed do not block re-upload.
         LocalDateTime duplicateWindowStart = LocalDateTime.now().minusMinutes(duplicateUploadWindowMinutes);
         List<BulkOperationStatus> completedStatuses = List.of(
                 BulkOperationStatus.COMPLETED,
@@ -105,8 +114,7 @@ public class BulkOperationServiceImpl implements BulkOperationService {
 
         BulkOperation operation = BulkOperation.builder()
                 .operationType(operationType)
-                .status(BulkOperationStatus.UPLOADED)
-                .isDryRun(dryRun)
+                .status(initialStatus)
                 .fileName(file.getOriginalFilename())
                 .fileSize(file.getSize() > 0 ? file.getSize() : (long) fileBytes.length)
                 .fileHash(fileHash)
@@ -127,7 +135,7 @@ public class BulkOperationServiceImpl implements BulkOperationService {
 
         publishToValidationQueue(operation.getOperationIdentifier());
 
-        log.info(BULK_OPERATION_CREATED, operation.getOperationIdentifier(), dryRun);
+        log.info(BULK_OPERATION_CREATED, operation.getOperationIdentifier());
         return BulkOperationResponse.from(operation);
     }
 
@@ -197,19 +205,27 @@ public class BulkOperationServiceImpl implements BulkOperationService {
     public BulkOperationResponse executeDryRunOperation(UUID dryRunOperationId) {
         BulkOperation operation = bulkOperationRepository.findByOperationIdentifier(dryRunOperationId)
                 .orElseThrow(() -> exceptionFactory.bulkOperationNotFoundException(dryRunOperationId));
-        if (!Boolean.TRUE.equals(operation.getIsDryRun())) {
+        if (!operation.getStatus().isDryRunFlow()) {
             throw exceptionFactory.bulkOperationNotFoundException(dryRunOperationId);
         }
-        // Allow execution only when validation is done and ready to process (dry run is not auto-queued).
-        if (operation.getStatus() != BulkOperationStatus.VALIDATED) {
+
+        // Only DRY_RUN_COMPLETED: user clicked "Execute for real" – run actual processing
+        if (operation.getStatus() != BulkOperationStatus.DRY_RUN_COMPLETED) {
             throw exceptionFactory.dryRunOperationNotCompletedException(dryRunOperationId);
         }
-        // Detach so the outer transaction does not hold this entity; process() updates the same row in REQUIRES_NEW transactions.
-        entityManager.detach(operation);
-        processingService.process(operation);
-        BulkOperation updated = bulkOperationRepository.findByOperationIdentifier(dryRunOperationId)
-                .orElseThrow(() -> exceptionFactory.bulkOperationNotFoundException(dryRunOperationId));
-        return BulkOperationResponse.from(updated);
+        operation.setStatus(BulkOperationStatus.VALIDATED);
+        operation.setProcessedRows(null);
+        operation.setSuccessfulRows(null);
+        operation.setFailedRows(null);
+        operation.setCurrentBatch(null);
+        operation.setTotalBatches(null);
+        operation.setProcessingStartedAt(null);
+        operation.setProcessingCompletedAt(null);
+        operation.setSummaryStorageKey(null);
+        operation.setTimeoutAt(LocalDateTime.now().plus(24, ChronoUnit.HOURS));
+        operation = bulkOperationRepository.save(operation);
+        publishToProcessingQueue(operation.getOperationIdentifier());
+        return BulkOperationResponse.from(operation);
     }
 
     /**
@@ -225,6 +241,23 @@ public class BulkOperationServiceImpl implements BulkOperationService {
             log.debug("Published bulk operation {} to validation queue", operationId);
         } catch (Exception e) {
             log.warn("Failed to publish bulk operation {} to validation queue: {}. Will be picked up by DB polling.",
+                    operationId, e.getMessage());
+        }
+    }
+
+    /**
+     * Publishes to BULK_OPERATION_PROCESSING queue so the listener can pick it up for real execution.
+     * If publish fails, DB polling will still pick up VALIDATED operations.
+     */
+    private void publishToProcessingQueue(UUID operationId) {
+        try {
+            messagePublisherFactory.getPublisher().publish(
+                    QueueType.BULK_OPERATION_PROCESSING,
+                    operationId.toString(),
+                    Map.of("operationId", operationId.toString()));
+            log.debug("Published bulk operation {} to processing queue for real execution", operationId);
+        } catch (Exception e) {
+            log.warn("Failed to publish bulk operation {} to processing queue: {}. Will be picked up by DB polling.",
                     operationId, e.getMessage());
         }
     }

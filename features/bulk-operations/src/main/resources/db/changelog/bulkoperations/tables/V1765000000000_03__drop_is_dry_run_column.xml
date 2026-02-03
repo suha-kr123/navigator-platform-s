@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1765000000000-03-drop-is-dry-run-column" author="system" context="default">
+        <comment>Migrate is_dry_run to status and remove column</comment>
+        <sql>
+            UPDATE n_bulk_operation
+            SET status = CASE
+                WHEN status = 'UPLOADED' AND is_dry_run = true THEN 'UPLOADED_DRY_RUN'
+                WHEN status = 'VALIDATION_IN_PROGRESS' AND is_dry_run = true THEN 'VALIDATION_IN_PROGRESS_DRY_RUN'
+                WHEN status = 'VALIDATED' AND is_dry_run = true THEN 'VALIDATED_DRY_RUN'
+                ELSE status
+            END
+            WHERE is_dry_run = true;
+        </sql>
+        <dropColumn tableName="n_bulk_operation" columnName="is_dry_run"/>
+    </changeSet>
+
+</databaseChangeLog>

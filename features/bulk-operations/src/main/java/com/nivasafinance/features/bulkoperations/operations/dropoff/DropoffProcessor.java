@@ -64,7 +64,7 @@ public class DropoffProcessor extends BaseBulkOperationProcessor {
             return ProcessingResult.failed(DropoffRowKeys.LEAD_IDENTIFIER + " and " + DropoffRowKeys.REASON_CODE + " are required", original);
         }
 
-        if (Boolean.TRUE.equals(bulkOperation.getIsDryRun())) {
+        if (bulkOperation.getStatus().isDryRunFlow()) {
             Map<String, Object> newValues = new HashMap<>(original);
             newValues.put(STATUS, DROPOFF + " (dry-run)");
             return ProcessingResult.success(original, newValues);

@@ -65,7 +65,7 @@ public class RejectedProcessor extends BaseBulkOperationProcessor {
 			return ProcessingResult.failed(RejectedRowKeys.LEAD_IDENTIFIER + " and " + RejectedRowKeys.REASON_CODE + " are required", original);
 		}
 
-		if (Boolean.TRUE.equals(bulkOperation.getIsDryRun())) {
+		if (bulkOperation.getStatus().isDryRunFlow()) {
 			Map<String, Object> newValues = new HashMap<>(original);
 			newValues.put(STATUS, REJECTED + " (dry-run)");
 			return ProcessingResult.success(original, newValues);

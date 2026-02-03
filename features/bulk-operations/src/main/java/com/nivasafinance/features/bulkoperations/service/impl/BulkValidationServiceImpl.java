@@ -172,7 +172,9 @@ public class BulkValidationServiceImpl implements BulkValidationService {
         bulkOperation.setTotalRows(totalRows);
         bulkOperation.setValidRows(validCount);
         bulkOperation.setInvalidRows(errorCount);
-        bulkOperation.setStatus(BulkOperationStatus.VALIDATED);
+        boolean isDryRun = bulkOperation.getStatus() == BulkOperationStatus.UPLOADED_DRY_RUN
+                || bulkOperation.getStatus() == BulkOperationStatus.VALIDATION_IN_PROGRESS_DRY_RUN;
+        bulkOperation.setStatus(isDryRun ? BulkOperationStatus.VALIDATED_DRY_RUN : BulkOperationStatus.VALIDATED);
         bulkOperation.setValidationCompletedAt(LocalDateTime.now());
 
         if (!ValidationUtils.isNullOrEmpty(validationResult.getValidRows())) {

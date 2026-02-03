@@ -68,7 +68,7 @@ public class OnholdProcessor extends BaseBulkOperationProcessor {
 			return ProcessingResult.failed(OnholdRowKeys.LEAD_IDENTIFIER + ", " + OnholdRowKeys.REASON_CODE + " and " + OnholdRowKeys.FOLLOW_UP_DATE + " are required", original);
 		}
 
-		if (Boolean.TRUE.equals(bulkOperation.getIsDryRun())) {
+		if (bulkOperation.getStatus().isDryRunFlow()) {
 			Map<String, Object> newValues = new HashMap<>(original);
 			newValues.put(STATUS, ONHOLD + " (dry-run)");
 			return ProcessingResult.success(original, newValues);

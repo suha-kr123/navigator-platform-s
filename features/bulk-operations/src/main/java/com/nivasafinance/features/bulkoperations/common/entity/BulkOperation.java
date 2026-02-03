@@ -40,10 +40,6 @@ public class BulkOperation extends AuditableEntity {
     @Column(name = "status", nullable = false, length = 50)
     private BulkOperationStatus status;
 
-    @Column(name = "is_dry_run", nullable = false)
-    @Builder.Default
-    private Boolean isDryRun = false;
-
     @Column(name = "file_name", length = 255)
     private String fileName;
 
