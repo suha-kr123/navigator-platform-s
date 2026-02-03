@@ -5,6 +5,7 @@ plugins {
 dependencies {
 
     implementation(project(":features:lead"))
+    implementation(project(":features:workflow"))
     implementation(project(":features:stage"))
     implementation(project(":features:usermanagement"))
     implementation(project(":features:master"))

@@ -230,13 +230,19 @@ public class BulkOperationValidationListener {
     private void publishToProcessingQueueIfValidated(BulkOperation bulkOperation) {
         boolean hasValidRows = bulkOperation.getValidRows() != null && bulkOperation.getValidRows() > 0;
         boolean hasWorkingFile = ValidationUtils.isNonNullOrEmpty(bulkOperation.getWorkingFileStorageKey());
-        if (ValidationUtils.equals(bulkOperation.getStatus(), BulkOperationStatus.VALIDATED)
-                && !Boolean.TRUE.equals(bulkOperation.getIsDryRun())
-                && hasValidRows
-                && hasWorkingFile) {
+        boolean isDryRun = Boolean.TRUE.equals(bulkOperation.getIsDryRun());
+        boolean statusValidated = ValidationUtils.equals(bulkOperation.getStatus(), BulkOperationStatus.VALIDATED);
+
+        if (statusValidated && !isDryRun && hasValidRows && hasWorkingFile) {
             bulkOperation.setTimeoutAt(LocalDateTime.now().plus(PROCESSING_TIMEOUT_HOURS, ChronoUnit.HOURS));
             bulkOperationRepository.save(bulkOperation);
             publishToProcessingQueue(bulkOperation.getOperationIdentifier());
+            log.info("Published bulk operation {} to processing queue (validRows={})",
+                    bulkOperation.getOperationIdentifier(), bulkOperation.getValidRows());
+        } else {
+            log.info("Skipping publish to processing queue for operation {}: status={}, isDryRun={}, validRows={}, hasWorkingFile={}",
+                    bulkOperation.getOperationIdentifier(), bulkOperation.getStatus(), isDryRun,
+                    bulkOperation.getValidRows(), hasWorkingFile);
         }
     }
 

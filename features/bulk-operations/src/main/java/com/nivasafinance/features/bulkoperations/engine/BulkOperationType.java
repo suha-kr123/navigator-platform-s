@@ -30,6 +30,13 @@ public enum BulkOperationType {
             "Reject Lead",
             "Bulk reject leads with reason codes",
             Arrays.asList("lead_identifier", "reason_code"),
+            Collections.emptyList()),
+
+    SUBSTAGE_CHANGE(
+            "SUBSTAGE_CHANGE",
+            "Change Lead Substage",
+            "Bulk change lead substage within current stage",
+            Arrays.asList("lead_identifier", "stage_key", "substage_key"),
             Collections.emptyList());
 
     private final String identifier;
