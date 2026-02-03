@@ -138,6 +138,9 @@ public class BulkOperationProcessingListener {
                 .findByStatusOrderByCreatedAtAsc(BulkOperationStatus.VALIDATED);
 
         for (BulkOperation operation : validatedOperations) {
+            // Skip dry-run: they stay VALIDATED until user explicitly calls execute-dry-run
+            if (Boolean.TRUE.equals(operation.getIsDryRun()))
+                continue;
             try {
                 String messageBody = serializeOperationToMessage(operation);
                 processProcessingMessage(messageBody);
