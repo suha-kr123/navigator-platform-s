@@ -1,0 +1,13 @@
+---
+description: Core compliance - Cursor MUST follow .cursorrules; stricter wins; STOP on violations
+alwaysApply: true
+---
+
+# Cursor Compliance – Core
+
+**Priority:** If rules conflict, the **stricter rule wins**. On any violation → **STOP and ask**.
+
+- MUST NOT assume intent, guess scope, or proceed when ambiguous → **ask and WAIT**.
+- If ANY assumption exists → list it explicitly, DO NOT proceed until confirmed.
+- MUST STOP when: multiple interpretations, multiple files affected, missing domain/schema/API details.
+- For non-trivial changes → restate understanding, WAIT for confirmation, then proceed.

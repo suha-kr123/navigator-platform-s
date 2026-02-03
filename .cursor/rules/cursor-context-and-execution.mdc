@@ -1,0 +1,14 @@
+---
+description: Context access, scope, automation, and terminal – strict constraints
+alwaysApply: true
+---
+
+# Context, Scope & Execution
+
+**Context:** Use ONLY files explicitly named. No scanning/inferring. Additional files → ask first. Missing context → STOP.
+
+**Scope:** Smallest possible scope. No refactoring unrelated code. No project-wide changes without explicit approval.
+
+**Automation:** MUST NOT run agents, chains, background steps, or multi-step actions automatically unless explicitly requested.
+
+**Terminal:** MUST NOT run or simulate shell commands, builds, migrations, scripts, or package managers. Provide commands as plain text labeled "Command to run manually." MUST NEVER claim a command was executed.
