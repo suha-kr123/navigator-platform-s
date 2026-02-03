@@ -1,0 +1,63 @@
+---
+description: Coding standards for structure, patterns, error handling, logging, validation – MUST follow
+globs: features/**/*.java
+alwaysApply: true
+---
+
+# Coding Standards Reference (MUST Follow)
+
+> Cursor MUST follow these standards when creating or modifying code. MUST NOT assume or pull in unrelated code.
+
+## 1. Structure
+
+- Organize modules with clear separation:
+  - **common/** – config (`@ConfigurationProperties`), DTOs, entities, enums, exception factory, utils
+  - **engine/** – abstract base classes, interfaces, registries
+  - **operations/** – concrete implementations per type
+  - **listener/** – message/queue listeners, scheduled tasks
+  - **service/** – orchestration; `impl/` contains concrete classes
+- Follow consistent package conventions and layering.
+
+## 2. Error Handling (STRICT)
+
+- **ExceptionFactory**: When adding a new exception, MUST check if the module has an ExceptionFactory. If it exists, MUST add a factory method and use it; do NOT throw `new SomeException("msg")` directly.
+- **No new patterns**: MUST NOT invent error codes, exception hierarchies, or HTTP mappings. Use existing patterns only.
+- Localize messages via `MessageSource` and `ExceptionUtils.createLocalizedMessage`.
+- Throw domain-specific exceptions only; do NOT invent new generic exceptions.
+
+## 3. Validation
+
+- Validate inputs early.
+- Use utility methods for common checks:
+  - `isNullOrEmpty()`, `isEmpty()`, `equals()`, `requireNonNull(exceptionSupplier)`
+- For per-row or per-item failures, return standardized failure objects (e.g., `ProcessingResult.failed(message, original)`).
+
+## 4. Logging
+
+- Annotate classes with `@Slf4j`.
+- Define log message constants at class level.
+- Use appropriate log levels:
+  - `info` – normal flow
+  - `warn` – recoverable issues
+  - `error` – failures with exception
+
+## 5. Patterns
+
+- **Base + Extension**: Use abstract base classes for shared logic; subclasses implement type-specific behavior.
+- **Registry/Lookup**: Register processors, validators, or handlers by type and perform runtime lookup.
+- **Constants over magic strings**: Always define static constants for keys, identifiers, or field names.
+- **Config Safety**: Use defensive setters for numeric or configurable fields (e.g., `Math.max(1, value)`).
+
+## 6. Comments
+
+- Cursor MUST NOT heavily comment code. Keep comments minimal.
+- Add comments only when needed (non-obvious logic, business rules, why not what).
+- Prefer self-explanatory names over comments.
+
+## 7. Cursor Guidelines
+
+- MUST NOT assume, create, or modify unrelated files or modules.
+- MUST only work on files explicitly specified by the user.
+- MUST ask clarifying questions if the requested action is ambiguous or could break structure, contracts, or patterns.
+- Prefer small, focused changes; diffs or snippets over full-file rewrites.
+- MUST STOP and wait for approval if assumptions are needed.
