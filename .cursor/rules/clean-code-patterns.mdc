@@ -32,6 +32,8 @@ alwaysApply: true
   - `isNullOrEmpty()`, `isEmpty()`, `equals()`, `requireNonNull(exceptionSupplier)`
 - For per-row or per-item failures, return standardized failure objects (e.g., `ProcessingResult.failed(message, original)`).
 
+**User-facing strings (i18n):** User-facing messages (errors, validation, UI text) MUST use MessageSource keys or existing i18n patterns. No hardcoded user-facing strings in code.
+
 ## 4. Logging
 
 - Annotate classes with `@Slf4j`.

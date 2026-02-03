@@ -281,3 +281,69 @@ Cursor MUST STOP if:
 - Cursor MUST NOT execute: git, gradle, aws, npm, maven, docker, shell commands, build tools, migrations, scripts, package managers, or database commands.
 - Cursor MAY ONLY: provide the command as plain text, labeled "Command to run manually," for the user to run.
 - Cursor MUST NEVER claim or imply that a command was executed.
+
+--------------------------------------------------
+## 27. Security & Secrets (STRICT)
+--------------------------------------------------
+
+- Cursor MUST NOT hardcode secrets, API keys, passwords, tokens, or connection strings.
+- Use config, env vars, or secrets managers only; no credentials in code or diffs.
+- If credentials appear in snippets/examples, mark clearly as placeholders.
+
+--------------------------------------------------
+## 28. Dependencies (STRICT)
+--------------------------------------------------
+
+- Cursor MUST NOT add new Maven/Gradle dependencies without explicit approval.
+- When suggesting a new dependency: state purpose, scope, and known alternatives.
+- WAIT for approval before adding to pom.xml / build.gradle.
+
+--------------------------------------------------
+## 29. User-Facing Strings / i18n (STRICT)
+--------------------------------------------------
+
+- User-facing messages (errors, validation, UI text) MUST use MessageSource keys or existing i18n patterns.
+- No hardcoded user-facing strings in code.
+
+--------------------------------------------------
+## 30. Debug & Temporary Code (STRICT)
+--------------------------------------------------
+
+- Cursor MUST NOT leave System.out, printStackTrace, debug logs, or temporary hacks in production code paths.
+- If added for debugging, mark clearly as temporary and remove before completion.
+
+--------------------------------------------------
+## 31. Incremental Changes
+--------------------------------------------------
+
+- Prefer one logical change per edit when possible.
+- Do not bundle unrelated fixes or refactors in a single edit.
+- If multiple changes are needed, list them and get approval before proceeding.
+
+--------------------------------------------------
+## 32. Backward Compatibility (HARD)
+--------------------------------------------------
+
+- When modifying public APIs, services, or contracts: preserve backward compatibility unless explicitly breaking.
+- If breaking change is proposed: state impact and migration path; WAIT for approval.
+
+--------------------------------------------------
+## 33. Third-Party Code
+--------------------------------------------------
+
+- Do not copy full snippets from external sources without attribution and license check.
+- Prefer references or minimal adapted snippets.
+
+--------------------------------------------------
+## 34. Deprecation
+--------------------------------------------------
+
+- When deprecating methods or APIs: use @Deprecated and document replacement.
+- Do not remove deprecated code without explicit approval.
+
+--------------------------------------------------
+## 35. Unused Code
+--------------------------------------------------
+
+- Do not remove "unused" code (methods, imports) without explicit user request.
+- Ask first if removal impact is unclear.
