@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
+import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +18,7 @@ import com.nivasafinance.features.bulkoperations.common.dto.CsvValidationError;
 import com.nivasafinance.features.bulkoperations.common.dto.CsvValidationResult;
 import com.nivasafinance.features.bulkoperations.common.entity.BulkOperation;
 import com.nivasafinance.features.bulkoperations.common.enums.BulkOperationStatus;
+import com.nivasafinance.features.bulkoperations.common.exception.BulkOperationCsvValidationException;
 import com.nivasafinance.features.bulkoperations.common.exception.BulkOperationExceptionFactory;
 import com.nivasafinance.features.bulkoperations.common.utils.WorkingFileCsvUtils;
 import com.nivasafinance.features.bulkoperations.engine.BulkOperationCsvValidator;
@@ -46,6 +48,7 @@ public class BulkValidationServiceImpl implements BulkValidationService {
     private final BulkOperationWorkingFileSaver workingFileSaver;
     private final BulkOperationFileStorageService fileStorageService;
     private final BulkOperationProcessingPersistence persistence;
+    private final EntityManager entityManager;
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -58,12 +61,16 @@ public class BulkValidationServiceImpl implements BulkValidationService {
         CsvValidationResult validationResult;
         try {
             validationResult = validator.validateCsv(file);
+        } catch (BulkOperationCsvValidationException e) {
+            log.error(VALIDATION_FAILED_FOR_OPERATION_TYPE, operation.getOperationType(), e.getMessage(), e);
+            throw e;
         } catch (Exception e) {
             log.error(VALIDATION_FAILED_FOR_OPERATION_TYPE, operation.getOperationType(), e.getMessage(), e);
             throw bulkOperationExceptionFactory.bulkOperationCsvValidationFileParseFailedException();
         }
 
         applyValidationOutcomes(operation, validationResult);
+        entityManager.detach(operation);
 
         List<CsvValidationError> errors = validationResult.getErrors() != null ? validationResult.getErrors() : List.of();
 
@@ -85,6 +92,7 @@ public class BulkValidationServiceImpl implements BulkValidationService {
                     : errors;
             saveValidationErrorsToStorage(operation, errors);
             persistence.persistValidationOutcome(operation);
+            entityManager.detach(operation);
             scheduleReportAfterCommit(operation.getOperationIdentifier(), errorsForReport);
             return;
         }
@@ -93,6 +101,7 @@ public class BulkValidationServiceImpl implements BulkValidationService {
             List<CsvValidationError> errorsForReport = errors;
             saveValidationErrorsToStorage(operation, errors);
             persistence.persistValidationOutcome(operation);
+            entityManager.detach(operation);
             scheduleReportAfterCommit(operation.getOperationIdentifier(), errorsForReport);
         }
         // Non-dry-run with valid rows: BulkOperationValidationListener publishes to processing queue

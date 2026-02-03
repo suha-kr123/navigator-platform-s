@@ -13,7 +13,6 @@ import com.nivasafinance.features.bulkoperations.common.exception.BulkOperationE
 import com.nivasafinance.features.bulkoperations.common.exception.BulkOperationNotFoundException;
 import com.nivasafinance.features.bulkoperations.engine.BulkOperationType;
 import com.nivasafinance.features.bulkoperations.repository.BulkOperationRepository;
-import com.nivasafinance.features.bulkoperations.service.BulkOperationProcessingService;
 import com.nivasafinance.features.bulkoperations.service.BulkOperationService;
 import com.nivasafinance.features.bulkoperations.storage.BulkOperationFileStorageService;
 import com.nivasafinance.common.messaging.factory.MessagePublisherFactory;
@@ -26,8 +25,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-
-import jakarta.persistence.EntityManager;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -57,8 +54,6 @@ public class BulkOperationServiceImpl implements BulkOperationService {
     private final BulkOperationRepository bulkOperationRepository;
     private final BulkOperationExceptionFactory exceptionFactory;
     private final BulkOperationFileStorageService fileStorageService;
-    private final BulkOperationProcessingService processingService;
-    private final EntityManager entityManager;
     private final MessagePublisherFactory messagePublisherFactory;
 
     @org.springframework.beans.factory.annotation.Value("${bulk.operations.duplicate-upload-window-minutes:30}")
