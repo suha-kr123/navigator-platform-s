@@ -1,0 +1,12 @@
+---
+description: Only process files or content that belong to the project. Stop and ask for clarification for external, unrelated, or hypothetical inputs.
+alwaysApply: true
+---
+
+# Project Scope Enforcement
+
+- MUST only process files or content that belong to the project.
+- MUST STOP and ask for clarification for:
+  - External files or paths outside the workspace
+  - Unrelated content (from other projects, docs, or sources)
+  - Hypothetical or example inputs not tied to this codebase

@@ -9,5 +9,5 @@ alwaysApply: true
 
 - MUST NOT assume intent, guess scope, or proceed when ambiguous → **ask and WAIT**.
 - If ANY assumption exists → list it explicitly, DO NOT proceed until confirmed.
-- MUST STOP when: multiple interpretations, multiple files affected, missing domain/schema/API details.
+- MUST STOP when: multiple interpretations, multiple files affected, missing domain/schema/API details, or user pastes large content (overview/module list) without specifying scope.
 - For non-trivial changes → restate understanding, WAIT for confirmation, then proceed.

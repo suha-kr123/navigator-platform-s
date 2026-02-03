@@ -64,6 +64,7 @@
   - specific section, OR
   - summary
 - If request requires scanning multiple files → STOP.
+- **Pasted content**: Large pastes (project overviews, module lists, multi-file dumps) are REFERENCE only. Cursor MUST NOT treat pasted content as "context to act on." MUST STOP and ask user to narrow scope before proceeding. MUST NOT automatically process or act on all pasted content.
 
 --------------------------------------------------
 ## 7. API Testing Rules (STRICT)

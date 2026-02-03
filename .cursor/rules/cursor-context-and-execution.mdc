@@ -1,5 +1,5 @@
 ---
-description: Context access, scope, automation, and terminal – strict constraints
+description: Context access, scope, automation, large input, and terminal – strict constraints
 alwaysApply: true
 ---
 
@@ -8,6 +8,8 @@ alwaysApply: true
 **Context:** Use ONLY files explicitly named. No scanning/inferring. Additional files → ask first. Missing context → STOP.
 
 **Scope:** Smallest possible scope. No refactoring unrelated code. No project-wide changes without explicit approval.
+
+**Large pastes / input:** Pasted content (project overviews, module lists, long logs, multi-file dumps) is REFERENCE only. MUST NOT treat it as "context to act on." If the paste is large or implies scanning multiple files → **STOP and ask**: "This appears to reference many modules/files. Please specify the exact scope you want me to work on (file, module, or discrete task)." MUST NOT automatically process all of it.
 
 **Automation:** MUST NOT run agents, chains, background steps, or multi-step actions automatically unless explicitly requested.
 
