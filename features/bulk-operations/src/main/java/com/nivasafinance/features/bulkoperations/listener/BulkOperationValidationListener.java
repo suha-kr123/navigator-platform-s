@@ -7,7 +7,6 @@ import com.nivasafinance.common.exception.ExceptionUtils;
 import com.nivasafinance.common.messaging.config.MessagingProperties;
 import com.nivasafinance.common.messaging.enums.MessageProvider;
 import com.nivasafinance.common.messaging.enums.QueueType;
-import com.nivasafinance.common.messaging.factory.MessagePublisherFactory;
 import com.nivasafinance.common.utils.ValidationUtils;
 import com.nivasafinance.features.bulkoperations.common.entity.BulkOperation;
 import com.nivasafinance.features.bulkoperations.common.enums.BulkOperationStatus;
@@ -18,6 +17,7 @@ import com.nivasafinance.features.bulkoperations.common.exception.BulkOperationN
 import com.nivasafinance.features.bulkoperations.common.exception.BulkOperationValidatorNotFoundException;
 import com.nivasafinance.features.bulkoperations.common.exception.InvalidBulkOperationTypeException;
 import com.nivasafinance.features.bulkoperations.repository.BulkOperationRepository;
+import com.nivasafinance.features.bulkoperations.service.BulkOperationProcessingQueuePublisher;
 import com.nivasafinance.features.bulkoperations.service.BulkValidationService;
 import com.nivasafinance.features.bulkoperations.storage.BulkOperationFileStorageService;
 import com.nivasafinance.features.bulkoperations.storage.StoredFileMultipartFile;
@@ -59,7 +59,6 @@ public class BulkOperationValidationListener {
     private static final String LOG_POLL_FAILED = "Failed to poll BULK_OPERATION_VALIDATION queue";
     private static final String LOG_UPLOADED_OPERATION_FAILED = "Failed to process UPLOADED operation {}";
     private static final String LOG_LOAD_FILE_FAILED = "Failed to load file for bulk operation {}";
-    private static final String LOG_PUBLISH_FAILED = "Failed to publish bulk operation {} to processing queue";
     private static final String LOG_PARSE_OPERATION_ID_FAILED = "Failed to parse operationId from message: {}";
     private static final String LOG_DELETE_MESSAGE_FAILED = "Failed to delete message from queue {}";
     private static final String LOG_UPDATE_VALIDATION_FAILURE_FAILED = "Cannot update validation failure: operation {} not found";
@@ -76,7 +75,7 @@ public class BulkOperationValidationListener {
     private final BulkOperationRepository bulkOperationRepository;
     private final BulkValidationService validationService;
     private final BulkOperationFileStorageService fileStorageService;
-    private final MessagePublisherFactory messagePublisherFactory;
+    private final BulkOperationProcessingQueuePublisher processingQueuePublisher;
     private final BulkOperationExceptionFactory exceptionFactory;
     private final ObjectMapper objectMapper;
     private final AtomicBoolean polling = new AtomicBoolean(false);
@@ -359,17 +358,9 @@ public class BulkOperationValidationListener {
     }
 
     private void publishToProcessingQueue(UUID operationId) {
-        try {
-            log.info("Publishing bulk operation {} to {} queue", operationId, QueueType.BULK_OPERATION_PROCESSING);
-            messagePublisherFactory.getPublisher().publish(
-                    QueueType.BULK_OPERATION_PROCESSING,
-                    operationId.toString(),
-                    Map.of(OPERATION_ID, operationId.toString())
-            );
-            log.info("Publish succeeded for bulk operation {}", operationId);
-        } catch (Exception ex) {
-            log.error(LOG_PUBLISH_FAILED, operationId, ex);
-        }
+        // Defer to async so publish runs after validation flow completes,
+        // avoiding any interference from scheduling/transaction context
+        processingQueuePublisher.publishToProcessingQueueAsync(operationId);
     }
 
     private UUID extractOperationId(String rawMessage) {

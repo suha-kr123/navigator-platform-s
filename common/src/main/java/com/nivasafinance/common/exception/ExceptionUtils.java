@@ -96,13 +96,16 @@ public class ExceptionUtils {
             }
             current = current.getCause();
         }
-        // Fallback: root cause message or class name
+        // Fallback: root cause message or class name; never expose generic rollback text to users
         Throwable root = t;
         while (root.getCause() != null) {
             root = root.getCause();
         }
         String msg = root.getMessage();
-        return (msg != null && !msg.isBlank()) ? msg : root.getClass().getSimpleName();
+        if (msg != null && !msg.isBlank() && !isGenericTransactionMessage(msg)) {
+            return msg;
+        }
+        return "Operation failed (see server logs for details)";
     }
 
     private static boolean isGenericTransactionMessage(String message) {

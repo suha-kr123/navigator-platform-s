@@ -77,6 +77,16 @@ public class BulkOperationExceptionFactory {
         return new BulkOperationCsvValidationException(ExceptionUtils.createLocalizedMessage("error.bulk.operation.csv.validation.file.parse.failed", null, messageSource));
     }
 
+    public BulkOperationCsvValidationException bulkOperationCsvValidationHeadersInvalidException() {
+        return new BulkOperationCsvValidationException(
+            ExceptionUtils.createLocalizedMessage(
+                "error.bulk.operation.csv.validation.headers.invalid",
+                null,
+                messageSource
+            )
+        );
+    }
+
     public BulkOperationCsvValidationException bulkOperationCsvValidationFileEmptyException() {
         return new BulkOperationCsvValidationException(ExceptionUtils.createLocalizedMessage("error.bulk.operation.csv.validation.file.empty", null, messageSource));
     }

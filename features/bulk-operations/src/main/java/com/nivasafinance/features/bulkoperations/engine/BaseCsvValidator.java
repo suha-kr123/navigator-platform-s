@@ -78,7 +78,7 @@ public abstract class BaseCsvValidator {
 		} catch (Exception e) {
 			log.error("Failed to parse CSV file {}", Optional.ofNullable(file.getOriginalFilename()).orElse("unknown"),
 					e);
-			throw bulkOperationExceptionFactory.bulkOperationCsvValidationFileParseFailedException();
+			throw bulkOperationExceptionFactory.bulkOperationCsvValidationHeadersInvalidException();
 		}
 	}
 
