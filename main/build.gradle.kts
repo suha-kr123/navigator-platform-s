@@ -30,6 +30,7 @@ dependencies {
     implementation(project(":webhooks"))
     implementation(project(":redash"))
     implementation(project(":features:bulk-operations"))
+    implementation(project(":externals:exotel"))
 }
 
 springBoot {
