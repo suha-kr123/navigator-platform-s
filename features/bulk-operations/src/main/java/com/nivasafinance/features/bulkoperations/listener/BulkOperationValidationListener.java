@@ -63,6 +63,8 @@ public class BulkOperationValidationListener {
     private static final String LOG_PARSE_OPERATION_ID_FAILED = "Failed to parse operationId from message: {}";
     private static final String LOG_DELETE_MESSAGE_FAILED = "Failed to delete message from queue {}";
     private static final String LOG_UPDATE_VALIDATION_FAILURE_FAILED = "Cannot update validation failure: operation {} not found";
+    private static final String LOG_SKIPPING_VALIDATION_FOR_OPERATION = "Skipping validation for operation {} – status already {}";
+    private static final String LOG_FAILED_TO_POLL_SQS_VALIDATION_QUEUE = "Failed to poll SQS validation queue: {}";
 
     private static final int PROCESSING_TIMEOUT_HOURS = 24;
 
@@ -91,17 +93,7 @@ public class BulkOperationValidationListener {
 
         try {
             if (isSqsProvider()) {
-                List<Message> messages = receiveValidationMessages();
-                polling.set(false); // release lock so next poll can start while we process
-                for (Message message : messages) {
-                    String queueUrl = messagingProperties.getSqs().resolveQueueUrl(QueueType.BULK_OPERATION_VALIDATION);
-                    boolean processed = processValidationMessage(message.body());
-                    if (processed) {
-                        SqsClient sqsClient = sqsClientProvider.getIfAvailable();
-                        if (sqsClient != null)
-                            deleteMessage(queueUrl, message, sqsClient);
-                    }
-                }
+                pollSqsQueue();
             } else {
                 pollLocalDatabase();
             }
@@ -109,6 +101,26 @@ public class BulkOperationValidationListener {
             log.error(LOG_POLL_FAILED, ex);
         } finally {
             polling.set(false);
+        }
+    }
+
+    /**
+     * Polls SQS queue for validation messages.
+     */
+    private void pollSqsQueue() {
+        try {
+            List<Message> messages = receiveValidationMessages();
+            for (Message message : messages) {
+                String queueUrl = messagingProperties.getSqs().resolveQueueUrl(QueueType.BULK_OPERATION_VALIDATION);
+                boolean processed = processValidationMessage(message.body());
+                if (processed) {
+                    SqsClient sqsClient = sqsClientProvider.getIfAvailable();
+                    if (sqsClient != null)
+                        deleteMessage(queueUrl, message, sqsClient);
+                }
+            }
+        } catch (Exception ex) {
+            log.warn(LOG_FAILED_TO_POLL_SQS_VALIDATION_QUEUE, ex.getMessage());
         }
     }
 
@@ -167,7 +179,7 @@ public class BulkOperationValidationListener {
             return true; // delete message – operation no longer exists
         // Skip if already in a terminal state or already validated – avoid re-running validation and overwriting VALIDATION_FAILED
         if (bulkOperation.getStatus() != BulkOperationStatus.UPLOADED && bulkOperation.getStatus() != BulkOperationStatus.VALIDATION_IN_PROGRESS) {
-            log.debug("Skipping validation for operation {} – status already {}", operationId, bulkOperation.getStatus());
+            log.debug(LOG_SKIPPING_VALIDATION_FOR_OPERATION, operationId, bulkOperation.getStatus());
             return true; // delete message – already handled
         }
         return executeValidationWithUserContext(bulkOperation);
