@@ -23,7 +23,6 @@ public class BulkOperationResponse {
     private UUID operationId;
     private BulkOperationType operationType;
     private BulkOperationStatus status;
-    private Boolean isDryRun;
     private Statistics statistics;
     private Progress progress;
     private Timestamps timestamps;
@@ -87,7 +86,6 @@ public class BulkOperationResponse {
                 .operationId(bulkOperation.getOperationIdentifier())
                 .operationType(bulkOperation.getOperationType())
                 .status(bulkOperation.getStatus())
-                .isDryRun(bulkOperation.getIsDryRun())
                 .statistics(Statistics.builder()
                         .totalRows(bulkOperation.getTotalRows())
                         .validRows(bulkOperation.getValidRows())

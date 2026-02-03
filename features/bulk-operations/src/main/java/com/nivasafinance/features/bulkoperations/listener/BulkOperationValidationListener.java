@@ -152,7 +152,9 @@ public class BulkOperationValidationListener {
         List<BulkOperation> operationsToValidate = bulkOperationRepository
                 .findByStatusInOrderByCreatedAtAsc(List.of(
                         BulkOperationStatus.UPLOADED,
-                        BulkOperationStatus.VALIDATION_IN_PROGRESS
+                        BulkOperationStatus.UPLOADED_DRY_RUN,
+                        BulkOperationStatus.VALIDATION_IN_PROGRESS,
+                        BulkOperationStatus.VALIDATION_IN_PROGRESS_DRY_RUN
                 ));
 
         for (BulkOperation operation : operationsToValidate) {
@@ -178,7 +180,9 @@ public class BulkOperationValidationListener {
         if (ValidationUtils.isEmpty(bulkOperation))
             return true; // delete message – operation no longer exists
         // Skip if already in a terminal state or already validated – avoid re-running validation and overwriting VALIDATION_FAILED
-        if (bulkOperation.getStatus() != BulkOperationStatus.UPLOADED && bulkOperation.getStatus() != BulkOperationStatus.VALIDATION_IN_PROGRESS) {
+        BulkOperationStatus s = bulkOperation.getStatus();
+        if (s != BulkOperationStatus.UPLOADED && s != BulkOperationStatus.UPLOADED_DRY_RUN
+                && s != BulkOperationStatus.VALIDATION_IN_PROGRESS && s != BulkOperationStatus.VALIDATION_IN_PROGRESS_DRY_RUN) {
             log.debug(LOG_SKIPPING_VALIDATION_FOR_OPERATION, operationId, bulkOperation.getStatus());
             return true; // delete message – already handled
         }
@@ -213,8 +217,14 @@ public class BulkOperationValidationListener {
     }
 
     private void markValidationInProgressIfNeeded(BulkOperation bulkOperation) {
-        if (ValidationUtils.equals(bulkOperation.getStatus(), BulkOperationStatus.UPLOADED)) {
+        BulkOperationStatus s = bulkOperation.getStatus();
+        if (s == BulkOperationStatus.UPLOADED) {
             bulkOperation.setStatus(BulkOperationStatus.VALIDATION_IN_PROGRESS);
+            bulkOperation.setValidationStartedAt(LocalDateTime.now());
+            bulkOperation.setTimeoutAt(LocalDateTime.now().plus(validationTimeoutHours, ChronoUnit.HOURS));
+            bulkOperationRepository.save(bulkOperation);
+        } else if (s == BulkOperationStatus.UPLOADED_DRY_RUN) {
+            bulkOperation.setStatus(BulkOperationStatus.VALIDATION_IN_PROGRESS_DRY_RUN);
             bulkOperation.setValidationStartedAt(LocalDateTime.now());
             bulkOperation.setTimeoutAt(LocalDateTime.now().plus(validationTimeoutHours, ChronoUnit.HOURS));
             bulkOperationRepository.save(bulkOperation);
@@ -230,18 +240,18 @@ public class BulkOperationValidationListener {
     private void publishToProcessingQueueIfValidated(BulkOperation bulkOperation) {
         boolean hasValidRows = bulkOperation.getValidRows() != null && bulkOperation.getValidRows() > 0;
         boolean hasWorkingFile = ValidationUtils.isNonNullOrEmpty(bulkOperation.getWorkingFileStorageKey());
-        boolean isDryRun = Boolean.TRUE.equals(bulkOperation.getIsDryRun());
-        boolean statusValidated = ValidationUtils.equals(bulkOperation.getStatus(), BulkOperationStatus.VALIDATED);
+        BulkOperationStatus status = bulkOperation.getStatus();
+        boolean readyForProcessing = (status == BulkOperationStatus.VALIDATED || status == BulkOperationStatus.VALIDATED_DRY_RUN);
 
-        if (statusValidated && !isDryRun && hasValidRows && hasWorkingFile) {
+        if (readyForProcessing && hasValidRows && hasWorkingFile) {
             bulkOperation.setTimeoutAt(LocalDateTime.now().plus(PROCESSING_TIMEOUT_HOURS, ChronoUnit.HOURS));
             bulkOperationRepository.save(bulkOperation);
             publishToProcessingQueue(bulkOperation.getOperationIdentifier());
             log.info("Published bulk operation {} to processing queue (validRows={})",
                     bulkOperation.getOperationIdentifier(), bulkOperation.getValidRows());
         } else {
-            log.info("Skipping publish to processing queue for operation {}: status={}, isDryRun={}, validRows={}, hasWorkingFile={}",
-                    bulkOperation.getOperationIdentifier(), bulkOperation.getStatus(), isDryRun,
+            log.info("Skipping publish to processing queue for operation {}: status={}, validRows={}, hasWorkingFile={}",
+                    bulkOperation.getOperationIdentifier(), bulkOperation.getStatus(),
                     bulkOperation.getValidRows(), hasWorkingFile);
         }
     }

@@ -11,7 +11,9 @@ import java.util.UUID;
 
 public interface BulkOperationService {
 
-    BulkOperationResponse uploadCsv(MultipartFile file, BulkOperationType operationType, boolean dryRun);
+    BulkOperationResponse uploadCsv(MultipartFile file, BulkOperationType operationType);
+
+    BulkOperationResponse uploadCsvDryRun(MultipartFile file, BulkOperationType operationType);
 
     BulkOperationResponse getOperationStatus(UUID operationId);
 

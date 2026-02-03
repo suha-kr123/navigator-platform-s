@@ -100,13 +100,13 @@ Processors and the domain services they call (e.g. `leadWriteService.dropoffLead
   - `toRowDataMap(Map<String, Object> row)` → map row to `Map<String, String>` for report
   - `getRowReference(Map<String, Object> row)` → entity id string for the row
 
-**Dry-run:** Check `bulkOperation.getIsDryRun()` and skip domain calls; return simulated success instead.
+**Dry-run:** Check `bulkOperation.getStatus().isDryRunFlow()` and skip domain calls; return simulated success instead.
 
 **Example:**
 ```java
 import com.nivasafinance.common.exception.ExceptionUtils;
 
-if (Boolean.TRUE.equals(bulkOperation.getIsDryRun())) {
+if (bulkOperation.getStatus().isDryRunFlow()) {
     return ProcessingResult.success(original, Map.of("status", "ONHOLD (dry-run)"));
 }
 try {
@@ -190,11 +190,31 @@ If non-lead operations grow, consider splitting by domain (e.g. `operations-lead
 |--------|------|------------|
 | GET | `/api/v1/bulk-operations/operation-types` | VIEW_BULK_OPERATION_TYPES |
 | POST | `/api/v1/bulk-operations/upload` | BULK_UPDATE_LEAD |
+| POST | `/api/v1/bulk-operations/dry-run/upload` | PREVIEW_BULK_OPERATION |
 | GET | `/api/v1/bulk-operations/operations/{id}` | VIEW_BULK_OPERATION_STATUS |
 | POST | `/api/v1/bulk-operations/operations/{id}/cancel` | CANCEL_BULK_OPERATION |
 | POST | `/api/v1/bulk-operations/operations/{id}/execute-dry-run` | PREVIEW_BULK_OPERATION |
 | GET | `/api/v1/bulk-operations/operations` | VIEW_BULK_OPERATION_STATUS |
 | GET | `/api/v1/bulk-operations/operations/{id}/summary` | DOWNLOAD_BULK_OPERATION_REPORTS |
+
+### Dry-run flow and frontend implementation
+
+Dry-run is driven by **status** only (no `isDryRun` or `dryRun` parameters). Use `status` to branch UI and API calls.
+
+**Normal flow (direct execution):**
+1. `POST /upload` with `file` + `operationType` → returns `operationId`
+2. Poll `GET /operations/{id}` until `status` is terminal (`COMPLETED`, `PARTIALLY_COMPLETED`, `FAILED`, `VALIDATION_FAILED`)
+3. If `reportAvailable === true`, show download link for `GET /operations/{id}/summary`
+
+**Dry-run flow (simulation runs automatically, one click to execute for real):**
+1. `POST /dry-run/upload` with `file` + `operationType` → returns `operationId`
+2. Validation runs, then simulation runs automatically (no user action)
+3. Poll `GET /operations/{id}` until `status === 'DRY_RUN_COMPLETED'`
+4. Show preview report (download summary) and "Execute for real" button
+5. User clicks once → call `POST /operations/{id}/execute-dry-run` → real processing runs
+6. Poll until `status` is terminal (`COMPLETED`, `PARTIALLY_COMPLETED`, `FAILED`)
+
+**Status reference for dry-run:** `UPLOADED_DRY_RUN` → `VALIDATED_DRY_RUN` → (auto) → `DRY_RUN_COMPLETED` → (user clicks execute) → `VALIDATED` → `COMPLETED`
 
 ## Design trade-offs
 

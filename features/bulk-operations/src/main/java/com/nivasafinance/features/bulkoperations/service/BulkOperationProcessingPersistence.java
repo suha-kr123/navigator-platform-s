@@ -62,7 +62,6 @@ public class BulkOperationProcessingPersistence {
 	/**
 	 * Updates only processing outcome fields (status, success/failed counts, report key, etc.).
 	 * Does not overwrite totalRows/validRows/invalidRows (set at validation time).
-	 * Does not modify isDryRun so dry-run operations remain marked as dry run after completion.
 	 */
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
 	public void persistSuccess(UUID operationId, OperationProcessingResult result) {

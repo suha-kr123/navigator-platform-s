@@ -135,7 +135,9 @@ public class BulkOperationProcessingListener {
 
     private void pollLocalDatabase() {
         List<BulkOperation> validatedOperations = bulkOperationRepository
-                .findByStatusOrderByCreatedAtAsc(BulkOperationStatus.VALIDATED);
+                .findByStatusInOrderByCreatedAtAsc(List.of(
+                        BulkOperationStatus.VALIDATED,
+                        BulkOperationStatus.VALIDATED_DRY_RUN));
 
         for (BulkOperation operation : validatedOperations) {
             try {
@@ -189,8 +191,8 @@ public class BulkOperationProcessingListener {
         if (ValidationUtils.isEmpty(bulkOperation))
             return true;
         BulkOperationStatus status = bulkOperation.getStatus();
-        if (status == BulkOperationStatus.VALIDATED)
-            return false; // only state we should process
+        if (status == BulkOperationStatus.VALIDATED || status == BulkOperationStatus.VALIDATED_DRY_RUN)
+            return false; // process both normal and dry-run (simulation)
         // Skip terminal states and in-progress to avoid redundant work or re-processing
         return status.isTerminal() || status == BulkOperationStatus.PROCESSING_IN_PROGRESS;
     }

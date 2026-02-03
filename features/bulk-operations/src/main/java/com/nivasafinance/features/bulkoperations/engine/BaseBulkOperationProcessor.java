@@ -108,7 +108,7 @@ public abstract class BaseBulkOperationProcessor implements BulkOperationProcess
 
         int total = successRows.size() + failedRows.size();
         BulkOperationStatus finalStatus = failedRows.isEmpty()
-                ? (bulkOperation.getIsDryRun() ? BulkOperationStatus.DRY_RUN_COMPLETED : BulkOperationStatus.COMPLETED)
+                ? (bulkOperation.getStatus().isDryRunFlow() ? BulkOperationStatus.DRY_RUN_COMPLETED : BulkOperationStatus.COMPLETED)
                 : (successRows.isEmpty() ? BulkOperationStatus.FAILED : BulkOperationStatus.PARTIALLY_COMPLETED);
 
         return new OperationProcessingResult(

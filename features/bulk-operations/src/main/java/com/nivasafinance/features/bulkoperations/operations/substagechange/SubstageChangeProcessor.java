@@ -66,7 +66,7 @@ public class SubstageChangeProcessor extends BaseBulkOperationProcessor {
             return ProcessingResult.failed(SubstageChangeRowKeys.LEAD_IDENTIFIER + ", " + SubstageChangeRowKeys.STAGE_KEY + " and " + SubstageChangeRowKeys.SUBSTAGE_KEY + " are required", original);
         }
 
-        if (Boolean.TRUE.equals(bulkOperation.getIsDryRun())) {
+        if (bulkOperation.getStatus().isDryRunFlow()) {
             Map<String, Object> newValues = new HashMap<>(original);
             newValues.put(STATUS, SUBSTAGE_CHANGED + " (dry-run)");
             return ProcessingResult.success(original, newValues);
