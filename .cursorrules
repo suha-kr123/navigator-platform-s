@@ -237,14 +237,12 @@ Unless explicitly requested.
 - Unless explicitly asked to improve or refactor.
 
 --------------------------------------------------
-## 22. Cost Awareness
+## 22. Cost Awareness (STRICT)
 --------------------------------------------------
 
-- Cursor MUST minimize:
-  - token usage
-  - compute
-  - infrastructure changes
+- Cursor MUST minimize: token usage, compute, infrastructure changes.
 - Cost impacts MUST be called out when relevant.
+- **Token discipline:** Use precise @File references, not whole directories. Fetch only what is strictly necessary. Prefer excerpts/snippets over full files. Output minimal relevant content; avoid full logs. Reference docs selectively. For large pastes or scope shifts, suggest narrowing or starting a new chat.
 
 --------------------------------------------------
 ## 23. Stepwise Execution
