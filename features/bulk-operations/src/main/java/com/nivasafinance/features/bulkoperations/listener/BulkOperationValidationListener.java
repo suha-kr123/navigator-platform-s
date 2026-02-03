@@ -110,6 +110,9 @@ public class BulkOperationValidationListener {
     private void pollSqsQueue() {
         try {
             List<Message> messages = receiveValidationMessages();
+            if (!messages.isEmpty()) {
+                log.info("BulkOperationValidationListener: SQS poll received {} message(s) from validation queue", messages.size());
+            }
             for (Message message : messages) {
                 String queueUrl = messagingProperties.getSqs().resolveQueueUrl(QueueType.BULK_OPERATION_VALIDATION);
                 boolean processed = processValidationMessage(message.body());
@@ -156,6 +159,9 @@ public class BulkOperationValidationListener {
                         BulkOperationStatus.VALIDATION_IN_PROGRESS,
                         BulkOperationStatus.VALIDATION_IN_PROGRESS_DRY_RUN
                 ));
+        if (!operationsToValidate.isEmpty()) {
+            log.info("BulkOperationValidationListener: DB poll found {} operation(s) to validate", operationsToValidate.size());
+        }
 
         for (BulkOperation operation : operationsToValidate) {
             try {
@@ -174,22 +180,28 @@ public class BulkOperationValidationListener {
 
     private boolean processValidationMessage(String rawMessage) {
         UUID operationId = extractOperationId(rawMessage);
-        if (ValidationUtils.isEmpty(operationId))
+        if (ValidationUtils.isEmpty(operationId)) {
+            log.warn("BulkOperationValidationListener: no operationId in message, rawMessage={}", rawMessage);
             return false;
+        }
+        log.info("BulkOperationValidationListener: processing validation message for operationId={}", operationId);
         BulkOperation bulkOperation = bulkOperationRepository.findByOperationIdentifier(operationId).orElse(null);
-        if (ValidationUtils.isEmpty(bulkOperation))
+        if (ValidationUtils.isEmpty(bulkOperation)) {
+            log.info("BulkOperationValidationListener: operation {} not found, skipping", operationId);
             return true; // delete message – operation no longer exists
+        }
         // Skip if already in a terminal state or already validated – avoid re-running validation and overwriting VALIDATION_FAILED
         BulkOperationStatus s = bulkOperation.getStatus();
         if (s != BulkOperationStatus.UPLOADED && s != BulkOperationStatus.UPLOADED_DRY_RUN
                 && s != BulkOperationStatus.VALIDATION_IN_PROGRESS && s != BulkOperationStatus.VALIDATION_IN_PROGRESS_DRY_RUN) {
-            log.debug(LOG_SKIPPING_VALIDATION_FOR_OPERATION, operationId, bulkOperation.getStatus());
+            log.info("BulkOperationValidationListener: skipping operation {} – status already {}", operationId, s);
             return true; // delete message – already handled
         }
         return executeValidationWithUserContext(bulkOperation);
     }
 
     private boolean executeValidationWithUserContext(BulkOperation bulkOperation) {
+        log.info("BulkOperationValidationListener: executeValidation for operation {}", bulkOperation.getOperationIdentifier());
         setUserContext(bulkOperation);
         try {
             markValidationInProgressIfNeeded(bulkOperation);
@@ -198,17 +210,21 @@ public class BulkOperationValidationListener {
 
             MultipartFile file = loadFileFromStorage(bulkOperation);
             if (ValidationUtils.isEmpty(file)) {
+                log.warn("BulkOperationValidationListener: file load failed for operation {}, applying failure", bulkOperation.getOperationIdentifier());
                 applyFileLoadFailure(bulkOperation);
                 return true;
             }
 
+            log.info("BulkOperationValidationListener: calling validateAndUpdateOperation for {}", bulkOperation.getOperationIdentifier());
             validationService.validateAndUpdateOperation(bulkOperation, file);
             bulkOperation = bulkOperationRepository.findByOperationIdentifier(bulkOperation.getOperationIdentifier())
                     .orElse(bulkOperation);
 
+            log.info("BulkOperationValidationListener: validation done, calling publishToProcessingQueueIfValidated for {}", bulkOperation.getOperationIdentifier());
             publishToProcessingQueueIfValidated(bulkOperation);
             return true;
         } catch (Exception ex) {
+            log.error("BulkOperationValidationListener: validation failed for operation {}", bulkOperation.getOperationIdentifier(), ex);
             handleValidationFailure(bulkOperation, ex);
             return false;
         } finally {
@@ -242,6 +258,15 @@ public class BulkOperationValidationListener {
         boolean hasWorkingFile = ValidationUtils.isNonNullOrEmpty(bulkOperation.getWorkingFileStorageKey());
         BulkOperationStatus status = bulkOperation.getStatus();
         boolean readyForProcessing = (status == BulkOperationStatus.VALIDATED || status == BulkOperationStatus.VALIDATED_DRY_RUN);
+
+        log.info(
+                "Validation publish check for operation {}: status={}, validRows={}, workingFileKey={}, ready={}, provider={}",
+                bulkOperation.getOperationIdentifier(),
+                status,
+                bulkOperation.getValidRows(),
+                hasWorkingFile ? bulkOperation.getWorkingFileStorageKey() : "null",
+                readyForProcessing,
+                messagingProperties.getProvider());
 
         if (readyForProcessing && hasValidRows && hasWorkingFile) {
             bulkOperation.setTimeoutAt(LocalDateTime.now().plus(PROCESSING_TIMEOUT_HOURS, ChronoUnit.HOURS));
@@ -335,11 +360,13 @@ public class BulkOperationValidationListener {
 
     private void publishToProcessingQueue(UUID operationId) {
         try {
+            log.info("Publishing bulk operation {} to {} queue", operationId, QueueType.BULK_OPERATION_PROCESSING);
             messagePublisherFactory.getPublisher().publish(
                     QueueType.BULK_OPERATION_PROCESSING,
                     operationId.toString(),
                     Map.of(OPERATION_ID, operationId.toString())
             );
+            log.info("Publish succeeded for bulk operation {}", operationId);
         } catch (Exception ex) {
             log.error(LOG_PUBLISH_FAILED, operationId, ex);
         }

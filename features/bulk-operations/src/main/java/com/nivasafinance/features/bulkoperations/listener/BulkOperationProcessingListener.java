@@ -96,6 +96,9 @@ public class BulkOperationProcessingListener {
     private void pollSqsQueue() {
         try {
             List<Message> messages = receiveProcessingMessages();
+            if (!messages.isEmpty()) {
+                log.info("BulkOperationProcessingListener: SQS poll received {} message(s) from processing queue", messages.size());
+            }
             String queueUrl = messagingProperties.getSqs().resolveQueueUrl(QueueType.BULK_OPERATION_PROCESSING);
             SqsClient sqsClient = sqsClientProvider.getIfAvailable();
             for (Message message : messages) {
@@ -138,6 +141,9 @@ public class BulkOperationProcessingListener {
                 .findByStatusInOrderByCreatedAtAsc(List.of(
                         BulkOperationStatus.VALIDATED,
                         BulkOperationStatus.VALIDATED_DRY_RUN));
+        if (!validatedOperations.isEmpty()) {
+            log.info("BulkOperationProcessingListener: DB poll found {} operation(s) to process (VALIDATED/VALIDATED_DRY_RUN)", validatedOperations.size());
+        }
 
         for (BulkOperation operation : validatedOperations) {
             try {
@@ -159,14 +165,19 @@ public class BulkOperationProcessingListener {
         return Boolean.TRUE.equals(template.execute(status -> {
             try {
                 UUID operationId = extractOperationId(rawMessage);
-                if (operationId == null)
+                if (operationId == null) {
+                    log.warn("BulkOperationProcessingListener: no operationId in message, rawMessage={}", rawMessage);
                     return false;
+                }
+                log.info("BulkOperationProcessingListener: processing message for operationId={}", operationId);
 
                 BulkOperation bulkOperation = bulkOperationRepository.findByOperationIdentifier(operationId)
                         .orElse(null);
-                if (shouldSkipProcessing(bulkOperation))
+                if (shouldSkipProcessing(bulkOperation)) {
                     return true;
+                }
 
+                log.info("BulkOperationProcessingListener: executing processing for operation {}", operationId);
                 return executeWithUserContext(bulkOperation);
             } catch (Exception ex) {
                 log.error(LOG_PROCESSING_FAILED, ex.getMessage(), ex);
@@ -188,13 +199,17 @@ public class BulkOperationProcessingListener {
      * When skipped, return true so the message is deleted and not redelivered.
      */
     private boolean shouldSkipProcessing(BulkOperation bulkOperation) {
-        if (ValidationUtils.isEmpty(bulkOperation))
+        if (ValidationUtils.isEmpty(bulkOperation)) {
+            log.info("BulkOperationProcessingListener: skipping – operation not found");
             return true;
+        }
         BulkOperationStatus status = bulkOperation.getStatus();
-        if (status == BulkOperationStatus.VALIDATED || status == BulkOperationStatus.VALIDATED_DRY_RUN)
+        if (status == BulkOperationStatus.VALIDATED || status == BulkOperationStatus.VALIDATED_DRY_RUN) {
             return false; // process both normal and dry-run (simulation)
-        // Skip terminal states and in-progress to avoid redundant work or re-processing
-        return status.isTerminal() || status == BulkOperationStatus.PROCESSING_IN_PROGRESS;
+        }
+        log.info("BulkOperationProcessingListener: skipping operation {} – status={} (terminal={}, processingInProgress={})",
+                bulkOperation.getOperationIdentifier(), status, status.isTerminal(), status == BulkOperationStatus.PROCESSING_IN_PROGRESS);
+        return true;
     }
 
     private boolean executeWithUserContext(BulkOperation bulkOperation) {
@@ -216,11 +231,14 @@ public class BulkOperationProcessingListener {
     }
 
     private boolean runProcessing(BulkOperation bulkOperation) {
+        log.info("BulkOperationProcessingListener: runProcessing for operation {} (status={})", bulkOperation.getOperationIdentifier(), bulkOperation.getStatus());
         setUserContext(bulkOperation);
         try {
             processingService.process(bulkOperation);
+            log.info("BulkOperationProcessingListener: processing completed for operation {}", bulkOperation.getOperationIdentifier());
             return true;
         } catch (Exception ex) {
+            log.error("BulkOperationProcessingListener: processing failed for operation {}", bulkOperation.getOperationIdentifier(), ex);
             processingService.recordProcessingFailure(bulkOperation.getOperationIdentifier(), ex);
             return false;
         } finally {
