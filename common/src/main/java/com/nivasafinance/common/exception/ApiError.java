@@ -11,6 +11,7 @@ public class ApiError {
     private HttpStatus statusCode;
     private String errorCode;
     private Map<String, String> fieldErrors;
+    private Map<String, Object> additionalData;
     private String requestId;
     private String path;
 
@@ -67,6 +68,14 @@ public class ApiError {
 
     public void setFieldErrors(Map<String, String> fieldErrors) {
         this.fieldErrors = fieldErrors;
+    }
+
+    public Map<String, Object> getAdditionalData() {
+        return additionalData;
+    }
+
+    public void setAdditionalData(Map<String, Object> additionalData) {
+        this.additionalData = additionalData;
     }
 
     public String getRequestId() {
