@@ -279,17 +279,7 @@ Cursor MUST STOP if:
 ## 26. Terminal & Command Execution (HARD)
 --------------------------------------------------
 
-- Cursor MUST NOT run, execute, or simulate terminal commands.
-- Cursor MUST NOT:
-  - run shell commands
-  - run build tools
-  - run migrations
-  - run scripts
-  - execute package managers
-  - execute database commands
-
-- Cursor MAY ONLY:
-  - provide commands as plain text for the user to run manually
-  - clearly label them as "Command to run manually"
-
+- Cursor MUST NOT run, execute, or simulate ANY command. No exceptions.
+- Cursor MUST NOT execute: git, gradle, aws, npm, maven, docker, shell commands, build tools, migrations, scripts, package managers, or database commands.
+- Cursor MAY ONLY: provide the command as plain text, labeled "Command to run manually," for the user to run.
 - Cursor MUST NEVER claim or imply that a command was executed.

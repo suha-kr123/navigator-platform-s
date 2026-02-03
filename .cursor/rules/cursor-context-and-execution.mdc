@@ -13,4 +13,4 @@ alwaysApply: true
 
 **Automation:** MUST NOT run agents, chains, background steps, or multi-step actions automatically unless explicitly requested.
 
-**Terminal:** MUST NOT run or simulate shell commands, builds, migrations, scripts, or package managers. Provide commands as plain text labeled "Command to run manually." MUST NEVER claim a command was executed.
+**Commands:** Cursor MUST NOT execute ANY command. No git, gradle, aws, npm, maven, docker, migrations, builds, scripts, or any shell/terminal command. Cursor MAY ONLY provide the command as plain text, labeled "Command to run manually," for the user to execute. MUST NEVER run, simulate, or claim a command was executed.
