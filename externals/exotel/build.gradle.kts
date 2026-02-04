@@ -8,6 +8,10 @@ plugins {
 
 dependencies {
     implementation(project(":features:lead"))
+    implementation(project(":integrations"))
+    implementation(project(":features:campaign"))
+    implementation(project(":features:call"))
+    implementation(project(":features:advisor"))
 }
 
 springBoot {

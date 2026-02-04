@@ -13,7 +13,7 @@ public interface VoiceProvider extends ThirdPartyProvider<ExotelConfiguration> {
             BusinessContext businessContext
     );
     
-    VoiceCallResponse getCallStatus(
+    VoiceGetCallStatusResponse getCallStatus(
             String callSid,
             ThirdPartyConfig config,
             BusinessContext businessContext

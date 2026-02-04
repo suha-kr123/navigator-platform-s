@@ -109,5 +109,6 @@ public class CallLog extends AuditableEntity {
     public static class CompletionLeg {
         private String duration;
         private CallStatus status;
+        private String direction; //to, from
     }
 }

@@ -44,7 +44,7 @@ public class VoiceHandler extends ThirdPartyHandler {
         }
     }
 
-    public VoiceCallResponse getCallStatus(String callSid, BusinessContext businessContext) {
+    public VoiceGetCallStatusResponse getCallStatus(String callSid, BusinessContext businessContext) {
         VoiceProvider primaryProvider = servicesMap.get(runConfig.getPrimaryConfig().getProvider());
         if (primaryProvider == null) {
             throw new VoiceHandlerException("Error fetching " + getKey().getServiceName());
@@ -57,7 +57,7 @@ public class VoiceHandler extends ThirdPartyHandler {
                 primaryProvider, fallbackProvider, runConfig.getRetries());
         
         try {
-            return (VoiceCallResponse) runner.invokeService("getCallStatus", callSid, runConfig, businessContext);
+            return (VoiceGetCallStatusResponse) runner.invokeService("getCallStatus", callSid, runConfig, businessContext);
         } catch (Exception e) {
             throw new VoiceHandlerException("Error getting call status: " + e.getMessage());
         }
