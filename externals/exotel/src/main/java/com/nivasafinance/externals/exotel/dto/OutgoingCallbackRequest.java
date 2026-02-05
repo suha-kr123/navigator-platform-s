@@ -1,5 +1,6 @@
 package com.nivasafinance.externals.exotel.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,5 +14,6 @@ import lombok.NoArgsConstructor;
 public class OutgoingCallbackRequest {
     
     @NotBlank(message = "callId is required")
+    @JsonProperty("CallSid")
     private String callId;
 }
