@@ -7,8 +7,8 @@ import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -17,10 +17,10 @@ public class UserRoleService {
     private final UserRoleMappingRepository userRoleMappingRepository;
     
     public List<String> getRolesByUsername(String username) {
-        return userRoleMappingRepository.findByUsername(username)
-                .map(mapping -> List.of(mapping.getRole()))
-                .orElse(Collections.emptyList());
-    }
+        return userRoleMappingRepository.findByUsername(username).stream()
+                .map(UserRoleMapping::getRole)
+                .collect(Collectors.toList());
+    }   
 
     @Nullable
     public String getPrimaryRoleForUsername(String username) {
