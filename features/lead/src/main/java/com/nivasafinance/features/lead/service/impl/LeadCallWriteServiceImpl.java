@@ -163,6 +163,7 @@ public class LeadCallWriteServiceImpl implements LeadCallWriteService {
         if(request.getCampaignId() != null) {
             CampaignDetailedResponse campaign = campaignReadService.getCampaignByIdentifier(request.getCampaignId());
             callLog.setCampaignId(campaign.getCampaignId());
+            callLog.setDirection(CallDirection.OUTBOUND); // campaign calls need to explicitly set outbound
         }
 
         // Save call log (duplicate check is done in CallWriteService.createCallLog)
