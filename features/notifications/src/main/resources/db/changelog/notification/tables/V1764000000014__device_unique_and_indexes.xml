@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- Unique constraint: one device per app user per client deviceId. Enables upsert on re-register. -->
+    <changeSet id="V1764000000014_device_unique_device_id" author="system">
+        <addUniqueConstraint
+                tableName="n_device"
+                columnNames="app_user, device_id"
+                constraintName="uk_device_app_user_device_id"/>
+        <rollback>
+            <dropUniqueConstraint tableName="n_device" constraintName="uk_device_app_user_device_id"/>
+        </rollback>
+    </changeSet>
+
+    <!-- Index for app notification list query: filter by user's devices, order by sent_timestamp -->
+    <changeSet id="V1764000000014_app_notification_index_sent" author="system">
+        <createIndex tableName="n_app_notification" indexName="idx_app_notification_device_sent">
+            <column name="device_id"/>
+            <column name="sent_timestamp" descending="true"/>
+        </createIndex>
+        <rollback>
+            <dropIndex tableName="n_app_notification" indexName="idx_app_notification_device_sent"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

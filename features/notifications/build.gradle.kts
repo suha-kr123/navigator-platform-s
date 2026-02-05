@@ -16,6 +16,7 @@ dependencies {
     implementation("com.fasterxml.jackson.core:jackson-databind")
     implementation(platform("software.amazon.awssdk:bom:2.25.64"))
     implementation("software.amazon.awssdk:sqs")
+    implementation("com.google.firebase:firebase-admin:9.2.0")
 }
 
 springBoot {

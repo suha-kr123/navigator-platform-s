@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- app_user = app user login; used by Firebase executor to look up active FCM tokens for app notifications. -->
+    <changeSet id="V1764000000000_10" author="system">
+        <createTable tableName="n_device">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="app_user" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="notification_token" type="VARCHAR(500)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="device_id" type="VARCHAR(255)"/>
+            <column name="platform" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="app_version" type="VARCHAR(50)"/>
+            <column name="os_version" type="VARCHAR(50)"/>
+            <column name="device_model" type="VARCHAR(100)"/>
+            <column name="apk_version" type="VARCHAR(50)"/>
+            <column name="sdk_version" type="VARCHAR(50)"/>
+            <column name="is_active" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_registration_token_time" type="TIMESTAMP"/>
+            <column name="created_by" type="VARCHAR(255)" defaultValue="system"/>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="NOW()"/>
+            <column name="updated_by" type="VARCHAR(255)"/>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="NOW()"/>
+            <column name="version" type="INT" defaultValueNumeric="1"/>
+        </createTable>
+        
+        <addUniqueConstraint
+                tableName="n_device"
+                columnNames="app_user, notification_token"
+                constraintName="uk_device_app_user_token"/>
+        
+        <createIndex tableName="n_device" indexName="idx_device_app_user">
+            <column name="app_user"/>
+        </createIndex>
+        
+        <createIndex tableName="n_device" indexName="idx_device_active">
+            <column name="app_user"/>
+            <column name="is_active"/>
+        </createIndex>
+        
+        <createIndex tableName="n_device" indexName="idx_device_notification_token">
+            <column name="notification_token"/>
+        </createIndex>
+        
+        <rollback>
+            <dropTable tableName="n_device"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
+

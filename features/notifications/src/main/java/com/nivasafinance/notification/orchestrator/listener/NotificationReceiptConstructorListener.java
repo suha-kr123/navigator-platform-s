@@ -326,6 +326,12 @@ public class NotificationReceiptConstructorListener {
         Map<String, Object> messagePayload = new HashMap<>(notificationPayload);
         messagePayload.putAll(dataProviderResult);
 
+        // Per-recipient notification bucket from config (e.g. different bucket for STAFF vs ADVISOR app)
+        String recipientNotificationBucket = getRecipientNotificationBucket(recipientDefinition);
+        if (recipientNotificationBucket != null && !recipientNotificationBucket.isBlank()) {
+            messagePayload.put("notification_bucket", recipientNotificationBucket);
+        }
+
         // Extract entity ID from notification payload for details
         String entityId = notificationPayload.entrySet().stream()
                 .filter(entry -> entry.getKey().toLowerCase().endsWith("id") &&
@@ -339,6 +345,7 @@ public class NotificationReceiptConstructorListener {
         Map<String, Object> details = new HashMap<>();
         details.put("recipient_type", recipientType);
         details.put("event_type", eventType);
+        details.put("appUser", recipientContact); // so tracking can resolve app user from receipt when messagePayload key differs
         if (entityId != null) {
             details.put("entity_id", entityId);
         }
@@ -415,6 +422,21 @@ public class NotificationReceiptConstructorListener {
         }
         
         return true; // Receipt was successfully created
+    }
+
+    /**
+     * Reads optional per-recipient notification bucket from recipient definition (for FIREBASE/ANDROID).
+     * Uses {@code notificationBucket} only. Returns null if not set or blank.
+     */
+    private String getRecipientNotificationBucket(Map<String, Object> recipientDefinition) {
+        if (recipientDefinition == null) {
+            return null;
+        }
+        Object notificationBucket = recipientDefinition.get("notificationBucket");
+        if (notificationBucket != null && !notificationBucket.toString().isBlank()) {
+            return notificationBucket.toString();
+        }
+        return null;
     }
 
     /**
