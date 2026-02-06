@@ -29,20 +29,25 @@ public class LeadCompleteTaskRequest {
 
     private Map<String, Object> locationDetails;
 
-
     public static CompleteTaskRequest toCompleteTaskRequest(LeadCompleteTaskRequest request) {
+
+        CompleteTaskRequest.OutcomeDetailsRequest outcomeDetails = null;
+
+        if (request.getRemarks() != null || ValidationUtils.isNonNull(request.getLocationDetails())) {
+            outcomeDetails = CompleteTaskRequest.OutcomeDetailsRequest.builder()
+                    .remarks(request.getRemarks())
+                    .locationDetails(
+                            ValidationUtils.isNonNull(request.getLocationDetails())
+                                    ? request.getLocationDetails()
+                                    : null)
+                    .build();
+        }
+
         return CompleteTaskRequest.builder()
                 .taskIdentifier(request.getTaskIdentifier())
                 .outcomeCodeValueKey(request.getOutcomeCodeValueKey())
-                .outcomeDetails(request.getRemarks() != null
-                        ? CompleteTaskRequest.OutcomeDetailsRequest.builder()
-                                .remarks(request.getRemarks())
-                                .locationDetails(ValidationUtils.isNonNull(request.getLocationDetails()) 
-                                        ? request.getLocationDetails()
-                                        : null)
-                                .build()
-                        : null)
+                .outcomeDetails(outcomeDetails)
                 .build();
     }
-}
 
+}
