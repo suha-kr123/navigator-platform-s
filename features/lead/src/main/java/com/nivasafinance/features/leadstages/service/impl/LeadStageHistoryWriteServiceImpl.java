@@ -2,6 +2,7 @@ package com.nivasafinance.features.leadstages.service.impl;
 
 import com.nivasafinance.common.events.BusinessEvent;
 import com.nivasafinance.common.events.SystemEvent;
+import com.nivasafinance.common.events.payload.LeadAssignedEventPayload;
 import com.nivasafinance.common.events.payload.StageTransitionEventPayload;
 import com.nivasafinance.common.utils.ValidationUtils;
 import com.nivasafinance.features.lead.entity.Lead;
@@ -121,7 +122,9 @@ public class LeadStageHistoryWriteServiceImpl implements LeadStageHistoryWriteSe
         ValidationUtils.requireNonNullOrEmpty(newAssignedTo, LeadStageValidationException::nullOrEmptyAssignedTo);
         
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadId);
-        return changeAssignmentInternal(lead.getId(), stageKey, newAssignedTo);
+        LeadStageHistory updated = changeAssignmentInternal(lead.getId(), stageKey, newAssignedTo);
+        publishLeadAssignedEvent(leadId, stageKey, newAssignedTo);
+        return updated;
     }
 
     @Override
@@ -521,6 +524,19 @@ public class LeadStageHistoryWriteServiceImpl implements LeadStageHistoryWriteSe
                 .successfulLeadIdentifiers(successfulLeadIdentifiers)
                 .errors(errors)
                 .build();
+    }
+
+ 
+    private void publishLeadAssignedEvent(UUID leadId, String stageKey, String newAssignedTo) {
+        String assignedBy = UserContext.getUsername();
+        LeadAssignedEventPayload payload = LeadAssignedEventPayload.builder()
+                .username(newAssignedTo)
+                .leadIdentifier(leadId)
+                .stageKey(stageKey)
+                .assignedBy(assignedBy != null ? assignedBy : "system")
+                .build();
+        publishEventAfterCommit(
+                new SystemEvent<>(BusinessEvent.LEAD_ASSIGNED.toString(), payload, newAssignedTo));
     }
 
     /**

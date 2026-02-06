@@ -45,6 +45,9 @@ public class DeviceServiceImpl implements DeviceService {
             log.info("Updating existing device {} for app user {}", device.getId(), appUser);
             device.setLastRegistrationTokenTime(now);
             device.setIsActive(true);
+            if (request.getNotificationToken() != null && !request.getNotificationToken().isBlank()) {
+                device.setNotificationToken(request.getNotificationToken());
+            }
             if (request.getDeviceId() != null) {
                 device.setDeviceId(request.getDeviceId());
             }
