@@ -32,6 +32,5 @@ include("features:campaign")
 include("features:bulk-operations")
 include("externals:exotel")
 include("externals:whatsapp")
-include("externals:lead")
 include("externals:creditbureau")
 

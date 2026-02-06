@@ -33,7 +33,6 @@ dependencies {
     implementation(project(":features:bulk-operations"))
     implementation(project(":externals:exotel"))
     implementation(project(":externals:whatsapp"))
-    implementation(project(":externals:lead"))
     implementation(project(":externals:creditbureau"))
 }
 
