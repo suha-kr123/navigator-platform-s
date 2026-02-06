@@ -160,8 +160,12 @@ public class ExotelServiceImpl implements ExotelService {
                 log.info("Updated campaign call count for lead: {}", leadIdentifier);
             }
 
-            createMissedCallTask(normalizedCallFrom, callSid);
-
+            try {
+                createMissedCallTask(normalizedCallFrom, callSid);
+            } catch (Exception e) {
+                log.error("Error creating missed call task for CallSid: {}", callSid, e);
+                // Don't rethrow - async method should handle exceptions gracefully
+            }
             log.info("Successfully processed missed call for CallSid: {}", callSid);
 
         } catch (Exception e) {
