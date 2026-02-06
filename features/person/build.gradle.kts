@@ -9,6 +9,9 @@ plugins {
 dependencies {
     implementation(project(":features:address"))
     implementation(project(":features:identifier"))
+    implementation(project(":features:creditbureau"))
+    implementation(project(":features:consent"))
+    implementation(project(":integrations"))
 }
 
 springBoot {

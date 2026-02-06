@@ -1,6 +1,7 @@
 package com.nivasafinance.features.person.dto;
 
 import com.nivasafinance.features.person.entity.MobileNumberDetails;
+import com.nivasafinance.features.person.entity.Person;
 import com.nivasafinance.features.person.enums.Gender;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,6 +27,8 @@ public class PersonResponse {
     private LocalDate dateOfBirth;
     private Gender gender;
     private Map<String, Object> extData;
+    private List<Long> cbEnquiryId;
+    private Person.CreditBureauDetails cbDetails;
     private LocalDateTime createdAt;
     private String createdBy;
     private LocalDateTime updatedAt;

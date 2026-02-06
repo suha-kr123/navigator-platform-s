@@ -6,6 +6,7 @@ include("webhooks")
 include("redash")
 
 include(":features:creditbureau")
+include(":features:consent")
 include(":features:advisor")
 include(":features:person")
 include(":features:usermanagement")

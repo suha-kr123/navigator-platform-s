@@ -18,6 +18,7 @@ import com.nivasafinance.features.master.products.service.ProductReadService;
 import com.nivasafinance.features.offices.service.OfficeReadService;
 import com.nivasafinance.features.staff.service.StaffReadService;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -39,6 +40,7 @@ import java.util.UUID;
 
 @Service
 @AllArgsConstructor
+@Slf4j
 public class LeadRepositoryWrapper {
 
     private final LeadRepository leadRepository;
@@ -641,6 +643,35 @@ public class LeadRepositoryWrapper {
             builder.numberOfCampaignCalls(noOfCampaignCalls);
 
             return builder.build();
+        }
+    }
+
+    /**
+     * Finds the lead identifier for the lead that has a contact whose cb_enquiry_id contains the given enquiry ID.
+     * Used when uploading CB Excel report to the correct lead after CB report is stored.
+     *
+     * @param enquiryId the credit bureau enquiry ID
+     * @return Optional of lead identifier if found, empty otherwise
+     */
+    public Optional<UUID> findLeadIdentifierByCbEnquiryId(Long enquiryId) {
+        String sql = """
+                SELECT l.lead_identifier
+                FROM n_lead l
+                CROSS JOIN LATERAL jsonb_array_elements_text(COALESCE(l.contacts, '[]'::jsonb)) AS cid
+                JOIN n_contact c ON c.id = (cid::bigint)
+                WHERE c.cb_enquiry_id IS NOT NULL
+                  AND EXISTS (
+                      SELECT 1 FROM jsonb_array_elements_text(c.cb_enquiry_id) AS eid
+                      WHERE eid::bigint = ?
+                  )
+                LIMIT 1
+                """;
+        try {
+            List<UUID> results = jdbcTemplate.query(sql, (rs, rowNum) -> (UUID) rs.getObject("lead_identifier"), enquiryId);
+            return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
+        } catch (Exception e) {
+            log.warn("Failed to find lead by cb_enquiry_id for enquiry ID: {}", enquiryId, e);
+            return Optional.empty();
         }
     }
 }
