@@ -11,6 +11,8 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -176,5 +178,13 @@ public class PersonRepositoryWrapper {
             throw new RuntimeException("Failed to find valid consent for person: " + personId, e);
         }
     }
-}
 
+    public List<Person> findByMobileNumberWithException(String mobileNumber) {
+        try {
+            return personRepository.findByMobileNumber(mobileNumber).stream()
+                    .collect(Collectors.toList());
+        } catch (DataAccessException e) {
+            throw PersonExceptionFactory.retrieveEntityFailed(messageSource);
+        }
+    }
+}

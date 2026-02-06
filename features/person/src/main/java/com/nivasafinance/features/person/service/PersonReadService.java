@@ -10,6 +10,7 @@ import java.util.UUID;
 public interface PersonReadService {
     PersonResponse getPersonById(Long personId);
     PersonResponse getPersonByPrimaryMobile(String mobileNumber);
+    List<PersonResponse> getPersonByMobile(String mobileNumber);
     List<AddressData> getAddresses(Long personId);
     AddressData getAddress(Long personId, String addressId);
 

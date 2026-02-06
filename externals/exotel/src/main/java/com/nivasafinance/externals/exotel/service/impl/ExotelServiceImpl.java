@@ -3,6 +3,7 @@ package com.nivasafinance.externals.exotel.service.impl;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.common.context.UserContext;
+import com.nivasafinance.common.enums.EntityType;
 import com.nivasafinance.common.enums.SystemEntities;
 import com.nivasafinance.common.utils.PhoneNumberUtils;
 import com.nivasafinance.externals.exotel.service.ExotelService;
@@ -23,6 +24,7 @@ import com.nivasafinance.features.lead.dto.LeadSearchResponse;
 import com.nivasafinance.features.lead.dto.UpdateCallDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdateSourcingDetailsRequest;
 import com.nivasafinance.features.lead.enums.LeadStatus;
+import com.nivasafinance.features.lead.enums.LeadSubStatus;
 import com.nivasafinance.features.advisor.dto.AdvisorBasicResponse;
 import com.nivasafinance.features.advisor.dto.AdvisorSearchRequest;
 import com.nivasafinance.features.advisor.dto.AdvisorUpdateCallLog;
@@ -32,9 +34,15 @@ import com.nivasafinance.features.advisor.service.AdvisorCallWriteService;
 import com.nivasafinance.features.advisor.service.AdvisorReadService;
 import com.nivasafinance.features.advisor.service.AdvisorWriteService;
 import com.nivasafinance.features.lead.dto.LeadUpdateCallLog;
+import com.nivasafinance.features.lead.dto.LeadWorkflowDetailsDto;
 import com.nivasafinance.features.lead.service.LeadCallWriteService;
 import com.nivasafinance.features.lead.service.LeadReadService;
 import com.nivasafinance.features.lead.service.LeadWriteService;
+import com.nivasafinance.features.leadtasks.service.LeadTaskWriteService;
+import com.nivasafinance.features.person.dto.PersonResponse;
+import com.nivasafinance.features.person.service.PersonReadService;
+import com.nivasafinance.features.task.dto.CreateTaskRequest;
+import com.nivasafinance.features.task.dto.TaskDetailsRequest;
 import com.nivasafinance.integrations.framework.ServiceFactory;
 import com.nivasafinance.integrations.framework.config.BusinessContext;
 import com.nivasafinance.integrations.framework.config.ThirdPartyServiceList;
@@ -45,11 +53,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import com.nivasafinance.features.workflow.constants.WorkflowConstants;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @SuppressWarnings("ALL")
 @Service
@@ -61,6 +73,8 @@ public class ExotelServiceImpl implements ExotelService {
     private final LeadReadService leadReadService;
     private final LeadWriteService leadWriteService;
     private final LeadCallWriteService leadCallWriteService;
+    private final LeadTaskWriteService leadTaskWriteService;
+    private final PersonReadService personReadService;
     private final AdvisorReadService advisorReadService;
     private final AdvisorWriteService advisorWriteService;
     private final AdvisorCallWriteService advisorCallWriteService;
@@ -145,6 +159,8 @@ public class ExotelServiceImpl implements ExotelService {
                 updateCampaignCallCount(leadIdentifier, numberOfCampaignCalls + 1);
                 log.info("Updated campaign call count for lead: {}", leadIdentifier);
             }
+
+            createMissedCallTask(normalizedCallFrom, callSid);
 
             log.info("Successfully processed missed call for CallSid: {}", callSid);
 
@@ -1214,6 +1230,54 @@ public class ExotelServiceImpl implements ExotelService {
                 .createdAt(callDetails != null ? callDetails.getCreatedTime() : null)
                 .recordingDetails(recordingDetails)
                 .completionDetails(completionDetails)
+                .build();
+    }
+
+    private void createMissedCallTask(String mobileNumber, String callSid) {
+        // TODO: we need to save sid in task to make sure that we are not creating duplicate tasks
+        List<Long> personIds = findPersonIdentifiers(mobileNumber);
+        if (personIds == null || personIds.isEmpty()) {
+            log.info("No person found for mobile: {}", mobileNumber);
+            return;
+        }
+        List<LeadWorkflowDetailsDto> leadWorkflowDetails = leadReadService.findLeadsByPersonIdsAndStatusesAndSubstatuses(personIds, getLeadStatuses(), getLeadSubStatuses());
+        if (leadWorkflowDetails == null || leadWorkflowDetails.isEmpty()) {
+            log.info("No lead workflow details found for person ids: {}", personIds);
+            return;
+        }
+        String taskConfigKey = "LEAD_MISSED_CALL_TASK";
+        for (LeadWorkflowDetailsDto leadWorkflowDetail : leadWorkflowDetails) {
+            Map<String, Object> taskDetails = new HashMap<>();
+            taskDetails.put(WorkflowConstants.TaskDetails.STAGE_KEY, leadWorkflowDetail.getCurrentStageKey());
+            CreateTaskRequest createTaskRequest = buildMissedCallTaskRequest(leadWorkflowDetail, taskConfigKey, mobileNumber, callSid);
+            leadTaskWriteService.createTaskAndAssociateWithLead(leadWorkflowDetail.getLeadId(), createTaskRequest, taskDetails);
+        }
+    }
+
+    private List<Long> findPersonIdentifiers(String mobileNumber) {
+        return personReadService.getPersonByMobile(mobileNumber).stream()
+                .map(PersonResponse::getId)
+                .collect(Collectors.toList());
+    }
+
+    private List<LeadStatus> getLeadStatuses() {
+        return List.of(LeadStatus.ACTIVE, LeadStatus.COMPLETED);
+    }
+
+    private List<LeadSubStatus> getLeadSubStatuses() {
+        return List.of(LeadSubStatus.ONHOLD);
+    }
+
+    private CreateTaskRequest buildMissedCallTaskRequest(LeadWorkflowDetailsDto leadWorkflowDetail,
+            String taskConfigKey, String mobileNumber, String callSid) {
+        return CreateTaskRequest.builder()
+                .taskConfigKey(taskConfigKey)
+                .assignedTo(leadWorkflowDetail.getCurrentStageAssignedTo() != null ? leadWorkflowDetail.getCurrentStageAssignedTo() : null)
+                .taskDetails(TaskDetailsRequest.builder()
+                        .entityId(leadWorkflowDetail.getLeadIdentifier())
+                        .entityType(EntityType.LEAD)
+                        .creatorRemarks("Missed call from " + mobileNumber + " call sid: " + callSid)
+                        .build())
                 .build();
     }
 }

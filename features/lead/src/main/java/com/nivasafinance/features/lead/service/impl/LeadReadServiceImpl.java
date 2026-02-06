@@ -4,6 +4,9 @@ import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.features.lead.dto.*;
 import com.nivasafinance.features.lead.entity.Lead;
+import com.nivasafinance.features.lead.enums.LeadStatus;
+import com.nivasafinance.features.lead.enums.LeadSubStatus;
+import com.nivasafinance.features.lead.mapper.LeadWorkflowDetailsRowMapper;
 import com.nivasafinance.features.lead.repository.LeadDashboardWrapper;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadReadService;
@@ -16,18 +19,26 @@ import com.nivasafinance.features.offices.dto.OfficeResponse;
 import com.nivasafinance.features.offices.service.OfficeReadService;
 import com.nivasafinance.features.staff.dto.StaffResponse;
 import com.nivasafinance.features.staff.service.StaffReadService;
+
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+
 import java.util.List;
 import java.util.UUID;
+import java.sql.Types;
 import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
 @Slf4j
+@RequiredArgsConstructor
 public class LeadReadServiceImpl implements LeadReadService {
 
     private final LeadRepositoryWrapper leadRepositoryWrapper;
@@ -37,22 +48,7 @@ public class LeadReadServiceImpl implements LeadReadService {
     private final LeadDashboardWrapper leadDashboardWrapper;
     private final OfficeReadService officeReadService;
     private final StaffReadService staffReadService;
-
-    public LeadReadServiceImpl(LeadRepositoryWrapper leadRepositoryWrapper,
-                                CodeValueMasterService codeValueMasterService,
-                                CodeMasterService codeMasterService,
-                                SourcingChannelReadService sourcingChannelReadService,
-                                LeadDashboardWrapper leadDashboardWrapper,
-                                OfficeReadService officeReadService,
-                                StaffReadService staffReadService) {
-        this.leadRepositoryWrapper = leadRepositoryWrapper;
-        this.codeValueMasterService = codeValueMasterService;
-        this.codeMasterService = codeMasterService;
-        this.sourcingChannelReadService = sourcingChannelReadService;
-        this.leadDashboardWrapper = leadDashboardWrapper;
-        this.officeReadService = officeReadService;
-        this.staffReadService = staffReadService;
-    }
+    private final NamedParameterJdbcTemplate jdbcTemplate;
 
     @Override
     @Transactional(readOnly = true)
@@ -324,4 +320,57 @@ public class LeadReadServiceImpl implements LeadReadService {
                 .staffs(staffList)
                 .build();
     }
+
+    @Override
+    public List<LeadWorkflowDetailsDto> findLeadsByPersonIdsAndStatusesAndSubstatuses(
+            List<Long> personIds, List<LeadStatus> statuses, List<LeadSubStatus> substatuses) {
+
+        List<String> statusesString = statuses.stream().map(LeadStatus::name).toList();
+        List<String> substatusesString = substatuses.stream().map(LeadSubStatus::name).toList();
+
+        String sql = getLeadWorkflowDetailsQuery();
+
+        MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue("personIds", personIds.toArray(new Long[0]), Types.ARRAY);
+        params.addValue("statuses", statusesString.toArray(new String[0]), Types.ARRAY);
+        params.addValue("substatuses", substatusesString.toArray(new String[0]), Types.ARRAY);
+
+        return jdbcTemplate.query(sql, params, new LeadWorkflowDetailsRowMapper());
+    }
+
+    private String getLeadWorkflowDetailsQuery() {
+        StringBuilder sql = new StringBuilder();
+
+        sql.append("SELECT ");
+        sql.append("l.id AS lead_id, ");
+        sql.append("l.lead_identifier AS lead_identifier, ");
+        sql.append("l.workflow_details->>'workflowConfigKey' AS workflow_config_key, ");
+        sql.append("l.workflow_details->'currentStageDetails'->>'stageKey' AS current_stage_key, ");
+        sql.append("l.workflow_details->'currentStageDetails'->>'subStageKey' AS current_sub_stage_key, ");
+        sql.append("l.workflow_details->'currentStageDetails'->>'assignedTo' AS assigned_to ");
+
+        sql.append("FROM n_lead l ");
+
+        sql.append("WHERE ( ");
+        sql.append("l.applicant = ANY (:personIds::bigint[]) ");
+
+        sql.append("OR EXISTS ( ");
+        sql.append("SELECT 1 FROM unnest(:personIds::bigint[]) pid ");
+        sql.append("WHERE l.contacts ?? pid::text ");
+        sql.append(") ");
+
+        sql.append("OR EXISTS ( ");
+        sql.append("SELECT 1 FROM unnest(:personIds::bigint[]) pid ");
+        sql.append("WHERE l.co_applicants ?? pid::text ");
+        sql.append(") ");
+        sql.append(") ");
+
+        sql.append("AND l.status = ANY (:statuses::text[]) ");
+        sql.append("AND (l.substatus IS NULL OR l.substatus = ANY (:substatuses::text[])) ");
+
+        sql.append("ORDER BY l.created_at DESC ");
+
+        return sql.toString();
+    }
+
 }

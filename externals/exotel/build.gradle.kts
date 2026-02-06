@@ -12,6 +12,9 @@ dependencies {
     implementation(project(":features:campaign"))
     implementation(project(":features:call"))
     implementation(project(":features:advisor"))
+    implementation(project(":features:task"))
+    implementation(project(":features:person"))
+    implementation(project(":features:workflow"))
 }
 
 springBoot {

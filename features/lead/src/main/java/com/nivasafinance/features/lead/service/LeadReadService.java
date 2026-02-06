@@ -3,7 +3,10 @@ package com.nivasafinance.features.lead.service;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.features.lead.dto.*;
+import com.nivasafinance.features.lead.enums.LeadStatus;
+import com.nivasafinance.features.lead.enums.LeadSubStatus;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface LeadReadService {
@@ -22,4 +25,6 @@ public interface LeadReadService {
             LeadDashboardFilters filters);
     PaginatedResponse<LeadSearchResponse> searchLeads(PaginationRequest paginationRequest, LeadSearchRequest request);
     LeadDashboardFiltersResponse getLeadDashboardFilters(LeadDashboardFiltersFilters filters);
+    List<LeadWorkflowDetailsDto> findLeadsByPersonIdsAndStatusesAndSubstatuses(List<Long> personIds,
+        List<LeadStatus> statuses, List<LeadSubStatus> substatuses);
 }

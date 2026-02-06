@@ -15,6 +15,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -87,6 +88,14 @@ public class PersonReadServiceImpl implements PersonReadService {
                 .findFirst()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Identifier not found for person"));
+    }
+
+    @Override
+    public List<PersonResponse> getPersonByMobile(String mobileNumber) {
+        List<Person> persons = personRepositoryWrapper.findByMobileNumberWithException(mobileNumber);
+        return persons.stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
     }
 }
 
