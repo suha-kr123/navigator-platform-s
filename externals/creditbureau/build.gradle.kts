@@ -16,3 +16,7 @@ dependencies {
 springBoot {
     mainClass.set("com.nivasafinance.NavigatorApplication")
 }
+
+tasks.jar {
+    archiveBaseName.set("creditbureau-externals")
+}
