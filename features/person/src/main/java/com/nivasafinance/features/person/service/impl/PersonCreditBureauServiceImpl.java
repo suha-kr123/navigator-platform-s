@@ -123,7 +123,6 @@ public class PersonCreditBureauServiceImpl implements PersonCreditBureauService 
             initiateResponse.setConsentIdentifier(consentIdentifier);
             
             // Trigger credit bureau pull since consent is already available
-            CreditBureauEnquiry enquiry = creditBureauReadService.getCbEnquiryEntityById(enquiryId);
             triggerCreditBureauPull(enquiry, personId);
         } else {
             // Create new consent and send link
