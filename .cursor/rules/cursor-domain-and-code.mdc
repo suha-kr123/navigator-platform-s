@@ -1,0 +1,12 @@
+---
+description: Domain authority, architecture, and code generation limits
+alwaysApply: true
+---
+
+# Domain & Code Authority
+
+**Domain/API:** MUST NOT invent schemas, tables, columns, repository/service methods, endpoints, or business rules. Missing details → STOP. Suggestions only if marked and approved.
+
+**Architecture:** Follow existing. No new abstractions, frameworks, or patterns. No moving logic across layers. Design requests → respond at architecture level first; no code unless requested.
+
+**Code generation:** Prefer snippets, diffs, TODOs. No full classes/controllers/services/config unless explicitly requested. No inventing names (classes, methods, DTOs, enums) – user provides or approves.

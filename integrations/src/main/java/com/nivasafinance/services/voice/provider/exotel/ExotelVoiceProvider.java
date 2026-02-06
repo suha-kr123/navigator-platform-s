@@ -1,6 +1,7 @@
 package com.nivasafinance.services.voice.provider.exotel;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nivasafinance.common.awssecretmanager.service.SecretManagerService;
 import com.nivasafinance.integrations.framework.config.BusinessContext;
@@ -21,14 +22,20 @@ import com.nivasafinance.services.voice.provider.exotel.data.ExotelConfiguration
 import com.nivasafinance.services.voice.provider.exotel.data.ExotelCreateCampaignRequest;
 import com.nivasafinance.services.voice.provider.exotel.data.ExotelCreateCampaignResponse;
 import com.nivasafinance.services.voice.provider.exotel.data.ExotelCSVUploadStatusResponse;
+import com.nivasafinance.services.voice.provider.exotel.data.ExotelGetCallLegsResponse;
+import com.nivasafinance.services.voice.provider.exotel.data.ExotelGetCallStatusResponse;
 import com.nivasafinance.services.voice.provider.exotel.data.ExotelGetCampaignResponse;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 import org.springframework.core.io.ByteArrayResource;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
@@ -38,6 +45,7 @@ import org.springframework.util.MultiValueMap;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class ExotelVoiceProvider implements VoiceProvider {
 
     private final NavigatorRestService restService;
@@ -100,13 +108,110 @@ public class ExotelVoiceProvider implements VoiceProvider {
         return mapResponse(integrationResponse);
     }
 
+    private static final int CALL_STATUS_RETRY_ATTEMPTS = 6;
+    private static final int CALL_STATUS_RETRY_DELAY_SECONDS = 5;
+
     @Override
-    public VoiceCallResponse getCallStatus(
+    public VoiceGetCallStatusResponse getCallStatus(
             String callSid,
             ThirdPartyConfig config,
             BusinessContext businessContext) {
-        setupConfiguration(config.getConfigurations());
-        throw new UnsupportedOperationException("Not yet implemented");
+        ExotelConfiguration exotelConfig = setupConfiguration(config.getConfigurations());
+        validateGetCallStatusRequest(callSid);
+
+        IntegrationRestRequest<Void> callRequest =
+                buildGetCallStatusRequest(callSid, exotelConfig, config, businessContext);
+        IntegrationResponse callResponse = executeWithRetry(
+                callRequest,
+                CALL_STATUS_RETRY_ATTEMPTS,
+                CALL_STATUS_RETRY_DELAY_SECONDS,
+                "Exotel get call status failed");
+
+        ExotelGetCallStatusResponse exotelCallResponse;
+        try {
+            exotelCallResponse = objectMapper.readValue(
+                    callResponse.getResponseBody(),
+                    ExotelGetCallStatusResponse.class);
+        } catch (JsonProcessingException e) {
+            throw new NavigatorIntegrationClientException("Failed to parse get call status response: " + e.getMessage());
+        }
+
+        ExotelGetCallStatusResponse.CallDetails callDetails = exotelCallResponse.getCallDetails();
+        if (callDetails == null) {
+            throw new NavigatorIntegrationClientException("Call details not found in response");
+        }
+
+        IntegrationRestRequest<Void> legsRequest =
+                buildGetCallLegsRequest(callSid, exotelConfig, config, businessContext);
+        IntegrationResponse legsResponse = executeWithRetryOptional(
+                legsRequest,
+                CALL_STATUS_RETRY_ATTEMPTS,
+                CALL_STATUS_RETRY_DELAY_SECONDS,
+                "Exotel get call legs details failed");
+
+        ExotelGetCallLegsResponse.LegDetails legDetails = null;
+        if (legsResponse != null && legsResponse.isSuccess()) {
+            try {
+                ExotelGetCallLegsResponse exotelLegsResponse = objectMapper.readValue(
+                        legsResponse.getResponseBody(),
+                        ExotelGetCallLegsResponse.class);
+                legDetails = exotelLegsResponse != null ? exotelLegsResponse.getLegDetails() : null;
+            } catch (JsonProcessingException e) {
+                log.warn("Failed to parse get call legs response after retries, keeping legs null: {}", e.getMessage());
+            }
+        } else if (legsResponse == null) {
+            log.warn("Legs API failed after {} retries, keeping legs null", CALL_STATUS_RETRY_ATTEMPTS);
+        }
+
+        return buildVoiceGetCallStatusResponse(callDetails, legDetails);
+    }
+
+    private IntegrationResponse executeWithRetry(
+            IntegrationRestRequest<Void> request,
+            int maxAttempts,
+            int delaySeconds,
+            String errorPrefix) {
+        IntegrationResponse response = null;
+        String lastError = null;
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            response = restService.doRestRequest(request);
+            if (response.isSuccess()) {
+                return response;
+            }
+            lastError = response.getErrorMessage() != null ? response.getErrorMessage() : response.getResponseBody();
+            if (attempt < maxAttempts) {
+                try {
+                    Thread.sleep(delaySeconds * 1000L);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new NavigatorIntegrationClientException(errorPrefix + ": interrupted during retry");
+                }
+            }
+        }
+        throw new NavigatorIntegrationClientException(errorPrefix + ": " + lastError);
+    }
+
+    private IntegrationResponse executeWithRetryOptional(
+            IntegrationRestRequest<Void> request,
+            int maxAttempts,
+            int delaySeconds,
+            String errorLogPrefix) {
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            IntegrationResponse response = restService.doRestRequest(request);
+            if (response.isSuccess()) {
+                return response;
+            }
+            if (attempt < maxAttempts) {
+                try {
+                    Thread.sleep(delaySeconds * 1000L);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    log.warn("{}: interrupted during retry", errorLogPrefix);
+                    return null;
+                }
+            }
+        }
+        return null;
     }
 
     @Override
@@ -323,6 +428,12 @@ public class ExotelVoiceProvider implements VoiceProvider {
     private void validateGetCampaignDetailsRequest(VoiceGetCampaignDetailsRequest request) {
         if (request.getCampaignId() == null || request.getCampaignId().isBlank()) {
             throw new NavigatorIntegrationClientException("Campaign ID cannot be empty");
+        }
+    }
+
+    private void validateGetCallStatusRequest(String callSid) {
+        if (callSid == null || callSid.isBlank()) {
+            throw new NavigatorIntegrationClientException("Call SID cannot be empty");
         }
     }
 
@@ -589,6 +700,74 @@ public class ExotelVoiceProvider implements VoiceProvider {
         return restRequest;
     }
     
+    private static final String EXOTEL_CCM_API_BASE = "https://ccm-api.exotel.com";
+
+    private IntegrationRestRequest<Void> buildGetCallStatusRequest(
+            String callSid,
+            ExotelConfiguration exotelConfig,
+            ThirdPartyConfig config,
+            BusinessContext businessContext
+    ) {
+        String url = String.format(
+                "%s/v3/accounts/%s/calls/%s",
+                EXOTEL_CCM_API_BASE,
+                exotelConfig.getAccountSid(),
+                callSid);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
+        headers.set(HttpHeaders.AUTHORIZATION, buildAuthorizationHeader(exotelConfig));
+
+        ApiContext apiContext = new ApiContext(
+                getKey().getProvideName(),
+                config.getId()
+        );
+
+        IntegrationRestRequest<Void> restRequest = new IntegrationRestRequest<>();
+        restRequest.setUrl(url);
+        restRequest.setMethod(HttpMethod.GET);
+        restRequest.setBusinessContext(businessContext);
+        restRequest.setApiContext(apiContext);
+        restRequest.setQueryParams(new LinkedMultiValueMap<>());
+        restRequest.setRequestBody(null);
+        restRequest.setHeaders(headers);
+
+        return restRequest;
+    }
+
+    private IntegrationRestRequest<Void> buildGetCallLegsRequest(
+            String callSid,
+            ExotelConfiguration exotelConfig,
+            ThirdPartyConfig config,
+            BusinessContext businessContext
+    ) {
+        String url = String.format(
+                "%s/v3/accounts/%s/calls/%s/legs",
+                EXOTEL_CCM_API_BASE,
+                exotelConfig.getAccountSid(),
+                callSid);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
+        headers.set(HttpHeaders.AUTHORIZATION, buildAuthorizationHeader(exotelConfig));
+
+        ApiContext apiContext = new ApiContext(
+                getKey().getProvideName(),
+                config.getId()
+        );
+
+        IntegrationRestRequest<Void> restRequest = new IntegrationRestRequest<>();
+        restRequest.setUrl(url);
+        restRequest.setMethod(HttpMethod.GET);
+        restRequest.setBusinessContext(businessContext);
+        restRequest.setApiContext(apiContext);
+        restRequest.setQueryParams(new LinkedMultiValueMap<>());
+        restRequest.setRequestBody(null);
+        restRequest.setHeaders(headers);
+
+        return restRequest;
+    }
+
     private IntegrationRestRequest<Void> buildGetCampaignRequest(
             VoiceGetCampaignDetailsRequest request,
             ExotelConfiguration exotelConfig,
@@ -647,6 +826,224 @@ public class ExotelVoiceProvider implements VoiceProvider {
         }
 
         return new VoiceCallResponse(callDetails.getSid(), getStatus(callDetails.getStatus()));
+    }
+
+    private VoiceGetCallStatusResponse buildVoiceGetCallStatusResponse(
+            ExotelGetCallStatusResponse.CallDetails callDetails,
+            ExotelGetCallLegsResponse.LegDetails legDetails) {
+        VoiceGetCallStatusResponse.CallDetails voiceCallDetails = null;
+        if (callDetails != null) {
+            List<VoiceGetCallStatusResponse.Recording> recordings = null;
+            if (callDetails.getRecordings() != null) {
+                recordings = callDetails.getRecordings().stream()
+                        .map(r -> VoiceGetCallStatusResponse.Recording.builder().url(r.getUrl()).build())
+                        .toList();
+            }
+
+            Map<String, String> entityIds = extractEntityIds(callDetails.getCustomField());
+
+            voiceCallDetails = VoiceGetCallStatusResponse.CallDetails.builder()
+                    .sid(callDetails.getSid())
+                    .direction(callDetails.getDirection())
+                    .virtualNumber(callDetails.getVirtualNumber())
+                    .state(callDetails.getState())
+                    .status(callDetails.getStatus())
+                    .legs(callDetails.getLegs())
+                    .createdTime(parseDateTime(callDetails.getCreatedTime()))
+                    .updatedTime(parseDateTime(callDetails.getUpdatedTime()))
+                    .startTime(parseDateTime(callDetails.getStartTime()))
+                    .endTime(parseDateTime(callDetails.getEndTime()))
+                    .totalDuration(callDetails.getTotalDuration())
+                    .totalTalkTime(callDetails.getTotalTalkTime())
+                    .appId(callDetails.getAppId())
+                    .appName(callDetails.getAppName())
+                    .digits(callDetails.getDigits())
+                    .campaignId(entityIds.get("campaignId"))
+                    .leadId(entityIds.get("leadId"))
+                    .advisorId(entityIds.get("advisorId"))
+                    .recordings(recordings)
+                    .build();
+        }
+
+        String fromLegStatus = null;
+        String toLegStatus = null;
+        VoiceGetCallStatusResponse.Leg fromLeg = null;
+        VoiceGetCallStatusResponse.Leg toLeg = null;
+        if (legDetails != null) {
+            if (legDetails.getFrom() != null && !legDetails.getFrom().isEmpty()) {
+                ExotelGetCallLegsResponse.Leg exotelFrom = legDetails.getFrom().get(0);
+                fromLegStatus = exotelFrom.getStatus();
+                fromLeg = mapToVoiceGetCallStatusLeg(exotelFrom);
+            }
+            if (legDetails.getTo() != null && !legDetails.getTo().isEmpty()) {
+                ExotelGetCallLegsResponse.Leg exotelTo = legDetails.getTo().get(0);
+                toLegStatus = exotelTo.getStatus();
+                toLeg = mapToVoiceGetCallStatusLeg(exotelTo);
+            }
+        }
+
+        String callStatus = callDetails != null ? callDetails.getStatus() : null;
+        VoiceStatus status = mapExotelStatusToVoiceStatus(callStatus, fromLegStatus, toLegStatus);
+
+        return VoiceGetCallStatusResponse.builder()
+                .callId(callDetails != null ? callDetails.getSid() : null)
+                .status(status)
+                .callDetails(voiceCallDetails)
+                .from(fromLeg)
+                .to(toLeg)
+                .build();
+    }
+
+    private VoiceGetCallStatusResponse.Leg mapToVoiceGetCallStatusLeg(ExotelGetCallLegsResponse.Leg exotelLeg) {
+        if (exotelLeg == null) {
+            return null;
+        }
+        return VoiceGetCallStatusResponse.Leg.builder()
+                .status(mapLegStatusToVoiceStatus(exotelLeg.getStatus()))
+                .contactUri(exotelLeg.getContactUri())
+                .build();
+    }
+
+    private VoiceStatus mapLegStatusToVoiceStatus(String legStatus) {
+        String norm = normalizeLegStatus(legStatus);
+        if (norm == null) {
+            return VoiceStatus.FAILED;
+        }
+        return switch (norm) {
+            case "queued" -> VoiceStatus.QUEUED;
+            case "in-progress" -> VoiceStatus.IN_PROGRESS;
+            case "completed" -> VoiceStatus.COMPLETED;
+            case "failed", "canceled", "cancelled" -> VoiceStatus.FAILED;
+            case "no-answer" -> VoiceStatus.NO_ANSWER;
+            case "busy" -> VoiceStatus.BUSY;
+            default -> VoiceStatus.IN_PROGRESS;
+        };
+    }
+
+    private VoiceStatus mapExotelStatusToVoiceStatus(String callStatus, String fromLegStatus, String toLegStatus) {
+        String fromNorm = normalizeLegStatus(fromLegStatus);
+        String toNorm = normalizeLegStatus(toLegStatus);
+        boolean hasLegData = fromNorm != null || toNorm != null;
+
+        if (hasLegData) {
+            if ("in-progress".equals(fromNorm) || "in-progress".equals(toNorm)) {
+                return VoiceStatus.IN_PROGRESS;
+            }
+            if ("no-answer".equals(fromNorm) || "no-answer".equals(toNorm)) {
+                return VoiceStatus.NO_ANSWER;
+            }
+            if ("failed".equals(fromNorm) || "canceled".equals(fromNorm) || "cancelled".equals(fromNorm)
+                || "failed".equals(toNorm) || "canceled".equals(toNorm) || "cancelled".equals(toNorm)) {
+                return VoiceStatus.FAILED;
+            }
+        }
+
+        String callNorm = callStatus != null ? callStatus.toLowerCase().trim() : null;
+        if ("completed".equals(callNorm)) {
+            if (!hasLegData) {
+                return VoiceStatus.COMPLETED;
+            }
+            if ("completed".equals(fromNorm) && "completed".equals(toNorm)) {
+                return VoiceStatus.COMPLETED;
+            }
+            return VoiceStatus.FAILED;
+        }
+        if ("from_leg_unanswered".equals(callNorm) || "to_leg_unanswered".equals(callNorm)) {
+            return VoiceStatus.NO_ANSWER;
+        }
+        if ("from_leg_cancelled".equals(callNorm)) {
+            return VoiceStatus.FAILED;
+        }
+        if ("to_leg_no_dial".equals(callNorm) || "from_leg_no_dial".equals(callNorm)) {
+            return VoiceStatus.FAILED;
+        }
+
+        if (hasLegData) {
+            log.warn("Unknown Exotel call status '{}', defaulting to FAILED", callStatus);
+            return VoiceStatus.FAILED;
+        }
+        log.warn("Unknown Exotel call status '{}' with no leg data, defaulting to IN_PROGRESS", callStatus);
+        return VoiceStatus.IN_PROGRESS;
+    }
+
+    private String normalizeLegStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return null;
+        }
+        String s = status.toLowerCase().trim();
+        if ("no_answer".equals(s)) {
+            return "no-answer";
+        }
+        return s;
+    }
+
+    private LocalDateTime parseDateTime(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return OffsetDateTime.parse(value).toLocalDateTime();
+        } catch (DateTimeParseException e) {
+            log.warn("Failed to parse date value '{}': {}", value, e.getMessage());
+            log.debug("Date parse exception", e);
+            return null;
+        }
+    }
+
+    private Map<String, String> extractEntityIds(String customField) {
+        Map<String, String> result = new HashMap<>();
+        result.put("campaignId", null);
+        result.put("leadId", null);
+        result.put("advisorId", null);
+
+        if (customField == null || customField.isBlank()) {
+            return result;
+        }
+
+        String trimmed = customField.trim();
+        if ("N/A".equalsIgnoreCase(trimmed)) {
+            log.debug("Custom field is 'N/A', ignoring");
+            return result;
+        }
+
+        try {
+            String decoded = trimmed;
+            if (decoded.startsWith("\"") && decoded.endsWith("\"") && decoded.length() >= 2) {
+                decoded = decoded.substring(1, decoded.length() - 1);
+            }
+            decoded = decoded.replace("\\\"", "\"");
+
+            if (decoded.isBlank() || "null".equalsIgnoreCase(decoded)) {
+                return result;
+            }
+
+            JsonNode node = objectMapper.readTree(decoded);
+            if (node.isTextual()) {
+                String inner = node.asText();
+                if (inner != null && !inner.isBlank()) {
+                    node = objectMapper.readTree(inner);
+                }
+            }
+
+            if (node.isObject()) {
+                String entityType = node.path("entityType").asText(null);
+                String identifier = node.path("identifier").asText(null);
+
+                if (entityType != null && identifier != null) {
+                    switch (entityType) {
+                        case "CAMPAIGN" -> result.put("campaignId", identifier);
+                        case "LEAD" -> result.put("leadId", identifier);
+                        case "ADVISOR" -> result.put("advisorId", identifier);
+                        default -> { }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to parse custom_field '{}': {}", customField, e.getMessage());
+            log.debug("Custom field parse exception", e);
+        }
+
+        return result;
     }
 
     private VoiceStatus getStatus(String status) {

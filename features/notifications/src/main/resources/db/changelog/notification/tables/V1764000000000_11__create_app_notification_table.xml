@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1764000000000_11" author="system">
+        <createTable tableName="n_app_notification">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="device_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="receipt_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="notification_record_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="notification_token" type="VARCHAR(500)"/>
+            <column name="template_id" type="VARCHAR(255)"/>
+            <column name="template_name" type="VARCHAR(255)"/>
+            <column name="provider_message_id" type="VARCHAR(500)"/>
+            <column name="status" type="VARCHAR(50)" defaultValue="SENT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="error_code" type="VARCHAR(100)"/>
+            <column name="error_message" type="TEXT"/>
+            <column name="sent_timestamp" type="TIMESTAMP"/>
+            <column name="created_by" type="VARCHAR(255)" defaultValue="system"/>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="NOW()"/>
+            <column name="updated_by" type="VARCHAR(255)"/>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="NOW()"/>
+            <column name="version" type="INT" defaultValueNumeric="1"/>
+        </createTable>
+
+        <addForeignKeyConstraint
+                baseTableName="n_app_notification"
+                baseColumnNames="device_id"
+                referencedTableName="n_device"
+                referencedColumnNames="id"
+                constraintName="fk_app_notification_device"
+                onDelete="CASCADE"/>
+
+        <addForeignKeyConstraint
+                baseTableName="n_app_notification"
+                baseColumnNames="receipt_id"
+                referencedTableName="n_notification_receipt"
+                referencedColumnNames="id"
+                constraintName="fk_app_notification_receipt"
+                onDelete="CASCADE"/>
+
+        <addForeignKeyConstraint
+                baseTableName="n_app_notification"
+                baseColumnNames="notification_record_id"
+                referencedTableName="n_notification_record"
+                referencedColumnNames="id"
+                constraintName="fk_app_notification_record"
+                onDelete="CASCADE"/>
+
+        <createIndex tableName="n_app_notification" indexName="idx_app_notification_device_id">
+            <column name="device_id"/>
+        </createIndex>
+
+        <createIndex tableName="n_app_notification" indexName="idx_app_notification_receipt_id">
+            <column name="receipt_id"/>
+        </createIndex>
+
+        <createIndex tableName="n_app_notification" indexName="idx_app_notification_provider_message_id">
+            <column name="provider_message_id"/>
+        </createIndex>
+
+        <createIndex tableName="n_app_notification" indexName="idx_app_notification_status">
+            <column name="status"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="n_app_notification"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

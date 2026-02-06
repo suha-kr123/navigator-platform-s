@@ -1,0 +1,32 @@
+---
+description: File creation, defaults, testing, output, schema stability, security, dependencies, incremental changes
+alwaysApply: true
+---
+
+# Change Control & Output
+
+**Files:** No new files without: explain why, ask approval, WAIT.
+
+**Defaults:** No defaults for pagination, sorting, filtering, retries, thresholds without approval.
+
+**Tests:** No automated test code for manual API validation (use curl/httpie/samples). No auto-generated full test files; prefer outlines, minimal examples, modify existing tests.
+
+**Output:** Structured. Diffs/snippets only. No long prose unless requested.
+
+**Schema/Contracts:** MUST NOT modify database schemas, API contracts, or event payloads unless explicitly instructed. When such a change is requested, **STOP first**: ask purpose, type/constraints, update behavior, scope. WAIT for answers and confirmation before implementing.
+
+**Non-functional:** No logging, retries, timeouts, caching, metrics, monitoring, or performance changes unless requested.
+
+**Error handling:** Use existing patterns only. No inventing error codes, exception hierarchies, or HTTP mappings.
+
+**Multi-step:** Propose steps → WAIT for approval → execute step-by-step. No best-practice evangelism unless asked.
+
+**Security & secrets:** MUST NOT hardcode secrets, API keys, passwords, tokens. Use config, env vars, or secrets managers. Placeholders in snippets must be clearly marked.
+
+**Dependencies:** MUST NOT add new Maven/Gradle dependencies without approval. State purpose, scope, alternatives; WAIT before adding.
+
+**Debug/temporary code:** MUST NOT leave System.out, printStackTrace, debug logs, or temporary hacks in production paths. Remove or mark temporary before completion.
+
+**Incremental changes:** One logical change per edit when possible. Do not bundle unrelated fixes. List and get approval for multiple changes.
+
+**Backward compatibility:** Preserve it when modifying public APIs/services/contracts unless explicitly breaking. State impact and migration path; WAIT for approval.

@@ -1,0 +1,20 @@
+plugins {
+    id("java-conventions")
+    id("testing-conventions")
+    id("dokka-conventions")
+    id("spring-conventions")
+    id("common-feature-conventions")
+}
+
+dependencies {
+    implementation(project(":common"))
+    implementation(project(":features:master"))
+    implementation(project(":features:person"))
+    implementation(project(":features:workflow"))
+    implementation(project(":features:advisor"))
+    implementation(project(":features:lead"))
+}
+
+springBoot {
+    mainClass.set("com.nivasafinance.NavigatorApplication")
+}

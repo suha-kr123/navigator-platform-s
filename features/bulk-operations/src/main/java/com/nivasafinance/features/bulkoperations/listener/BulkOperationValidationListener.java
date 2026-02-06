@@ -62,7 +62,6 @@ public class BulkOperationValidationListener {
     private static final String LOG_PARSE_OPERATION_ID_FAILED = "Failed to parse operationId from message: {}";
     private static final String LOG_DELETE_MESSAGE_FAILED = "Failed to delete message from queue {}";
     private static final String LOG_UPDATE_VALIDATION_FAILURE_FAILED = "Cannot update validation failure: operation {} not found";
-    private static final String LOG_SKIPPING_VALIDATION_FOR_OPERATION = "Skipping validation for operation {} – status already {}";
     private static final String LOG_FAILED_TO_POLL_SQS_VALIDATION_QUEUE = "Failed to poll SQS validation queue: {}";
 
     private static final int PROCESSING_TIMEOUT_HOURS = 24;

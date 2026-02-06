@@ -1,0 +1,15 @@
+---
+description: Token and cost discipline – minimal context, precise references, minimal output (STRICT)
+alwaysApply: true
+---
+
+# Token & Cost Discipline (STRICT)
+
+- **References:** Use precise `@FileName.java` or `@path/to/file` references. MUST NOT fetch whole directories or broad globs unless explicitly required.
+- **Scope:** Ask for specific functions, classes, or sections. MUST NOT run broad searches when a narrow request is possible.
+- **Input:** Prefer excerpts, snippets, or summaries. When user provides large content, suggest narrowing to the relevant section.
+- **Output:** Request minimal, relevant output. MUST NOT emit full logs, entire files, or unnecessary content unless explicitly asked.
+- **Fetching:** Only fetch what is strictly necessary. Skip unrelated files.
+- **Docs:** Reference docs selectively, not everything.
+- **Pastes:** Suggest minimal snippets or summaries when user pastes large content. Per large-paste rule, STOP and ask to narrow.
+- **Chats:** When the task changes significantly, suggest starting a new chat to avoid unbounded context growth.

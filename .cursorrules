@@ -1,0 +1,349 @@
+# Cursor Rules – Team Standard (Strict / Non-Ambiguous)
+
+> **Priority rule:**  
+> If any rule conflicts, the **stricter rule always wins**.  
+> If any rule is violated, Cursor **MUST STOP** and ask for clarification.
+
+--------------------------------------------------
+## 1. Context Access Rules (HARD)
+--------------------------------------------------
+
+- Cursor MUST NOT scan, infer, or reference the workspace by default.
+- Cursor MUST ONLY use files explicitly named by the user.
+- Accessing ANY additional file requires explicit user approval FIRST.
+- If required context is missing → STOP and ask.
+- Cursor MUST NOT repeat large code blocks unless explicitly requested.
+
+--------------------------------------------------
+## 2. Scope Control (HARD)
+--------------------------------------------------
+
+- Cursor MUST limit changes to the smallest possible scope.
+- Cursor MUST NOT refactor unrelated code.
+- Cursor MUST NOT perform project-wide changes unless explicitly instructed.
+- Cursor MUST NOT modify more files than explicitly approved.
+
+--------------------------------------------------
+## 3. Architecture & Layering (HARD)
+--------------------------------------------------
+
+- Cursor MUST follow existing architecture and layering.
+- Cursor MUST NOT introduce:
+  - new abstractions
+  - new frameworks
+  - new patterns
+- Cursor MUST NOT move logic across layers.
+- Architectural suggestions MUST list trade-offs and MUST NOT be implemented without approval.
+
+--------------------------------------------------
+## 4. Design-Level Requests (CONTROLLED)
+--------------------------------------------------
+
+- Respond at the architecture level first.
+- MUST NOT write code unless explicitly requested.
+- MUST state assumptions and WAIT for confirmation.
+
+--------------------------------------------------
+## 5. Automation & Agents (HARD)
+--------------------------------------------------
+
+- Cursor MUST NOT run agents, chains, or autonomous steps unless explicitly requested.
+- Cursor MUST NOT execute background, iterative, or multi-step actions automatically.
+
+--------------------------------------------------
+## 6. Large Context & Input Guardrails (HARD)
+--------------------------------------------------
+
+- Cursor MUST NOT ingest:
+  - entire files
+  - folders
+  - logs
+  - CSVs
+  - generated outputs
+- For large files, Cursor MUST ask:
+  - specific section, OR
+  - summary
+- If request requires scanning multiple files → STOP.
+- **Pasted content**: Large pastes (project overviews, module lists, multi-file dumps) are REFERENCE only. Cursor MUST NOT treat pasted content as "context to act on." MUST STOP and ask user to narrow scope before proceeding. MUST NOT automatically process or act on all pasted content.
+
+--------------------------------------------------
+## 7. API Testing Rules (STRICT)
+--------------------------------------------------
+
+- Cursor MUST NOT generate automated test code for manual API validation.
+- Allowed alternatives:
+  - curl / httpie
+  - single-request Postman / Bruno example
+  - request/response samples
+- Automated tests ONLY IF:
+  - user explicitly says tests will be committed, OR
+  - request is explicitly for CI / regression testing.
+
+--------------------------------------------------
+## 8. Test Generation Limits (STRICT)
+--------------------------------------------------
+
+- Cursor MUST NOT auto-generate full test files.
+- Cursor MUST NOT generate boilerplate-heavy test suites.
+- Prefer:
+  - test case outlines
+  - minimal examples
+- Cursor MUST modify existing tests instead of creating new ones.
+
+--------------------------------------------------
+## 9. Clarification Before Action (MANDATORY)
+--------------------------------------------------
+
+- Cursor MUST NOT assume intent.
+- Cursor MUST NOT guess scope, files, or outcomes.
+- If request is ambiguous:
+  - ask clarification
+  - WAIT for confirmation
+- Cursor MUST NOT proceed until intent is clear.
+
+--------------------------------------------------
+## 10. Output Discipline
+--------------------------------------------------
+
+- Responses MUST be structured.
+- For code changes:
+  - brief explanation
+  - exact diff or snippet only
+- Cursor MUST avoid long prose unless requested.
+
+--------------------------------------------------
+## 11. Domain, Data & API Authority (STRICT)
+--------------------------------------------------
+
+- Cursor MUST NOT invent or infer:
+  - database schemas
+  - tables / columns
+  - repository methods
+  - service methods
+  - API endpoints or contracts
+  - business rules
+- Missing domain details → STOP and ask.
+- Suggestions allowed ONLY if:
+  - clearly marked as suggestions
+  - user explicitly approves before implementation.
+
+--------------------------------------------------
+## 12. Assumptions (MANDATORY)
+--------------------------------------------------
+
+- If ANY assumption exists:
+  - list it explicitly
+  - DO NOT proceed until confirmed
+- No hidden or implicit assumptions allowed.
+
+--------------------------------------------------
+## 13. Non-Functional Changes (STRICT)
+--------------------------------------------------
+
+Cursor MUST NOT add or change:
+- logging
+- retries
+- timeouts
+- caching
+- metrics
+- monitoring
+- performance optimizations
+
+Unless explicitly requested.
+
+--------------------------------------------------
+## 14. Error Handling (STRICT)
+--------------------------------------------------
+
+- Cursor MUST NOT invent:
+  - error codes
+  - exception hierarchies
+  - HTTP status mappings
+- Use existing patterns only.
+- No pattern provided → ask user.
+
+--------------------------------------------------
+## 15. Defaults (STRICT)
+--------------------------------------------------
+
+- Cursor MUST NOT introduce defaults for:
+  - pagination
+  - sorting
+  - filtering
+  - retries
+  - thresholds
+- Defaults require explicit user approval.
+
+--------------------------------------------------
+## 16. Read-Before-Write Rule (HARD)
+--------------------------------------------------
+
+- For any non-trivial change:
+  - restate understanding
+  - WAIT for confirmation
+- No confirmation → no code.
+
+--------------------------------------------------
+## 17. Code Generation Limits (STRICT)
+--------------------------------------------------
+
+- Cursor MUST NOT generate:
+  - full classes
+  - full controllers
+  - full services
+  - full config files
+- Unless explicitly requested.
+- Prefer:
+  - method snippets
+  - diffs
+  - TODO markers
+
+--------------------------------------------------
+## 18. Diff-Only Changes
+--------------------------------------------------
+
+- Cursor MUST show diffs or changed snippets only.
+- Unchanged code MUST NOT be reprinted.
+
+--------------------------------------------------
+## 19. File Creation (STRICT)
+--------------------------------------------------
+
+- Cursor MUST NOT create new files without approval.
+- Required steps:
+  1. explain why
+  2. ask approval
+  3. WAIT
+
+--------------------------------------------------
+## 20. Naming Authority (STRICT)
+--------------------------------------------------
+
+- Cursor MUST NOT invent names:
+  - classes
+  - methods
+  - DTOs
+  - enums
+- User provides names OR explicitly approves suggestions.
+
+--------------------------------------------------
+## 21. No Best-Practice Evangelism
+--------------------------------------------------
+
+- Cursor MUST NOT suggest:
+  - “cleaner”
+  - “more scalable”
+  - “industry standard”
+- Unless explicitly asked to improve or refactor.
+
+--------------------------------------------------
+## 22. Cost Awareness (STRICT)
+--------------------------------------------------
+
+- Cursor MUST minimize: token usage, compute, infrastructure changes.
+- Cost impacts MUST be called out when relevant.
+- **Token discipline:** Use precise @File references, not whole directories. Fetch only what is strictly necessary. Prefer excerpts/snippets over full files. Output minimal relevant content; avoid full logs. Reference docs selectively. For large pastes or scope shifts, suggest narrowing or starting a new chat.
+
+--------------------------------------------------
+## 23. Stepwise Execution
+--------------------------------------------------
+
+- Multi-step tasks:
+  - propose steps
+  - WAIT for approval
+  - execute step-by-step
+
+--------------------------------------------------
+## 24. Schema & Contract Stability (HARD)
+--------------------------------------------------
+
+- Cursor MUST NOT modify:
+  - database schemas
+  - API contracts
+  - event payloads
+- Unless explicitly instructed.
+
+--------------------------------------------------
+## 25. Mandatory Stop Conditions
+--------------------------------------------------
+
+Cursor MUST STOP if:
+- more than one interpretation exists
+- multiple files may be affected
+- correctness depends on missing data
+- domain / schema / API details are not provided
+
+--------------------------------------------------
+## 26. Terminal & Command Execution (HARD)
+--------------------------------------------------
+
+- Cursor MUST NOT run, execute, or simulate ANY command. No exceptions.
+- Cursor MUST NOT execute: git, gradle, aws, npm, maven, docker, shell commands, build tools, migrations, scripts, package managers, or database commands.
+- Cursor MAY ONLY: provide the command as plain text, labeled "Command to run manually," for the user to run.
+- Cursor MUST NEVER claim or imply that a command was executed.
+
+--------------------------------------------------
+## 27. Security & Secrets (STRICT)
+--------------------------------------------------
+
+- Cursor MUST NOT hardcode secrets, API keys, passwords, tokens, or connection strings.
+- Use config, env vars, or secrets managers only; no credentials in code or diffs.
+- If credentials appear in snippets/examples, mark clearly as placeholders.
+
+--------------------------------------------------
+## 28. Dependencies (STRICT)
+--------------------------------------------------
+
+- Cursor MUST NOT add new Maven/Gradle dependencies without explicit approval.
+- When suggesting a new dependency: state purpose, scope, and known alternatives.
+- WAIT for approval before adding to pom.xml / build.gradle.
+
+--------------------------------------------------
+## 29. User-Facing Strings / i18n (STRICT)
+--------------------------------------------------
+
+- User-facing messages (errors, validation, UI text) MUST use MessageSource keys or existing i18n patterns.
+- No hardcoded user-facing strings in code.
+
+--------------------------------------------------
+## 30. Debug & Temporary Code (STRICT)
+--------------------------------------------------
+
+- Cursor MUST NOT leave System.out, printStackTrace, debug logs, or temporary hacks in production code paths.
+- If added for debugging, mark clearly as temporary and remove before completion.
+
+--------------------------------------------------
+## 31. Incremental Changes
+--------------------------------------------------
+
+- Prefer one logical change per edit when possible.
+- Do not bundle unrelated fixes or refactors in a single edit.
+- If multiple changes are needed, list them and get approval before proceeding.
+
+--------------------------------------------------
+## 32. Backward Compatibility (HARD)
+--------------------------------------------------
+
+- When modifying public APIs, services, or contracts: preserve backward compatibility unless explicitly breaking.
+- If breaking change is proposed: state impact and migration path; WAIT for approval.
+
+--------------------------------------------------
+## 33. Third-Party Code
+--------------------------------------------------
+
+- Do not copy full snippets from external sources without attribution and license check.
+- Prefer references or minimal adapted snippets.
+
+--------------------------------------------------
+## 34. Deprecation
+--------------------------------------------------
+
+- When deprecating methods or APIs: use @Deprecated and document replacement.
+- Do not remove deprecated code without explicit approval.
+
+--------------------------------------------------
+## 35. Unused Code
+--------------------------------------------------
+
+- Do not remove "unused" code (methods, imports) without explicit user request.
+- Ask first if removal impact is unclear.

@@ -14,6 +14,11 @@
     <include file="classpath:db/changelog/notification/tables/V1763000000000_07__add_details_to_notification_record.xml"/>
     <include file="classpath:db/changelog/notification/tables/V1763000000000_08__create_lead_whatsapp_notification_table.xml"/>
     <include file="classpath:db/changelog/notification/tables/V1763000000000_09__create_advisor_whatsapp_notification_table.xml"/>
+    <include file="classpath:db/changelog/notification/tables/V1764000000000_10__create_device_table.xml"/>
+    <include file="classpath:db/changelog/notification/tables/V1764000000000_11__create_app_notification_table.xml"/>
+    <include file="classpath:db/changelog/notification/tables/V1764000000012__insert_device_permissions.xml"/>
+    <include file="classpath:db/changelog/notification/tables/V1764000000013__add_opened_at_to_app_notification.xml"/>
+    <include file="classpath:db/changelog/notification/tables/V1764000000014__device_unique_and_indexes.xml"/>
 
 </databaseChangeLog>
 
