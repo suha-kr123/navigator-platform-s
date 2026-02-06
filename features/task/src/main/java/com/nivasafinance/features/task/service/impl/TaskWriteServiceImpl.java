@@ -24,8 +24,7 @@ import com.nivasafinance.features.task.service.TaskWriteService;
 import com.nivasafinance.common.context.UserContext;
 import com.nivasafinance.common.events.BusinessEvent;
 import com.nivasafinance.common.events.SystemEvent;
-import com.nivasafinance.common.enums.EntityType;
-import com.nivasafinance.common.events.payload.LeadTaskAssignedEventPayload;
+import com.nivasafinance.common.events.payload.TaskAssignedEventPayload;
 import com.nivasafinance.common.utils.ValidationUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -315,21 +314,17 @@ public class TaskWriteServiceImpl implements TaskWriteService {
     private void publishTaskAssignedIfAssigned(Task task) {
         String assignedTo = task.getAssignedTo();
         if (ValidationUtils.isNonNullOrEmpty(assignedTo)) {
-            UUID leadIdentifier = null;
-            if (task.getTaskDetails() != null
-                    && task.getTaskDetails().getEntityType() == EntityType.LEAD
-                    && task.getTaskDetails().getEntityId() != null) {
-                leadIdentifier = task.getTaskDetails().getEntityId();
-            }
-            LeadTaskAssignedEventPayload payload = LeadTaskAssignedEventPayload.builder()
+            var details = task.getTaskDetails();
+            TaskAssignedEventPayload payload = TaskAssignedEventPayload.builder()
                     .username(assignedTo)
                     .taskIdentifier(task.getTaskIdentifier())
                     .taskName(task.getName())
                     .taskConfigKey(task.getTaskConfigKey())
-                    .leadIdentifier(leadIdentifier)
+                    .entityType(details != null ? details.getEntityType() : null)
+                    .entityId(details != null ? details.getEntityId() : null)
                     .build();
             applicationEventPublisher.publishEvent(
-                    new SystemEvent<>(BusinessEvent.LEAD_TASK_ASSIGNED.toString(), payload, assignedTo));
+                    new SystemEvent<>(BusinessEvent.TASK_ASSIGNED.toString(), payload, assignedTo));
         }
     }
 
