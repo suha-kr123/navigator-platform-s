@@ -26,6 +26,8 @@
     <include file="db/changelog/call/db.changelog-call.xml"/>
     <include file="db/changelog/campaign/db.changelog-campaign.xml"/>
     <include file="db/changelog/bulkoperations/db.changelog-bulkoperations.xml"/>
+    <include file="db/changelog/creditbureau/db.changelog-creditbureau.xml"/>
+    <include file="db/changelog/consent/db.changelog-consent.xml"/>
     <include file="db/changelog/integrations/db.changelog-integrations.xml"/>
 
     <!-- Permission group mappings - must run after all permissions and groups are inserted -->

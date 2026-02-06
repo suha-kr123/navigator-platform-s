@@ -24,6 +24,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -269,6 +270,21 @@ public class PersonWriteServiceImpl implements PersonWriteService {
         } else {
             person.setIdentifiers(new ArrayList<>(identifiers));
         }
+        personRepositoryWrapper.saveWithException(person);
+    }
+
+    @Override
+    public void updateCreditBureauFields(Long personId, List<Long> cbEnquiryIds, Person.CreditBureauDetails cbDetails) {
+        Person person = personRepositoryWrapper.findByIdWithException(personId);
+
+        if (cbEnquiryIds != null) {
+            person.setCbEnquiryId(cbEnquiryIds);
+        }
+
+        if (cbDetails != null) {
+            person.setCbDetails(cbDetails);
+        }
+
         personRepositoryWrapper.saveWithException(person);
     }
 }

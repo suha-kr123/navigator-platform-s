@@ -46,6 +46,8 @@ public class PersonReadServiceImpl implements PersonReadService {
                 .dateOfBirth(person.getDateOfBirth())
                 .gender(person.getGender())
                 .extData(person.getExtData())
+                .cbEnquiryId(person.getCbEnquiryId())
+                .cbDetails(person.getCbDetails())
                 .createdAt(person.getCreatedAt())
                 .createdBy(person.getCreatedBy())
                 .updatedAt(person.getUpdatedAt())

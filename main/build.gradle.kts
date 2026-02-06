@@ -10,6 +10,7 @@ plugins {
 dependencies {
     implementation(project(":common"))
     implementation(project(":features:creditbureau"))
+    implementation(project(":features:consent"))
     implementation(project(":features:person"))
     implementation(project(":features:usermanagement"))
     implementation(project(":features:advisor"))

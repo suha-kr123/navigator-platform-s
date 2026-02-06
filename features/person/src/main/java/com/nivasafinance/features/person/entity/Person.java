@@ -7,6 +7,7 @@ import com.nivasafinance.features.person.enums.Gender;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -70,5 +71,37 @@ public class Person extends AuditableEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "data_ext", columnDefinition = "jsonb")
     private Map<String, Object> extData;
+
+    @Type(JsonType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "cb_enquiry_id", columnDefinition = "jsonb")
+    private List<Long> cbEnquiryId;
+
+    @Type(JsonType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "cb_details", columnDefinition = "jsonb")
+    private CreditBureauDetails cbDetails;
+
+    @Type(JsonType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "consent_details", columnDefinition = "jsonb")
+    private List<ConsentInfo> consentDetails;
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ConsentInfo {
+        private Long id;
+        private String type;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class CreditBureauDetails {
+        private Long latestSuccessEnquiryId;
+        private Long latestEnquiryId;
+    }
 }
 

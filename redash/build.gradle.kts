@@ -7,6 +7,7 @@ plugins {
 
 dependencies {
     implementation(project(":common"))
+    implementation(libs.poi.ooxml)
 }
 
 springBoot {

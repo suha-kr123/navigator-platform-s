@@ -15,12 +15,24 @@ import java.util.UUID;
 public interface LeadDocumentWriteService {
 
     /**
-     * Creates a new document for a lead.
+     * Creates a new document for a lead from an uploaded file.
      * @param leadIdentifier The lead identifier
+     * @param file The uploaded file
      * @param request The document creation request
      * @return The created document response
      */
     LeadDocumentCreateResponse createLeadDocument(UUID leadIdentifier, MultipartFile file, LeadDocumentCreateRequest request);
+
+    /**
+     * Creates a new document for a lead from in-memory content (e.g. from Redash).
+     * @param leadIdentifier The lead identifier
+     * @param content The document content
+     * @param filename The filename (e.g. cb-report.xlsx)
+     * @param contentType The content type (e.g. application/vnd.openxmlformats-officedocument.spreadsheetml.sheet)
+     * @param request The document creation request
+     * @return The created document response
+     */
+    LeadDocumentCreateResponse createLeadDocument(UUID leadIdentifier, byte[] content, String filename, String contentType, LeadDocumentCreateRequest request);
 
     /**
      * Creates a house front photo for a lead with geolocation data.

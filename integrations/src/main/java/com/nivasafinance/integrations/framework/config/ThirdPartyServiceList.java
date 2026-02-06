@@ -5,7 +5,8 @@ import lombok.Getter;
 @Getter
 public enum ThirdPartyServiceList {
     VOICE("voice"),
-    WHATSAPP("whatsapp");
+    WHATSAPP("whatsapp"),
+    CREDIT_BUREAU("credit_bureau");
 
     private final String serviceName;
 

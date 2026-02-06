@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1767955003000_59" author="system" context="default">
+        <createTable tableName="n_cb_customer_tradeline">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <column name="identifier" type="UUID" defaultValueComputed="gen_random_uuid()">
+                <constraints nullable="false" unique="true"/>
+            </column>
+
+            <column name="enquiry_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="account_number" type="VARCHAR(100)"/>
+            <column name="credit_grantor" type="VARCHAR(200)"/>
+            <column name="credit_grantor_group" type="VARCHAR(50)"/>
+            <column name="credit_grantor_type" type="VARCHAR(10)"/>
+            <column name="account_type" type="VARCHAR(100)"/>
+            <column name="account_status" type="VARCHAR(50)"/>
+            <column name="reported_date" type="DATE"/>
+            <column name="closed_date" type="DATE"/>
+            <column name="ownership_type" type="VARCHAR(50)"/>
+
+            <column name="disbursed_amount" type="NUMERIC(18,2)"/>
+            <column name="disbursed_date" type="DATE"/>
+            <column name="current_balance" type="NUMERIC(18,2)"/>
+            <column name="credit_limit" type="NUMERIC(18,2)"/>
+            <column name="cash_limit" type="NUMERIC(18,2)"/>
+            <column name="overdue_amount" type="NUMERIC(18,2)"/>
+            <column name="installment_amount" type="VARCHAR(50)"/>
+            <column name="installment_frequency" type="VARCHAR(100)"/>
+            <column name="original_term" type="INTEGER"/>
+            <column name="term_to_maturity" type="INTEGER"/>
+            <column name="repayment_tenure" type="VARCHAR(50)"/>
+            <column name="interest_rate" type="VARCHAR(10)"/>
+            <column name="last_payment_date" type="TIMESTAMP"/>
+            <column name="last_paid_amount" type="NUMERIC(18,2)"/>
+            <column name="actual_payment" type="NUMERIC(18,2)"/>
+            <column name="write_off_amount" type="NUMERIC(18,2)"/>
+            <column name="principal_write_off_amount" type="NUMERIC(18,2)"/>
+            <column name="settlement_amount" type="NUMERIC(18,2)"/>
+            <column name="write_off_date" type="DATE"/>
+            <column name="security_status" type="VARCHAR(100)"/>
+            <column name="obligation" type="NUMERIC(18,2)"/>
+            <column name="account_remarks" type="TEXT"/>
+            <column name="account_in_dispute" type="BOOLEAN"/>
+            <column name="suit_filed_wilful_default_status" type="VARCHAR(100)"/>
+            <column name="written_off_settled_status" type="VARCHAR(100)"/>
+            <column name="suit_filed_date" type="DATE"/>
+            <column name="occupation" type="VARCHAR(100)"/>
+            <column name="income_frequency" type="VARCHAR(50)"/>
+            <column name="income_amount" type="NUMERIC(18,2)"/>
+
+            <column name="created_by" type="varchar(255)"/>
+            <column name="updated_by" type="varchar(255)"/>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="updated_at" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="version" type="bigint" defaultValueNumeric="0"/>
+        </createTable>
+        <createIndex indexName="idx_cb_customer_tradeline_enquiry_id_id" tableName="n_cb_customer_tradeline">
+            <column name="enquiry_id"/>
+            <column name="id"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

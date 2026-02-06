@@ -14,6 +14,8 @@ public class SystemLeadDocumentsMaster {
         }
     }
 
+    public static final String LEAD_CREDIT_DOCUMENTS_CRIF_REPORT = "LEAD_CREDIT_DOCUMENTS_CRIF_REPORT";
+
     private SystemLeadDocumentsMaster() {
         // Prevent instantiation
     }

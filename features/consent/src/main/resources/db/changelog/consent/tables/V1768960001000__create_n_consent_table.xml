@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1768960001000_1" author="system" context="default">
+        <createTable tableName="n_consent">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="identifier" type="UUID" defaultValueComputed="gen_random_uuid()">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="status" type="VARCHAR(50)"/>
+            <column name="consent_sent_details" type="JSONB"/>
+            <column name="consent_received_details" type="JSONB"/>
+            <column name="consent_withdrawn_details" type="JSONB"/>
+            <column name="audit_log_ids" type="JSONB"/>
+            <column name="created_by" type="varchar(255)"/>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="updated_by" type="varchar(255)"/>
+            <column name="updated_at" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="version" type="bigint" defaultValueNumeric="0"/>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>
