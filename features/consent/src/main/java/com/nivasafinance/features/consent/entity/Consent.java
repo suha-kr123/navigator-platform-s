@@ -17,7 +17,6 @@ import org.hibernate.annotations.Type;
 import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -50,11 +49,6 @@ public class Consent extends IdentifiableEntity {
     @Column(name = "consent_withdrawn_details", columnDefinition = "jsonb")
     private ConsentWithdrawnDetails consentWithdrawnDetails;
 
-    @Type(JsonType.class)
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "audit_log_ids", columnDefinition = "jsonb")
-    private List<Long> auditLogIds;
-
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
@@ -67,6 +61,7 @@ public class Consent extends IdentifiableEntity {
     @AllArgsConstructor
     public static class ConsentReceivedDetails {
         private LocalDateTime consentReceivedTime;
+        private String auditId;
     }
 
     @Data
@@ -74,5 +69,6 @@ public class Consent extends IdentifiableEntity {
     @AllArgsConstructor
     public static class ConsentWithdrawnDetails {
         private LocalDateTime consentWithdrawalRequestedTime;
+        private String auditId;
     }
 }

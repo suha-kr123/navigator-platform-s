@@ -9,6 +9,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
+import java.util.UUID;
+
 @Component
 public class RequestContextInterceptor implements HandlerInterceptor {
 
@@ -24,10 +26,10 @@ public class RequestContextInterceptor implements HandlerInterceptor {
         RequestMetadata.RequestMetadataBuilder builder = RequestMetadata.builder();
 
         String auditIdHeader = request.getHeader(HEADER_AUDIT_ID);
-        if(auditIdHeader != null && !auditIdHeader.isBlank()) {
-            try{
-                builder.auditId(Long.parseLong(auditIdHeader.trim()));
-            } catch (NumberFormatException e) {
+        if (auditIdHeader != null && !auditIdHeader.isBlank()) {
+            try {
+                builder.auditId(UUID.fromString(auditIdHeader.trim()).toString());
+            } catch (IllegalArgumentException e) {
                 logger.warn("Invalid {} header value: {}", HEADER_AUDIT_ID, auditIdHeader);
             }
         }

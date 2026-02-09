@@ -11,5 +11,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class RequestMetadata {
 
-    private Long auditId;
+    private String auditId;
 }

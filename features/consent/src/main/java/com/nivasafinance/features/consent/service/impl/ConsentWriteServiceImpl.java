@@ -2,7 +2,6 @@ package com.nivasafinance.features.consent.service.impl;
 
 import com.nivasafinance.common.context.RequestContext;
 import com.nivasafinance.common.context.UserContext;
-import com.nivasafinance.common.dto.RequestMetadata;
 import com.nivasafinance.common.events.BusinessEvent;
 import com.nivasafinance.common.events.SystemEvent;
 import com.nivasafinance.common.events.payload.ConsentReceivedEventPayload;
@@ -20,8 +19,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.time.LocalDateTime;
 
 @Service
@@ -83,8 +80,8 @@ public class ConsentWriteServiceImpl implements ConsentWriteService {
         if (consent.getStatus() != ConsentStatus.SENT) {
             throw ConsentExceptionFactory.invalidStatusForAccept(consent.getStatus(), messageSource);
         }
-        appendAuditLogIdIfPresent(consent);
-        consent.setConsentReceivedDetails(new Consent.ConsentReceivedDetails(LocalDateTime.now()));
+        String auditId = RequestContext.getRequestMetadata() != null ? RequestContext.getRequestMetadata().getAuditId() : null;
+        consent.setConsentReceivedDetails(new Consent.ConsentReceivedDetails(LocalDateTime.now(), auditId));
         consent.setStatus(ConsentStatus.RECEIVED);
         consentRepositoryWrapper.saveWithException(consent);
 
@@ -122,22 +119,10 @@ public class ConsentWriteServiceImpl implements ConsentWriteService {
         if (consent.getStatus() != ConsentStatus.RECEIVED) {
             throw ConsentExceptionFactory.invalidStatusForWithdrawn(consent.getStatus(), messageSource);
         }
-        appendAuditLogIdIfPresent(consent);
-        consent.setConsentWithdrawnDetails(new Consent.ConsentWithdrawnDetails(LocalDateTime.now()));
+        String auditId = RequestContext.getRequestMetadata() != null ? RequestContext.getRequestMetadata().getAuditId() : null;
+        consent.setConsentWithdrawnDetails(new Consent.ConsentWithdrawnDetails(LocalDateTime.now(), auditId));
         consent.setStatus(ConsentStatus.REQUEST_FOR_WITHDRAWAL);
         consentRepositoryWrapper.saveWithException(consent);
-    }
-
-    private void appendAuditLogIdIfPresent(Consent consent) {
-        RequestMetadata meta = RequestContext.getRequestMetadata();
-        if (meta == null || meta.getAuditId() == null) {
-            return;
-        }
-        List<Long> ids = consent.getAuditLogIds() != null
-                ? new ArrayList<>(consent.getAuditLogIds())
-                : new ArrayList<>();
-        ids.add(meta.getAuditId());
-        consent.setAuditLogIds(ids);
     }
 
     private static String buildConsentLink(String base, String consentIdentifier, String enquiryIdentifier,
