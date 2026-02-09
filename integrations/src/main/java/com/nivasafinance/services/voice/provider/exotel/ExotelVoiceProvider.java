@@ -437,8 +437,6 @@ public class ExotelVoiceProvider implements VoiceProvider {
         }
     }
 
-    private static final String EXOTEL_CALL_WEBHOOK_URL = "https://a136636e317a.ngrok-free.app/external/v1/exotel/outgoing/callback";
-
     private IntegrationRestRequest<String> buildConnectCallRequest(
             VoiceCallRequest request,
             ExotelConfiguration exotelConfig,
@@ -468,7 +466,7 @@ public class ExotelVoiceProvider implements VoiceProvider {
                 .statusCallback(Collections.singletonList(
                         ExotelV3CallRequest.StatusCallback.builder()
                                 .event("terminal")
-                                .url(EXOTEL_CALL_WEBHOOK_URL)
+                                .url(exotelConfig.getCallWebhookUrl())
                                 .build()))
                 .build();
 
@@ -975,16 +973,7 @@ public class ExotelVoiceProvider implements VoiceProvider {
         if ("from_leg_cancelled".equals(callNorm)) {
             return VoiceStatus.FAILED;
         }
-        if ("to_leg_no_dial".equals(callNorm) || "from_leg_no_dial".equals(callNorm)) {
-            return VoiceStatus.FAILED;
-        }
-
-        if (hasLegData) {
-            log.warn("Unknown Exotel call status '{}', defaulting to FAILED", callStatus);
-            return VoiceStatus.FAILED;
-        }
-        log.warn("Unknown Exotel call status '{}' with no leg data, defaulting to IN_PROGRESS", callStatus);
-        return VoiceStatus.IN_PROGRESS;
+        return VoiceStatus.FAILED;
     }
 
     private String normalizeLegStatus(String status) {
