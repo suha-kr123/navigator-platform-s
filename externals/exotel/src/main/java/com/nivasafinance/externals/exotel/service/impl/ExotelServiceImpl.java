@@ -54,6 +54,9 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import com.nivasafinance.features.workflow.constants.WorkflowConstants;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -81,12 +84,14 @@ public class ExotelServiceImpl implements ExotelService {
     private final CampaignReadService campaignReadService;
     private final CampaignWriteService campaignWriteService;
     private final CallReadService callReadService;
+    private final ObjectMapper objectMapper;
 
     private static final String DIRECT_CALL_SOURCE = "DIRECT_CALL_SOURCE";
+    private static final String ENTITY_TYPE_CAMPAIGN = "CAMPAIGN";
 
     @Async
     @Override
-    public void processMissedCall(String callSid) {
+    public void processMissedCall(String callSid, String customField) {
         log.info("Processing missed call for CallSid: {} with user: {}", callSid, UserContext.getUsername());
 
         try {
@@ -137,8 +142,11 @@ public class ExotelServiceImpl implements ExotelService {
 
             log.info("Found/Created lead: {} for mobile: {}", leadIdentifier, normalizedCallFrom);
 
-            // 6. Extract campaign ID if present
+            // 6. Extract campaign ID if present (from call details, then from customField)
             UUID campaignId = extractCampaignId(callStatusResponse);
+            if (campaignId == null) {
+                campaignId = extractCampaignIdFromCustomField(customField);
+            }
 
             // 7. Build CreateExternalCallLogRequest
             CreateExternalCallLogRequest callLogRequest = buildCallLogRequest(
@@ -176,7 +184,7 @@ public class ExotelServiceImpl implements ExotelService {
 
     @Async
     @Override
-    public void processAnsweredCall(String callSid) {
+    public void processAnsweredCall(String callSid, String customField) {
         log.info("Processing answered call for CallSid: {} with user: {}", callSid, UserContext.getUsername());
 
         try {
@@ -227,8 +235,11 @@ public class ExotelServiceImpl implements ExotelService {
 
             log.info("Found lead: {} for mobile: {}", leadIdentifier, normalizedCallFrom);
 
-            // 6. Extract campaign ID if present
+            // 6. Extract campaign ID if present (from call details, then from customField)
             UUID campaignId = extractCampaignId(callStatusResponse);
+            if (campaignId == null) {
+                campaignId = extractCampaignIdFromCustomField(customField);
+            }
 
             // 7. Build CreateExternalCallLogRequest
             CreateExternalCallLogRequest callLogRequest = buildCallLogRequest(
@@ -551,21 +562,53 @@ public class ExotelServiceImpl implements ExotelService {
         }
 
         String campaignIdStr = response.getCallDetails().getCampaignId();
+        return resolveCampaignId(campaignIdStr);
+    }
+
+    /**
+     * Extract campaign ID from customField JSON when entityType is CAMPAIGN and identifier is present.
+     * Used as fallback when extractCampaignId returns null.
+     */
+    private UUID extractCampaignIdFromCustomField(String customField) {
+        if (customField == null || customField.isBlank()) {
+            return null;
+        }
+        String trimmed = customField.trim();
+        if ("N/A".equalsIgnoreCase(trimmed)) {
+            return null;
+        }
         try {
-            // Try to parse as UUID first (if it's already a UUID)
-            return UUID.fromString(campaignIdStr);
-        } catch (IllegalArgumentException e) {
-            // If not a UUID, it might be a provider ID - try to resolve to campaign
-            try {
-                CampaignDetailedResponse campaign = campaignReadService.getCampaignByProviderId(campaignIdStr);
-                if (campaign != null && campaign.getIdentifier() != null) {
-                    return UUID.fromString(campaign.getIdentifier());
-                }
-                return null;
-            } catch (Exception ex) {
-                log.warn("Failed to resolve campaign provider ID: {}", campaignIdStr, ex);
+            String decoded = trimmed;
+            if (decoded.startsWith("\"") && decoded.endsWith("\"") && decoded.length() >= 2) {
+                decoded = decoded.substring(1, decoded.length() - 1);
+            }
+            decoded = decoded.replace("\\\"", "\"");
+            if (decoded.isBlank() || "null".equalsIgnoreCase(decoded)) {
                 return null;
             }
+            JsonNode node = objectMapper.readTree(decoded);
+            if (node.isTextual()) {
+                String inner = node.asText();
+                if (inner != null && !inner.isBlank()) {
+                    node = objectMapper.readTree(inner);
+                }
+            }
+            if (!node.isObject()) {
+                return null;
+            }
+            String entityType = node.path("entityType").asText(null);
+            String identifier = node.path("identifier").asText(null);
+            if (!ENTITY_TYPE_CAMPAIGN.equals(entityType) || identifier == null || identifier.isBlank()) {
+                return null;
+            }
+            UUID campaignId = resolveCampaignId(identifier);
+            if (campaignId != null) {
+                log.info("Setting campaignId from CustomField: {}", identifier);
+            }
+            return campaignId;
+        } catch (Exception e) {
+            log.warn("Failed to parse customField for campaignId: {}", e.getMessage());
+            return null;
         }
     }
 
