@@ -119,9 +119,9 @@ public class ExotelController {
             @Valid @RequestBody OutgoingCallbackRequest request
     ) {
         log.info("Received outgoing callback webhook - callId: {} from user: {}",
-                request.getCallId(), UserContext.getUsername());
+                request.getCallDetails().getSid(), UserContext.getUsername());
 
-        exotelService.processOutgoingCallback(request.getCallId());
+        exotelService.processOutgoingCallback(request.getCallDetails().getSid());
 
         return ResponseEntity.ok()
                 .body(Map.of("message", "callback request received and processing in background"));

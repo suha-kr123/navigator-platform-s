@@ -863,6 +863,7 @@ public class ExotelServiceImpl implements ExotelService {
         if (response.getFrom() != null && response.getFrom().getStatus() != null) {
             LeadUpdateCallLog.CompletionLeg fromLeg = LeadUpdateCallLog.CompletionLeg.builder()
                     .status(mapToCallStatus(response.getFrom().getStatus()))
+                    .direction("from")
                     .duration(null) // Duration per leg not available
                     .build();
             legs.add(fromLeg);
@@ -872,6 +873,7 @@ public class ExotelServiceImpl implements ExotelService {
         if (response.getTo() != null && response.getTo().getStatus() != null) {
             LeadUpdateCallLog.CompletionLeg toLeg = LeadUpdateCallLog.CompletionLeg.builder()
                     .status(mapToCallStatus(response.getTo().getStatus()))
+                    .direction("to")
                     .duration(null) // Duration per leg not available
                     .build();
             legs.add(toLeg);
@@ -890,6 +892,7 @@ public class ExotelServiceImpl implements ExotelService {
         if (response.getFrom() != null && response.getFrom().getStatus() != null) {
             AdvisorUpdateCallLog.CompletionLeg fromLeg = AdvisorUpdateCallLog.CompletionLeg.builder()
                     .status(mapToCallStatus(response.getFrom().getStatus()))
+                    .direction("from")
                     .duration(null) // Duration per leg not available
                     .build();
             legs.add(fromLeg);
@@ -899,6 +902,7 @@ public class ExotelServiceImpl implements ExotelService {
         if (response.getTo() != null && response.getTo().getStatus() != null) {
             AdvisorUpdateCallLog.CompletionLeg toLeg = AdvisorUpdateCallLog.CompletionLeg.builder()
                     .status(mapToCallStatus(response.getTo().getStatus()))
+                    .direction("to")
                     .duration(null) // Duration per leg not available
                     .build();
             legs.add(toLeg);

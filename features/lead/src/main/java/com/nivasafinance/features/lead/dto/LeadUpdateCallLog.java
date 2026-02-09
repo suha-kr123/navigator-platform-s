@@ -44,5 +44,6 @@ public class LeadUpdateCallLog {
     public static class CompletionLeg {
         private String duration;
         private CallStatus status;
+        private String direction;
     }
 }
