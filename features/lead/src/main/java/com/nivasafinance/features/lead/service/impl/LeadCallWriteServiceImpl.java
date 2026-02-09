@@ -116,7 +116,7 @@ public class LeadCallWriteServiceImpl implements LeadCallWriteService {
             if (request.getCompletionDetails().getLegs() != null) {
                 List<CallLog.CompletionLeg> legs = new ArrayList<>();
                 for (LeadUpdateCallLog.CompletionLeg leadLeg : request.getCompletionDetails().getLegs()) {
-                    legs.add(CallLog.CompletionLeg.builder().duration(leadLeg.getDuration()).status(leadLeg.getStatus()).build());
+                    legs.add(CallLog.CompletionLeg.builder().duration(leadLeg.getDuration()).direction(leadLeg.getDirection()).status(leadLeg.getStatus()).build());
                 }
                 completionDetails.setLegs(legs);
             }

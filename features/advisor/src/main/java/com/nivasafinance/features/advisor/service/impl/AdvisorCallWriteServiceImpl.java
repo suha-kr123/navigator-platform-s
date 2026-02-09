@@ -105,7 +105,7 @@ public class AdvisorCallWriteServiceImpl implements AdvisorCallWriteService {
             if (request.getCompletionDetails().getLegs() != null) {
                 List<CallLog.CompletionLeg> legs = new ArrayList<>();
                 for (AdvisorUpdateCallLog.CompletionLeg advisorLeg : request.getCompletionDetails().getLegs()) {
-                    legs.add(CallLog.CompletionLeg.builder().duration(advisorLeg.getDuration()).status(advisorLeg.getStatus()).build());
+                    legs.add(CallLog.CompletionLeg.builder().duration(advisorLeg.getDuration()).direction(advisorLeg.getDirection()).status(advisorLeg.getStatus()).build());
                 }
                 completionDetails.setLegs(legs);
             }

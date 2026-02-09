@@ -13,11 +13,9 @@ import com.nivasafinance.integrations.framework.core.data.IntegrationRestRequest
 import com.nivasafinance.integrations.framework.core.data.ThirdPartyConfig;
 import com.nivasafinance.integrations.framework.core.exception.NavigatorIntegrationClientException;
 import com.nivasafinance.integrations.framework.core.exception.NavigatorIntegrationServerException;
-import com.nivasafinance.integrations.framework.core.utils.XMLUtils;
 import com.nivasafinance.services.voice.dto.*;
 import com.nivasafinance.services.voice.provider.VoiceProvider;
 import com.nivasafinance.services.voice.provider.exotel.data.ExotelAddContactsCSVToListResponse;
-import com.nivasafinance.services.voice.provider.exotel.data.ExotelCallResponse;
 import com.nivasafinance.services.voice.provider.exotel.data.ExotelConfiguration;
 import com.nivasafinance.services.voice.provider.exotel.data.ExotelCreateCampaignRequest;
 import com.nivasafinance.services.voice.provider.exotel.data.ExotelCreateCampaignResponse;
@@ -25,6 +23,8 @@ import com.nivasafinance.services.voice.provider.exotel.data.ExotelCSVUploadStat
 import com.nivasafinance.services.voice.provider.exotel.data.ExotelGetCallLegsResponse;
 import com.nivasafinance.services.voice.provider.exotel.data.ExotelGetCallStatusResponse;
 import com.nivasafinance.services.voice.provider.exotel.data.ExotelGetCampaignResponse;
+import com.nivasafinance.services.voice.provider.exotel.data.ExotelV3CallRequest;
+import com.nivasafinance.services.voice.provider.exotel.data.ExotelV3CallResponse;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
@@ -95,7 +95,7 @@ public class ExotelVoiceProvider implements VoiceProvider {
             BusinessContext businessContext) {
         ExotelConfiguration exotelConfig = setupConfiguration(config.getConfigurations());
         validateVoiceCallRequest(request);
-        IntegrationRestRequest<MultiValueMap<String, String>> restRequest =
+        IntegrationRestRequest<String> restRequest =
                 buildConnectCallRequest(request, exotelConfig, config, businessContext);
         IntegrationResponse integrationResponse = restService.doRestRequest(restRequest);
         if (!integrationResponse.isSuccess()) {
@@ -109,7 +109,7 @@ public class ExotelVoiceProvider implements VoiceProvider {
     }
 
     private static final int CALL_STATUS_RETRY_ATTEMPTS = 6;
-    private static final int CALL_STATUS_RETRY_DELAY_SECONDS = 5;
+    private static final int CALL_STATUS_RETRY_DELAY_SECONDS = 10;
 
     @Override
     public VoiceGetCallStatusResponse getCallStatus(
@@ -437,34 +437,51 @@ public class ExotelVoiceProvider implements VoiceProvider {
         }
     }
 
-    private IntegrationRestRequest<MultiValueMap<String, String>> buildConnectCallRequest(
+    private static final String EXOTEL_CALL_WEBHOOK_URL = "https://a136636e317a.ngrok-free.app/external/v1/exotel/outgoing/callback";
+
+    private IntegrationRestRequest<String> buildConnectCallRequest(
             VoiceCallRequest request,
             ExotelConfiguration exotelConfig,
             ThirdPartyConfig config,
             BusinessContext businessContext
     ) {
         String url = String.format(
-                "%s/v1/Accounts/%s/Calls/connect",
-                exotelConfig.getBaseUrl(),
+                "%s/v3/accounts/%s/calls",
+                EXOTEL_CCM_API_BASE,
                 exotelConfig.getAccountSid());
 
-        MultiValueMap<String, String> payload = new LinkedMultiValueMap<>();
-        payload.add("From", request.getFromNumber());
-        payload.add("To", request.getToNumber());
-        payload.add("CallerId", request.getCallerId());
-        payload.add("Record", "true");
+        String customField;
         try {
-            payload.add("CustomField", objectMapper.writeValueAsString(request.getCallBackData()));
+            customField = request.getCallBackData() != null
+                    ? objectMapper.writeValueAsString(request.getCallBackData())
+                    : null;
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            throw new NavigatorIntegrationClientException("Failed to serialize callback data: " + e.getMessage());
         }
-        payload.add("StatusCallback", exotelConfig.getCallWebhookUrl());
-        payload.add("StatusCallbackEvents[0]", "terminal");
-        payload.add("StatusCallbackContentType", "application/json");
+
+        ExotelV3CallRequest payload = ExotelV3CallRequest.builder()
+                .from(ExotelV3CallRequest.ContactUri.builder().contactUri(request.getFromNumber()).build())
+                .to(ExotelV3CallRequest.ContactUri.builder().contactUri(request.getToNumber()).build())
+                .recording(ExotelV3CallRequest.Recording.builder().record(true).channels("single").build())
+                .virtualNumber(request.getCallerId())
+                .customField(customField)
+                .statusCallback(Collections.singletonList(
+                        ExotelV3CallRequest.StatusCallback.builder()
+                                .event("terminal")
+                                .url(EXOTEL_CALL_WEBHOOK_URL)
+                                .build()))
+                .build();
+
+        String requestBody;
+        try {
+            requestBody = objectMapper.writeValueAsString(payload);
+        } catch (JsonProcessingException e) {
+            throw new NavigatorIntegrationClientException("Failed to serialize call request: " + e.getMessage());
+        }
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-        headers.set(HttpHeaders.ACCEPT, MediaType.APPLICATION_XML_VALUE);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
         headers.set(HttpHeaders.AUTHORIZATION, buildAuthorizationHeader(exotelConfig));
 
         ApiContext apiContext = new ApiContext(
@@ -472,13 +489,13 @@ public class ExotelVoiceProvider implements VoiceProvider {
                 config.getId()
         );
 
-        IntegrationRestRequest<MultiValueMap<String, String>> restRequest = new IntegrationRestRequest<>();
+        IntegrationRestRequest<String> restRequest = new IntegrationRestRequest<>();
         restRequest.setUrl(url);
         restRequest.setMethod(HttpMethod.POST);
         restRequest.setBusinessContext(businessContext);
         restRequest.setApiContext(apiContext);
         restRequest.setQueryParams(new LinkedMultiValueMap<>());
-        restRequest.setRequestBody(payload);
+        restRequest.setRequestBody(requestBody);
         restRequest.setHeaders(headers);
 
         return restRequest;
@@ -813,19 +830,23 @@ public class ExotelVoiceProvider implements VoiceProvider {
             throw new NavigatorIntegrationClientException("Empty response received from Exotel");
         }
 
-        ExotelCallResponse exotelCallResponse =
-                XMLUtils.xmlToClassObject(responseBody, ExotelCallResponse.class);
-
-        if (exotelCallResponse == null || exotelCallResponse.getCall() == null) {
-            throw new NavigatorIntegrationClientException("Missing call details in Exotel response");
+        ExotelV3CallResponse exotelCallResponse;
+        try {
+            exotelCallResponse = objectMapper.readValue(responseBody, ExotelV3CallResponse.class);
+        } catch (JsonProcessingException e) {
+            throw new NavigatorIntegrationClientException("Failed to parse Exotel call response: " + e.getMessage());
         }
 
-        ExotelCallResponse.Call callDetails = exotelCallResponse.getCall();
+        ExotelV3CallResponse.CallDetails callDetails = exotelCallResponse.getCallDetails();
+        if (callDetails == null) {
+            throw new NavigatorIntegrationClientException("Missing call details in Exotel response");
+        }
         if (callDetails.getSid() == null || callDetails.getSid().isBlank()) {
             throw new NavigatorIntegrationClientException("Missing Sid in Exotel response");
         }
 
-        return new VoiceCallResponse(callDetails.getSid(), getStatus(callDetails.getStatus()));
+        String status = callDetails.getStatus() != null ? callDetails.getStatus() : callDetails.getState();
+        return new VoiceCallResponse(callDetails.getSid(), getStatus(status));
     }
 
     private VoiceGetCallStatusResponse buildVoiceGetCallStatusResponse(
