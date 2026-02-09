@@ -945,6 +945,9 @@ public class ExotelVoiceProvider implements VoiceProvider {
         boolean hasLegData = fromNorm != null || toNorm != null;
 
         if (hasLegData) {
+            if ("completed".equals(fromNorm) && "completed".equals(toNorm)) {
+                return VoiceStatus.COMPLETED;
+            }
             if ("in-progress".equals(fromNorm) || "in-progress".equals(toNorm)) {
                 return VoiceStatus.IN_PROGRESS;
             }
@@ -958,20 +961,11 @@ public class ExotelVoiceProvider implements VoiceProvider {
         }
 
         String callNorm = callStatus != null ? callStatus.toLowerCase().trim() : null;
-        if ("completed".equals(callNorm)) {
-            if (!hasLegData) {
-                return VoiceStatus.COMPLETED;
-            }
-            if ("completed".equals(fromNorm) && "completed".equals(toNorm)) {
-                return VoiceStatus.COMPLETED;
-            }
-            return VoiceStatus.FAILED;
+        if ("completed".equals(callNorm) && !hasLegData) {
+            return VoiceStatus.COMPLETED;
         }
         if ("from_leg_unanswered".equals(callNorm) || "to_leg_unanswered".equals(callNorm)) {
             return VoiceStatus.NO_ANSWER;
-        }
-        if ("from_leg_cancelled".equals(callNorm)) {
-            return VoiceStatus.FAILED;
         }
         return VoiceStatus.FAILED;
     }

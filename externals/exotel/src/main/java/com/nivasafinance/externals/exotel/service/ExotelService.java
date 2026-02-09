@@ -15,7 +15,7 @@ public interface ExotelService {
      * 
      * @param callSid The Exotel call SID from the webhook
      */
-    void processMissedCall(String callSid);
+    void processMissedCall(String callSid, String customField);
     
     /**
      * Process an answered call event from Exotel webhook.
@@ -28,7 +28,7 @@ public interface ExotelService {
      * 
      * @param callSid The Exotel call SID from the webhook
      */
-    void processAnsweredCall(String callSid);
+    void processAnsweredCall(String callSid, String customField);
 
     /**
      * Process a campaign call status event.

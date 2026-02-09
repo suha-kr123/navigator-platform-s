@@ -36,7 +36,8 @@ public class ExotelController {
      */
     @GetMapping("/lead/incoming/missed-call")
     public ResponseEntity<Map<String, String>> handleMissedCall(
-            @RequestParam(value = "CallSid", required = false) String callSid
+            @RequestParam(value = "CallSid", required = false) String callSid,
+            @RequestParam(value = "CustomField", required = false) String customField
     ) {
         log.info("Received missed call webhook with CallSid: {}", callSid);
 
@@ -48,7 +49,7 @@ public class ExotelController {
         }
 
         // Start async processing
-        exotelService.processMissedCall(callSid);
+        exotelService.processMissedCall(callSid, customField);
 
         // Return immediate response
         return ResponseEntity.ok()
@@ -65,7 +66,8 @@ public class ExotelController {
      */
     @GetMapping("/lead/incoming/answered")
     public ResponseEntity<Map<String, String>> handleAnsweredCall(
-            @RequestParam(value = "CallSid", required = false) String callSid
+            @RequestParam(value = "CallSid", required = false) String callSid,
+            @RequestParam(value = "CustomField", required = false) String customField
     ) {
         log.info("Received answered call webhook with CallSid: {}", callSid);
 
@@ -77,7 +79,7 @@ public class ExotelController {
         }
 
         // Start async processing - UserContext will be automatically propagated
-        exotelService.processAnsweredCall(callSid);
+        exotelService.processAnsweredCall(callSid, customField);
 
         // Return immediate response
         return ResponseEntity.ok()
