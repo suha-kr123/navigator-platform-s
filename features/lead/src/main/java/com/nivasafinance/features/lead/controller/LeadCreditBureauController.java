@@ -96,6 +96,16 @@ public class LeadCreditBureauController {
         List<DemographicVariationResponse> demographicVariations = leadCreditBureauReadService.getDemographicVariationsByEnquiryIdentifier(leadIdentifier, contactIdentifier, enquiryIdentifier);
         return ResponseEntity.ok(demographicVariations);
     }
+
+    @PostMapping("/enquiry/{enquiryIdentifier}/cb-report/regenerate")
+    @RequirePermission(permissionName = "CREATE_LEAD_DOCUMENTS")
+    public ResponseEntity<Void> regenerateCbReport(
+            @PathVariable UUID leadIdentifier,
+            @PathVariable UUID contactIdentifier,
+            @PathVariable UUID enquiryIdentifier) {
+        leadCreditBureauWriteService.regenerateCbReport(leadIdentifier, contactIdentifier, enquiryIdentifier);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).build();
+    }
 }
 
 

@@ -1,6 +1,9 @@
 package com.nivasafinance.features.lead.service.impl;
 
 import com.nivasafinance.common.enums.SystemEntities;
+import com.nivasafinance.common.events.BusinessEvent;
+import com.nivasafinance.common.events.SystemEvent;
+import com.nivasafinance.common.events.payload.CbReportStoredEventPayload;
 import com.nivasafinance.features.consent.dto.AcceptConsentRequest;
 import com.nivasafinance.features.consent.dto.WithdrawConsentRequest;
 import com.nivasafinance.features.consent.service.ConsentReadService;
@@ -16,12 +19,14 @@ import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.common.exception.BadRequestException;
 import com.nivasafinance.features.lead.repository.ContactRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
+import com.nivasafinance.features.lead.service.LeadCreditBureauReadService;
 import com.nivasafinance.features.lead.service.LeadCreditBureauWriteService;
 import com.nivasafinance.features.person.entity.MobileNumberDetails;
 import com.nivasafinance.features.person.service.PersonReadService;
 import com.nivasafinance.features.person.dto.PersonResponse;
 import com.nivasafinance.features.person.service.PersonCreditBureauService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -43,6 +48,8 @@ public class LeadCreditBureauWriteServiceImpl implements LeadCreditBureauWriteSe
     private final ConsentReadService consentReadService;
     private final ConsentWriteService consentWriteService;
     private final CreditBureauReadService creditBureauReadService;
+    private final LeadCreditBureauReadService leadCreditBureauReadService;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     public InitiateCbEnquiryResponse initiateEnquiry(UUID leadIdentifier, UUID contactIdentifier) {
@@ -129,6 +136,14 @@ public class LeadCreditBureauWriteServiceImpl implements LeadCreditBureauWriteSe
                 .consentIdentifier(consentIdentifier)
                 .enquiryIdentifier(enquiryIdentifier)
                 .build());
+    }
+
+    @Override
+    public void regenerateCbReport(UUID leadIdentifier, UUID contactIdentifier, UUID enquiryIdentifier) {
+        Long enquiryId = leadCreditBureauReadService.getEnquiryIdForCbReportRegenerate(leadIdentifier, contactIdentifier, enquiryIdentifier);
+        applicationEventPublisher.publishEvent(new SystemEvent<>(
+                BusinessEvent.CB_REPORT_STORED.toString(),
+                CbReportStoredEventPayload.builder().enquiryId(enquiryId).build()));
     }
 
     private void validateContactBelongsToLead(Lead lead, Long contactId) {

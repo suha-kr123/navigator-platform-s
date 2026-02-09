@@ -14,4 +14,6 @@ public interface LeadCreditBureauReadService {
     Optional<EnquiryConsentStatusResponse> getConsentStatusByEnquiryIdentifier(UUID leadIdentifier, UUID contactIdentifier, UUID enquiryIdentifier);
     List<TrendsResponse> getScoreTrendsByEnquiryIdentifier(UUID leadIdentifier, UUID contactIdentifier, UUID enquiryIdentifier);
     List<DemographicVariationResponse> getDemographicVariationsByEnquiryIdentifier(UUID leadIdentifier, UUID contactIdentifier, UUID enquiryIdentifier);
+
+    Long getEnquiryIdForCbReportRegenerate(UUID leadIdentifier, UUID contactIdentifier, UUID enquiryIdentifier);
 }

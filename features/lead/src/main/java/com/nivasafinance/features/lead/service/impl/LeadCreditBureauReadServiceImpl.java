@@ -134,6 +134,19 @@ public class LeadCreditBureauReadServiceImpl implements LeadCreditBureauReadServ
         return creditBureauReadService.getDemographicVariationsByEnquiryIdentifier(enquiryIdentifier);
     }
 
+    @Override
+    public Long getEnquiryIdForCbReportRegenerate(UUID leadIdentifier, UUID contactIdentifier, UUID enquiryIdentifier) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        Contact contact = contactRepositoryWrapper.findByIdentifierWithException(contactIdentifier);
+        validateContactBelongsToLead(lead, contact.getId());
+
+        CreditBureauEnquiry enquiry = creditBureauReadService.getCbEnquiryEntityByIdentifier(enquiryIdentifier);
+        if (CollectionUtils.isEmpty(contact.getCbEnquiryId()) || !contact.getCbEnquiryId().contains(enquiry.getId())) {
+            throw new BadRequestException("Enquiry does not belong to the provided contact");
+        }
+        return enquiry.getId();
+    }
+
     private void validateContactBelongsToLead(Lead lead, Long contactId) {
         List<Long> contacts = lead.getContacts();
         if (CollectionUtils.isEmpty(contacts) || !contacts.contains(contactId)) {
