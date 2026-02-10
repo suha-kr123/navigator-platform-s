@@ -20,7 +20,7 @@ public class PaginationRequest {
     @Max(value = MAX_LIMIT, message = "Limit cannot exceed " + MAX_LIMIT)
     private int limit = DEFAULT_LIMIT;
 
-    private String sortBy = "created_at";
+    private String sortBy = "createdAt";
     private String sortDirection = "DESC";
 }
 

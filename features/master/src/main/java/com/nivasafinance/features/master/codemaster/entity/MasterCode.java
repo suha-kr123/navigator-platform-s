@@ -13,6 +13,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.Builder;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.Type;
 import org.hibernate.type.SqlTypes;
@@ -22,6 +23,7 @@ import org.hibernate.type.SqlTypes;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 @EqualsAndHashCode(callSuper = true)
 public class MasterCode extends AuditableEntity {
     
@@ -46,6 +48,7 @@ public class MasterCode extends AuditableEntity {
     private MasterLanguageData description;
     
     @Column(name = "is_system_defined", nullable = false)
+    @Builder.Default
     private Boolean isSystemDefined = false;
 }
 
