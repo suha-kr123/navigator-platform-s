@@ -954,6 +954,9 @@ public class ExotelVoiceProvider implements VoiceProvider {
             if ("no-answer".equals(fromNorm) || "no-answer".equals(toNorm)) {
                 return VoiceStatus.NO_ANSWER;
             }
+            if("busy".equals(fromNorm) || "busy".equals(toNorm)) {
+                return VoiceStatus.BUSY;
+            }
             if ("failed".equals(fromNorm) || "canceled".equals(fromNorm) || "cancelled".equals(fromNorm)
                 || "failed".equals(toNorm) || "canceled".equals(toNorm) || "cancelled".equals(toNorm)) {
                 return VoiceStatus.FAILED;
