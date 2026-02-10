@@ -32,9 +32,12 @@ public class RoleCheckAspect {
             throw new UnauthorizedException("User not authenticated");
         }
         List<String> roles = userRoleService.getRolesByUsername(username);
-        if (roles.isEmpty() || !Arrays.asList(requireRole.value()).containsAll(roles)) {
+        boolean hasRequiredRole = roles.stream()
+                .anyMatch(role -> Arrays.asList(requireRole.value()).contains(role));
+        if (!hasRequiredRole) {
             throw new ForbiddenException("User does not have the required role");
         }
+
         return joinPoint.proceed();
     }
 
