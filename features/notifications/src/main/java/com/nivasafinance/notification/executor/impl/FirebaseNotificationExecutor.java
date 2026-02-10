@@ -23,6 +23,8 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /** FCM executor: resolves app user, loads tokens from n_device, sends and tracks. */
 @Component
@@ -151,10 +153,9 @@ public class FirebaseNotificationExecutor implements NotificationExecutor {
 
     private String extractTitle(NotificationTemplate template, Map<String, Object> messagePayload) {
         if (messagePayload != null && messagePayload.containsKey("title")) {
-            return replacePlaceholders(messagePayload.get("title").toString(), messagePayload);
-        }
-        if (messagePayload != null && messagePayload.containsKey("taskName")) {
-            return replacePlaceholders("{{taskName}} assigned", messagePayload);
+            Object titleObj = messagePayload.get("title");
+            String title = titleObj != null ? titleObj.toString() : "";
+            return replacePlaceholders(title, messagePayload);
         }
         if (template != null && template.getIdentifier() != null) {
             return template.getIdentifier();
@@ -179,18 +180,34 @@ public class FirebaseNotificationExecutor implements NotificationExecutor {
         return "You have a new notification";
     }
 
+    private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\{\\{(\\w+)\\}\\}");
+
     private String replacePlaceholders(String text, Map<String, Object> messagePayload) {
         if (text == null || messagePayload == null) {
             return text;
         }
-        String result = text;
-        for (Map.Entry<String, Object> entry : messagePayload.entrySet()) {
-            String key = entry.getKey();
-            String placeholder = "{{" + key + "}}";
-            String value = entry.getValue() != null ? entry.getValue().toString() : "";
-            result = result.replace(placeholder, value);
+        Matcher matcher = PLACEHOLDER_PATTERN.matcher(text);
+        StringBuffer sb = new StringBuffer();
+        while (matcher.find()) {
+            String placeholderName = matcher.group(1);
+            Object valueObj = getValueIgnoreCase(messagePayload, placeholderName);
+            String value = valueObj != null ? valueObj.toString() : "";
+            matcher.appendReplacement(sb, Matcher.quoteReplacement(value));
         }
-        return result;
+        matcher.appendTail(sb);
+        return sb.toString();
+    }
+
+    private Object getValueIgnoreCase(Map<String, Object> map, String key) {
+        if (map == null || key == null) {
+            return null;
+        }
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            if (key.equalsIgnoreCase(entry.getKey())) {
+                return entry.getValue();
+            }
+        }
+        return null;
     }
 
     private Map<String, String> buildDataPayload(Map<String, Object> messagePayload) {
