@@ -2,6 +2,7 @@ package com.nivasafinance.features.master.codemaster.controller;
 
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import com.nivasafinance.features.master.codemaster.dto.MasterCodeResponse;
+import com.nivasafinance.features.master.codemaster.dto.MasterCodeTreeResponse;
 import com.nivasafinance.features.master.codemaster.dto.MasterCodeValueRequest;
 import com.nivasafinance.features.master.codemaster.dto.MasterCodeWithValuesRequest;
 import com.nivasafinance.features.master.codemaster.dto.MasterCodeValueResponse;
@@ -92,5 +93,21 @@ public class CodeMasterController {
         return ResponseEntity.ok(response);
     }
 
-}
+    @GetMapping("/tree/{parentCodeKey}")
+    @RequireRole(value = { "ADMIN" })
+    public ResponseEntity<List<MasterCodeTreeResponse>> getMasterCodeTree(
+            @PathVariable String parentCodeKey) {
+        List<MasterCodeTreeResponse> response = codeMasterService.getMasterCodeTree(parentCodeKey);
+        return ResponseEntity.ok(response);
+    }
 
+
+    @PostMapping("/tree/{parentCodeKey}/child")
+    @RequireRole(value = { "ADMIN" })
+    public ResponseEntity<List<MasterCodeTreeResponse>> addChildToTree(
+            @PathVariable String parentCodeKey,
+            @RequestBody MasterCodeWithValuesRequest child) {
+        List<MasterCodeTreeResponse> response = codeMasterService.addChildToTree(parentCodeKey, child);
+        return ResponseEntity.ok(response);
+    }
+}

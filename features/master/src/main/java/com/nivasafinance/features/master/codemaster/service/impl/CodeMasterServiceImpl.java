@@ -3,9 +3,9 @@ package com.nivasafinance.features.master.codemaster.service.impl;
 import com.nivasafinance.common.base.model.MasterLanguageData;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
-import com.nivasafinance.common.utils.ValidationUtils;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import com.nivasafinance.features.master.codemaster.dto.MasterCodeResponse;
+import com.nivasafinance.features.master.codemaster.dto.MasterCodeTreeResponse;
 import com.nivasafinance.features.master.codemaster.dto.MasterCodeValueRequest;
 import com.nivasafinance.features.master.codemaster.dto.MasterCodeValueResponse;
 import com.nivasafinance.features.master.codemaster.dto.MasterCodeWithValuesRequest;
@@ -15,18 +15,24 @@ import com.nivasafinance.features.master.codemaster.entity.MasterCodeValue;
 import com.nivasafinance.features.master.codemaster.repository.MasterCodeRepositoryWrapper;
 import com.nivasafinance.features.master.codemaster.repository.MasterCodeValueRepositoryWrapper;
 import com.nivasafinance.features.master.codemaster.service.CodeMasterService;
+import com.nivasafinance.features.master.codemaster.utils.MasterCodeKeyUtil;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class CodeMasterServiceImpl implements CodeMasterService {
+
+	public static final String MASTER_CODE_VALUE_KEY_SUFFIX = "MASTER_CODE_VALUE";
+	public static final String MASTER_CODE_KEY_SUFFIX = "MASTER_CODE";
 
 	private final MasterCodeRepositoryWrapper masterCodeRepositoryWrapper;
 	private final MasterCodeValueRepositoryWrapper masterCodeValueRepositoryWrapper;
@@ -180,5 +186,49 @@ public class CodeMasterServiceImpl implements CodeMasterService {
 	private boolean hasDefaultValue(Map<String, String> map) {
 		return map != null && map.get("default") != null;
 	}
+
+	@Override
+	public List<MasterCodeTreeResponse> getMasterCodeTree(String parentCodeKey) {
+		MasterCode parentMasterCode = masterCodeRepositoryWrapper.findByKeyWithException(parentCodeKey);
+		return List.of(buildTree(parentMasterCode));
+	}
+
+	private MasterCodeTreeResponse buildTree(MasterCode node) {
+		List<MasterCode> children = masterCodeRepositoryWrapper.findByParentIdWithException(node.getId());
+		List<MasterCodeTreeResponse> childTree = children.stream()
+				.map(this::buildTree)
+				.collect(Collectors.toList());
+
+		return MasterCodeTreeResponse.from(node, childTree);
+	}
+
+	@Override
+	@Transactional
+	public List<MasterCodeTreeResponse> addChildToTree(String parentCodeKey, MasterCodeWithValuesRequest child) {
+		MasterCode parentMasterCode = masterCodeRepositoryWrapper.findByKeyWithException(parentCodeKey);
+
+		Set<String> existingKeys = masterCodeRepositoryWrapper.findAllWithException()
+				.stream()
+				.map(MasterCode::getKey)
+				.collect(Collectors.toSet());
+
+		String codeKey = MasterCodeKeyUtil.generateUniqueKey(parentCodeKey, MASTER_CODE_KEY_SUFFIX, existingKeys);
+
+		MasterCode childMasterCode = child.toEntity(codeKey);
+		childMasterCode.setParentId(parentMasterCode.getId());
+		masterCodeRepositoryWrapper.saveWithException(childMasterCode);
+		if (child.getMasterCodeValueRequests() != null) {
+			for (MasterCodeValueRequest valueRequest : child.getMasterCodeValueRequests()) {
+				String valueKey = MasterCodeKeyUtil.generateUniqueKey(codeKey, MASTER_CODE_VALUE_KEY_SUFFIX,
+						existingKeys);
+				MasterCodeValue masterCodeValue = valueRequest.toEntity(valueKey, codeKey);
+				masterCodeValueRepositoryWrapper.saveWithException(masterCodeValue);
+				existingKeys.add(valueKey);
+			}
+		}
+
+		return getMasterCodeTree(parentCodeKey);
+	}
+
 
 }
