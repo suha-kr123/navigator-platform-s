@@ -352,16 +352,18 @@ public class LeadReadServiceImpl implements LeadReadService {
         sql.append("FROM n_lead l ");
 
         sql.append("WHERE ( ");
-        sql.append("l.applicant = ANY (:personIds::bigint[]) ");
+        sql.append("EXISTS (SELECT 1 FROM n_contact c WHERE c.id = l.applicant AND c.person_id = ANY (:personIds::bigint[])) ");
 
         sql.append("OR EXISTS ( ");
-        sql.append("SELECT 1 FROM unnest(:personIds::bigint[]) pid ");
-        sql.append("WHERE l.contacts ?? pid::text ");
+        sql.append("SELECT 1 FROM jsonb_array_elements_text(l.contacts) AS elem ");
+        sql.append("JOIN n_contact c ON c.id = (elem)::bigint ");
+        sql.append("WHERE c.person_id = ANY (:personIds::bigint[]) ");
         sql.append(") ");
 
         sql.append("OR EXISTS ( ");
-        sql.append("SELECT 1 FROM unnest(:personIds::bigint[]) pid ");
-        sql.append("WHERE l.co_applicants ?? pid::text ");
+        sql.append("SELECT 1 FROM jsonb_array_elements_text(l.co_applicants) AS elem ");
+        sql.append("JOIN n_contact c ON c.id = (elem)::bigint ");
+        sql.append("WHERE c.person_id = ANY (:personIds::bigint[]) ");
         sql.append(") ");
         sql.append(") ");
 
