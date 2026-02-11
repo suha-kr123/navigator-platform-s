@@ -13,10 +13,13 @@ import com.nivasafinance.features.creditbureau.dto.CreditBureauEnquiryResponse;
 import com.nivasafinance.features.creditbureau.entity.CreditBureauEnquiry;
 import com.nivasafinance.features.creditbureau.enums.CreditBureauEnquiryStatus;
 import com.nivasafinance.features.creditbureau.service.CreditBureauReadService;
+import com.nivasafinance.common.dto.AddressData;
+import com.nivasafinance.common.dto.IdentifierData;
 import com.nivasafinance.features.lead.dto.InitiateCbEnquiryResponse;
 import com.nivasafinance.features.lead.entity.Contact;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.common.exception.BadRequestException;
+import com.nivasafinance.features.lead.exception.LeadExceptionFactory;
 import com.nivasafinance.features.lead.repository.ContactRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadCreditBureauReadService;
@@ -27,9 +30,11 @@ import com.nivasafinance.features.person.dto.PersonResponse;
 import com.nivasafinance.features.person.service.PersonCreditBureauService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,6 +55,7 @@ public class LeadCreditBureauWriteServiceImpl implements LeadCreditBureauWriteSe
     private final CreditBureauReadService creditBureauReadService;
     private final LeadCreditBureauReadService leadCreditBureauReadService;
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final MessageSource messageSource;
 
     @Override
     public InitiateCbEnquiryResponse initiateEnquiry(UUID leadIdentifier, UUID contactIdentifier) {
@@ -62,6 +68,10 @@ public class LeadCreditBureauWriteServiceImpl implements LeadCreditBureauWriteSe
         
         // Get person from contact
         PersonResponse personResponse = personReadService.getPersonById(contact.getPersonId());
+        List<AddressData> addresses = personReadService.getAddresses(contact.getPersonId());
+        List<IdentifierData> identifiers = personReadService.getIdentifiers(contact.getPersonId());
+
+        validateCbDataRequired(personResponse, addresses, identifiers);
 
         // Build request DTO
         CreditBureauEnquiryRequest request = CreditBureauEnquiryRequest.builder()
@@ -144,6 +154,36 @@ public class LeadCreditBureauWriteServiceImpl implements LeadCreditBureauWriteSe
         applicationEventPublisher.publishEvent(new SystemEvent<>(
                 BusinessEvent.CB_REPORT_STORED.toString(),
                 CbReportStoredEventPayload.builder().enquiryId(enquiryId).build()));
+    }
+
+    private void validateCbDataRequired(PersonResponse personResponse, List<AddressData> addresses, List<IdentifierData> identifiers) {
+        List<String> errors = new ArrayList<>();
+
+        if (!StringUtils.hasText(personResponse.getFirstName())) {
+            errors.add("firstName");
+        }
+        if (!StringUtils.hasText(personResponse.getLastName())) {
+            errors.add("lastName");
+        }
+        if (personResponse.getMobileNumbers() == null || personResponse.getMobileNumbers().isEmpty()
+                || personResponse.getMobileNumbers().stream().map(MobileNumberDetails::getNumber).filter(StringUtils::hasText).findFirst().isEmpty()) {
+            errors.add("mobileNumber");
+        }
+        if (identifiers == null || identifiers.isEmpty()
+                || identifiers.stream().map(IdentifierData::getIdentifier).filter(StringUtils::hasText).findFirst().isEmpty()) {
+            errors.add("identifier");
+        }
+        AddressData address1 = addresses != null && !addresses.isEmpty() ? addresses.get(0) : null;
+        if (address1 == null || !StringUtils.hasText(address1.getAddress())) {
+            errors.add("address");
+        }
+        if (address1 == null || !StringUtils.hasText(address1.getPincode())) {
+            errors.add("pincode");
+        }
+
+        if (!errors.isEmpty()) {
+            throw LeadExceptionFactory.cbDataIncomplete(String.join(", ", errors), messageSource);
+        }
     }
 
     private void validateContactBelongsToLead(Lead lead, Long contactId) {
