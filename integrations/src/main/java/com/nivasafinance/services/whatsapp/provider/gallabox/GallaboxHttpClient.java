@@ -65,7 +65,11 @@ public class GallaboxHttpClient {
                 }
             }
             template.put("bodyValues", bodyValues);
-            
+
+            if (request.getButtonValues() != null && !request.getButtonValues().isEmpty()) {
+                template.put("buttonValues", request.getButtonValues());
+            }
+
             whatsapp.put("template", template);
             requestBody.put("whatsapp", whatsapp);
 

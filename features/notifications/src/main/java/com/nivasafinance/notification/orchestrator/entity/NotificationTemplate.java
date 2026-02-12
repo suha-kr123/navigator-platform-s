@@ -14,6 +14,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.Type;
 import org.hibernate.type.SqlTypes;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -44,6 +45,11 @@ public class NotificationTemplate extends IdentifiableEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "variables", columnDefinition = "jsonb")
     private Map<String, Object> variables;
+
+    @Type(JsonType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "buttons", columnDefinition = "jsonb")
+    private List<Map<String, Object>> buttons;
 
     @Column(name = "status", nullable = false, length = 50)
     private String status;

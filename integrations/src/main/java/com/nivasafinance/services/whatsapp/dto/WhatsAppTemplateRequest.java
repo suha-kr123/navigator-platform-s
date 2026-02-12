@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -18,5 +19,6 @@ public class WhatsAppTemplateRequest {
     private String broadcastName;
     @Builder.Default
     private List<TemplateParameter> parameters = new ArrayList<>();
+    private List<Map<String, Object>> buttonValues;
 }
 
