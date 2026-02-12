@@ -83,22 +83,6 @@ public class WhatsAppLeadServiceImpl implements WhatsAppLeadService {
                                 ? leadContactReadService.getAddresses(contactIdentifier)
                                 : List.of();
                 
-                // Extract district from first address, use taluka if district is missing, or "empty" if not exists
-                String district = "empty";
-                if (addresses != null && !addresses.isEmpty()) {
-                    AddressData firstAddress = addresses.get(0);
-                    if (firstAddress != null) {
-                        // First try to get district
-                        if (firstAddress.getDistrict() != null && !firstAddress.getDistrict().isBlank()) {
-                            district = firstAddress.getDistrict();
-                        } 
-                        // If district is missing, use taluka if available
-                        else if (firstAddress.getTaluka() != null && !firstAddress.getTaluka().isBlank()) {
-                            district = firstAddress.getTaluka();
-                        }
-                    }
-                }
-                
                 // Get preliminary details (JSON string if exists, "empty" if not exists)
                 String preliminaryDetails = "empty";
                 try {
@@ -162,7 +146,6 @@ public class WhatsAppLeadServiceImpl implements WhatsAppLeadService {
                         .leadIdentifier(leadIdentifier)
                         .contactIdentifier(contactIdentifier)
                         .address(addresses != null ? addresses : List.of())
-                        .district(district)
                         .preliminaryDetails(preliminaryDetails)
                         .status(status)
                         .substatus(substatus)

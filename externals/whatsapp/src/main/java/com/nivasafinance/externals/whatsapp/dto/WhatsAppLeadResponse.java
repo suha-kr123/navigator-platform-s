@@ -17,7 +17,6 @@ public class WhatsAppLeadResponse {
     private UUID leadIdentifier;
     private UUID contactIdentifier;
     private List<AddressData> address;
-    private String district;  // Root level district field
     private String preliminaryDetails;  // Changed to String to support "empty" value
     private String status;  // Changed to String to support "empty" value
     private String substatus;  // Changed to String to support "empty" value
