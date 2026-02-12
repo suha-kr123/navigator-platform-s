@@ -1,8 +1,6 @@
 package com.nivasafinance.externals.whatsapp.dto;
 
 import com.nivasafinance.common.dto.AddressData;
-import com.nivasafinance.features.lead.dto.PreliminaryDetailsResponse;
-import com.nivasafinance.features.lead.enums.LeadStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,7 +17,9 @@ public class WhatsAppLeadResponse {
     private UUID leadIdentifier;
     private UUID contactIdentifier;
     private List<AddressData> address;
-    private PreliminaryDetailsResponse preliminaryDetails;
-    private LeadStatus status;
+    private String preliminaryDetails;  // Changed to String to support "empty" value
+    private String status;  // Changed to String to support "empty" value
+    private String substatus;  // Changed to String to support "empty" value
+    private String reasons;  // Changed to String to support "empty" value
     private String stage;
 }

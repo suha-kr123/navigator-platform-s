@@ -1,14 +1,17 @@
 package com.nivasafinance.externals.whatsapp.service.impl;
 
 import com.nivasafinance.common.dto.AddressData;
+import com.nivasafinance.externals.whatsapp.dto.WhatsAppLeadRequest;
 import com.nivasafinance.externals.whatsapp.dto.WhatsAppLeadResponse;
 import com.nivasafinance.externals.whatsapp.service.WhatsAppLeadService;
 import com.nivasafinance.features.lead.dto.CreateLeadRequest;
 import com.nivasafinance.features.lead.dto.CreateLeadResponse;
 import com.nivasafinance.features.lead.dto.PreliminaryDetailsResponse;
+import com.nivasafinance.features.lead.dto.UpdateSourcingDetailsRequest;
 import com.nivasafinance.features.lead.entity.Contact;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.enums.LeadStatus;
+import com.nivasafinance.features.lead.enums.LeadSubStatus;
 import com.nivasafinance.features.lead.repository.ContactRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadContactReadService;
@@ -16,6 +19,7 @@ import com.nivasafinance.features.lead.service.LeadReadService;
 import com.nivasafinance.features.lead.service.LeadWriteService;
 import com.nivasafinance.features.person.entity.Person;
 import com.nivasafinance.features.person.repository.PersonRepositoryWrapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -38,13 +42,27 @@ public class WhatsAppLeadServiceImpl implements WhatsAppLeadService {
     private final LeadReadService leadReadService;
     private final LeadContactReadService leadContactReadService;
     private final JdbcTemplate jdbcTemplate;
+    private final ObjectMapper objectMapper;
 
     @Override
     @Transactional
-    public WhatsAppLeadResponse createOrGetLead(CreateLeadRequest request) {
+    public WhatsAppLeadResponse createOrGetLead(WhatsAppLeadRequest request) {
+        // Map WhatsAppLeadRequest to CreateLeadRequest
+        // Always set isWhatsapp to true for WhatsApp API leads
+        CreateLeadRequest createLeadRequest = new CreateLeadRequest();
+        CreateLeadRequest.MobileNumberDetails mobileNumberDetails = 
+                new CreateLeadRequest.MobileNumberDetails(
+                        request.getMobileNumber(),
+                        true  // Always true for WhatsApp API
+                );
+        createLeadRequest.setPhoneNumber(mobileNumberDetails);
+
         // Check if person exists with this phone number
         Optional<Person> existingPerson = personRepositoryWrapper
-                .findByPrimaryMobileNumber(request.getPhoneNumber().getMobileNumber());
+                .findByPrimaryMobileNumber(request.getMobileNumber());
+
+        UUID leadIdentifier;
+        UUID contactIdentifier;
 
         if (existingPerson.isPresent()) {
             // Person exists, check if they are a contact in any lead
@@ -56,48 +74,126 @@ public class WhatsAppLeadServiceImpl implements WhatsAppLeadService {
             if (existingLead.isPresent()) {
                 // Lead exists, return existing lead details with full information
                 Lead lead = existingLead.get();
-                UUID leadIdentifier = lead.getLeadIdentifier();
-                UUID contactIdentifier = getPrimaryContactIdentifier(lead);
+                leadIdentifier = lead.getLeadIdentifier();
+                contactIdentifier = getPrimaryContactIdentifier(lead);
                 
-                // Get address from contact
+                // Get address from contact (full address data from address table)
                 List<AddressData> addresses = 
                         contactIdentifier != null 
                                 ? leadContactReadService.getAddresses(contactIdentifier)
                                 : List.of();
                 
-                // Get preliminary details
-                PreliminaryDetailsResponse preliminaryDetails = 
-                        leadReadService.getPreliminaryDetails(leadIdentifier);
+                // Get preliminary details (JSON string if exists, "empty" if not exists)
+                String preliminaryDetails = "empty";
+                try {
+                    PreliminaryDetailsResponse preliminaryDetailsObj = leadReadService.getPreliminaryDetails(leadIdentifier);
+                    if (preliminaryDetailsObj != null) {
+                        // Check if preliminary details has any data
+                        boolean hasData = (preliminaryDetailsObj.getWhatsAppFormDetails() != null && !preliminaryDetailsObj.getWhatsAppFormDetails().isEmpty())
+                                || preliminaryDetailsObj.getIsWhatsAppDIYFormCompleted() != null
+                                || preliminaryDetailsObj.getMonthlyFamilyIncome() != null;
+                        
+                        if (hasData) {
+                            // Convert to JSON string
+                            preliminaryDetails = objectMapper.writeValueAsString(preliminaryDetailsObj);
+                        } else {
+                            preliminaryDetails = "empty";
+                        }
+                    }
+                } catch (Exception e) {
+                    preliminaryDetails = "empty";
+                }
                 
-                // Get status
-                LeadStatus status = lead.getStatus();
+                // Get status ("empty" if not exists)
+                LeadStatus statusEnum = lead.getStatus();
+                String status = (statusEnum != null) ? statusEnum.toString() : "empty";
                 
-                // Get stage from workflow details
+                // Get substatus ("empty" if not exists)
+                LeadSubStatus substatusEnum = lead.getSubstatus();
+                String substatus = (substatusEnum != null) ? substatusEnum.toString() : "empty";
+                
+                // Get reasons (JSON string if exists, "empty" if not exists)
+                Lead.ReasonDetails reasonsObj = lead.getReasons();
+                String reasons = "empty";
+                if (reasonsObj != null) {
+                    // Check if reasons has any data
+                    boolean hasData = (reasonsObj.getReject() != null && !reasonsObj.getReject().isBlank())
+                            || (reasonsObj.getWithdrawn() != null && !reasonsObj.getWithdrawn().isBlank())
+                            || (reasonsObj.getOnhold() != null && !reasonsObj.getOnhold().isBlank())
+                            || (reasonsObj.getDropoff() != null && !reasonsObj.getDropoff().isBlank());
+                    
+                    if (hasData) {
+                        // Convert to JSON string
+                        try {
+                            reasons = objectMapper.writeValueAsString(reasonsObj);
+                        } catch (Exception e) {
+                            reasons = "empty";
+                        }
+                    }
+                }
+                
+                // Get stage from workflow details ("empty" if not exists)
                 String stage = null;
                 if (lead.getWorkflowDetails() != null 
                         && lead.getWorkflowDetails().getCurrentStageDetails() != null) {
                     stage = lead.getWorkflowDetails().getCurrentStageDetails().getStageKey();
                 }
+                if (stage == null || stage.isBlank()) {
+                    stage = "empty";
+                }
                 
                 return WhatsAppLeadResponse.builder()
                         .leadIdentifier(leadIdentifier)
                         .contactIdentifier(contactIdentifier)
-                        .address(addresses)
+                        .address(addresses != null ? addresses : List.of())
                         .preliminaryDetails(preliminaryDetails)
                         .status(status)
+                        .substatus(substatus)
+                        .reasons(reasons)
                         .stage(stage)
                         .build();
             }
         }
 
         // Lead doesn't exist, delegate to features/lead service to create it
-        CreateLeadResponse createResponse = leadWriteService.createLead(request);
+        CreateLeadResponse createResponse = leadWriteService.createLead(createLeadRequest);
+        leadIdentifier = createResponse.getLeadIdentifier();
+        contactIdentifier = createResponse.getContactIdentifier();
+        
+        // Update sourcing details if provided (only for new lead creation)
+        if (request.getSourcing_channel_name() != null) {
+            updateSourcingDetails(leadIdentifier, request);
+        }
         
         // Return simple response for newly created lead
         return WhatsAppLeadResponse.builder()
-                .leadIdentifier(createResponse.getLeadIdentifier())
-                .contactIdentifier(createResponse.getContactIdentifier())
+                .leadIdentifier(leadIdentifier)
+                .contactIdentifier(contactIdentifier)
                 .build();
+    }
+
+    private void updateSourcingDetails(UUID leadIdentifier, WhatsAppLeadRequest request) {
+        UpdateSourcingDetailsRequest sourcingRequest = new UpdateSourcingDetailsRequest();
+        sourcingRequest.setSourcingChannel(request.getSourcing_channel_name());
+        
+        // Check if at least one marketing detail has a value
+        boolean hasMarketingDetails = false;
+        if (request.getMarketing_details() != null) {
+            boolean hasSourceId = request.getMarketing_details().getSourceId() != null && 
+                                  !request.getMarketing_details().getSourceId().isBlank();
+            boolean hasSourceUrl = request.getMarketing_details().getSourceUrl() != null && 
+                                  !request.getMarketing_details().getSourceUrl().isBlank();
+            
+            // If at least one has a value, update both fields (even if one is empty)
+            if (hasSourceId || hasSourceUrl) {
+                hasMarketingDetails = true;
+                sourcingRequest.setSourceId(request.getMarketing_details().getSourceId());
+                sourcingRequest.setSourceUrl(request.getMarketing_details().getSourceUrl());
+            }
+            // If both are empty/null, don't update marketing_details (only sourcing_channel_name will be updated)
+        }
+        
+        leadWriteService.updateSourcingDetails(leadIdentifier, sourcingRequest);
     }
 
     private UUID getPrimaryContactIdentifier(Lead lead) {
