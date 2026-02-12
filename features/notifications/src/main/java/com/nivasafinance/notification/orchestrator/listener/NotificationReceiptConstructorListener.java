@@ -240,8 +240,13 @@ public class NotificationReceiptConstructorListener {
             return true;
         } catch (Exception ex) {
             log.error("Failed to process notification record {}", recordId, ex);
-            // Try to update status, but don't fail if record doesn't exist
-            notificationRecordService.updateStatusIfExists(recordId, NotificationStatus.FAILED);
+            Map<String, Object> errorJson = buildErrorJson(ex);
+            TransactionTemplate requiresNew = new TransactionTemplate(transactionManager);
+            requiresNew.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            requiresNew.execute(s -> {
+                notificationRecordService.updateStatusAndErrorIfExists(recordId, NotificationStatus.FAILED, errorJson);
+                return null;
+            });
             status.setRollbackOnly();
             // Return true to delete message from queue if it's a missing record error
             if (ex instanceof IllegalStateException && ex.getMessage() != null && ex.getMessage().contains("not found")) {
@@ -258,6 +263,13 @@ public class NotificationReceiptConstructorListener {
         } catch (Exception ex) {
             throw new IllegalStateException("Failed to parse SQS message body", ex);
         }
+    }
+
+    private Map<String, Object> buildErrorJson(Exception ex) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("message", ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName());
+        map.put("exceptionType", ex.getClass().getSimpleName());
+        return map;
     }
 
     /**

@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -68,12 +69,13 @@ public class GallaboxNotificationExecutor implements NotificationExecutor {
         // Get Gallabox config based on recipient type
         ThirdPartyConfig gallaboxConfig = gallaboxConfigProvider.getConfigForRecipient(recipientType);
         
-        // Build WhatsApp template request
-        // Template parameters are extracted based on template.variables definition
+        // Build WhatsApp template request (body + optional button values)
+        List<Map<String, Object>> buttonValues = buildButtonValues(template, receipt.getMessagePayload());
         WhatsAppTemplateRequest request = WhatsAppTemplateRequest.builder()
                 .phoneNumber(recipientContact)
                 .templateName(templateIdentifier)
                 .parameters(buildTemplateParameters(template, receipt.getMessagePayload()))
+                .buttonValues(buttonValues)
                 .build();
 
         // Create business context for auditing/logging third-party API calls
@@ -246,6 +248,38 @@ public class GallaboxNotificationExecutor implements NotificationExecutor {
         }
         
         return parameters;
+    }
+
+    /**
+     * Builds Gallabox buttonValues from template.buttons and messagePayload.
+     * Each button in template.buttons may have "parametersKey": key name whose value in messagePayload
+     * is used for parameters.text (dynamic URL path or other substitution). parametersKey is not sent to Gallabox.
+     */
+    private List<Map<String, Object>> buildButtonValues(NotificationTemplate template, Map<String, Object> messagePayload) {
+        List<Map<String, Object>> templateButtons = template.getButtons();
+        if (templateButtons == null || templateButtons.isEmpty()) {
+            return null;
+        }
+        if (messagePayload == null) {
+            messagePayload = Map.of();
+        }
+        List<Map<String, Object>> buttonValues = new ArrayList<>();
+        for (Map<String, Object> button : templateButtons) {
+            Map<String, Object> copy = new HashMap<>(button);
+            Object parametersKeyObj = copy.remove("parametersKey");
+            if (parametersKeyObj != null && parametersKeyObj instanceof String) {
+                String parametersKey = (String) parametersKeyObj;
+                Object dynamicValue = findValueCaseInsensitive(messagePayload, parametersKey);
+                if (dynamicValue != null) {
+                    Map<String, Object> parameters = new HashMap<>();
+                    parameters.put("type", "text");
+                    parameters.put("text", dynamicValue.toString());
+                    copy.put("parameters", parameters);
+                }
+            }
+            buttonValues.add(copy);
+        }
+        return buttonValues.isEmpty() ? null : buttonValues;
     }
 
     /**

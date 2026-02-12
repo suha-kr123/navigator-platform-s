@@ -8,6 +8,7 @@ import com.nivasafinance.notification.orchestrator.repository.NotificationReceip
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
@@ -85,23 +86,57 @@ public class NotificationReceiptService {
             log.info("Receipt {} executed successfully", receiptId);
         } catch (Exception ex) {
             log.error("Failed to execute receipt {}", receiptId, ex);
-            receipt.setStatus(NotificationStatus.FAILED);
-            
-            // Store error message in remarks (JSONB field)
-            Map<String, Object> remarksMap = Map.of(
-                    "error", ex.getMessage() != null ? ex.getMessage() : "Unknown error",
-                    "timestamp", System.currentTimeMillis()
-            );
-            receipt.setRemarks(remarksMap);
-            receipt.setUpdatedBy("system");
-            notificationReceiptRepository.save(receipt);
-            
-            // Force immediate write to database
-            notificationReceiptRepository.flush();
-            
-            log.info("Receipt {} status updated to FAILED and flushed to database", receiptId);
+            Map<String, Object> errorJson = buildErrorJson(receipt, ex);
+            markReceiptFailed(receiptId, errorJson);
             throw new IllegalStateException("Failed to execute receipt: " + receiptId, ex);
         }
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void markReceiptFailed(UUID receiptId, Map<String, Object> errorJson) {
+        Optional<NotificationReceipt> receiptOpt = notificationReceiptRepository.findById(receiptId);
+        if (receiptOpt.isEmpty()) {
+            log.warn("Cannot mark receipt {} as FAILED - receipt not found", receiptId);
+            return;
+        }
+        NotificationReceipt receipt = receiptOpt.get();
+        receipt.setStatus(NotificationStatus.FAILED);
+        receipt.setErrorJson(errorJson);
+        receipt.setUpdatedBy("system");
+        Map<String, Object> remarks = new HashMap<>();
+        remarks.put("error", errorJson.get("message") != null ? errorJson.get("message") : "Unknown error");
+        remarks.put("timestamp", System.currentTimeMillis());
+        receipt.setRemarks(remarks);
+        notificationReceiptRepository.save(receipt);
+        notificationReceiptRepository.flush();
+        log.info("Receipt {} status updated to FAILED with error_json and flushed to database", receiptId);
+    }
+
+    private Map<String, Object> buildErrorJson(NotificationReceipt receipt, Exception ex) {
+        String message = ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName();
+        String code = inferErrorCode(message);
+        Map<String, Object> map = new HashMap<>();
+        map.put("message", message);
+        map.put("exceptionType", ex.getClass().getSimpleName());
+        if (code != null) {
+            map.put("code", code);
+        }
+        if (receipt.getTemplateIdentifier() != null) {
+            map.put("templateIdentifier", receipt.getTemplateIdentifier());
+        }
+        return map;
+    }
+
+    private static String inferErrorCode(String message) {
+        if (message != null) {
+            if (message.contains("NotificationTemplate not found") || message.contains("template exists in n_notification_template")) {
+                return "TEMPLATE_NOT_FOUND";
+            }
+            if (message.contains("Template variable") && message.contains("not found")) {
+                return "TEMPLATE_VARIABLE_NOT_FOUND";
+            }
+        }
+        return "EXECUTION_FAILED";
     }
 }
 

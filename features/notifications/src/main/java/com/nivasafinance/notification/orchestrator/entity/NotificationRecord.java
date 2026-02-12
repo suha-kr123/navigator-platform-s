@@ -57,6 +57,11 @@ public class NotificationRecord extends AuditableEntity {
     @Column(name = "status", nullable = false, length = 50)
     @Builder.Default
     private NotificationStatus status = NotificationStatus.INITIATED;
+
+    @Type(JsonType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "error_json", columnDefinition = "jsonb")
+    private Map<String, Object> errorJson;
 }
 
 

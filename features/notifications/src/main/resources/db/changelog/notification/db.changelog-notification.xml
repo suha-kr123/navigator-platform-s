@@ -19,6 +19,8 @@
     <include file="classpath:db/changelog/notification/tables/V1764000000012__insert_device_permissions.xml"/>
     <include file="classpath:db/changelog/notification/tables/V1764000000013__add_opened_at_to_app_notification.xml"/>
     <include file="classpath:db/changelog/notification/tables/V1764000000014__device_unique_and_indexes.xml"/>
+    <include file="classpath:db/changelog/notification/tables/V1764000000015__add_error_json_to_notification_record_and_receipt.xml"/>
+    <include file="classpath:db/changelog/notification/tables/V1764000000016__add_buttons_to_notification_template.xml"/>
 
 </databaseChangeLog>
 

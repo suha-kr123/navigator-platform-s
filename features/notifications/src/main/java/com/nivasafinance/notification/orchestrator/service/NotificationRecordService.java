@@ -112,6 +112,11 @@ public class NotificationRecordService {
 
     @Transactional
     public boolean updateStatusIfExists(UUID recordId, NotificationStatus status) {
+        return updateStatusAndErrorIfExists(recordId, status, null);
+    }
+
+    @Transactional
+    public boolean updateStatusAndErrorIfExists(UUID recordId, NotificationStatus status, Map<String, Object> errorJson) {
         Optional<NotificationRecord> recordOpt = notificationRecordRepository.findById(recordId);
         if (recordOpt.isEmpty()) {
             log.warn("Cannot update status for notification record {} - record not found", recordId);
@@ -119,9 +124,9 @@ public class NotificationRecordService {
         }
         NotificationRecord record = recordOpt.get();
         record.setStatus(status);
+        record.setErrorJson(errorJson);
         record.setUpdatedBy("system");
         notificationRecordRepository.save(record);
-        // Force immediate write to database to ensure status is visible to other transactions
         notificationRecordRepository.flush();
         log.info("Updated notification record {} status to {} and flushed to database", recordId, status);
         return true;
