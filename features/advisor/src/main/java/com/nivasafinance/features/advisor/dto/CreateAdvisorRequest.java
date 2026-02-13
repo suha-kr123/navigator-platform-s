@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalTime;
 
+import com.nivasafinance.features.sourcechannel.dto.SourcingChannelRequest;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -24,4 +26,7 @@ public class CreateAdvisorRequest {
     private LocalTime preferredCallStartTime;
 
     private LocalTime preferredCallEndTime;
+
+    private SourcingChannelRequest sourcingChannelRequest;
+
 }

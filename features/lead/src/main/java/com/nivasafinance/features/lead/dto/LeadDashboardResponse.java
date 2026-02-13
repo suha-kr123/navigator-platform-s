@@ -3,6 +3,8 @@ package com.nivasafinance.features.lead.dto;
 import com.nivasafinance.features.lead.enums.LeadStatus;
 import com.nivasafinance.features.lead.enums.LeadSubStatus;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
+import com.nivasafinance.features.referral.enums.EntityType;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -35,8 +37,6 @@ public class LeadDashboardResponse {
     private LocalDateTime leadCreatedAt;
     private LocalDateTime lastActivityDate;
     private String lastActivityBy;
-    private String advisorName;
-    private String advisorNumber;
     private String leadOwner;
     private LocalTime preferredCallStartTime;
     private LocalTime preferredCallEndTime;
@@ -61,4 +61,11 @@ public class LeadDashboardResponse {
     private String stageAssignedTo;
     private LocalDateTime stageAssignedAt;
     private LocalDateTime stageEnteredAt;
+
+    //referral details
+    private String referredByCode;
+    private UUID referredByIdentifier;
+    private EntityType referredByType;
+    private String referredByName;
+    private String referredByNumber;
 }

@@ -23,7 +23,7 @@ dependencies {
     implementation(project(":features:staff"))
     implementation(project(":features:offices"))
     implementation(project(":features:usermanagement"))
-    implementation(project(":features:advisor"))
+    implementation(project(":features:referral"))
     implementation(project(":integrations"))
     implementation(project(":features:creditbureau"))
     implementation(project(":features:consent"))

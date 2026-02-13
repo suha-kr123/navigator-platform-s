@@ -1,13 +1,11 @@
 package com.nivasafinance.features.advisor.service.impl;
 
 import com.nivasafinance.common.base.model.PaginatedResponse;
-import com.nivasafinance.common.base.model.PaginationInfo;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.common.context.UserContext;
 import com.nivasafinance.common.utils.ValidationUtils;
 import com.nivasafinance.features.advisor.dto.AdvisorDashboardFilters;
 import com.nivasafinance.features.advisor.dto.AdvisorDashboardResponse;
-import com.nivasafinance.features.advisor.dto.AdvisorLeadResponse;
 import com.nivasafinance.features.advisor.dto.AdvisorResponse;
 import com.nivasafinance.features.advisor.dto.AdvisorSearchRequest;
 import com.nivasafinance.features.advisor.dto.AdvisorBasicResponse;
@@ -16,30 +14,31 @@ import com.nivasafinance.features.advisor.dto.PersonalDetails;
 import com.nivasafinance.features.advisor.dto.SourcingDetailsResponse;
 import com.nivasafinance.features.advisor.entity.Advisor;
 import com.nivasafinance.features.advisor.exception.AdvisorExceptionFactory;
-import com.nivasafinance.features.advisor.mapper.AdvisorRowMapper;
 import com.nivasafinance.features.advisor.repository.AdvisorDashboardWrapper;
 import com.nivasafinance.features.advisor.repository.AdvisorRepositoryWrapper;
 import com.nivasafinance.features.advisor.service.AdvisorReadService;
-import com.nivasafinance.features.advisorlead.repository.AdvisorLeadMappingRepositoryWrapper;
 import com.nivasafinance.features.master.codemaster.SystemControlledMasterCodes;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import com.nivasafinance.features.master.codemaster.service.CodeMasterService;
 import com.nivasafinance.features.offices.exception.OfficeNotFoundException;
 import com.nivasafinance.features.offices.service.OfficeReadService;
+import com.nivasafinance.features.person.entity.MobileNumberDetails;
 import com.nivasafinance.features.person.entity.Person;
 import com.nivasafinance.features.person.repository.PersonRepositoryWrapper;
+import com.nivasafinance.features.referral.enums.EntityType;
+import com.nivasafinance.features.referral.service.ReferralCodeRegistryService;
+import com.nivasafinance.features.staff.dto.StaffResponse;
+import com.nivasafinance.features.staff.service.StaffReadService;
 import com.nivasafinance.features.sourcechannel.dto.SourcingChannelResponse;
 import com.nivasafinance.features.sourcechannel.repository.SourcingChannelRepositoryWrapper;
 import lombok.AllArgsConstructor;
 
 import org.springframework.context.MessageSource;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
-
 
 @Service
 @Transactional(readOnly = true)
@@ -49,12 +48,12 @@ public class AdvisorReadServiceImpl implements AdvisorReadService {
     private final AdvisorRepositoryWrapper advisorRepositoryWrapper;
     private final PersonRepositoryWrapper personRepositoryWrapper;
     private final SourcingChannelRepositoryWrapper sourcingChannelRepositoryWrapper;
+    private final ReferralCodeRegistryService referralCodeRegistryService;
     private final CodeMasterService codeMasterService;
-    private final AdvisorLeadMappingRepositoryWrapper advisorLeadMappingRepositoryWrapper;
     private final OfficeReadService officeReadService;
     private final AdvisorDashboardWrapper advisorDashboardWrapper;
     private final MessageSource messageSource;
-    private final JdbcTemplate jdbcTemplate;
+    private final StaffReadService staffReadService;
     
     @Override
     public AdvisorResponse getAdvisorByIdentifier(UUID identifier) {
@@ -65,21 +64,20 @@ public class AdvisorReadServiceImpl implements AdvisorReadService {
     @Override
     public SourcingDetailsResponse getSourcingDetails(UUID identifier) {
         Advisor advisor = advisorRepositoryWrapper.findByIdentifierWithException(identifier);
-        
+
         if (advisor.getSourceChannelId() == null) {
             return SourcingDetailsResponse.builder().build();
         }
 
-        SourcingChannelResponse sourcingChannel = 
-                sourcingChannelRepositoryWrapper.findByIdAsResponseWithException(advisor.getSourceChannelId());
+        SourcingChannelResponse sourcingChannel = sourcingChannelRepositoryWrapper
+                .findByIdAsResponseWithException(advisor.getSourceChannelId());
 
         SourcingChannelResponse sanitized = new SourcingChannelResponse(
                 null,
                 sourcingChannel.getSourcingIdentifier(),
                 sourcingChannel.getSourcingChannel(),
                 sourcingChannel.getMarketingSource(),
-                sourcingChannel.getMarketingDetails()
-        );
+                sourcingChannel.getMarketingDetails());
 
         return SourcingDetailsResponse.builder()
                 .sourcingChannelDetails(sanitized)
@@ -111,7 +109,8 @@ public class AdvisorReadServiceImpl implements AdvisorReadService {
     }
 
     @Override
-    public PaginatedResponse<AdvisorBasicResponse> getAllAdvisors(PaginationRequest paginationRequest, String name, String mobileNumber) {
+    public PaginatedResponse<AdvisorBasicResponse> getAllAdvisors(PaginationRequest paginationRequest, String name,
+            String mobileNumber) {
         return advisorRepositoryWrapper.findAllAdvisors(paginationRequest, name, mobileNumber);
     }
 
@@ -119,11 +118,6 @@ public class AdvisorReadServiceImpl implements AdvisorReadService {
     public PaginatedResponse<AdvisorBasicResponse> searchAdvisors(
             PaginationRequest paginationRequest, AdvisorSearchRequest request) {
         return advisorRepositoryWrapper.searchAdvisorsByPhoneNumber(paginationRequest, request);
-    }
-
-    @Override
-    public PaginatedResponse<AdvisorLeadResponse> getLeadsByAdvisorId(UUID advisorId, PaginationRequest paginationRequest) {
-        return advisorLeadMappingRepositoryWrapper.findLeadsByAdvisorIdWithException(advisorId, paginationRequest);
     }
 
     @Override
@@ -168,14 +162,77 @@ public class AdvisorReadServiceImpl implements AdvisorReadService {
             try {
                 response.setOfficeName(officeReadService.getOfficeByKey(officeKey).getName());
             } catch (OfficeNotFoundException e) {
-                // If office not found, set officeName to null
                 response.setOfficeName(null);
             }
         } else {
             response.setOfficeName(null);
         }
 
+        response.setReferralCode(advisor.getReferralCode());
+
+        if (advisor.getSourceChannelId() != null) {
+            SourcingChannelResponse sourcingChannel = sourcingChannelRepositoryWrapper
+                    .findByIdAsResponseWithException(advisor.getSourceChannelId());
+            response.setSourcingChannelDetails(sourcingChannel);
+            String referredByCode = sourcingChannel.getMarketingDetails() != null
+                    ? sourcingChannel.getMarketingDetails().getReferredByCode() : null;
+            if (referredByCode != null && !referredByCode.isBlank()) {
+                response.setReferredByCode(referredByCode);
+                var registry = referralCodeRegistryService.getReferralCodeByCode(referredByCode);
+                if (registry != null) {
+                    response.setReferredByIdentifier(registry.getEntityIdentifier());
+                    response.setReferredByType(registry.getEntityType());
+                    resolveReferrerNameAndPhone(response, registry.getEntityType(), registry.getEntityIdentifier());
+                }
+            }
+        } else {
+            response.setSourcingChannelDetails(null);
+        }
+
         return response;
+    }
+
+    private void resolveReferrerNameAndPhone(AdvisorResponse response, EntityType entityType, UUID entityIdentifier) {
+        if (entityIdentifier == null) {
+            return;
+        }
+        try {
+            switch (entityType) {
+                case STAFF -> staffReadService.getStaffByIdentifier(entityIdentifier)
+                        .map(StaffResponse::getUserResponse)
+                        .filter(ur -> ur != null)
+                        .map(ur -> ur.getPersonResponse())
+                        .filter(pr -> pr != null)
+                        .ifPresent(person -> {
+                            response.setReferredByName(person.getDisplayName());
+                            response.setReferredByNumber(extractPrimaryMobile(person.getMobileNumbers()));
+                        });
+                case APPLICANT -> advisorRepositoryWrapper.findReferrerDisplayInfo(entityType, entityIdentifier)
+                        .ifPresent(info -> {
+                            response.setReferredByName(info.name());
+                            response.setReferredByNumber(info.phone());
+                        });
+                case ADVISOR -> {
+                    Advisor referrerAdvisor = advisorRepositoryWrapper.findByIdentifierWithException(entityIdentifier);
+                    Person referrerPerson = personRepositoryWrapper.findByIdWithException(referrerAdvisor.getPersonId());
+                    response.setReferredByName(referrerPerson.getDisplayName());
+                    response.setReferredByNumber(extractPrimaryMobile(referrerPerson.getMobileNumbers()));
+                }
+                default -> { }
+            }
+        } catch (Exception ignored) {
+        }
+    }
+
+    private static String extractPrimaryMobile(java.util.List<MobileNumberDetails> mobileNumbers) {
+        if (mobileNumbers == null || mobileNumbers.isEmpty()) {
+            return null;
+        }
+        return mobileNumbers.stream()
+                .filter(m -> Boolean.TRUE.equals(m.getIsPrimary()))
+                .findFirst()
+                .map(MobileNumberDetails::getNumber)
+                .orElse(null);
     }
 
     @Override
@@ -184,54 +241,12 @@ public class AdvisorReadServiceImpl implements AdvisorReadService {
         if (!ValidationUtils.isNonNull(username)) {
             throw AdvisorExceptionFactory.noCurrentUser(messageSource);
         }
-        AdvisorRowMapper advisorRowMapper = new AdvisorRowMapper();
-        StringBuilder query = buildMyAdvisorsQuery(username, paginationRequest);
-        String sql = query.toString();
-        StringBuilder countQuery = buildMyAdvisorsCountQuery(username);
-        String countSql = countQuery.toString();
-        List<AdvisorBasicResponse> advisors = jdbcTemplate.query(sql, advisorRowMapper, username, paginationRequest.getLimit(), paginationRequest.getOffset());
-        long total = jdbcTemplate.queryForObject(countSql, Long.class, username);
-        PaginationInfo paginationInfo = buildPaginationInfo(paginationRequest, total);
-        return new PaginatedResponse<>(advisors, paginationInfo);  
+        return advisorRepositoryWrapper.findAdvisorsByUsername(username, paginationRequest);
     }
-    
-    private StringBuilder buildMyAdvisorsQuery(String username, PaginationRequest paginationRequest) {
-        StringBuilder query = new StringBuilder();
-    
-        query.append("SELECT a.identifier AS advisor_identifier, ");
-        query.append("p.display_name AS person_name, ");
-        query.append("(jsonb_path_query_first(COALESCE(p.mobile_numbers, '[]'::jsonb), ");
-        query.append("'$[*] ? (@.isPrimary == true)') ->> 'number') AS mobile_number, ");
-        query.append("a.status, ");
-        query.append("a.created_at, ");
-        query.append("a.updated_at, ");
-        query.append("a.office_key AS office_key, ");
-        query.append("a.owner AS owner ");
-        query.append("FROM n_advisor a ");
-        query.append("LEFT JOIN n_person p ON p.id = a.person_id ");
-        query.append("WHERE a.owner = ? ");
-        query.append("ORDER BY a.updated_at DESC ");
-        query.append("LIMIT ? OFFSET ?");
-    
-        return query;
-    }
-    
 
-    private StringBuilder buildMyAdvisorsCountQuery(String username) {
-        StringBuilder query = new StringBuilder();
-        query.append("Select count(*) ");
-        query.append("from n_advisor a ");
-        query.append("left join n_person p on p.id = a.person_id ");
-        query.append("where a.owner = ?");
-        return query;
+    @Override
+    public PaginatedResponse<AdvisorBasicResponse> getAdvisorsByReferralCode(String referralCode, PaginationRequest paginationRequest) {
+        return advisorRepositoryWrapper.findAdvisorsByReferralCode(referralCode, paginationRequest);
     }
-    private PaginationInfo buildPaginationInfo(PaginationRequest paginationRequest, long total) {
-        int limit = paginationRequest.getLimit();
-        int offset = paginationRequest.getOffset();
-        int totalPages = limit == 0 ? 0 : (int) Math.ceil((double) total / limit);
-        int currentPage = limit == 0 ? 0 : offset / limit;
-        boolean hasNext = offset + limit < total;
-        boolean hasPrevious = offset > 0;
-        return new PaginationInfo(offset, limit, total, totalPages, currentPage, hasNext, hasPrevious);
-    }
+
 }

@@ -11,13 +11,13 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UpdateAdvisorRequest {
-    
+
     private List<MobileNumberDetails> mobileNumberDetails;
-    
+
     private PersonalDetails personalDetails;
-    
+
     private String owner;
-    
+
     private String officeKey;
 
     private LocalTime preferredCallStartTime;

@@ -5,6 +5,7 @@ import com.nivasafinance.common.base.model.PaginationInfo;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.features.advisor.dto.AdvisorSearchRequest;
 import com.nivasafinance.features.advisor.dto.AdvisorBasicResponse;
+import com.nivasafinance.features.referral.enums.EntityType;
 import com.nivasafinance.features.advisor.entity.Advisor;
 import com.nivasafinance.features.advisor.enums.AdvisorStatus;
 import com.nivasafinance.features.advisor.exception.AdvisorExceptionFactory;
@@ -175,10 +176,35 @@ public class AdvisorRepositoryWrapper {
                 a.status,
                 a.created_at,
                 a.updated_at,
-                a.office_key as office_key
+                a.office_key as office_key,
+                sc.marketing_details->>'referredByCode' AS referred_by_code,
+                r.entity_type::text AS referred_by_type,
+                r.entity_identifier AS referred_by_identifier,
+                COALESCE(ref_adv_p.display_name, ref_st_p.display_name, ref_lead_p.display_name, ref_lead_app_p.display_name, ref_app_by_uuid_p.display_name) AS referred_by_name,
+                COALESCE(
+                    (jsonb_path_query_first(COALESCE(ref_adv_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
+                    (jsonb_path_query_first(COALESCE(ref_st_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
+                    (jsonb_path_query_first(COALESCE(ref_lead_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
+                    (jsonb_path_query_first(COALESCE(ref_lead_app_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
+                    (jsonb_path_query_first(COALESCE(ref_app_by_uuid_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number')
+                ) AS referred_by_number
             FROM n_advisor a
             LEFT JOIN n_office o ON o.key = a.office_key
             JOIN n_person p ON p.id = a.person_id
+            LEFT JOIN n_sourcing_channel_details sc ON sc.id = a.source_channel_id
+            LEFT JOIN n_referral_code_registry r ON r.referral_code = sc.marketing_details->>'referredByCode'
+            LEFT JOIN n_advisor ref_adv ON ref_adv.identifier = r.entity_identifier AND r.entity_type::text = 'ADVISOR'
+            LEFT JOIN n_person ref_adv_p ON ref_adv_p.id = ref_adv.person_id
+            LEFT JOIN n_staff ref_st ON ref_st.identifier = r.entity_identifier AND r.entity_type::text = 'STAFF'
+            LEFT JOIN n_user ref_st_u ON ref_st_u.id = ref_st.user_id
+            LEFT JOIN n_person ref_st_p ON ref_st_p.id = ref_st_u.person_id
+            LEFT JOIN n_lead ref_lead ON ref_lead.lead_identifier = r.entity_identifier AND r.entity_type::text = 'APPLICANT'
+            LEFT JOIN n_contact ref_lead_c ON ref_lead_c.id = (ref_lead.other_details->>'primaryContactId')::bigint
+            LEFT JOIN n_person ref_lead_p ON ref_lead_p.id = ref_lead_c.person_id
+            LEFT JOIN n_applicant ref_lead_app ON ref_lead_app.id = ref_lead.applicant
+            LEFT JOIN n_person ref_lead_app_p ON ref_lead_app_p.id = ref_lead_app.person_id
+            LEFT JOIN n_applicant ref_app_by_uuid ON ref_app_by_uuid.identifier = r.entity_identifier AND r.entity_type::text = 'APPLICANT'
+            LEFT JOIN n_person ref_app_by_uuid_p ON ref_app_by_uuid_p.id = ref_app_by_uuid.person_id
             WHERE EXISTS (
                 SELECT 1 FROM jsonb_array_elements(COALESCE(p.mobile_numbers, '[]'::jsonb)) AS m
                 WHERE m->>'number' = ?
@@ -287,10 +313,31 @@ public class AdvisorRepositoryWrapper {
                 a.status,
                 a.created_at,
                 a.updated_at,
-                a.office_key as office_key
+                a.office_key as office_key,
+                sc.marketing_details->>'referredByCode' AS referred_by_code,
+                r.entity_type::text AS referred_by_type,
+                r.entity_identifier AS referred_by_identifier,
+                COALESCE(ref_adv_p.display_name, ref_st_p.display_name, ref_lead_p.display_name, ref_lead_app_p.display_name, ref_app_by_uuid_p.display_name) AS referred_by_name,
+                COALESCE(
+                    (jsonb_path_query_first(COALESCE(ref_adv_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
+                    (jsonb_path_query_first(COALESCE(ref_st_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
+                    (jsonb_path_query_first(COALESCE(ref_lead_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
+                    (jsonb_path_query_first(COALESCE(ref_lead_app_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
+                    (jsonb_path_query_first(COALESCE(ref_app_by_uuid_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number')
+                ) AS referred_by_number
             FROM n_advisor a
             LEFT JOIN n_office o ON o.key = a.office_key
             JOIN n_person p ON p.id = a.person_id
+            LEFT JOIN n_sourcing_channel_details sc ON sc.id = a.source_channel_id
+            LEFT JOIN n_referral_code_registry r ON r.referral_code = sc.marketing_details->>'referredByCode'
+            LEFT JOIN n_advisor ref_adv ON ref_adv.identifier = r.entity_identifier AND r.entity_type::text = 'ADVISOR'
+            LEFT JOIN n_person ref_adv_p ON ref_adv_p.id = ref_adv.person_id
+            LEFT JOIN n_staff ref_st ON ref_st.identifier = r.entity_identifier AND r.entity_type::text = 'STAFF'
+            LEFT JOIN n_user ref_st_u ON ref_st_u.id = ref_st.user_id
+            LEFT JOIN n_person ref_st_p ON ref_st_p.id = ref_st_u.person_id
+            LEFT JOIN n_lead ref_lead ON ref_lead.lead_identifier = r.entity_identifier AND r.entity_type::text = 'APPLICANT'
+            LEFT JOIN n_contact ref_lead_c ON ref_lead_c.id = (ref_lead.other_details->>'primaryContactId')::bigint
+            LEFT JOIN n_person ref_lead_p ON ref_lead_p.id = ref_lead_c.person_id
             """ + whereClause + """
             ORDER BY a.updated_at DESC
             LIMIT ? OFFSET ?
@@ -322,6 +369,201 @@ public class AdvisorRepositoryWrapper {
             throw new RuntimeException("Failed to fetch all advisors", e);
         }
     }
+
+    public PaginatedResponse<AdvisorBasicResponse> findAdvisorsByUsername(
+            String username, PaginationRequest paginationRequest) {
+        if (!StringUtils.hasText(username)) {
+            return new PaginatedResponse<>(Collections.emptyList(),
+                    buildPaginationInfo(paginationRequest, 0));
+        }
+        String countSql = """
+            SELECT COUNT(DISTINCT a.id)
+            FROM n_advisor a
+            LEFT JOIN n_office o ON o.key = a.office_key
+            JOIN n_person p ON p.id = a.person_id
+            WHERE a.owner = ?
+            """;
+        String dataSql = """
+            SELECT DISTINCT
+                a.identifier as advisor_identifier,
+                p.display_name as person_name,
+                (jsonb_path_query_first(COALESCE(p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') AS mobile_number,
+                a.status,
+                a.created_at,
+                a.updated_at,
+                a.office_key as office_key,
+                sc.marketing_details->>'referredByCode' AS referred_by_code,
+                r.entity_type::text AS referred_by_type,
+                r.entity_identifier AS referred_by_identifier,
+                COALESCE(ref_adv_p.display_name, ref_st_p.display_name, ref_lead_p.display_name, ref_lead_app_p.display_name, ref_app_by_uuid_p.display_name) AS referred_by_name,
+                COALESCE(
+                    (jsonb_path_query_first(COALESCE(ref_adv_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
+                    (jsonb_path_query_first(COALESCE(ref_st_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
+                    (jsonb_path_query_first(COALESCE(ref_lead_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
+                    (jsonb_path_query_first(COALESCE(ref_lead_app_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
+                    (jsonb_path_query_first(COALESCE(ref_app_by_uuid_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number')
+                ) AS referred_by_number
+            FROM n_advisor a
+            LEFT JOIN n_office o ON o.key = a.office_key
+            JOIN n_person p ON p.id = a.person_id
+            LEFT JOIN n_sourcing_channel_details sc ON sc.id = a.source_channel_id
+            LEFT JOIN n_referral_code_registry r ON r.referral_code = sc.marketing_details->>'referredByCode'
+            LEFT JOIN n_advisor ref_adv ON ref_adv.identifier = r.entity_identifier AND r.entity_type::text = 'ADVISOR'
+            LEFT JOIN n_person ref_adv_p ON ref_adv_p.id = ref_adv.person_id
+            LEFT JOIN n_staff ref_st ON ref_st.identifier = r.entity_identifier AND r.entity_type::text = 'STAFF'
+            LEFT JOIN n_user ref_st_u ON ref_st_u.id = ref_st.user_id
+            LEFT JOIN n_person ref_st_p ON ref_st_p.id = ref_st_u.person_id
+            LEFT JOIN n_lead ref_lead ON ref_lead.lead_identifier = r.entity_identifier AND r.entity_type::text = 'APPLICANT'
+            LEFT JOIN n_contact ref_lead_c ON ref_lead_c.id = (ref_lead.other_details->>'primaryContactId')::bigint
+            LEFT JOIN n_person ref_lead_p ON ref_lead_p.id = ref_lead_c.person_id
+            LEFT JOIN n_applicant ref_lead_app ON ref_lead_app.id = ref_lead.applicant
+            LEFT JOIN n_person ref_lead_app_p ON ref_lead_app_p.id = ref_lead_app.person_id
+            LEFT JOIN n_applicant ref_app_by_uuid ON ref_app_by_uuid.identifier = r.entity_identifier AND r.entity_type::text = 'APPLICANT'
+            LEFT JOIN n_person ref_app_by_uuid_p ON ref_app_by_uuid_p.id = ref_app_by_uuid.person_id
+            WHERE a.owner = ?
+            ORDER BY a.updated_at DESC
+            LIMIT ? OFFSET ?
+            """;
+        try {
+            Long totalCount = jdbcTemplate.queryForObject(countSql, Long.class, username.trim());
+            long total = totalCount != null ? totalCount : 0L;
+            List<AdvisorBasicResponse> results = jdbcTemplate.query(
+                    dataSql,
+                    new AdvisorSearchRowMapper(),
+                    username.trim(),
+                    paginationRequest.getLimit(),
+                    paginationRequest.getOffset());
+            return new PaginatedResponse<>(results, buildPaginationInfo(paginationRequest, total));
+        } catch (EmptyResultDataAccessException e) {
+            return new PaginatedResponse<>(Collections.emptyList(),
+                    buildPaginationInfo(paginationRequest, 0));
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Failed to fetch advisors by username", e);
+        }
+    }
+
+    public PaginatedResponse<AdvisorBasicResponse> findAdvisorsByReferralCode(
+            String referralCode, PaginationRequest paginationRequest) {
+        if (!StringUtils.hasText(referralCode)) {
+            return new PaginatedResponse<>(Collections.emptyList(),
+                    buildPaginationInfo(paginationRequest, 0));
+        }
+        String countSql = """
+            SELECT COUNT(DISTINCT a.id)
+            FROM n_advisor a
+            JOIN n_sourcing_channel_details sc ON sc.id = a.source_channel_id
+            JOIN n_person p ON p.id = a.person_id
+            WHERE sc.marketing_details->>'referredByCode' = ?
+            """;
+        String dataSql = """
+            SELECT DISTINCT
+                a.identifier as advisor_identifier,
+                p.display_name as person_name,
+                (jsonb_path_query_first(COALESCE(p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') AS mobile_number,
+                a.status,
+                a.created_at,
+                a.updated_at,
+                a.office_key as office_key,
+                sc.marketing_details->>'referredByCode' AS referred_by_code,
+                r.entity_type::text AS referred_by_type,
+                r.entity_identifier AS referred_by_identifier,
+                COALESCE(ref_adv_p.display_name, ref_st_p.display_name, ref_lead_p.display_name, ref_lead_app_p.display_name, ref_app_by_uuid_p.display_name) AS referred_by_name,
+                COALESCE(
+                    (jsonb_path_query_first(COALESCE(ref_adv_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
+                    (jsonb_path_query_first(COALESCE(ref_st_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
+                    (jsonb_path_query_first(COALESCE(ref_lead_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
+                    (jsonb_path_query_first(COALESCE(ref_lead_app_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
+                    (jsonb_path_query_first(COALESCE(ref_app_by_uuid_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number')
+                ) AS referred_by_number
+            FROM n_advisor a
+            JOIN n_sourcing_channel_details sc ON sc.id = a.source_channel_id
+            JOIN n_person p ON p.id = a.person_id
+            LEFT JOIN n_referral_code_registry r ON r.referral_code = sc.marketing_details->>'referredByCode'
+            LEFT JOIN n_advisor ref_adv ON ref_adv.identifier = r.entity_identifier AND r.entity_type::text = 'ADVISOR'
+            LEFT JOIN n_person ref_adv_p ON ref_adv_p.id = ref_adv.person_id
+            LEFT JOIN n_staff ref_st ON ref_st.identifier = r.entity_identifier AND r.entity_type::text = 'STAFF'
+            LEFT JOIN n_user ref_st_u ON ref_st_u.id = ref_st.user_id
+            LEFT JOIN n_person ref_st_p ON ref_st_p.id = ref_st_u.person_id
+            LEFT JOIN n_lead ref_lead ON ref_lead.lead_identifier = r.entity_identifier AND r.entity_type::text = 'APPLICANT'
+            LEFT JOIN n_contact ref_lead_c ON ref_lead_c.id = (ref_lead.other_details->>'primaryContactId')::bigint
+            LEFT JOIN n_person ref_lead_p ON ref_lead_p.id = ref_lead_c.person_id
+            LEFT JOIN n_applicant ref_lead_app ON ref_lead_app.id = ref_lead.applicant
+            LEFT JOIN n_person ref_lead_app_p ON ref_lead_app_p.id = ref_lead_app.person_id
+            LEFT JOIN n_applicant ref_app_by_uuid ON ref_app_by_uuid.identifier = r.entity_identifier AND r.entity_type::text = 'APPLICANT'
+            LEFT JOIN n_person ref_app_by_uuid_p ON ref_app_by_uuid_p.id = ref_app_by_uuid.person_id
+            WHERE sc.marketing_details->>'referredByCode' = ?
+            ORDER BY a.updated_at DESC
+            LIMIT ? OFFSET ?
+            """;
+        try {
+            Long totalCount = jdbcTemplate.queryForObject(countSql, Long.class, referralCode.trim());
+            long total = totalCount != null ? totalCount : 0L;
+            List<AdvisorBasicResponse> results = jdbcTemplate.query(
+                    dataSql,
+                    new AdvisorSearchRowMapper(),
+                    referralCode.trim(),
+                    paginationRequest.getLimit(),
+                    paginationRequest.getOffset());
+            return new PaginatedResponse<>(results, buildPaginationInfo(paginationRequest, total));
+        } catch (EmptyResultDataAccessException e) {
+            return new PaginatedResponse<>(Collections.emptyList(),
+                    buildPaginationInfo(paginationRequest, 0));
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Failed to fetch advisors by referral code", e);
+        }
+    }
+
+    public Optional<ReferrerDisplayInfo> findReferrerDisplayInfo(EntityType entityType, UUID entityIdentifier) {
+        if (entityIdentifier == null) {
+            return Optional.empty();
+        }
+        try {
+            return switch (entityType) {
+                case STAFF -> {
+                    String sql = """
+                        SELECT p.display_name AS name,
+                               (jsonb_path_query_first(COALESCE(p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') AS phone
+                        FROM n_staff s
+                        LEFT JOIN n_user u ON u.id = s.user_id
+                        LEFT JOIN n_person p ON p.id = u.person_id
+                        WHERE s.identifier = ?::uuid
+                        """;
+                    var list = jdbcTemplate.query(sql, (rs, rowNum) ->
+                            new ReferrerDisplayInfo(rs.getString("name"), rs.getString("phone")),
+                            entityIdentifier.toString());
+                    yield list.isEmpty() ? Optional.empty() : Optional.ofNullable(list.get(0));
+                }
+                case APPLICANT -> {
+                    String sql = """
+                        SELECT COALESCE(p_lead.display_name, p_lead_app.display_name, p_app.display_name) AS name,
+                               COALESCE(
+                                   (jsonb_path_query_first(COALESCE(p_lead.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
+                                   (jsonb_path_query_first(COALESCE(p_lead_app.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
+                                   (jsonb_path_query_first(COALESCE(p_app.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number')
+                               ) AS phone
+                        FROM (SELECT ?::uuid AS entity_id) params
+                        LEFT JOIN n_lead l ON l.lead_identifier = params.entity_id
+                        LEFT JOIN n_contact c ON c.id = (l.other_details->>'primaryContactId')::bigint
+                        LEFT JOIN n_person p_lead ON p_lead.id = c.person_id
+                        LEFT JOIN n_applicant ref_lead_app ON ref_lead_app.id = l.applicant
+                        LEFT JOIN n_person p_lead_app ON p_lead_app.id = ref_lead_app.person_id
+                        LEFT JOIN n_applicant a ON a.identifier = params.entity_id
+                        LEFT JOIN n_person p_app ON p_app.id = a.person_id
+                        WHERE l.lead_identifier IS NOT NULL OR a.id IS NOT NULL
+                        """;
+                    var list = jdbcTemplate.query(sql, (rs, rowNum) ->
+                            new ReferrerDisplayInfo(rs.getString("name"), rs.getString("phone")),
+                            entityIdentifier.toString());
+                    yield list.isEmpty() ? Optional.empty() : Optional.ofNullable(list.get(0));
+                }
+                default -> Optional.empty();
+            };
+        } catch (DataAccessException e) {
+            return Optional.empty();
+        }
+    }
+
+    public record ReferrerDisplayInfo(String name, String phone) {}
 
     private PaginationInfo buildPaginationInfo(PaginationRequest paginationRequest, long totalElements) {
         int limit = paginationRequest.getLimit();
@@ -375,6 +617,24 @@ public class AdvisorRepositoryWrapper {
             }
 
             builder.officeKey(rs.getString("office_key"));
+
+            builder.referredByCode(rs.getString("referred_by_code"));
+            String referredByTypeStr = rs.getString("referred_by_type");
+            if (referredByTypeStr != null) {
+                try {
+                    builder.referredByType(EntityType.valueOf(referredByTypeStr));
+                } catch (IllegalArgumentException ignored) {
+                }
+            }
+            String referredByIdentifierStr = rs.getString("referred_by_identifier");
+            if (referredByIdentifierStr != null) {
+                try {
+                    builder.referredByIdentifier(UUID.fromString(referredByIdentifierStr));
+                } catch (IllegalArgumentException ignored) {
+                }
+            }
+            builder.referredByName(rs.getString("referred_by_name"));
+            builder.referredByNumber(rs.getString("referred_by_number"));
 
             return builder.build();
         }

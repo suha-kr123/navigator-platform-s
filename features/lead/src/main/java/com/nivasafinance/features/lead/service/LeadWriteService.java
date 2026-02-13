@@ -15,8 +15,6 @@ import com.nivasafinance.features.lead.dto.UpdateProposedDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdateSourcingDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdateTrancheRequest;
 import com.nivasafinance.features.lead.dto.WithdrawLeadRequest;
-import com.nivasafinance.features.lead.dto.BulkSalesOwnerAssignmentRequest;
-import com.nivasafinance.features.lead.dto.BulkSalesOwnerAssignmentResponse;
 import com.nivasafinance.features.lead.dto.UpdateCallDetailsRequest;
 
 import java.util.UUID;
@@ -43,5 +41,4 @@ public interface LeadWriteService {
     void onholdLead(UUID leadIdentifier, OnholdLeadRequest request);
     void resumeLead(UUID leadIdentifier);
     void dropoffLead(UUID leadIdentifier, DropoffLeadRequest request);
-    BulkSalesOwnerAssignmentResponse bulkAssignSalesOwner(BulkSalesOwnerAssignmentRequest request);
 }

@@ -5,17 +5,21 @@ import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.common.context.UserContext;
 import com.nivasafinance.features.staff.dto.StaffResponse;
 import com.nivasafinance.features.staff.entity.Staff;
+import com.nivasafinance.features.staff.exception.StaffExceptionFactory;
 import com.nivasafinance.features.staff.repository.StaffRepositoryWrapper;
 import com.nivasafinance.features.staff.service.StaffReadService;
 import com.nivasafinance.features.usermanagement.dto.UserResponse;
 import com.nivasafinance.features.offices.service.OfficeReadService;
 import com.nivasafinance.features.usermanagement.service.UserReadService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,6 +30,7 @@ public class StaffReadServiceImpl implements StaffReadService {
     private final StaffRepositoryWrapper staffRepositoryWrapper;
     private final UserReadService userReadService;
     private final OfficeReadService officeReadService;
+    private final MessageSource messageSource;
 
     @Override
     public PaginatedResponse<StaffResponse> getStaff(String officeKey, String nameQuery, PaginationRequest paginationRequest) {
@@ -47,7 +52,7 @@ public class StaffReadServiceImpl implements StaffReadService {
         String currentUsername = UserContext.getUsername();
 
         if (!StringUtils.hasText(currentUsername)) {
-            throw new IllegalStateException("No current user");
+            throw StaffExceptionFactory.noCurrentUser(messageSource);
         }
 
         UserResponse user = userReadService.getUserByUsername(currentUsername);
@@ -67,6 +72,15 @@ public class StaffReadServiceImpl implements StaffReadService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public Optional<StaffResponse> getStaffByIdentifier(UUID identifier) {
+        if (identifier == null) {
+            return Optional.empty();
+        }
+        return staffRepositoryWrapper.findByIdentifier(identifier)
+                .map(staff -> mapToResponse(staff, userReadService.getUserById(staff.getUserId())));
+    }
+
     private StaffResponse mapToResponse(Staff staff, UserResponse userResponse) {
         return StaffResponse.builder()
                 .id(staff.getId())
@@ -74,6 +88,7 @@ public class StaffReadServiceImpl implements StaffReadService {
                 .officeKey(staff.getOfficeKey())
                 .officeName(officeReadService.getOfficeByKey(staff.getOfficeKey()).getName())
                 .userResponse(userResponse)
+                .referralCode(staff.getReferralCode())
                 .build();
     }
 }

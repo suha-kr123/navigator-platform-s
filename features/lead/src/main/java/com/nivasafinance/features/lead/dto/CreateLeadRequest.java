@@ -7,7 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.util.UUID;
+import com.nivasafinance.features.sourcechannel.dto.SourcingChannelRequest;
 
 @Data
 @NoArgsConstructor
@@ -22,7 +22,7 @@ public class CreateLeadRequest {
 
     private String officeKey;
 
-    private UUID advisorIdentifier;
+    private SourcingChannelRequest sourcingChannelRequest;
 
     @Data
     @AllArgsConstructor

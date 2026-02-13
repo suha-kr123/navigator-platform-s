@@ -12,6 +12,8 @@ import com.nivasafinance.features.advisor.enums.AdvisorStatus;
 import com.nivasafinance.features.advisor.repository.AdvisorRepositoryWrapper;
 import com.nivasafinance.features.advisor.service.AdvisorWriteService;
 import com.nivasafinance.features.offices.service.OfficeReadService;
+import com.nivasafinance.features.referral.enums.EntityType;
+import com.nivasafinance.features.referral.service.ReferralCodeRegistryService;
 import com.nivasafinance.features.person.dto.PersonCreateRequest;
 import com.nivasafinance.features.person.dto.PersonCreateResponse;
 import com.nivasafinance.features.person.dto.PersonUpdateRequest;
@@ -24,6 +26,7 @@ import com.nivasafinance.features.master.codemaster.SystemControlledMasterCodes;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import com.nivasafinance.features.master.codemaster.service.CodeMasterService;
 import com.nivasafinance.common.exception.BadRequestException;
+import com.nivasafinance.common.utils.ValidationUtils;
 import com.nivasafinance.features.advisor.exception.AdvisorExceptionFactory;
 import com.nivasafinance.features.person.entity.Person;
 import lombok.AllArgsConstructor;
@@ -54,6 +57,7 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
     private final OfficeReadService officeReadService;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final MessageSource messageSource;
+    private final ReferralCodeRegistryService referralCodeRegistryService;
 
     @Override
     public UUID createAdvisor(CreateAdvisorRequest request) {
@@ -112,6 +116,10 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
         advisor.setOwner(UserContext.getUsername());
 
         Advisor savedAdvisor = advisorRepositoryWrapper.saveWithException(advisor);
+
+        handleSourcingChannel(savedAdvisor, request.getSourcingChannelRequest());
+
+        generateReferralCode(savedAdvisor);
 
         // Publish ADVISOR_CREATED event
         String mobileNumber = request.getMobileNumberDetails() != null
@@ -209,7 +217,7 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
                         .sourceId(request.getSourceId())
                         .sourceUrl(request.getSourceUrl())
                         .campaignId(request.getCampaignId())
-                        .sourcedBy(request.getSourcedBy())
+                        .referredByCode(request.getReferralCode())
                         .build();
 
         // Build sourcing channel request
@@ -523,51 +531,29 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
 
         return personRequest;
     }
+    
 
-    @Override
-    @Transactional
-    public BulkSalesOwnerAssignmentResponse bulkAssignSalesOwner(BulkSalesOwnerAssignmentRequest request) {
-        // Input validation
-        if (request == null) {
-            throw new BadRequestException("Request cannot be null");
+    private void handleSourcingChannel(Advisor advisor, SourcingChannelRequest sourcingChannelRequest) {
+        if (ValidationUtils.isNull(sourcingChannelRequest)) {
+            return;
         }
-        if (request.getSalesOwner() == null || request.getSalesOwner().trim().isEmpty()) {
-            throw new BadRequestException("Sales owner is required");
-        }
-        if (request.getAdvisorIdentifiers() == null || request.getAdvisorIdentifiers().isEmpty()) {
-            throw new BadRequestException("Advisor identifiers are required");
-        }
-        
-        List<UUID> successfulAdvisorIdentifiers = new ArrayList<>();
-        List<BulkSalesOwnerAssignmentResponse.AssignmentError> errors = new ArrayList<>();
-        
-        for (UUID advisorIdentifier : request.getAdvisorIdentifiers()) {
-            try {
-                Advisor advisor = advisorRepositoryWrapper.findByIdentifierWithException(advisorIdentifier);
-                advisor.setOwner(request.getSalesOwner());
+        if (advisor.getSourceChannelId() != null) {
+            sourcingChannelWriteService.update(advisor.getSourceChannelId(), sourcingChannelRequest);
+        } else {
+            SourcingChannelResponse response = sourcingChannelWriteService.create(sourcingChannelRequest);
+            if (response != null && response.getId() != null) {
+                advisor.setSourceChannelId(response.getId());
                 advisorRepositoryWrapper.saveWithException(advisor);
-                successfulAdvisorIdentifiers.add(advisorIdentifier);
-            } catch (Exception e) {
-                BulkSalesOwnerAssignmentResponse.AssignmentError error = 
-                        BulkSalesOwnerAssignmentResponse.AssignmentError.builder()
-                                .advisorIdentifier(advisorIdentifier)
-                                .errorMessage(e.getMessage() != null ? e.getMessage() : "Unknown error")
-                                .build();
-                errors.add(error);
             }
         }
-        
-        int totalRequested = request.getAdvisorIdentifiers().size();
-        int successful = successfulAdvisorIdentifiers.size();
-        int failed = errors.size();
-        
-        return BulkSalesOwnerAssignmentResponse.builder()
-                .totalRequested(totalRequested)
-                .successful(successful)
-                .failed(failed)
-                .successfulAdvisorIdentifiers(successfulAdvisorIdentifiers)
-                .errors(errors)
-                .build();
+    }
+
+    private void generateReferralCode(Advisor advisor) {
+        var response = referralCodeRegistryService.generateReferralCode(EntityType.ADVISOR, advisor.getIdentifier());
+        if (response != null) {
+            advisor.setReferralCode(response.getReferralCode());
+            advisorRepositoryWrapper.saveWithException(advisor);
+        }
     }
 
 }

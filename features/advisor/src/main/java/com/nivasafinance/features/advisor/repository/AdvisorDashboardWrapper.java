@@ -5,6 +5,7 @@ import com.nivasafinance.common.base.model.PaginationInfo;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.features.advisor.dto.AdvisorDashboardFilters;
 import com.nivasafinance.features.advisor.dto.AdvisorDashboardResponse;
+import com.nivasafinance.features.referral.enums.EntityType;
 import com.nivasafinance.features.advisor.enums.AdvisorStatus;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import com.nivasafinance.features.master.codemaster.service.CodeValueMasterService;
@@ -102,25 +103,7 @@ public class AdvisorDashboardWrapper {
         appendSegmentationFilter(effectiveFilters, countWhereClause, countQueryParams);
         appendSourcingChannelFilter(effectiveFilters, countWhereClause, countQueryParams);
         appendSalesOwnerFilter(effectiveFilters, countWhereClause, countQueryParams);
-        
-        // Handle lastLeadDate filter in count query with subquery
-        LocalDateTime lastLeadDateFrom = effectiveFilters.getLastLeadDateFrom();
-        LocalDateTime lastLeadDateTo = effectiveFilters.getLastLeadDateTo();
-        if (lastLeadDateFrom != null || lastLeadDateTo != null) {
-            countWhereClause.append(" AND EXISTS (");
-            countWhereClause.append("SELECT 1 FROM n_advisor_lead_mapping alm2 JOIN n_lead l2 ON l2.id = alm2.lead_id ");
-            countWhereClause.append("WHERE alm2.advisor_id = a.id ");
-            if (lastLeadDateFrom != null) {
-                countWhereClause.append("AND l2.created_at >= ? ");
-                countQueryParams.add(lastLeadDateFrom);
-            }
-            if (lastLeadDateTo != null) {
-                countWhereClause.append("AND l2.created_at <= ? ");
-                countQueryParams.add(lastLeadDateTo);
-            }
-            countWhereClause.append(") ");
-        }
-        
+
         // Optimized COUNT query - use simpler FROM clause for counting
         String countFromClause = """
                 FROM n_advisor a
@@ -135,26 +118,32 @@ public class AdvisorDashboardWrapper {
                     p.display_name AS name,
                     (jsonb_path_query_first(COALESCE(p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') AS phone_number,
                     a.created_at AS created_at,
-                    lead_stats.last_lead_date,
+                    NULL::timestamp AS last_lead_date,
                     a.status AS status,
                     o.name AS office,
                     a.segmentation_details->>'segmentation' AS segmentation_key,
                     sourcing_channel.sourcing_channel_name AS sourcing_channel_name,
-                    COALESCE(lead_stats.no_of_leads, 0) AS no_of_leads,
+                    (SELECT COUNT(*)
+                     FROM n_lead l2
+                     JOIN n_sourcing_channel_details sc2 ON sc2.id = l2.sourcing_channel_id
+                     JOIN n_referral_code_registry r2 ON r2.referral_code = sc2.marketing_details->>'referredByCode'
+                     WHERE r2.entity_type::text = 'ADVISOR' AND r2.entity_identifier = a.identifier) AS no_of_leads,
+                    0 AS no_of_advisors,
                     a.owner AS sales_owner,
                     (a.other_details->>'preferredCallStartTime')::time AS preferred_call_start_time,
-                    (a.other_details->>'preferredCallEndTime')::time AS preferred_call_end_time
-                """ + fromClause + """
-                LEFT JOIN (
-                    SELECT
-                        alm.advisor_id,
-                        MAX(l.created_at) AS last_lead_date,
-                        COUNT(DISTINCT l.id) AS no_of_leads
-                    FROM n_advisor_lead_mapping alm
-                    JOIN n_lead l ON l.id = alm.lead_id
-                    GROUP BY alm.advisor_id
-                ) lead_stats ON lead_stats.advisor_id = a.id
-                """ + whereClause +
+                    (a.other_details->>'preferredCallEndTime')::time AS preferred_call_end_time,
+                    sourcing_channel.marketing_details->>'referredByCode' AS referred_by_code,
+                    r.entity_type::text AS referred_by_type,
+                    r.entity_identifier AS referred_by_identifier,
+                    COALESCE(ref_adv_p.display_name, ref_st_p.display_name, ref_lead_p.display_name, ref_lead_app_p.display_name, ref_app_by_uuid_p.display_name) AS referred_by_name,
+                    COALESCE(
+                        (jsonb_path_query_first(COALESCE(ref_adv_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
+                        (jsonb_path_query_first(COALESCE(ref_st_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
+                        (jsonb_path_query_first(COALESCE(ref_lead_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
+                        (jsonb_path_query_first(COALESCE(ref_lead_app_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
+                        (jsonb_path_query_first(COALESCE(ref_app_by_uuid_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number')
+                    ) AS referred_by_number
+                """ + fromClause + whereClause +
                 " ORDER BY " + sortColumn + " " + sortDirection +
                 " LIMIT ? OFFSET ?";
 
@@ -238,18 +227,7 @@ public class AdvisorDashboardWrapper {
     }
 
     private void appendLastLeadDateFilter(AdvisorDashboardFilters filters, StringBuilder whereClause, List<Object> params) {
-        LocalDateTime lastLeadDateFrom = filters.getLastLeadDateFrom();
-        LocalDateTime lastLeadDateTo = filters.getLastLeadDateTo();
-
-        if (lastLeadDateFrom != null) {
-            whereClause.append(" AND lead_stats.last_lead_date >= ? ");
-            params.add(lastLeadDateFrom);
-        }
-
-        if (lastLeadDateTo != null) {
-            whereClause.append(" AND lead_stats.last_lead_date <= ? ");
-            params.add(lastLeadDateTo);
-        }
+        // No longer applied: n_advisor_lead_mapping is not used
     }
 
     private void appendSegmentationFilter(AdvisorDashboardFilters filters, StringBuilder whereClause, List<Object> params) {
@@ -294,6 +272,19 @@ public class AdvisorDashboardWrapper {
                 LEFT JOIN n_person p ON p.id = a.person_id
                 LEFT JOIN n_office o ON o.key = a.office_key
                 LEFT JOIN n_sourcing_channel_details sourcing_channel ON sourcing_channel.id = a.source_channel_id
+                LEFT JOIN n_referral_code_registry r ON r.referral_code = sourcing_channel.marketing_details->>'referredByCode'
+                LEFT JOIN n_advisor ref_adv ON ref_adv.identifier = r.entity_identifier AND r.entity_type::text = 'ADVISOR'
+                LEFT JOIN n_person ref_adv_p ON ref_adv_p.id = ref_adv.person_id
+                LEFT JOIN n_staff ref_st ON ref_st.identifier = r.entity_identifier AND r.entity_type::text = 'STAFF'
+                LEFT JOIN n_user ref_st_u ON ref_st_u.id = ref_st.user_id
+                LEFT JOIN n_person ref_st_p ON ref_st_p.id = ref_st_u.person_id
+                LEFT JOIN n_lead ref_lead ON ref_lead.lead_identifier = r.entity_identifier AND r.entity_type::text = 'APPLICANT'
+                LEFT JOIN n_contact ref_lead_c ON ref_lead_c.id = (ref_lead.other_details->>'primaryContactId')::bigint
+                LEFT JOIN n_person ref_lead_p ON ref_lead_p.id = ref_lead_c.person_id
+                LEFT JOIN n_applicant ref_lead_app ON ref_lead_app.id = ref_lead.applicant
+                LEFT JOIN n_person ref_lead_app_p ON ref_lead_app_p.id = ref_lead_app.person_id
+                LEFT JOIN n_applicant ref_app_by_uuid ON ref_app_by_uuid.identifier = r.entity_identifier AND r.entity_type::text = 'APPLICANT'
+                LEFT JOIN n_person ref_app_by_uuid_p ON ref_app_by_uuid_p.id = ref_app_by_uuid.person_id
                 """;
     }
 
@@ -351,6 +342,7 @@ public class AdvisorDashboardWrapper {
                     .lastLeadAt(getLocalDateTime(rs, "last_lead_date"))
                     .office(rs.getString("office"))
                     .noOfLeads(getLong(rs, "no_of_leads"))
+                    .noOfAdvisors(getLong(rs, "no_of_advisors"))
                     .salesOwner(rs.getString("sales_owner"));
 
             String status = rs.getString("status");
@@ -383,7 +375,25 @@ public class AdvisorDashboardWrapper {
             }
 
             builder.preferredCallStartTime(getLocalTime(rs, "preferred_call_start_time"))
-                    .preferredCallEndTime(getLocalTime(rs, "preferred_call_end_time"));
+                    .preferredCallEndTime(getLocalTime(rs, "preferred_call_end_time"))
+                    .referredByCode(rs.getString("referred_by_code"))
+                    .referredByName(rs.getString("referred_by_name"))
+                    .referredByNumber(rs.getString("referred_by_number"));
+
+            String referredByTypeStr = rs.getString("referred_by_type");
+            if (referredByTypeStr != null) {
+                try {
+                    builder.referredByType(EntityType.valueOf(referredByTypeStr));
+                } catch (IllegalArgumentException ex) {
+                }
+            }
+            String referredByIdentifierStr = rs.getString("referred_by_identifier");
+            if (referredByIdentifierStr != null) {
+                try {
+                    builder.referredByIdentifier(java.util.UUID.fromString(referredByIdentifierStr));
+                } catch (IllegalArgumentException ex) {
+                }
+            }
 
             return builder.build();
         }

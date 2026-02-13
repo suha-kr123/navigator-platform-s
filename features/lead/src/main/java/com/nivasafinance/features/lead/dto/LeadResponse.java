@@ -3,10 +3,14 @@ package com.nivasafinance.features.lead.dto;
 import com.nivasafinance.features.lead.enums.LeadStatus;
 import com.nivasafinance.features.lead.enums.LeadSubStatus;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
+import com.nivasafinance.features.referral.enums.EntityType;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import com.nivasafinance.features.sourcechannel.dto.SourcingChannelResponse;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -35,7 +39,7 @@ public class LeadResponse {
     private LeadSubStatus subStatus;
     private String reasonCode;
     private String reason;
-    private LocalDate leadCreatedAt;
+    private LocalDateTime leadCreatedAt;
     private LocalDate holdFollowUpDate;
     private LocalTime preferredCallStartTime;
     private LocalTime preferredCallEndTime;
@@ -46,17 +50,9 @@ public class LeadResponse {
     private CodeValueResponse customerProfiles;
     private CodeValueResponse monthlyFamilyIncome;
     private BigDecimal eligibleLoanAmount;
-    private String advisorIdentifier;
-    private String advisorName;
-    private String advisorNumber;
     private String recentNote;
     private String noteCreatedBy;
     private LocalDateTime noteCreatedAt;
-    private String partnerIdentifier;
-    private String partnerName;
-    private String partnerStatus;
-    private CodeValueResponse partnerStage;
-    private String partnerOfficeName;
     private String lenderIdentifier;
     private String lenderName;
     private String lenderStatus;
@@ -72,5 +68,13 @@ public class LeadResponse {
     private String assignedTo;
     private LocalDateTime assignedAt;
     private LocalDateTime enteredAt;
+    private SourcingChannelResponse sourcingChannelDetails;
+
+    //referral details
+    private String referredByCode;
+    private UUID referredByIdentifier;
+    private EntityType referredByType;
+    private String referredByName;
+    private String referredByNumber;
 
 }

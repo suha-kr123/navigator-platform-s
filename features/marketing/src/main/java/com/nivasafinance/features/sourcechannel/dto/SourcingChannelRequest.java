@@ -21,7 +21,7 @@ public class SourcingChannelRequest {
         private String sourceId;
         private String sourceUrl;
         private String campaignId;
-        private String sourcedBy;
+        private String referredByCode; // referral code
     }
 }
 

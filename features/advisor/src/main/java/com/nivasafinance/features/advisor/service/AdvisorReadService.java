@@ -18,11 +18,14 @@ public interface AdvisorReadService {
 
     PaginatedResponse<AdvisorBasicResponse> searchAdvisors(PaginationRequest paginationRequest, AdvisorSearchRequest request);
 
-    PaginatedResponse<AdvisorLeadResponse> getLeadsByAdvisorId(UUID advisorId, PaginationRequest paginationRequest);
-
     PaginatedResponse<AdvisorDashboardResponse> getAdvisorDashboard(
-            PaginationRequest paginationRequest,
-            AdvisorDashboardFilters filters);
+        PaginationRequest paginationRequest,
+        AdvisorDashboardFilters filters);
 
+    // advisors where the current user is the owner
     PaginatedResponse<AdvisorBasicResponse> getMyAdvisors(PaginationRequest paginationRequest);
+
+    // advisors by the given referral code
+    PaginatedResponse<AdvisorBasicResponse> getAdvisorsByReferralCode(String referralCode, PaginationRequest paginationRequest);
+
 }

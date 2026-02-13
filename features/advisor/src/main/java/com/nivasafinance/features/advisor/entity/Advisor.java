@@ -95,6 +95,9 @@ public class Advisor extends AuditableEntity {
     @Column(name = "call_logs", columnDefinition = "jsonb")
     private List<CallLogDetails> callLogDetails;
 
+    @Column(name = "referral_code", length = 255, unique = true)
+    private String referralCode;
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor

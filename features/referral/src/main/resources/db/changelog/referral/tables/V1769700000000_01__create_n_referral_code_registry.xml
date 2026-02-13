@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1769700000000_01__create_n_referral_code_registry" author="system">
+        <createTable tableName="n_referral_code_registry">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="referral_code" type="VARCHAR(255)">
+                <constraints unique="true"/>
+            </column>
+            <column name="entity_type" type="VARCHAR(50)"/>
+            <column name="entity_identifier" type="UUID"/>
+            <column name="created_by" type="VARCHAR(255)"/>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="updated_by" type="VARCHAR(255)"/>
+            <column name="updated_at" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="version" type="BIGINT" defaultValueNumeric="0"/>
+        </createTable>
+
+        <createIndex indexName="idx_n_referral_code_registry_code" tableName="n_referral_code_registry">
+            <column name="referral_code"/>
+        </createIndex>
+        <createIndex indexName="idx_n_referral_code_registry_entity" tableName="n_referral_code_registry">
+            <column name="entity_type"/>
+            <column name="entity_identifier"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

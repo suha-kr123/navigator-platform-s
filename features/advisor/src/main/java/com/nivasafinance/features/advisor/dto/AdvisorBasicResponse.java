@@ -1,6 +1,8 @@
 package com.nivasafinance.features.advisor.dto;
 
 import com.nivasafinance.features.advisor.enums.AdvisorStatus;
+import com.nivasafinance.features.referral.enums.EntityType;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,5 +24,12 @@ public class AdvisorBasicResponse {
     private LocalDateTime updatedAt;
     private String officeKey;
     private String owner;
+
+    //referral details
+    private String referredByCode;
+    private EntityType referredByType;
+    private UUID referredByIdentifier;
+    private String referredByName;
+    private String referredByNumber;
 }
 

@@ -8,7 +8,6 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalTime;
-import java.util.UUID;
 
 @Data
 @NoArgsConstructor
@@ -18,16 +17,14 @@ public class UpdateLeadRequest {
 
     @DecimalMin(value = "0.0", inclusive = false, message = "Requested amount must be greater than 0")
     private BigDecimal requestedAmount;
-    
-    private String officeKey;
-    
-    private String owner;
-    
-    private String purpose;
-    
-    private String productCode;
 
-    private UUID advisorId;
+    private String officeKey;
+
+    private String owner;
+
+    private String purpose;
+
+    private String productCode;
 
     private LocalTime preferredCallStartTime;
 

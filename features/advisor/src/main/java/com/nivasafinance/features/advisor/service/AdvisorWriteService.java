@@ -18,7 +18,6 @@ public interface AdvisorWriteService {
     
     void updateSegmentationDetails(UUID identifier, UpdateSegmentationDetailsRequest request);
     
-    
     void rejectAdvisor(UUID identifier, RejectAdvisorRequest request);
     
     void dormantAdvisor(UUID identifier, DormantAdvisorRequest request);
@@ -26,7 +25,5 @@ public interface AdvisorWriteService {
     void activateAdvisor(UUID identifier);
     
     void outOfGeoAdvisor(UUID identifier, OutOfGeoAdvisorRequest request);
-    
-    BulkSalesOwnerAssignmentResponse bulkAssignSalesOwner(BulkSalesOwnerAssignmentRequest request);
 }
 

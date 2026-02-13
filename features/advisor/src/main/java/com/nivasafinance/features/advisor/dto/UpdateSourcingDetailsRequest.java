@@ -18,5 +18,5 @@ public class UpdateSourcingDetailsRequest {
     private String sourceId;
     private String sourceUrl;
     private String campaignId;
-    private String sourcedBy; 
+    private String referralCode;
 }

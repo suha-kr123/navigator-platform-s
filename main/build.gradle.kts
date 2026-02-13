@@ -34,6 +34,7 @@ dependencies {
     implementation(project(":externals:exotel"))
     implementation(project(":externals:whatsapp"))
     implementation(project(":externals:creditbureau"))
+    implementation(project(":features:referral"))
 }
 
 springBoot {

@@ -6,7 +6,6 @@ import com.nivasafinance.features.lead.dto.*;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.enums.LeadStatus;
 import com.nivasafinance.features.lead.enums.LeadSubStatus;
-import com.nivasafinance.features.lead.mapper.LeadWorkflowDetailsRowMapper;
 import com.nivasafinance.features.lead.repository.LeadDashboardWrapper;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadReadService;
@@ -17,6 +16,7 @@ import com.nivasafinance.features.sourcechannel.dto.SourcingChannelResponse;
 import com.nivasafinance.features.sourcechannel.service.SourcingChannelReadService;
 import com.nivasafinance.features.offices.dto.OfficeResponse;
 import com.nivasafinance.features.offices.service.OfficeReadService;
+import com.nivasafinance.features.referral.enums.EntityType;
 import com.nivasafinance.features.staff.dto.StaffResponse;
 import com.nivasafinance.features.staff.service.StaffReadService;
 
@@ -27,12 +27,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
-import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
-
 import java.util.List;
 import java.util.UUID;
-import java.sql.Types;
 import java.util.stream.Collectors;
 
 @Service
@@ -48,7 +44,6 @@ public class LeadReadServiceImpl implements LeadReadService {
     private final LeadDashboardWrapper leadDashboardWrapper;
     private final OfficeReadService officeReadService;
     private final StaffReadService staffReadService;
-    private final NamedParameterJdbcTemplate jdbcTemplate;
 
     @Override
     @Transactional(readOnly = true)
@@ -324,55 +319,23 @@ public class LeadReadServiceImpl implements LeadReadService {
     @Override
     public List<LeadWorkflowDetailsDto> findLeadsByPersonIdsAndStatusesAndSubstatuses(
             List<Long> personIds, List<LeadStatus> statuses, List<LeadSubStatus> substatuses) {
-
-        List<String> statusesString = statuses.stream().map(LeadStatus::name).toList();
-        List<String> substatusesString = substatuses.stream().map(LeadSubStatus::name).toList();
-
-        String sql = getLeadWorkflowDetailsQuery();
-
-        MapSqlParameterSource params = new MapSqlParameterSource();
-        params.addValue("personIds", personIds.toArray(new Long[0]), Types.ARRAY);
-        params.addValue("statuses", statusesString.toArray(new String[0]), Types.ARRAY);
-        params.addValue("substatuses", substatusesString.toArray(new String[0]), Types.ARRAY);
-
-        return jdbcTemplate.query(sql, params, new LeadWorkflowDetailsRowMapper());
+                return leadRepositoryWrapper.findLeadsByPersonIdsAndStatusesAndSubstatuses(personIds, statuses, substatuses);
     }
 
-    private String getLeadWorkflowDetailsQuery() {
-        StringBuilder sql = new StringBuilder();
-
-        sql.append("SELECT ");
-        sql.append("l.id AS lead_id, ");
-        sql.append("l.lead_identifier AS lead_identifier, ");
-        sql.append("l.workflow_details->>'workflowConfigKey' AS workflow_config_key, ");
-        sql.append("l.workflow_details->'currentStageDetails'->>'stageKey' AS current_stage_key, ");
-        sql.append("l.workflow_details->'currentStageDetails'->>'subStageKey' AS current_sub_stage_key, ");
-        sql.append("l.workflow_details->'currentStageDetails'->>'assignedTo' AS assigned_to ");
-
-        sql.append("FROM n_lead l ");
-
-        sql.append("WHERE ( ");
-        sql.append("EXISTS (SELECT 1 FROM n_contact c WHERE c.id = l.applicant AND c.person_id = ANY (:personIds::bigint[])) ");
-
-        sql.append("OR EXISTS ( ");
-        sql.append("SELECT 1 FROM jsonb_array_elements_text(l.contacts) AS elem ");
-        sql.append("JOIN n_contact c ON c.id = (elem)::bigint ");
-        sql.append("WHERE c.person_id = ANY (:personIds::bigint[]) ");
-        sql.append(") ");
-
-        sql.append("OR EXISTS ( ");
-        sql.append("SELECT 1 FROM jsonb_array_elements_text(l.co_applicants) AS elem ");
-        sql.append("JOIN n_contact c ON c.id = (elem)::bigint ");
-        sql.append("WHERE c.person_id = ANY (:personIds::bigint[]) ");
-        sql.append(") ");
-        sql.append(") ");
-
-        sql.append("AND l.status = ANY (:statuses::text[]) ");
-        sql.append("AND (l.substatus IS NULL OR l.substatus = ANY (:substatuses::text[])) ");
-
-        sql.append("ORDER BY l.created_at DESC ");
-
-        return sql.toString();
+    @Override
+    public LeadBasicResponse getLeadByReferralTrackingCode(String referralTrackingCode) {
+        return leadRepositoryWrapper.findLeadByReferralTrackingCodeWithException(referralTrackingCode);
     }
 
+    @Override
+    public PaginatedResponse<LeadBasicResponse> getLeadsByEntity(EntityType entityType, UUID entityIdentifier,
+            PaginationRequest paginationRequest) {
+        return leadRepositoryWrapper.findLeadsByEntity(entityType, entityIdentifier, paginationRequest);
+    }
+
+    @Override
+    public PaginatedResponse<LeadBasicResponse> getLeadsByReferralCode(String referralCode,
+            PaginationRequest paginationRequest) {
+        return leadRepositoryWrapper.findLeadsByReferralCode(referralCode, paginationRequest);
+    }
 }

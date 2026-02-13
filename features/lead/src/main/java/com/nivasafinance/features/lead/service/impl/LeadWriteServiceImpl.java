@@ -10,11 +10,8 @@ import com.nivasafinance.common.events.payload.LeadStatusChangeEventPayload;
 import com.nivasafinance.common.events.payload.LeadUpdateEventPayload;
 import com.nivasafinance.common.exception.BadRequestException;
 import com.nivasafinance.common.exception.ResourceNotFoundException;
+import com.nivasafinance.common.utils.ValidationUtils;
 import com.nivasafinance.features.address.service.AddressDataService;
-import com.nivasafinance.features.advisor.dto.AdvisorResponse;
-import com.nivasafinance.features.advisor.service.AdvisorReadService;
-import com.nivasafinance.features.advisorlead.entity.AdvisorLeadMapping;
-import com.nivasafinance.features.advisorlead.repository.AdvisorLeadMappingRepositoryWrapper;
 import com.nivasafinance.features.lead.dto.*;
 import com.nivasafinance.features.lead.dto.UpdateCallDetailsRequest;
 import com.nivasafinance.features.lead.entity.Lead;
@@ -70,8 +67,6 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     private final LeadContactWriteService contactWriteService;
     private final WorkflowConfigRepositoryWrapper workflowConfigRepositoryWrapper;
     private final LeadStageHistoryWriteService leadStageHistoryWriteService;
-    private final AdvisorLeadMappingRepositoryWrapper advisorLeadMappingRepositoryWrapper;
-    private final AdvisorReadService advisorReadService;
 
 
     @Override
@@ -118,7 +113,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         String workflowKey = WorkflowConstants.Workflow.DEFAULT_WORKFLOW_KEY;
         String workflowConfigKey = workflowConfigRepositoryWrapper.findActiveByWorkflowConfigKey(workflowKey).getWorkflowConfigKey();
         leadStageHistoryWriteService.createInitialStage(savedLead.getLeadIdentifier(), workflowConfigKey);
-        handleAdvisorMapping(savedLead.getId(), request.getAdvisorIdentifier());
+        handleSourcingChannel(savedLead, request.getSourcingChannelRequest());
         // Publish LEAD_CREATED event for other listeners (activities, notifications, etc.) - not used by workflow
         publishLeadCreatedEvent(savedLead, request);
 
@@ -171,9 +166,6 @@ public class LeadWriteServiceImpl implements LeadWriteService {
             otherDetails.setPriority(request.getPriority());
         }
         lead.setOtherDetails(otherDetails);
-
-        // Handle advisor mapping
-        handleAdvisorMapping(lead.getId(), request.getAdvisorId());
 
         leadRepositoryWrapper.saveWithException(lead);
 
@@ -342,7 +334,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     @Transactional
     public void updateSourcingDetails(UUID leadIdentifier, UpdateSourcingDetailsRequest request) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
-        
+
         SourcingChannelRequest sourcingChannelRequest = new SourcingChannelRequest(
                 request.getSourcingChannel(),
                 request.getMarketingSource(),
@@ -350,7 +342,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
                         .sourceId(request.getSourceId())
                         .sourceUrl(request.getSourceUrl())
                         .campaignId(request.getCampaignId())
-                        .sourcedBy(request.getSourcedBy())
+                        .referredByCode(request.getReferredByCode())
                         .build()
         );
 
@@ -808,81 +800,18 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         }
     }
 
-    private void handleAdvisorMapping(Long leadId, UUID advisorIdentifier) {
-        if (advisorIdentifier != null) {
-
-            // Validate advisor exists - this will throw exception if not found
-            AdvisorResponse advisor = advisorReadService.getAdvisorByIdentifier(advisorIdentifier);
-            Long advisorId = advisor.getId();
-
-            // Find existing mapping for this lead
-            Optional<AdvisorLeadMapping> existingMapping = advisorLeadMappingRepositoryWrapper.findByLeadId(leadId);
-
-            AdvisorLeadMapping mapping;
-            if (existingMapping.isPresent()) {
-                // Update existing mapping
-                mapping = existingMapping.get();
-                mapping.setAdvisorId(advisorId);
-            } else {
-                // Create new mapping
-                mapping = new AdvisorLeadMapping();
-                mapping.setAdvisorId(advisorId);
-                mapping.setLeadId(leadId);
-            }
-            advisorLeadMappingRepositoryWrapper.saveWithException(mapping);
+    private void handleSourcingChannel(Lead lead, SourcingChannelRequest sourcingChannelRequest) {
+        if (ValidationUtils.isNull(sourcingChannelRequest)) {
+            return;
+        }
+        if (lead.getSourcingChannelId() != null) {
+            sourcingChannelWriteService.update(lead.getSourcingChannelId(), sourcingChannelRequest);
         } else {
-            // Remove mapping if advisorId is null
-            Optional<AdvisorLeadMapping> existingMapping = advisorLeadMappingRepositoryWrapper.findByLeadId(leadId);
-            existingMapping.ifPresent(advisorLeadMappingRepositoryWrapper::deleteWithException);
-        }
-    }
-
-    @Override
-    @Transactional
-    public BulkSalesOwnerAssignmentResponse bulkAssignSalesOwner(BulkSalesOwnerAssignmentRequest request) {
-        // Input validation
-        if (request == null) {
-            throw new BadRequestException("Request cannot be null");
-        }
-        if (request.getSalesOwner() == null || request.getSalesOwner().trim().isEmpty()) {
-            throw new BadRequestException("Sales owner is required");
-        }
-        if (request.getLeadIdentifiers() == null || request.getLeadIdentifiers().isEmpty()) {
-            throw new BadRequestException("Lead identifiers are required");
-        }
-        
-        List<UUID> successfulLeadIdentifiers = new ArrayList<>();
-        List<BulkSalesOwnerAssignmentResponse.AssignmentError> errors = new ArrayList<>();
-        
-        for (UUID leadIdentifier : request.getLeadIdentifiers()) {
-            try {
-                Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
-                lead.setOwner(request.getSalesOwner());
+            SourcingChannelResponse response = sourcingChannelWriteService.create(sourcingChannelRequest);
+            if (response != null && response.getId() != null) {
+                lead.setSourcingChannelId(response.getId());
                 leadRepositoryWrapper.saveWithException(lead);
-                successfulLeadIdentifiers.add(leadIdentifier);
-                log.debug("Successfully assigned sales owner {} to lead {}", request.getSalesOwner(), leadIdentifier);
-            } catch (Exception e) {
-                BulkSalesOwnerAssignmentResponse.AssignmentError error = 
-                        BulkSalesOwnerAssignmentResponse.AssignmentError.builder()
-                                .leadIdentifier(leadIdentifier)
-                                .errorMessage(e.getMessage() != null ? e.getMessage() : "Unknown error")
-                                .build();
-                errors.add(error);
-                log.warn("Failed to assign sales owner {} to lead {}: {}", 
-                        request.getSalesOwner(), leadIdentifier, e.getMessage(), e);
             }
         }
-        
-        int totalRequested = request.getLeadIdentifiers().size();
-        int successful = successfulLeadIdentifiers.size();
-        int failed = errors.size();
-        
-        return BulkSalesOwnerAssignmentResponse.builder()
-                .totalRequested(totalRequested)
-                .successful(successful)
-                .failed(failed)
-                .successfulLeadIdentifiers(successfulLeadIdentifiers)
-                .errors(errors)
-                .build();
     }
 }
