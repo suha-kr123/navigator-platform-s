@@ -54,28 +54,35 @@ public class SourcingChannelWriteServiceImpl implements SourcingChannelWriteServ
     public SourcingChannelResponse update(Long id, SourcingChannelRequest request) {
         SourcingChannel existingEntity = sourcingChannelRepositoryWrapper.findByIdWithException(id);
 
-        if(request.getSourcingChannel() != null){ 
+        if (request.getSourcingChannel() != null) {
             codeValueMasterService.getCodeValueByKeyAndCodeKey(request.getSourcingChannel(), SystemControlledMasterCodes.MARKETING_SOURCE_MASTER);
+            existingEntity.setSourcingChannel(request.getSourcingChannel());
         }
 
-        if(request.getMarketingSource() != null){ 
+        if (request.getMarketingSource() != null) {
             codeValueMasterService.getCodeValueByKeyAndCodeKey(request.getMarketingSource(), SystemControlledMasterCodes.MARKETING_CHANNEL_MASTER);
+            existingEntity.setMarketingSource(request.getMarketingSource());
         }
 
-        existingEntity.setSourcingChannel(request.getSourcingChannel());
-        existingEntity.setMarketingSource(request.getMarketingSource());
         if (request.getMarketingDetails() != null) {
-            SourcingChannel.MarketingDetails marketingDetails = existingEntity.getMarketingDetails();
-            if (marketingDetails == null) {
-                marketingDetails = new SourcingChannel.MarketingDetails();
+            SourcingChannel.MarketingDetails existing = existingEntity.getMarketingDetails();
+            if (existing == null) {
+                existing = new SourcingChannel.MarketingDetails();
             }
-            marketingDetails.setSourceId(request.getMarketingDetails().getSourceId());
-            marketingDetails.setSourceUrl(request.getMarketingDetails().getSourceUrl());
-            marketingDetails.setCampaignId(request.getMarketingDetails().getCampaignId());
-            marketingDetails.setReferredByCode(request.getMarketingDetails().getReferredByCode());
-            existingEntity.setMarketingDetails(marketingDetails);
-        } else {
-            existingEntity.setMarketingDetails(null);
+            SourcingChannelRequest.MarketingDetails incoming = request.getMarketingDetails();
+            if (incoming.getSourceId() != null) {
+                existing.setSourceId(incoming.getSourceId());
+            }
+            if (incoming.getSourceUrl() != null) {
+                existing.setSourceUrl(incoming.getSourceUrl());
+            }
+            if (incoming.getCampaignId() != null) {
+                existing.setCampaignId(incoming.getCampaignId());
+            }
+            if (incoming.getReferredByCode() != null) {
+                existing.setReferredByCode(incoming.getReferredByCode());
+            }
+            existingEntity.setMarketingDetails(existing);
         }
 
         SourcingChannel savedEntity = sourcingChannelRepositoryWrapper.saveWithException(existingEntity);
