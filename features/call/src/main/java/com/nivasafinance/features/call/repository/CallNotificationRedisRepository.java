@@ -68,7 +68,8 @@ public class CallNotificationRedisRepository {
                     ? dialWhomNumber 
                     : notification.getCallTo();
             if (phone != null && !phone.isBlank()) {
-                String userPhoneKey = USER_NOTIFICATIONS_KEY_PREFIX + "phone:" + phone;
+                String normalizedPhoneLast10 = PhoneNumberUtils.normalizePhoneNumber(phone);
+                String userPhoneKey = USER_NOTIFICATIONS_KEY_PREFIX + "phone:" + normalizedPhoneLast10;
                 addNotificationToUser(userPhoneKey, notificationKey);
             }
         } catch (Exception e) {
@@ -141,6 +142,13 @@ public class CallNotificationRedisRepository {
                     } catch (Exception e) {
                         log.warn("Failed to deserialize notification: {}", notificationKey, e);
                     }
+                } else {
+                    try {
+                        redisTemplate.opsForList().remove(userKey, 0, notificationKey);
+                        log.debug("Pruned stale notification pointer from list: {} -> {}", userKey, notificationKey);
+                    } catch (Exception pruneEx) {
+                        log.warn("Failed to prune stale pointer {} from {}", notificationKey, userKey, pruneEx);
+                    }
                 }
             }
             return notifications;
@@ -150,4 +158,3 @@ public class CallNotificationRedisRepository {
         }
     }
 }
-
