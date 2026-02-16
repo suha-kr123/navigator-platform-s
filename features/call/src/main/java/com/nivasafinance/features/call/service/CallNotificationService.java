@@ -17,5 +17,7 @@ public interface CallNotificationService {
      * @return Optional containing the most recent notification from Redis, or empty if none found
      */
     Optional<CallNotificationResponse> getRecentNotificationsFromRedis();
+
+    void sendNotificationAsync(CallNotificationResponse notification, String userPhone);
 }
 

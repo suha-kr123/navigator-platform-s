@@ -2,7 +2,6 @@ rootProject.name = "navigator"
 
 include("main")
 include("common")
-include("webhooks")
 include("redash")
 
 include(":features:creditbureau")

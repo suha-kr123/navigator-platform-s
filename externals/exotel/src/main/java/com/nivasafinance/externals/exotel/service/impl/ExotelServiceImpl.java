@@ -3,6 +3,7 @@ package com.nivasafinance.externals.exotel.service.impl;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.common.context.UserContext;
+import com.nivasafinance.common.dto.CallNotificationResponse;
 import com.nivasafinance.common.enums.EntityType;
 import com.nivasafinance.common.enums.SystemEntities;
 import com.nivasafinance.common.utils.PhoneNumberUtils;
@@ -10,6 +11,7 @@ import com.nivasafinance.externals.exotel.service.ExotelService;
 import com.nivasafinance.features.call.dto.CallLogResponse;
 import com.nivasafinance.features.call.entity.CallLog;
 import com.nivasafinance.features.call.enums.CallDirection;
+import com.nivasafinance.features.call.service.CallNotificationService;
 import com.nivasafinance.features.call.service.CallReadService;
 import com.nivasafinance.features.call.enums.CallProvider;
 import com.nivasafinance.features.call.enums.CallStatus;
@@ -51,12 +53,15 @@ import com.nivasafinance.services.voice.VoiceHandler;
 import com.nivasafinance.services.voice.dto.VoiceGetCallStatusResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.util.MultiValueMap;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -85,6 +90,7 @@ public class ExotelServiceImpl implements ExotelService {
     private final CampaignWriteService campaignWriteService;
     private final CallReadService callReadService;
     private final ObjectMapper objectMapper;
+    private final CallNotificationService callNotificationService;
 
     private static final String DIRECT_CALL_SOURCE = "DIRECT_CALL_SOURCE";
     private static final String ENTITY_TYPE_CAMPAIGN = "CAMPAIGN";
@@ -1331,4 +1337,166 @@ public class ExotelServiceImpl implements ExotelService {
                         .build())
                 .build();
     }
+    
+    /* === incoming call popup webhook === */
+    @Override
+    public Map<String, Object> handleWebhook(MultiValueMap<String, String> formData) {
+    
+        List<String> errors = validateWebhookData(formData);
+        if (!errors.isEmpty()) {
+            return errorResponse("Invalid webhook data", errors);
+        }
+    
+        try {
+            processWebhook(formData);
+            return successResponse("Webhook received");
+        } catch (Exception ex) {
+            log.error("Error processing call webhook", ex);
+            return errorResponse("Error processing webhook: " + ex.getMessage(), null);
+        }
+    }
+    
+
+     /* === helper methods for incoming call popup webhook === */
+    private void processWebhook(MultiValueMap<String, String> formData) {
+
+        String callSid = getRequired(formData, "CallSid");
+        if (callSid == null) {
+            log.warn("Missing CallSid. Skipping webhook.");
+            return;
+        }
+    
+        String callFrom = get(formData, "CallFrom");
+        String callTo = get(formData, "CallTo");
+        String dialWhomNumber = get(formData, "DialWhomNumber");
+        String callStatus = get(formData, "CallStatus");
+        String direction = normalizeDirection(get(formData, "Direction"));
+        String agentEmail = get(formData, "AgentEmail");
+    
+        String eventType = resolveEventType(formData, callStatus);
+        LocalDateTime timestamp = resolveTimestamp(formData);
+    
+        CallNotificationResponse notification = CallNotificationResponse.builder()
+                .callSid(callSid)
+                .callFrom(callFrom)
+                .callTo(callTo)
+                .callStatus(callStatus)
+                .direction(direction)
+                .eventType(eventType)
+                .agentEmail(agentEmail)
+                .timestamp(timestamp)
+                .createdAt(LocalDateTime.now())
+                .build();
+    
+        callNotificationService.sendNotificationAsync(notification, dialWhomNumber);
+    }
+
+    /* === helper methods for incoming call popup webhook === */
+    private List<String> validateWebhookData(MultiValueMap<String, String> formData) {
+
+        List<String> errors = new ArrayList<>();
+    
+        validateRequired(formData, "CallSid", errors);
+        validateRequired(formData, "CallFrom", errors);
+        validateRequired(formData, "CallTo", errors);
+        validateRequired(formData, "Direction", errors);
+    
+        if (isBlank(get(formData, "CallStatus")) && isBlank(get(formData, "Status"))) {
+            errors.add("Missing required parameter: CallStatus or Status");
+        }
+    
+        return errors;
+    }    
+
+    /* === helper methods for incoming call popup webhook === */
+    private String get(MultiValueMap<String, String> formData, String key) {
+        return Optional.ofNullable(formData.getFirst(key))
+                .map(String::trim)
+                .filter(s -> !s.isBlank())
+                .orElse(null);
+    }
+   
+    /* === helper methods for incoming call popup webhook === */
+    private String getRequired(MultiValueMap<String, String> formData, String key) {
+        String value = get(formData, key);
+        return value != null ? value : null;
+    }
+   
+    /* === helper methods for incoming call popup webhook === */
+    private void validateRequired(MultiValueMap<String, String> formData,
+                                  String key,
+                                  List<String> errors) {
+        if (isBlank(get(formData, key))) {
+            errors.add("Missing required parameter: " + key);
+        }
+    }
+    
+    /* === helper methods for incoming call popup webhook === */
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
+    }
+
+    /* === helper methods for incoming call popup webhook === */
+    private String normalizeDirection(String direction) {
+        if (direction == null) return null;
+    
+        return switch (direction.toUpperCase()) {
+            case "INCOMING", "INBOUND" -> "INBOUND";
+            case "OUTBOUND", "OUTBOUND-DIAL" -> "OUTBOUND";
+            default -> direction.toUpperCase();
+        };
+    }
+
+    /* === helper methods for incoming call popup webhook === */
+    private String resolveEventType(MultiValueMap<String, String> formData, String callStatus) {
+        String eventType = get(formData, "EventType");
+    
+        if (!isBlank(eventType)) {
+            return eventType;
+        }
+    
+        return !isBlank(callStatus) ? callStatus : "UNKNOWN";
+    }
+
+    /* === helper methods for incoming call popup webhook === */
+    private LocalDateTime resolveTimestamp(MultiValueMap<String, String> formData) {
+
+        return parseDateTime(get(formData, "Timestamp"))
+                .or(() -> parseDateTime(get(formData, "Created")))
+                .orElse(LocalDateTime.now());
+    }
+   
+    /* === helper methods for incoming call popup webhook === */
+    private Optional<LocalDateTime> parseDateTime(String value) {
+        if (isBlank(value)) return Optional.empty();
+    
+        try {
+            return Optional.of(LocalDateTime.parse(value));
+        } catch (Exception ex) {
+            log.warn("Failed to parse timestamp: {}", value);
+            return Optional.empty();
+        }
+    }
+
+    /* === helper methods for incoming call popup webhook === */
+    private Map<String, Object> successResponse(String message) {
+        return Map.of(
+                "status", "success",
+                "message", message
+        );
+    }
+    
+    /* === helper methods for incoming call popup webhook === */
+    private Map<String, Object> errorResponse(String message, List<String> errors) {
+    
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", "error");
+        response.put("message", message);
+    
+        if (errors != null && !errors.isEmpty()) {
+            response.put("errors", errors);
+        }
+    
+        return response;
+    }    
 }

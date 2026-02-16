@@ -9,6 +9,7 @@ import com.nivasafinance.common.dto.EnrichedCallNotificationResponse;
 import com.nivasafinance.common.utils.PhoneNumberUtils;
 import com.nivasafinance.features.call.entity.CallLog;
 import com.nivasafinance.features.call.repository.CallNotificationRedisRepository;
+import com.nivasafinance.features.call.service.CallNotificationSseService;
 import com.nivasafinance.features.call.service.CallNotificationService;
 import com.nivasafinance.features.person.service.PersonReadService;
 import com.nivasafinance.features.usermanagement.entity.User;
@@ -16,6 +17,7 @@ import com.nivasafinance.features.usermanagement.service.UserReadService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -30,6 +32,7 @@ public class CallNotificationServiceImpl implements CallNotificationService {
     private final PersonReadService personReadService;
     private final JdbcTemplate jdbcTemplate;
     private final CallNotificationRedisRepository redisRepository;
+    private final CallNotificationSseService sseService;
 
     @Override
     public PaginatedResponse<EnrichedCallNotificationResponse> getNotificationsForCurrentUser(PaginationRequest paginationRequest) {
@@ -524,5 +527,48 @@ public class CallNotificationServiceImpl implements CallNotificationService {
         
         return Optional.of(mostRecent);
     }
+
+    /* === send notification async to user via SSE === */
+    @Override
+    @Async
+    public void sendNotificationAsync(CallNotificationResponse notification, String userPhone) {
+        try {
+            // normalize phone number to 10 digits
+            String normalizedUserPhone = extractLast10Digits(userPhone);
+            log.info("=== SSE NOTIFICATION FLOW START ===");
+            log.info("Looking up users for phone: {}, callSid: {}", userPhone, notification.getCallSid());
+            
+            List<User> users = userReadService.findUsersByPersonPhoneNumber(normalizedUserPhone);
+            log.info("Found {} users for phone: {}, callSid: {}", users.size(), userPhone, notification.getCallSid());
+            
+            if (users.isEmpty()) {
+                log.warn("⚠️ No users found for phone number: {}, notification will not be sent via SSE. CallSid: {}", 
+                        normalizedUserPhone, notification.getCallSid());
+                return;
+            }
+            
+            users.stream()
+                    .map(user -> {
+                        log.info("✓ Found user: {} (username: {}) for phone: {}, callSid: {}", 
+                                user.getId(), user.getUsername(), userPhone, notification.getCallSid());
+                        return user.getUsername();
+                    })
+                    .forEach(username -> {
+                        log.info("→ Attempting to send SSE notification to username: {} for call: {}", 
+                                username, notification.getCallSid());
+                        try {
+                            sseService.sendNotificationToUser(notification, username);
+                            log.info("✓ Successfully sent SSE notification to username: {}", username);
+                        } catch (Exception e) {
+                            log.error("✗ Failed to send SSE notification to user: {}", username, e);
+                        }
+                    });
+            log.info("=== SSE NOTIFICATION FLOW END ===");
+        } catch (Exception e) {
+            log.error("✗ Failed to process async notification for phone: {}, callSid: {}", 
+                    userPhone, notification.getCallSid(), e);
+        }
+    }
+   
 }
 
