@@ -533,6 +533,12 @@ public class CallNotificationServiceImpl implements CallNotificationService {
     @Async
     public void sendNotificationAsync(CallNotificationResponse notification, String userPhone) {
         try {
+            try {
+                redisRepository.save(notification, userPhone);
+                log.info("Saved recent call notification to Redis for user phone: {}", userPhone);
+            } catch (Exception e) {
+                log.warn("Failed to save recent call notification to Redis for user phone: {}", userPhone, e);
+            }
             // normalize phone number to 10 digits
             String normalizedUserPhone = extractLast10Digits(userPhone);
             log.info("=== SSE NOTIFICATION FLOW START ===");
@@ -571,4 +577,3 @@ public class CallNotificationServiceImpl implements CallNotificationService {
     }
    
 }
-
