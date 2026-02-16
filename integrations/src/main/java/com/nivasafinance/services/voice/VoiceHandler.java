@@ -33,15 +33,11 @@ public class VoiceHandler extends ThirdPartyHandler {
         VoiceProvider fallbackProvider = runConfig.getFallbackConfig() != null
                 ? servicesMap.get(runConfig.getFallbackConfig().getProvider())
                 : null;
-        
+
         ServiceRunner<VoiceProvider, VoiceCallRequest> runner = new ServiceRunner<>(
                 primaryProvider, fallbackProvider, runConfig.getRetries());
-        
-        try {
-            return (VoiceCallResponse) runner.invokeService("makeCall", voiceCallRequest, runConfig, businessContext);
-        } catch (Exception e) {
-            throw new VoiceHandlerException("Error making call: " + e.getMessage());
-        }
+
+        return (VoiceCallResponse) runner.invokeService("makeCall", voiceCallRequest, runConfig, businessContext);
     }
 
     public VoiceGetCallStatusResponse getCallStatus(String callSid, BusinessContext businessContext) {
@@ -52,15 +48,11 @@ public class VoiceHandler extends ThirdPartyHandler {
         VoiceProvider fallbackProvider = runConfig.getFallbackConfig() != null
                 ? servicesMap.get(runConfig.getFallbackConfig().getProvider())
                 : null;
-        
+
         ServiceRunner<VoiceProvider, String> runner = new ServiceRunner<>(
                 primaryProvider, fallbackProvider, runConfig.getRetries());
-        
-        try {
-            return (VoiceGetCallStatusResponse) runner.invokeService("getCallStatus", callSid, runConfig, businessContext);
-        } catch (Exception e) {
-            throw new VoiceHandlerException("Error getting call status: " + e.getMessage());
-        }
+
+        return (VoiceGetCallStatusResponse) runner.invokeService("getCallStatus", callSid, runConfig, businessContext);
     }
 
     public VoiceCreateListResponse uploadCSVList(VoiceCreateListRequest request, BusinessContext businessContext) {
@@ -71,15 +63,11 @@ public class VoiceHandler extends ThirdPartyHandler {
         VoiceProvider fallbackProvider = runConfig.getFallbackConfig() != null
                 ? servicesMap.get(runConfig.getFallbackConfig().getProvider())
                 : null;
-        
+
         ServiceRunner<VoiceProvider, VoiceCreateListRequest> runner = new ServiceRunner<>(
                 primaryProvider, fallbackProvider, runConfig.getRetries());
-        
-        try {
-            return (VoiceCreateListResponse) runner.invokeService("uploadCSVList", request, runConfig, businessContext);
-        } catch (Exception e) {
-            throw new VoiceHandlerException("Error uploading CSV list: " + e.getMessage());
-        }
+
+        return (VoiceCreateListResponse) runner.invokeService("uploadCSVList", request, runConfig, businessContext);
     }
 
     public VoiceCSVUploadStatusResponse getCSVUploadStatus(VoiceCSVUploadStatusRequest request, BusinessContext businessContext) {
@@ -90,15 +78,11 @@ public class VoiceHandler extends ThirdPartyHandler {
         VoiceProvider fallbackProvider = runConfig.getFallbackConfig() != null
                 ? servicesMap.get(runConfig.getFallbackConfig().getProvider())
                 : null;
-        
+
         ServiceRunner<VoiceProvider, VoiceCSVUploadStatusRequest> runner = new ServiceRunner<>(
                 primaryProvider, fallbackProvider, runConfig.getRetries());
-        
-        try {
-            return (VoiceCSVUploadStatusResponse) runner.invokeService("getCSVUploadStatus", request, runConfig, businessContext);
-        } catch (Exception e) {
-            throw new VoiceHandlerException("Error getting CSV upload status: " + e.getMessage());
-        }
+
+        return (VoiceCSVUploadStatusResponse) runner.invokeService("getCSVUploadStatus", request, runConfig, businessContext);
     }
 
     public VoiceCampaignResponse createCampaign(VoiceCampaignRequest request, BusinessContext businessContext) {
@@ -109,15 +93,11 @@ public class VoiceHandler extends ThirdPartyHandler {
         VoiceProvider fallbackProvider = runConfig.getFallbackConfig() != null
                 ? servicesMap.get(runConfig.getFallbackConfig().getProvider())
                 : null;
-        
+
         ServiceRunner<VoiceProvider, VoiceCampaignRequest> runner = new ServiceRunner<>(
                 primaryProvider, fallbackProvider, runConfig.getRetries());
-        
-        try {
-            return (VoiceCampaignResponse) runner.invokeService("createCampaign", request, runConfig, businessContext);
-        } catch (Exception e) {
-            throw new VoiceHandlerException("Error creating campaign: " + e.getMessage());
-        }
+
+        return (VoiceCampaignResponse) runner.invokeService("createCampaign", request, runConfig, businessContext);
     }
 
     public VoiceCampaignResponse getCampaignDetails(VoiceGetCampaignDetailsRequest request, BusinessContext businessContext) {
@@ -128,15 +108,11 @@ public class VoiceHandler extends ThirdPartyHandler {
         VoiceProvider fallbackProvider = runConfig.getFallbackConfig() != null
                 ? servicesMap.get(runConfig.getFallbackConfig().getProvider())
                 : null;
-        
+
         ServiceRunner<VoiceProvider, VoiceGetCampaignDetailsRequest> runner = new ServiceRunner<>(
                 primaryProvider, fallbackProvider, runConfig.getRetries());
-        
-        try {
-            return (VoiceCampaignResponse) runner.invokeService("getCampaignDetails", request, runConfig, businessContext);
-        } catch (Exception e) {
-            throw new VoiceHandlerException("Error getting campaign details: " + e.getMessage());
-        }
+
+        return (VoiceCampaignResponse) runner.invokeService("getCampaignDetails", request, runConfig, businessContext);
     }
 
     @Override
