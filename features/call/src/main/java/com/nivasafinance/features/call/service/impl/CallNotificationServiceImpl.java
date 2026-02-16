@@ -535,6 +535,12 @@ public class CallNotificationServiceImpl implements CallNotificationService {
         try {
             // normalize phone number to 10 digits
             String normalizedUserPhone = extractLast10Digits(userPhone);
+            try {
+                redisRepository.save(notification, userPhone);
+                log.info("Saved recent call notification to Redis for user phone: {}", userPhone);
+            } catch (Exception e) {
+                log.warn("Failed to save recent call notification to Redis for user phone: {}", userPhone, e);
+            }
             log.info("=== SSE NOTIFICATION FLOW START ===");
             log.info("Looking up users for phone: {}, callSid: {}", userPhone, notification.getCallSid());
             
