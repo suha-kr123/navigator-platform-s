@@ -64,23 +64,12 @@ public class CallNotificationRedisRepository {
             
             redisTemplate.opsForValue().set(notificationKey, notificationJson, NOTIFICATION_TTL);
             
-            if (notification.getAgentEmail() != null && !notification.getAgentEmail().isBlank()) {
-                String userKey = USER_NOTIFICATIONS_KEY_PREFIX + "email:" + notification.getAgentEmail();
-                addNotificationToUser(userKey, notificationKey);
-            }
-            
-            // Use DialWhomNumber (the agent number) for notifications
-            // Fallback to callTo if DialWhomNumber is not provided
             String phone = (dialWhomNumber != null && !dialWhomNumber.isBlank()) 
                     ? dialWhomNumber 
                     : notification.getCallTo();
             if (phone != null && !phone.isBlank()) {
-                // Normalize phone number before saving to Redis
-                String normalizedPhone = PhoneNumberUtils.normalizePhoneNumber(phone);
-                if (normalizedPhone != null && !normalizedPhone.isBlank()) {
-                    String userPhoneKey = USER_NOTIFICATIONS_KEY_PREFIX + "phone:" + normalizedPhone;
-                    addNotificationToUser(userPhoneKey, notificationKey);
-                }
+                String userPhoneKey = USER_NOTIFICATIONS_KEY_PREFIX + "phone:" + phone;
+                addNotificationToUser(userPhoneKey, notificationKey);
             }
         } catch (Exception e) {
             log.error("Failed to save notification to Redis", e);
@@ -127,20 +116,11 @@ public class CallNotificationRedisRepository {
         }
     }
 
-    public List<CallNotificationResponse> findByUserEmail(String email) {
-        if (email == null || email.isBlank()) {
-            return new ArrayList<>();
-        }
-        return findByUserKey(USER_NOTIFICATIONS_KEY_PREFIX + "email:" + email);
-    }
-
     public List<CallNotificationResponse> findByUserPhone(String phone) {
         if (phone == null || phone.isBlank()) {
             return new ArrayList<>();
         }
-        // Normalize phone number before lookup to match the format in Redis
-        String normalizedPhone = PhoneNumberUtils.normalizePhoneNumber(phone);
-        return findByUserKey(USER_NOTIFICATIONS_KEY_PREFIX + "phone:" + normalizedPhone);
+        return findByUserKey(USER_NOTIFICATIONS_KEY_PREFIX + "phone:" + PhoneNumberUtils.normalizePhoneNumber(phone));
     }
 
     private List<CallNotificationResponse> findByUserKey(String userKey) {

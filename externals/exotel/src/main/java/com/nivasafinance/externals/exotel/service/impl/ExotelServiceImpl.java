@@ -412,34 +412,11 @@ public class ExotelServiceImpl implements ExotelService {
         return null;
     }
 
-    /**
-     * Normalize phone number by removing country code prefix if present.
-     * Converts +919876543210 to 9876543210.
-     */
     private String normalizePhoneNumber(String phoneNumber) {
         if (phoneNumber == null || phoneNumber.isBlank()) {
             return phoneNumber;
         }
-
-        // First normalize to standard format with country code
-        String normalized = PhoneNumberUtils.normalizePhoneNumber(phoneNumber);
-        
-        // Remove +91 prefix for India to get 10-digit number
-        if (normalized != null && normalized.startsWith("+91") && normalized.length() == 13) {
-            return normalized.substring(3); // Remove "+91"
-        }
-        
-        // Remove just the + if present
-        if (normalized != null && normalized.startsWith("+")) {
-            String digits = normalized.substring(1);
-            // If it starts with 91 and is 12 digits, remove the 91
-            if (digits.startsWith("91") && digits.length() == 12) {
-                return digits.substring(2);
-            }
-            return digits;
-        }
-
-        return normalized;
+        return PhoneNumberUtils.normalizePhoneNumber(phoneNumber);
     }
 
     /**
