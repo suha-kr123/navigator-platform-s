@@ -82,8 +82,9 @@ public class CallNotificationSseController {
      */
     @GetMapping("/call-notifications/recent")
     public ResponseEntity<CallNotificationResponse> getRecentNotificationsFromRedis() {
-        CallNotificationResponse notification = notificationService.getRecentNotificationsFromRedis();
-        return ResponseEntity.ok(notification);
+        return notificationService.getRecentNotificationsFromRedis()
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 }
 

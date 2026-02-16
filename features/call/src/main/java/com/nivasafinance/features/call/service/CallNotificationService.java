@@ -5,6 +5,8 @@ import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.common.dto.CallNotificationResponse;
 import com.nivasafinance.common.dto.EnrichedCallNotificationResponse;
 
+import java.util.Optional;
+
 public interface CallNotificationService {
     PaginatedResponse<EnrichedCallNotificationResponse> getNotificationsForCurrentUser(PaginationRequest paginationRequest);
     
@@ -14,7 +16,7 @@ public interface CallNotificationService {
      * 
      * @return Optional containing the most recent notification from Redis, or empty if none found
      */
-    CallNotificationResponse getRecentNotificationsFromRedis();
+    Optional<CallNotificationResponse> getRecentNotificationsFromRedis();
 
     void sendNotificationAsync(CallNotificationResponse notification, String userPhone);
 }

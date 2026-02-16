@@ -432,17 +432,17 @@ public class CallNotificationServiceImpl implements CallNotificationService {
      * @return Optional containing the most recent notification from Redis, or empty if none found
      */
     @Override
-    public CallNotificationResponse getRecentNotificationsFromRedis() {
+    public Optional<CallNotificationResponse> getRecentNotificationsFromRedis() {
         String username = UserContext.getUsername();
         if (username == null || username.isBlank()) {
             log.debug("Missing username in UserContext - returning empty");
-            return null;
+            return Optional.empty();
         }
 
         Optional<User> userOpt = userReadService.findUserByUsername(username);
         if (userOpt.isEmpty() || userOpt.get().getPerson() == null) {
             log.debug("User not found or has no person associated: {}", username);
-            return null;
+            return Optional.empty();
         }
 
         User user = userOpt.get();
@@ -458,7 +458,7 @@ public class CallNotificationServiceImpl implements CallNotificationService {
 
         if (primaryPhoneOriginal == null) {
             log.debug("No primary phone number found for user: {}", username);
-            return null;
+            return Optional.empty();
         }
 
         String primaryPhoneNormalized = PhoneNumberUtils.normalizePhoneNumber(primaryPhoneOriginal);
@@ -502,7 +502,7 @@ public class CallNotificationServiceImpl implements CallNotificationService {
 
         if (notifications.isEmpty()) {
             log.debug("No notifications found in Redis for user: {}", username);
-            return null;
+            return Optional.empty();
         }
 
         // Sort by createdAt descending (most recent first)
@@ -525,7 +525,7 @@ public class CallNotificationServiceImpl implements CallNotificationService {
         log.info("Returning most recent notification from Redis for user: {} (callSid: {}, total in Redis: {})", 
                 username, mostRecent.getCallSid(), notifications.size());
         
-        return mostRecent;
+        return Optional.of(mostRecent);
     }
 
     /* === send notification async to user via SSE === */
