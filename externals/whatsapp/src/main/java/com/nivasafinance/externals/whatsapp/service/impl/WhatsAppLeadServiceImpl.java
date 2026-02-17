@@ -176,8 +176,6 @@ public class WhatsAppLeadServiceImpl implements WhatsAppLeadService {
         UpdateSourcingDetailsRequest sourcingRequest = new UpdateSourcingDetailsRequest();
         sourcingRequest.setSourcingChannel(request.getSourcing_channel_name());
         
-        // Check if at least one marketing detail has a value
-        boolean hasMarketingDetails = false;
         if (request.getMarketing_details() != null) {
             boolean hasSourceId = request.getMarketing_details().getSourceId() != null && 
                                   !request.getMarketing_details().getSourceId().isBlank();
@@ -186,7 +184,6 @@ public class WhatsAppLeadServiceImpl implements WhatsAppLeadService {
             
             // If at least one has a value, update both fields (even if one is empty)
             if (hasSourceId || hasSourceUrl) {
-                hasMarketingDetails = true;
                 sourcingRequest.setSourceId(request.getMarketing_details().getSourceId());
                 sourcingRequest.setSourceUrl(request.getMarketing_details().getSourceUrl());
             }

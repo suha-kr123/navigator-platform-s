@@ -72,10 +72,6 @@ public class CreditBureauWriteServiceImpl implements CreditBureauWriteService {
                 throw new IllegalArgumentException("Person data cannot be null");
             }
 
-            if (enquiry == null) {
-                throw new IllegalArgumentException("Enquiry cannot be null");
-            }
-
             try {
                 BusinessContext businessContext = new BusinessContext(
                     SystemEntities.LEAD.name(),

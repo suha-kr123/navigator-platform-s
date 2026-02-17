@@ -40,7 +40,6 @@ public class CreditBureauHandler extends ThirdPartyHandler {
             fallbackProvider = servicesMap.get(runConfig.getFallbackConfig().getProvider());
         }
         
-        @SuppressWarnings("unchecked")
         ServiceRunner<CreditBureauProvider, CreditBureauEnquiryRequest> runner = 
             new ServiceRunner<>(primaryProvider, fallbackProvider, runConfig.getRetries());
         
@@ -68,7 +67,6 @@ public class CreditBureauHandler extends ThirdPartyHandler {
             fallbackProvider = servicesMap.get(runConfig.getFallbackConfig().getProvider());
         }
         
-        @SuppressWarnings("unchecked")
         ServiceRunner<CreditBureauProvider, String> runner = 
             new ServiceRunner<>(primaryProvider, fallbackProvider, runConfig.getRetries());
         
@@ -120,7 +118,6 @@ public class CreditBureauHandler extends ThirdPartyHandler {
             retries = runConfig.getRetries();
         }
         
-        @SuppressWarnings("unchecked")
         ServiceRunner<CreditBureauProvider, PullEnquiryRequest> runner = 
             new ServiceRunner<>(primaryProvider, fallbackProvider, retries);
         

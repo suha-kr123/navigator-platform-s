@@ -4,10 +4,6 @@ import com.nivasafinance.common.exception.BadRequestException;
 import com.nivasafinance.common.exception.ExceptionUtils;
 import org.springframework.context.MessageSource;
 
-import org.springframework.context.MessageSource;
-
-import com.nivasafinance.common.exception.ExceptionUtils;
-
 public final class LeadExceptionFactory {
 
     private LeadExceptionFactory() {
@@ -20,11 +16,6 @@ public final class LeadExceptionFactory {
     }
 
     public static LeadNotFoundException leadNotFoundByReferralTrackingCode(String referralTrackingCode, MessageSource messageSource) {
-        String message = ExceptionUtils.createLocalizedMessage(
-            "error.lead.not.found.by.referral.tracking.code",
-            new Object[]{referralTrackingCode},
-            messageSource
-        );
         return new LeadNotFoundException(referralTrackingCode, messageSource);
     }
 

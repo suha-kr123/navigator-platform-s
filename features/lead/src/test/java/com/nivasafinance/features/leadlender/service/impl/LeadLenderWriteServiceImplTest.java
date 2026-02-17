@@ -119,6 +119,7 @@ class LeadLenderWriteServiceImplTest {
 
     // ==================== createLeadLender() Tests ====================
 
+    @SuppressWarnings("rawtypes")
     @Test
     void createLeadLender_success_createsNewLeadLenderRelationship() {
         // Given
@@ -258,6 +259,7 @@ class LeadLenderWriteServiceImplTest {
         verify(leadWriteService).touchLead(leadIdentifier);
         verify(applicationEventPublisher).publishEvent(any(SystemEvent.class));
         
+        @SuppressWarnings("rawtypes")
         ArgumentCaptor<SystemEvent> eventCaptor = ArgumentCaptor.forClass(SystemEvent.class);
         verify(applicationEventPublisher).publishEvent(eventCaptor.capture());
         SystemEvent<?> publishedEvent = eventCaptor.getValue();
@@ -580,6 +582,7 @@ class LeadLenderWriteServiceImplTest {
             verify(leadWriteService).touchLead(leadIdentifier);
             verify(applicationEventPublisher).publishEvent(any(SystemEvent.class));
             
+            @SuppressWarnings("rawtypes")
             ArgumentCaptor<SystemEvent> eventCaptor = ArgumentCaptor.forClass(SystemEvent.class);
             verify(applicationEventPublisher).publishEvent(eventCaptor.capture());
             SystemEvent<?> publishedEvent = eventCaptor.getValue();
@@ -828,6 +831,7 @@ class LeadLenderWriteServiceImplTest {
             leadLenderWriteService.rejectLeadLender(leadIdentifier, lenderIdentifier, request);
 
             // Then
+            @SuppressWarnings("rawtypes")
             ArgumentCaptor<SystemEvent> eventCaptor = ArgumentCaptor.forClass(SystemEvent.class);
             verify(applicationEventPublisher).publishEvent(eventCaptor.capture());
             
@@ -871,6 +875,7 @@ class LeadLenderWriteServiceImplTest {
         verify(leadWriteService).touchLead(leadIdentifier);
         verify(applicationEventPublisher).publishEvent(any(SystemEvent.class));
         
+        @SuppressWarnings("rawtypes")
         ArgumentCaptor<SystemEvent> eventCaptor = ArgumentCaptor.forClass(SystemEvent.class);
         verify(applicationEventPublisher).publishEvent(eventCaptor.capture());
         SystemEvent<?> publishedEvent = eventCaptor.getValue();
@@ -983,6 +988,7 @@ class LeadLenderWriteServiceImplTest {
         leadLenderWriteService.submitLeadLender(leadIdentifier, lenderIdentifier);
 
         // Then
+        @SuppressWarnings("rawtypes")
         ArgumentCaptor<SystemEvent> eventCaptor = ArgumentCaptor.forClass(SystemEvent.class);
         verify(applicationEventPublisher).publishEvent(eventCaptor.capture());
         

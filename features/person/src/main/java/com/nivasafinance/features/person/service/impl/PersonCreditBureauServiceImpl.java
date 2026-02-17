@@ -56,8 +56,6 @@ public class PersonCreditBureauServiceImpl implements PersonCreditBureauService 
         Long personId = request.getPersonId();
         String entityType = request.getEntityType();
         Long entityId = request.getEntityId();
-        String businessPurpose = request.getBusinessPurpose();
-
         log.info("Initiating credit bureau enquiry for personId: {}, entityType: {}", personId, entityType);
         
         PersonResponse personResponse = personReadService.getPersonById(personId);
@@ -68,7 +66,6 @@ public class PersonCreditBureauServiceImpl implements PersonCreditBureauService 
         
         if (validSuccessEnquiryOpt.isPresent()) {
             Long validEnquiryId = (Long) validSuccessEnquiryOpt.get().get("enquiry_id");
-            UUID validEnquiryIdentifier = (UUID) validSuccessEnquiryOpt.get().get("enquiry_identifier");
             log.info("Found valid non-expired SUCCESS enquiry ID: {} for personId: {}", validEnquiryId, personId);
             CreditBureauEnquiry enquiry = creditBureauReadService.getCbEnquiryEntityById(validEnquiryId);
             return CreditBureauEnquiryResponse.toCbEnquiryResponse(enquiry);

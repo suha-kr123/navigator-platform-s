@@ -1,6 +1,5 @@
 package com.nivasafinance.features.referral.service.impl;
 
-import com.nivasafinance.common.utils.ValidationUtils;
 import com.nivasafinance.features.referral.dto.ReferralCodeRegistryResponse;
 import com.nivasafinance.features.referral.entity.ReferralCodeRegistry;
 import com.nivasafinance.features.referral.enums.EntityType;

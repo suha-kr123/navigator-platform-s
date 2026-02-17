@@ -12,7 +12,6 @@ import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.repository.ContactRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadCreditBureauReadService;
-import com.nivasafinance.features.lead.service.LeadReadService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,7 +28,6 @@ public class LeadCreditBureauReadServiceImpl implements LeadCreditBureauReadServ
 
     private final CreditBureauReadService creditBureauReadService;
     private final ConsentReadService consentReadService;
-    private final LeadReadService leadReadService;
     private final LeadRepositoryWrapper leadRepositoryWrapper;
     private final ContactRepositoryWrapper contactRepositoryWrapper;
 

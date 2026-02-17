@@ -6,7 +6,6 @@ import com.nivasafinance.features.rolemanagement.permission.dto.PermissionCheckR
 import com.nivasafinance.features.rolemanagement.permission.dto.PermissionCheckResponse;
 import com.nivasafinance.features.rolemanagement.permissionchecker.PermissionCheckerService;
 import com.nivasafinance.features.rolemanagement.role.service.UserRoleService;
-import com.nivasafinance.features.rolemanagement.enums.Role;
 import com.nivasafinance.common.context.UserContext;
 
 

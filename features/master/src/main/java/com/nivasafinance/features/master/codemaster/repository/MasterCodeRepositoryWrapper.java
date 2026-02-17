@@ -3,7 +3,6 @@ package com.nivasafinance.features.master.codemaster.repository;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationInfo;
 import com.nivasafinance.common.base.model.PaginationRequest;
-import com.nivasafinance.features.master.codemaster.dto.MasterCodeResponse;
 import com.nivasafinance.features.master.codemaster.entity.MasterCode;
 import com.nivasafinance.features.master.codemaster.exception.CodeMasterExceptionFactory;
 import com.nivasafinance.features.master.codemaster.exception.CodeMasterNotFoundException;
@@ -17,7 +16,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class MasterCodeRepositoryWrapper {
