@@ -63,14 +63,19 @@ public class CallNotificationRedisRepository {
             String notificationJson = objectMapper.writeValueAsString(notification);
             
             redisTemplate.opsForValue().set(notificationKey, notificationJson, NOTIFICATION_TTL);
-            
+            boolean duplicate = existsByCallSidAndEventType(notification.getCallSid(), eventType);
             String phone = (dialWhomNumber != null && !dialWhomNumber.isBlank()) 
                     ? dialWhomNumber 
                     : notification.getCallTo();
             if (phone != null && !phone.isBlank()) {
                 String normalizedPhoneLast10 = PhoneNumberUtils.normalizePhoneNumber(phone);
                 String userPhoneKey = USER_NOTIFICATIONS_KEY_PREFIX + "phone:" + normalizedPhoneLast10;
-                addNotificationToUser(userPhoneKey, notificationKey);
+                if (!duplicate) {
+                    addNotificationToUser(userPhoneKey, notificationKey);
+                } else {
+                    log.debug("Duplicate notification detected for {}:{}; skipping list push for {}", 
+                            notification.getCallSid(), eventType, userPhoneKey);
+                }
             }
         } catch (Exception e) {
             log.error("Failed to save notification to Redis", e);
