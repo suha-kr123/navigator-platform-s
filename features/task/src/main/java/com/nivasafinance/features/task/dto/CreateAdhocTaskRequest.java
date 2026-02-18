@@ -1,4 +1,4 @@
-package com.nivasafinance.features.leadtasks.dto;
+package com.nivasafinance.features.task.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
@@ -21,12 +21,5 @@ public class CreateAdhocTaskRequest {
 
     private LocalDateTime dueAt;
 
-    private String stageKey;
-
-    private String creatorRemarks;
-
-    private LocalDateTime preferredCallWindowStart;
-    
-    private LocalDateTime preferredCallWindowEnd;
-
+    private TaskDetailsRequest taskDetails;
 }

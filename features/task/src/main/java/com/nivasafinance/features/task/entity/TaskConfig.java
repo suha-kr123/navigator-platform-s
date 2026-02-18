@@ -58,6 +58,7 @@ public class TaskConfig extends AuditableEntity {
         private String rescheduleReasonsCodeValueKey;
         private List<String> allowedRoles;
         private String dueDateLogicExpression;
+        private Boolean isAdhocTaskAllowed;
     }
 }
 

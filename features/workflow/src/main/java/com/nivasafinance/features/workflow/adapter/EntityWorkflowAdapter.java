@@ -3,7 +3,9 @@ package com.nivasafinance.features.workflow.adapter;
 import com.nivasafinance.common.enums.EntityType;
 import com.nivasafinance.features.task.dto.TaskDetailsRequest;
 
+import java.util.Map;
 import java.util.UUID;
+
 
 /**
  * Adapter interface for entity-specific workflow operations.
@@ -35,20 +37,10 @@ public interface EntityWorkflowAdapter {
      * Gets the workflow config key from the entity.
      */
     String getWorkflowConfigKey(Long entityId);
-
-    /**
-     * Creates an adhoc task request for the entity type.
-     */
-    Object createAdhocTaskRequest(String taskConfigKey, String stageKey);
     
     /**
      * Creates a task and associates it with the entity (synchronous, no reflection).
      */
-    Object createTaskAndAssociate(Long entityId, Object createTaskRequest, java.util.Map<String, Object> taskDetails);
-    
-    /**
-     * Creates an adhoc task for the entity (synchronous, no reflection).
-     */
-    Object createAdhocTask(UUID entityIdentifier, Object createAdhocTaskRequest);
+    Object createTaskAndAssociate(Long entityId, Object createTaskRequest, Map<String, Object> taskDetails);
 }
 

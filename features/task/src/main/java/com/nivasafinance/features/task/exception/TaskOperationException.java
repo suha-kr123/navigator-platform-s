@@ -2,6 +2,7 @@ package com.nivasafinance.features.task.exception;
 
 import com.nivasafinance.common.exception.BadRequestException;
 import com.nivasafinance.common.exception.ExceptionUtils;
+import com.nivasafinance.common.enums.EntityType;
 import org.springframework.context.MessageSource;
 
 import java.io.Serial;
@@ -61,6 +62,20 @@ public class TaskOperationException extends BadRequestException {
     public static TaskOperationException rescheduleNotAllowed(String taskConfigKey, MessageSource messageSource) {
         return new TaskOperationException(
             ExceptionUtils.createLocalizedMessage("error.task.reschedule.not.allowed", 
+                new Object[]{taskConfigKey}, messageSource)
+        );
+    }
+
+    public static TaskOperationException entityServiceNotFound(EntityType entityType, MessageSource messageSource) {
+        return new TaskOperationException(
+            ExceptionUtils.createLocalizedMessage("error.task.entity.service.not.found", 
+                new Object[]{entityType.name()}, messageSource)
+        );
+    }   
+
+    public static TaskOperationException adhocTaskNotAllowed(String taskConfigKey, MessageSource messageSource) {
+        return new TaskOperationException(
+            ExceptionUtils.createLocalizedMessage("error.task.adhoc.task.not.allowed", 
                 new Object[]{taskConfigKey}, messageSource)
         );
     }

@@ -22,6 +22,7 @@ public enum OperationsEnum {
     READ_STAGE,
     READ_WORKFLOW,
     READ_TASK,
+    CREATE_TASK,
     UPDATE_TASK,
     READ_USER_PREFERENCES,
     CREATE_USER_PREFERENCES,

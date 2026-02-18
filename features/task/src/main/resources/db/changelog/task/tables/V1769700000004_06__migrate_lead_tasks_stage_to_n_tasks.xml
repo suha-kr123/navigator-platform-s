@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1769700000004_06" author="system" context="default">
+        <comment>Migrate stage and lead context from n_lead_tasks into n_tasks.task_details (entityId, entityType LEAD, stageKey and other details)</comment>
+        <sql>
+            UPDATE n_tasks t
+            SET task_details = (
+                jsonb_build_object('entityId', l.lead_identifier, 'entityType', 'LEAD')
+                || COALESCE(lt.task_details, '{}'::jsonb)
+            )
+            FROM n_lead_tasks lt
+            JOIN n_lead l ON lt.lead_id = l.id
+            WHERE t.id = lt.task_id
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

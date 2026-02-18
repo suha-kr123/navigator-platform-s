@@ -17,6 +17,7 @@ import com.nivasafinance.common.enums.EntityType;
 public class TaskDetailsRequest {
     private UUID entityId;
     private EntityType entityType;
+    private String stageKey;
     private PreferredCallWindow preferredCallWindow;
     private String creatorRemarks;
     private Integer iterationCount;
