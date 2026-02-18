@@ -212,7 +212,7 @@ public class ExotelController {
     }
 
     /* === incoming call popup webhook === */
-    @GetMapping(value = "/call-popup", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    @GetMapping(value = "/call-popup")
     public ResponseEntity<Map<String, Object>> handleCallEvent(
             @RequestParam MultiValueMap<String, String> formData) {
 
