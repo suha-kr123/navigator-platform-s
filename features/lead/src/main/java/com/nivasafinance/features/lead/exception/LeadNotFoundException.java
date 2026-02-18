@@ -27,4 +27,12 @@ public class LeadNotFoundException extends ResourceNotFoundException {
                 messageSource
         ));
     }
+
+    public LeadNotFoundException(String referralTrackingCode, MessageSource messageSource) {
+        super(ExceptionUtils.createLocalizedMessage(
+                "error.lead.not.found.by.referral.tracking.code",
+                new Object[]{referralTrackingCode},
+                messageSource
+        ));
+    }
 }

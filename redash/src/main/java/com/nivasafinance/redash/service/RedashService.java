@@ -2,7 +2,9 @@ package com.nivasafinance.redash.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nivasafinance.redash.client.RedashClient;
+import com.nivasafinance.redash.dto.ExcelMergeInput;
 import com.nivasafinance.redash.dto.FileType;
+import com.nivasafinance.redash.dto.RedashExcelReportRequest;
 import com.nivasafinance.redash.dto.RedashQueryResponse;
 import com.nivasafinance.redash.dto.RedashQueryResultRequest;
 import com.nivasafinance.redash.dto.RedashReportRequest;
@@ -10,8 +12,19 @@ import feign.FeignException;
 import feign.Response;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -21,6 +34,8 @@ import java.util.concurrent.TimeoutException;
 @AllArgsConstructor
 @Slf4j
 public class RedashService {
+
+    private static final String SHEET_NAME_PREFIX = "Sheet";
 
     private final RedashClient redashClient;
     private final ObjectMapper objectMapper;
@@ -117,6 +132,126 @@ public class RedashService {
                 throw new RuntimeException("Failed to generate report: " + e.getMessage(), e);
             }
         }, executorService);
+    }
+
+    /**
+     * Generates a consolidated Excel report by running each Redash query (by the given query IDs)
+     * with the given parameters (XLSX), merging all sheets into one workbook, and returning the Excel as a stream.
+     * Caller supplies the list of query IDs; Redash does not store or resolve query IDs.
+     *
+     * @param request RedashExcelReportRequest containing queryIds, parameters, and optional queryIdToSheetName mapping
+     * @return InputStream of the merged Excel workbook; caller is responsible for closing it
+     */
+    public InputStream generateExcelReport(RedashExcelReportRequest request) {
+        if (request == null || request.getQueryIds() == null || request.getQueryIds().isEmpty()) {
+            throw new IllegalArgumentException("request and queryIds must not be null or empty");
+        }
+
+        List<Long> queryIds = request.getQueryIds();
+        Map<String, Object> params = request.getParameters() != null ? request.getParameters() : Map.of();
+        Map<Long, String> queryIdToSheetName = request.getQueryIdToSheetName();
+
+        List<CompletableFuture<Response>> futures = queryIds.stream()
+                .map(queryId -> {
+                    RedashReportRequest reportRequest = RedashReportRequest.builder()
+                            .queryId(queryId)
+                            .fileType(FileType.XLSX)
+                            .parameters(params)
+                            .build();
+                    return generateReport(reportRequest);
+                })
+                .toList();
+
+        byte[] mergedBytes = CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[0]))
+                .thenApply(v -> {
+                    List<Response> responses = futures.stream()
+                            .map(CompletableFuture::join)
+                            .toList();
+                    ExcelMergeInput mergeInput = ExcelMergeInput.builder()
+                            .queryIds(queryIds)
+                            .responses(responses)
+                            .queryIdToSheetName(queryIdToSheetName)
+                            .build();
+                    return mergeExcelSheets(mergeInput);
+                })
+                .join();
+
+        return new ByteArrayInputStream(mergedBytes);
+    }
+
+    /**
+     * Merges XLSX responses from Redash (one sheet per response) into a single workbook.
+     * Each response body is read as XLSX; the first sheet is copied into the target workbook.
+     * Sheet names are taken from queryIdToSheetName mapping if available, otherwise defaults to Sheet1, Sheet2, etc.
+     *
+     * @param input merge input containing queryIds, responses (same order), and optional queryIdToSheetName mapping
+     */
+    private byte[] mergeExcelSheets(ExcelMergeInput input) {
+        List<Long> queryIds = input.getQueryIds();
+        List<Response> responses = input.getResponses();
+        Map<Long, String> queryIdToSheetName = input.getQueryIdToSheetName();
+
+        try (Workbook targetWorkbook = new XSSFWorkbook()) {
+            for (int i = 0; i < responses.size(); i++) {
+                Response response = responses.get(i);
+                Long queryId = i < queryIds.size() ? queryIds.get(i) : null;
+
+                String sheetName;
+                if (queryIdToSheetName != null && queryId != null && queryIdToSheetName.containsKey(queryId)) {
+                    sheetName = queryIdToSheetName.get(queryId);
+                } else {
+                    sheetName = SHEET_NAME_PREFIX + (i + 1);
+                }
+
+                if (response == null || response.body() == null) {
+                    log.warn("Skipping sheet '{}': null response body", sheetName);
+                    continue;
+                }
+                try (InputStream bodyStream = response.body().asInputStream();
+                     Workbook sourceWorkbook = new XSSFWorkbook(bodyStream)) {
+                    Sheet sourceSheet = sourceWorkbook.getSheetAt(0);
+                    Sheet targetSheet = targetWorkbook.createSheet(sanitizeSheetName(sheetName));
+                    copySheet(sourceSheet, targetSheet);
+                }
+            }
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            targetWorkbook.write(out);
+            return out.toByteArray();
+        } catch (Exception e) {
+            log.error("Failed to merge Excel sheets", e);
+            throw new RuntimeException("Failed to merge Excel report: " + e.getMessage(), e);
+        }
+    }
+
+    private void copySheet(Sheet source, Sheet target) {
+        for (Row sourceRow : source) {
+            Row targetRow = target.createRow(sourceRow.getRowNum());
+            for (Cell sourceCell : sourceRow) {
+                Cell targetCell = targetRow.createCell(sourceCell.getColumnIndex(), sourceCell.getCellType());
+                copyCellValue(sourceCell, targetCell);
+            }
+        }
+    }
+
+    private void copyCellValue(Cell source, Cell target) {
+        CellType cellType = source.getCellType();
+        switch (cellType) {
+            case STRING -> target.setCellValue(source.getStringCellValue());
+            case NUMERIC -> target.setCellValue(source.getNumericCellValue());
+            case BOOLEAN -> target.setCellValue(source.getBooleanCellValue());
+            case FORMULA -> target.setCellFormula(source.getCellFormula());
+            case BLANK -> target.setBlank();
+            case ERROR -> target.setCellErrorValue(source.getErrorCellValue());
+            default -> { }
+        }
+    }
+
+    private String sanitizeSheetName(String name) {
+        if (name == null || name.isEmpty()) {
+            return "Sheet";
+        }
+        String sanitized = name.replaceAll("[\\\\/:*?\\[\\]]", "_");
+        return sanitized.substring(0, Math.min(sanitized.length(), 31));
     }
 
     private String getFileExtension(FileType fileType) {

@@ -143,6 +143,10 @@ public class ValidationUtils {
         return Objects.equals(obj1, obj2);
     }
 
+    public static boolean isNull(Object obj) {
+        return obj == null;
+    }
+
 
 }
 

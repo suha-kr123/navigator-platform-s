@@ -8,6 +8,7 @@ import com.nivasafinance.common.events.payload.LeadDocumentDeletionEventPayload;
 import com.nivasafinance.common.events.payload.LeadDocumentUpdationEventPayload;
 import com.nivasafinance.common.exception.BadRequestException;
 import com.nivasafinance.features.document.dto.DocumentCreateRequest;
+import com.nivasafinance.features.document.dto.DocumentCreateRequestInputStream;
 import com.nivasafinance.features.document.dto.DocumentCreateResponse;
 import com.nivasafinance.features.document.dto.DocumentResponse;
 import com.nivasafinance.features.document.service.DocumentReadService;
@@ -27,6 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -82,6 +84,43 @@ public class LeadDocumentWriteServiceImpl implements LeadDocumentWriteService {
         publishLeadDocumentCreatedEvent(lead, documentResponse);
 
         // Return response with document identifier
+        return LeadDocumentCreateResponse.builder()
+                .documentIdentifier(documentResponse.getIdentifier())
+                .build();
+    }
+
+    @Override
+    public LeadDocumentCreateResponse createLeadDocument(UUID leadIdentifier, byte[] content, String filename, String contentType, LeadDocumentCreateRequest request) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+
+        DocumentCreateRequestInputStream documentRequest = DocumentCreateRequestInputStream.builder()
+                .name(filename)
+                .file(new ByteArrayInputStream(content))
+                .customPath(generateDocumentPathForLead(leadIdentifier, filename))
+                .contentType(contentType)
+                .size((long) content.length)
+                .build();
+
+        DocumentCreateResponse documentResponse = documentWriteService.createDocument(documentRequest);
+
+        codeValueMasterService.getByKeys(request.getTags());
+
+        Lead.DocumentDetail documentDetail = Lead.DocumentDetail.builder()
+                .id(documentResponse.getId())
+                .tag(request.getTags())
+                .build();
+
+        List<Lead.DocumentDetail> documentDetails = lead.getDocumentDetails();
+        if (documentDetails == null) {
+            documentDetails = new ArrayList<>();
+            lead.setDocumentDetails(documentDetails);
+        }
+        documentDetails.add(documentDetail);
+
+        leadRepositoryWrapper.saveWithException(lead);
+
+        publishLeadDocumentCreatedEvent(lead, documentResponse);
+
         return LeadDocumentCreateResponse.builder()
                 .documentIdentifier(documentResponse.getIdentifier())
                 .build();

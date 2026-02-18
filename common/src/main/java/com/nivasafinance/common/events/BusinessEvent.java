@@ -10,9 +10,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum BusinessEvent {
 
-    /**
-     * Raised when a new lead is created in the system.
-     */
     LEAD_CREATED("LEAD_CREATED"),
     LEAD_UPDATED("LEAD_UPDATED"),
     LEAD_REJECTED("LEAD_REJECTED"),
@@ -50,7 +47,11 @@ public enum BusinessEvent {
     ADVISOR_CALL_LOG_CREATED("ADVISOR_CALL_LOG_CREATED"),
     ADVISOR_CALL_LOG_UPDATED("ADVISOR_CALL_LOG_UPDATED"),
     STAGE_TRANSITIONED("STAGE_TRANSITIONED"),
-    LEAD_TASK_ASSIGNED("LEAD_TASK_ASSIGNED"),
+    TASK_ASSIGNED("TASK_ASSIGNED"),
+    LEAD_ASSIGNED("LEAD_ASSIGNED"),
+    CB_CONSENT_SENT("CB_CONSENT_SENT"),
+    CB_CONSENT_RECEIVED("CB_CONSENT_RECEIVED"),
+    CB_REPORT_STORED("CB_REPORT_STORED"),
     ;
 
     private final String code;

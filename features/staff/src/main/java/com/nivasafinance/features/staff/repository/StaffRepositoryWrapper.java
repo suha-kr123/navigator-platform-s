@@ -5,16 +5,20 @@ import com.nivasafinance.common.base.model.PaginationInfo;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.common.exception.BadRequestException;
 import com.nivasafinance.features.staff.entity.Staff;
+import com.nivasafinance.features.staff.exception.StaffExceptionFactory;
+import com.nivasafinance.features.staff.exception.StaffNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Component
@@ -26,6 +30,7 @@ public class StaffRepositoryWrapper {
                    s.identifier,
                    s.user_id,
                    s.office_key,
+                   s.referral_code,
                    s.created_by,
                    s.created_at,
                    s.updated_by,
@@ -47,6 +52,7 @@ public class StaffRepositoryWrapper {
 
     private final StaffRepository staffRepository;
     private final NamedParameterJdbcTemplate jdbcTemplate;
+    private final MessageSource messageSource;
 
     private static final String OFFICE_FILTER = " AND s.office_key = :officeKey";
 
@@ -58,15 +64,26 @@ public class StaffRepositoryWrapper {
         try {
             return staffRepository.save(staff);
         } catch (DataAccessException ex) {
-            throw new RuntimeException("Failed to save staff", ex);
+            throw StaffExceptionFactory.saveFailed(messageSource);
         }
     }
 
     public Staff findByUserIdWithException(Long userId) {
         try {
-            return staffRepository.findByUserId(userId).orElseThrow(() -> new IllegalArgumentException("Staff not found" + userId));
+            return staffRepository.findByUserId(userId)
+                    .orElseThrow(() -> StaffExceptionFactory.notFoundByUserId(userId, messageSource));
+        } catch (StaffNotFoundException ex) {
+            throw ex;
         } catch (DataAccessException ex) {
-            throw new RuntimeException("Failed to fetch staff", ex);
+            throw StaffExceptionFactory.retrieveEntityFailed(messageSource);
+        }
+    }
+
+    public Optional<Staff> findByIdentifier(UUID identifier) {
+        try {
+            return staffRepository.findByIdentifier(identifier);
+        } catch (DataAccessException ex) {
+            throw StaffExceptionFactory.retrieveEntityFailed(messageSource);
         }
     }
 
@@ -137,7 +154,7 @@ public class StaffRepositoryWrapper {
 
             return new PaginatedResponse<>(staff, paginationInfo);
         } catch (DataAccessException ex) {
-            throw new RuntimeException("Failed to fetch staff list", ex);
+            throw StaffExceptionFactory.retrieveEntityFailed(messageSource);
         }
     }
 
@@ -164,7 +181,7 @@ public class StaffRepositoryWrapper {
         try {
             return jdbcTemplate.query(selectQuery.toString(), params, staffRowMapper());
         } catch (DataAccessException ex) {
-            throw new RuntimeException("Failed to fetch staff by office keys", ex);
+            throw StaffExceptionFactory.retrieveEntityFailed(messageSource);
         }
     }
 
@@ -215,6 +232,7 @@ public class StaffRepositoryWrapper {
             }
             staff.setUserId(rs.getLong("user_id"));
             staff.setOfficeKey(rs.getString("office_key"));
+            staff.setReferralCode(rs.getString("referral_code"));
 
             staff.setCreatedBy(rs.getString("created_by"));
             staff.setUpdatedBy(rs.getString("updated_by"));

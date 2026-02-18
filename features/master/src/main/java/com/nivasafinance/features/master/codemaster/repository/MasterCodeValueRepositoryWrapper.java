@@ -9,6 +9,9 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Set;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 public class MasterCodeValueRepositoryWrapper {
@@ -106,5 +109,26 @@ public class MasterCodeValueRepositoryWrapper {
         return masterCodeValueRepository.findByKey(key).orElseThrow(() ->
                 codeMasterExceptionFactory.codeValueKeyNotFound(key, messageSource));
     }
-}
+
+    public Set<String> findAllKeysWithException() {
+        try {
+            return masterCodeValueRepository.findAll().stream()
+                    .map(MasterCodeValue::getKey)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+        } catch (DataAccessException e) {
+            throw codeMasterExceptionFactory.retrieveEntityFailed(messageSource);
+        }
+    }
+
+    public List<MasterCodeValue> saveAllWithException(List<MasterCodeValue> masterCodeValues) {
+        try {
+            String masterCodeKey = masterCodeValues.get(0).getCodeKey();
+            masterCodeValueRepository.saveAll(masterCodeValues);
+            return findByCodeKeyWithException(masterCodeKey);
+        } catch (DataAccessException e) {
+            throw codeMasterExceptionFactory.retrieveEntityFailed(messageSource);
+        }
+    }
+}   
 

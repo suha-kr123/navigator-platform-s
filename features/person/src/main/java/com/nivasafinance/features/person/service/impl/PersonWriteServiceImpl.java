@@ -271,5 +271,20 @@ public class PersonWriteServiceImpl implements PersonWriteService {
         }
         personRepositoryWrapper.saveWithException(person);
     }
+
+    @Override
+    public void updateCreditBureauFields(Long personId, List<Long> cbEnquiryIds, Person.CreditBureauDetails cbDetails) {
+        Person person = personRepositoryWrapper.findByIdWithException(personId);
+
+        if (cbEnquiryIds != null) {
+            person.setCbEnquiryId(cbEnquiryIds);
+        }
+
+        if (cbDetails != null) {
+            person.setCbDetails(cbDetails);
+        }
+
+        personRepositoryWrapper.saveWithException(person);
+    }
 }
 

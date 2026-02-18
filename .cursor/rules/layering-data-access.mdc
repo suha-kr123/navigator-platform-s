@@ -1,0 +1,75 @@
+---
+description: Layering rules, service boundaries, data access control, JDBC usage, domain ownership
+alwaysApply: true
+---
+
+# Architecture: Layering & Data Access Boundaries
+
+## Repository (JPA Layer)
+
+**Purpose:** ORM-based entity persistence.
+
+- Only standard JPA/ORM operations.
+- Entity-specific queries allowed (including native queries tied to that entity).
+- Primarily for transactional/write operations.
+- MUST NOT contain business logic.
+- MUST NOT call Services.
+- MUST NOT coordinate cross-entity orchestration.
+
+---
+
+## Repository Wrapper (Data Transition Layer)
+
+**Purpose:** Single bridge between Service layer and database.
+
+- Coordinates JPA repositories and JDBC queries.
+- Responsible only for data fetching and transforming DB results into Service-ready models.
+- MUST NOT contain business logic.
+- MUST NOT call Services.
+- MUST ONLY interact with DB (via JPA or JDBC).
+
+### JDBC Rules
+
+- Queries MUST be parameterized (no value concatenation).
+- Use structured StringBuilder for query construction.
+- MUST NOT use `SELECT *`.
+- MUST use dedicated RowMapper classes.
+- RowMapper MUST contain only mapping logic (no validation/business logic).
+
+---
+
+## Service Layer (Business Layer)
+
+**Purpose:** Business orchestration and rule enforcement.
+
+- Handles validations, calculations, orchestration, and business rules.
+- MUST use ONLY its own entity’s Repository Wrapper for data access.
+- MAY call other Services if business flow requires it.
+- MUST NOT directly call:
+  - Repositories of other entities
+  - Repository Wrappers of other entities
+
+---
+
+# Enforced Data Flow
+
+Allowed:
+
+- Service → Its Own Wrapper → (JPA Repository / JDBC)
+- Service A → Service B → Service B’s Wrapper → DB
+
+Not Allowed:
+
+- Service → Other Entity Repository
+- Service → Other Entity Wrapper
+- Wrapper → Service
+
+---
+
+# Architectural Intent
+
+- Preserve domain ownership
+- Prevent cross-entity tight coupling
+- Avoid bypassing business rules
+- Optimize read operations using JDBC
+- Maintain strict separation of concerns

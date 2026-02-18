@@ -1,6 +1,9 @@
 package com.nivasafinance.features.advisor.dto;
 
 import com.nivasafinance.features.advisor.enums.AdvisorStatus;
+import com.nivasafinance.features.referral.enums.EntityType;
+import com.nivasafinance.features.sourcechannel.dto.SourcingChannelResponse;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -23,5 +26,15 @@ public class AdvisorResponse {
     private String ownerUsername;
     private String officeKey;
     private String officeName;
+    private String referralCode;
+    private SourcingChannelResponse sourcingChannelDetails;
+
+    //referral details
+    private String referredByCode;
+    private UUID referredByIdentifier;
+    private EntityType referredByType;
+    private String referredByName;
+    private String referredByNumber;
+    
 }
 

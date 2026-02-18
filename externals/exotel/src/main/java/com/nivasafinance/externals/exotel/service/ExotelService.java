@@ -1,5 +1,9 @@
 package com.nivasafinance.externals.exotel.service;
 
+import java.util.Map;
+
+import org.springframework.util.MultiValueMap;
+
 /**
  * Service interface for processing Exotel webhooks and external events.
  */
@@ -91,4 +95,6 @@ public interface ExotelService {
      * @param callSid The Exotel call SID from the webhook
      */
     void processAdvisorAnsweredCall(String callSid);
+
+    Map<String, Object> handleWebhook(MultiValueMap<String, String> formData);
 }

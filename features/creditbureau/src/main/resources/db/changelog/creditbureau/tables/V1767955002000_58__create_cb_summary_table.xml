@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1767955002000_58" author="system" context="default">
+        <createTable tableName="n_cb_summary">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <column name="identifier" type="UUID" defaultValueComputed="gen_random_uuid()">
+                <constraints nullable="false" unique="true"/>
+            </column>
+
+            <column name="enquiry_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="credit_score" type="INTEGER"/>
+            <column name="score_version" type="VARCHAR(50)"/>
+            <column name="score_name" type="VARCHAR(255)"/>
+
+            <column name="total_accounts" type="INTEGER"/>
+            <column name="active_accounts" type="INTEGER"/>
+            <column name="overdue_accounts" type="INTEGER"/>
+            <column name="closed_accounts" type="INTEGER"/>
+            <column name="secured_accounts" type="INTEGER"/>
+            <column name="unsecured_accounts" type="INTEGER"/>
+            <column name="untagged_accounts" type="INTEGER"/>
+
+            <column name="total_current_balance" type="NUMERIC(18,2)"/>
+            <column name="current_balance_secured" type="NUMERIC(18,2)"/>
+            <column name="current_balance_unsecured" type="NUMERIC(18,2)"/>
+            <column name="total_overdue_amount" type="NUMERIC(18,2)"/>
+            <column name="total_sanctioned_amount" type="NUMERIC(18,2)"/>
+            <column name="total_disbursed_amount" type="NUMERIC(18,2)"/>
+
+            <column name="no_of_own_mfis" type="INTEGER"/>
+            <column name="no_of_other_mfis" type="INTEGER"/>
+            <column name="total_own_current_balance" type="NUMERIC(18,2)"/>
+            <column name="total_own_installment_amount" type="NUMERIC(18,2)"/>
+            <column name="total_own_disbursed_amount" type="NUMERIC(18,2)"/>
+            <column name="total_other_installment_amount" type="NUMERIC(18,2)"/>
+            <column name="total_other_disbursed_amount" type="NUMERIC(18,2)"/>
+            <column name="total_other_overdue_amount" type="NUMERIC(18,2)"/>
+
+            <column name="max_worst_delinquency" type="INTEGER"/>
+            <column name="account_count" type="INTEGER"/>
+
+            <column name="score_factor_details" type="JSONB">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="created_by" type="varchar(255)"/>
+            <column name="updated_by" type="varchar(255)"/>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="updated_at" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="version" type="bigint" defaultValueNumeric="0"/>
+        </createTable>
+        <createIndex indexName="idx_cb_summary_enquiry_id" tableName="n_cb_summary">
+            <column name="enquiry_id"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

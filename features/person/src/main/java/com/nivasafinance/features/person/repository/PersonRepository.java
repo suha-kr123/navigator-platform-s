@@ -18,5 +18,11 @@ public interface PersonRepository extends JpaRepository<Person, Long> {
            "WHERE m->>'number' = :mobileNumber AND (m->>'isPrimary')::boolean = true)",
            nativeQuery = true)
     Optional<Person> findByPrimaryMobileNumber(@Param("mobileNumber") String mobileNumber);
+
+    @Query(value = "SELECT * FROM n_person p WHERE EXISTS " +
+           "(SELECT 1 FROM jsonb_array_elements(p.mobile_numbers) AS m " +
+           "WHERE m->>'number' = :mobileNumber)",
+           nativeQuery = true)
+    Optional<Person> findByMobileNumber(@Param("mobileNumber") String mobileNumber);
 }
 

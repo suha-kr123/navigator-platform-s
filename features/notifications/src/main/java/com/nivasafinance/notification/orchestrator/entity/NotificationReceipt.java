@@ -77,5 +77,10 @@ public class NotificationReceipt extends AuditableEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "remarks", columnDefinition = "jsonb")
     private Map<String, Object> remarks;
+
+    @Type(JsonType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "error_json", columnDefinition = "jsonb")
+    private Map<String, Object> errorJson;
 }
 

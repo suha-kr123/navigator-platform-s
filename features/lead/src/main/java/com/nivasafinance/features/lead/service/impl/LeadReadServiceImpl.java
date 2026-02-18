@@ -4,6 +4,8 @@ import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.features.lead.dto.*;
 import com.nivasafinance.features.lead.entity.Lead;
+import com.nivasafinance.features.lead.enums.LeadStatus;
+import com.nivasafinance.features.lead.enums.LeadSubStatus;
 import com.nivasafinance.features.lead.repository.LeadDashboardWrapper;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadReadService;
@@ -14,9 +16,13 @@ import com.nivasafinance.features.sourcechannel.dto.SourcingChannelResponse;
 import com.nivasafinance.features.sourcechannel.service.SourcingChannelReadService;
 import com.nivasafinance.features.offices.dto.OfficeResponse;
 import com.nivasafinance.features.offices.service.OfficeReadService;
+import com.nivasafinance.features.referral.enums.EntityType;
 import com.nivasafinance.features.staff.dto.StaffResponse;
 import com.nivasafinance.features.staff.service.StaffReadService;
+
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -28,6 +34,7 @@ import java.util.stream.Collectors;
 @Service
 @Transactional(readOnly = true)
 @Slf4j
+@RequiredArgsConstructor
 public class LeadReadServiceImpl implements LeadReadService {
 
     private final LeadRepositoryWrapper leadRepositoryWrapper;
@@ -37,22 +44,6 @@ public class LeadReadServiceImpl implements LeadReadService {
     private final LeadDashboardWrapper leadDashboardWrapper;
     private final OfficeReadService officeReadService;
     private final StaffReadService staffReadService;
-
-    public LeadReadServiceImpl(LeadRepositoryWrapper leadRepositoryWrapper,
-                                CodeValueMasterService codeValueMasterService,
-                                CodeMasterService codeMasterService,
-                                SourcingChannelReadService sourcingChannelReadService,
-                                LeadDashboardWrapper leadDashboardWrapper,
-                                OfficeReadService officeReadService,
-                                StaffReadService staffReadService) {
-        this.leadRepositoryWrapper = leadRepositoryWrapper;
-        this.codeValueMasterService = codeValueMasterService;
-        this.codeMasterService = codeMasterService;
-        this.sourcingChannelReadService = sourcingChannelReadService;
-        this.leadDashboardWrapper = leadDashboardWrapper;
-        this.officeReadService = officeReadService;
-        this.staffReadService = staffReadService;
-    }
 
     @Override
     @Transactional(readOnly = true)
@@ -323,5 +314,28 @@ public class LeadReadServiceImpl implements LeadReadService {
                 .offices(allOffices)
                 .staffs(staffList)
                 .build();
+    }
+
+    @Override
+    public List<LeadWorkflowDetailsDto> findLeadsByPersonIdsAndStatusesAndSubstatuses(
+            List<Long> personIds, List<LeadStatus> statuses, List<LeadSubStatus> substatuses) {
+                return leadRepositoryWrapper.findLeadsByPersonIdsAndStatusesAndSubstatuses(personIds, statuses, substatuses);
+    }
+
+    @Override
+    public LeadBasicResponse getLeadByReferralTrackingCode(String referralTrackingCode) {
+        return leadRepositoryWrapper.findLeadByReferralTrackingCodeWithException(referralTrackingCode);
+    }
+
+    @Override
+    public PaginatedResponse<LeadBasicResponse> getLeadsByEntity(EntityType entityType, UUID entityIdentifier,
+            PaginationRequest paginationRequest) {
+        return leadRepositoryWrapper.findLeadsByEntity(entityType, entityIdentifier, paginationRequest);
+    }
+
+    @Override
+    public PaginatedResponse<LeadBasicResponse> getLeadsByReferralCode(String referralCode,
+            PaginationRequest paginationRequest) {
+        return leadRepositoryWrapper.findLeadsByReferralCode(referralCode, paginationRequest);
     }
 }

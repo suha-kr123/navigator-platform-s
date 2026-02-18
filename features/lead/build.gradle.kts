@@ -23,7 +23,11 @@ dependencies {
     implementation(project(":features:staff"))
     implementation(project(":features:offices"))
     implementation(project(":features:usermanagement"))
-    implementation(project(":features:advisor"))
+    implementation(project(":features:referral"))
+    implementation(project(":integrations"))
+    implementation(project(":features:creditbureau"))
+    implementation(project(":features:consent"))
+    implementation(project(":redash"))
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
     implementation("org.springframework.boot:spring-boot-starter-jdbc")
     // Spring Retry for handling optimistic locking conflicts

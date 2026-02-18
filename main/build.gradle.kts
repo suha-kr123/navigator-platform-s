@@ -10,6 +10,7 @@ plugins {
 dependencies {
     implementation(project(":common"))
     implementation(project(":features:creditbureau"))
+    implementation(project(":features:consent"))
     implementation(project(":features:person"))
     implementation(project(":features:usermanagement"))
     implementation(project(":features:advisor"))
@@ -27,11 +28,12 @@ dependencies {
     implementation(project(":features:staff"))
     implementation(project(":features:identifier"))
     implementation(project(":features:campaign"))
-    implementation(project(":webhooks"))
     implementation(project(":redash"))
     implementation(project(":features:bulk-operations"))
     implementation(project(":externals:exotel"))
     implementation(project(":externals:whatsapp"))
+    implementation(project(":externals:creditbureau"))
+    implementation(project(":features:referral"))
 }
 
 springBoot {

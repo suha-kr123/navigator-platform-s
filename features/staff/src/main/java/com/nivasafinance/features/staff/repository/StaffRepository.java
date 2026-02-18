@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 @JaversSpringDataAuditable
@@ -17,4 +18,6 @@ public interface StaffRepository extends JpaRepository<Staff, Long> {
     boolean existsByUserIdAndOfficeKey(Long userId, String officeKey);
 
     Optional<Staff> findByUserId(Long userId);
+
+    Optional<Staff> findByIdentifier(UUID identifier);
 }

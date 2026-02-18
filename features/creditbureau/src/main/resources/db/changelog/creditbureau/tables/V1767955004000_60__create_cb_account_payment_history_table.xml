@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1767955004000_60" author="system" context="default">
+        <createTable tableName="n_cb_account_payment_history">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <column name="identifier" type="UUID" defaultValueComputed="gen_random_uuid()">
+                <constraints nullable="false" unique="true"/>
+            </column>
+
+            <column name="tradeline_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="history_type" type="VARCHAR(50)"/>
+            <column name="month_year" type="VARCHAR(10)"/>
+            <column name="history_value" type="VARCHAR(20)"/>
+
+            <column name="created_by" type="varchar(255)"/>
+            <column name="updated_by" type="varchar(255)"/>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="updated_at" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="version" type="bigint" defaultValueNumeric="0"/>
+        </createTable>
+        <createIndex indexName="idx_cb_account_payment_history_tradeline_month_year" tableName="n_cb_account_payment_history">
+            <column name="tradeline_id"/>
+            <column name="month_year"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

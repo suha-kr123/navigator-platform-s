@@ -63,23 +63,18 @@ public class CallNotificationRedisRepository {
             String notificationJson = objectMapper.writeValueAsString(notification);
             
             redisTemplate.opsForValue().set(notificationKey, notificationJson, NOTIFICATION_TTL);
-            
-            if (notification.getAgentEmail() != null && !notification.getAgentEmail().isBlank()) {
-                String userKey = USER_NOTIFICATIONS_KEY_PREFIX + "email:" + notification.getAgentEmail();
-                addNotificationToUser(userKey, notificationKey);
-            }
-            
-            // Use DialWhomNumber (the agent number) for notifications
-            // Fallback to callTo if DialWhomNumber is not provided
+            boolean duplicate = existsByCallSidAndEventType(notification.getCallSid(), eventType);
             String phone = (dialWhomNumber != null && !dialWhomNumber.isBlank()) 
                     ? dialWhomNumber 
                     : notification.getCallTo();
             if (phone != null && !phone.isBlank()) {
-                // Normalize phone number before saving to Redis
-                String normalizedPhone = PhoneNumberUtils.normalizePhoneNumber(phone);
-                if (normalizedPhone != null && !normalizedPhone.isBlank()) {
-                    String userPhoneKey = USER_NOTIFICATIONS_KEY_PREFIX + "phone:" + normalizedPhone;
+                String normalizedPhoneLast10 = PhoneNumberUtils.normalizePhoneNumber(phone);
+                String userPhoneKey = USER_NOTIFICATIONS_KEY_PREFIX + "phone:" + normalizedPhoneLast10;
+                if (!duplicate) {
                     addNotificationToUser(userPhoneKey, notificationKey);
+                } else {
+                    log.debug("Duplicate notification detected for {}:{}; skipping list push for {}", 
+                            notification.getCallSid(), eventType, userPhoneKey);
                 }
             }
         } catch (Exception e) {
@@ -127,20 +122,11 @@ public class CallNotificationRedisRepository {
         }
     }
 
-    public List<CallNotificationResponse> findByUserEmail(String email) {
-        if (email == null || email.isBlank()) {
-            return new ArrayList<>();
-        }
-        return findByUserKey(USER_NOTIFICATIONS_KEY_PREFIX + "email:" + email);
-    }
-
     public List<CallNotificationResponse> findByUserPhone(String phone) {
         if (phone == null || phone.isBlank()) {
             return new ArrayList<>();
         }
-        // Normalize phone number before lookup to match the format in Redis
-        String normalizedPhone = PhoneNumberUtils.normalizePhoneNumber(phone);
-        return findByUserKey(USER_NOTIFICATIONS_KEY_PREFIX + "phone:" + normalizedPhone);
+        return findByUserKey(USER_NOTIFICATIONS_KEY_PREFIX + "phone:" + PhoneNumberUtils.normalizePhoneNumber(phone));
     }
 
     private List<CallNotificationResponse> findByUserKey(String userKey) {
@@ -161,6 +147,13 @@ public class CallNotificationRedisRepository {
                     } catch (Exception e) {
                         log.warn("Failed to deserialize notification: {}", notificationKey, e);
                     }
+                } else {
+                    try {
+                        redisTemplate.opsForList().remove(userKey, 0, notificationKey);
+                        log.debug("Pruned stale notification pointer from list: {} -> {}", userKey, notificationKey);
+                    } catch (Exception pruneEx) {
+                        log.warn("Failed to prune stale pointer {} from {}", notificationKey, userKey, pruneEx);
+                    }
                 }
             }
             return notifications;
@@ -170,4 +163,3 @@ public class CallNotificationRedisRepository {
         }
     }
 }
-

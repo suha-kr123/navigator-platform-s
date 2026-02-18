@@ -3,50 +3,63 @@ package com.nivasafinance.features.lead.repository;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationInfo;
 import com.nivasafinance.common.base.model.PaginationRequest;
+import com.nivasafinance.features.lead.dto.LeadBasicResponse;
 import com.nivasafinance.features.lead.dto.LeadResponse;
 import com.nivasafinance.features.lead.dto.LeadSearchRequest;
 import com.nivasafinance.features.lead.dto.LeadSearchResponse;
+import com.nivasafinance.features.lead.dto.LeadWorkflowDetailsDto;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.enums.LeadStatus;
 import com.nivasafinance.features.lead.enums.LeadSubStatus;
 import com.nivasafinance.features.lead.exception.LeadConflictException;
+import com.nivasafinance.features.lead.exception.LeadExceptionFactory;
 import com.nivasafinance.features.lead.exception.LeadNotFoundException;
+import com.nivasafinance.features.lead.mapper.LeadBasicResponseMapper;
+import com.nivasafinance.features.lead.mapper.LeadWorkflowDetailsRowMapper;
 import com.nivasafinance.features.master.codemaster.SystemControlledMasterCodes;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import com.nivasafinance.features.master.codemaster.service.CodeValueMasterService;
 import com.nivasafinance.features.master.products.service.ProductReadService;
 import com.nivasafinance.features.offices.service.OfficeReadService;
+import com.nivasafinance.features.referral.enums.EntityType;
 import com.nivasafinance.features.staff.service.StaffReadService;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
 @AllArgsConstructor
+@Slf4j
 public class LeadRepositoryWrapper {
 
     private final LeadRepository leadRepository;
     private final MessageSource messageSource;
     private final JdbcTemplate jdbcTemplate;
-    private final CodeValueMasterService codeValueMasterService;
-    private final ProductReadService productReadService;
-    private final StaffReadService staffReadService;
+    private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
+    private final CodeValueMasterService codeValueMasterService; 
+    private final ProductReadService productReadService; 
+    private final StaffReadService staffReadService; 
     private final OfficeReadService officeReadService;
 
     public Lead saveWithException(Lead lead) {
@@ -116,9 +129,6 @@ public class LeadRepositoryWrapper {
                     l.credit_rating_details->>'bureauRating' as bureau_rating_key,
                     l.credit_rating_details->>'customerProfiles' as customer_profiles_key,
                     l.credit_rating_details->>'monthlyFamilyIncome' as monthly_family_income_key,
-                    advisor.identifier::text as advisor_identifier,
-                    advisor_person.display_name as advisor_name,
-                    (jsonb_path_query_first(COALESCE(advisor_person.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') AS advisor_number,
                     latest_note.content as recent_note,
                     latest_note.created_by as recent_note_created_by,
                     latest_note.created_at as recent_note_created_at,
@@ -143,7 +153,7 @@ public class LeadRepositoryWrapper {
                         THEN TO_DATE(l.onhold_details->>'holdFollowUpDate', 'DD-MM-YYYY')
                         ELSE NULL
                     END AS hold_follow_up_date,
-                    primary_contact_person.display_name         AS primaryPersonName,
+                    primary_contact_person.display_name AS primaryPersonName,
                     (jsonb_path_query_first(COALESCE(primary_contact_person.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') AS primaryPersonNumber,
                      o.name as officeName,
                      (l.workflow_details->>'workflowConfigKey') AS workflow_config_key,
@@ -159,14 +169,35 @@ public class LeadRepositoryWrapper {
                          WHEN (l.workflow_details->'currentStageDetails')->>'enteredAt' IS NOT NULL
                          THEN to_timestamp((l.workflow_details->'currentStageDetails')->>'enteredAt', 'DD-MM-YYYY HH24:MI:SS')
                          ELSE NULL
-                     END AS entered_at
+                     END AS entered_at,
+                    sc.marketing_details->>'referredByCode' AS referred_by_code,
+                    r.entity_type::text AS referred_by_type,
+                    r.entity_identifier AS referred_by_identifier,
+                    COALESCE(ref_adv_p.display_name, ref_st_p.display_name, ref_lead_p.display_name, ref_lead_app_p.display_name, ref_app_by_uuid_p.display_name) AS referred_by_name,
+                    COALESCE(
+                        (jsonb_path_query_first(COALESCE(ref_adv_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
+                        (jsonb_path_query_first(COALESCE(ref_st_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
+                        (jsonb_path_query_first(COALESCE(ref_lead_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
+                        (jsonb_path_query_first(COALESCE(ref_lead_app_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
+                        (jsonb_path_query_first(COALESCE(ref_app_by_uuid_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number')
+                    ) AS referred_by_number
                  FROM n_lead l
-                -- Left join with primary contact from other_details -> person
+                LEFT JOIN n_sourcing_channel_details sc ON sc.id = l.sourcing_channel_id
+                LEFT JOIN n_referral_code_registry r ON r.referral_code = sc.marketing_details->>'referredByCode'
+                LEFT JOIN n_advisor ref_adv ON ref_adv.identifier = r.entity_identifier AND r.entity_type::text = 'ADVISOR'
+                LEFT JOIN n_person ref_adv_p ON ref_adv_p.id = ref_adv.person_id
+                LEFT JOIN n_staff ref_st ON ref_st.identifier = r.entity_identifier AND r.entity_type::text = 'STAFF'
+                LEFT JOIN n_user ref_st_u ON ref_st_u.id = ref_st.user_id
+                LEFT JOIN n_person ref_st_p ON ref_st_p.id = ref_st_u.person_id
+                LEFT JOIN n_lead ref_lead ON ref_lead.lead_identifier = r.entity_identifier AND r.entity_type::text = 'APPLICANT'
+                LEFT JOIN n_contact ref_lead_c ON ref_lead_c.id = (ref_lead.other_details->>'primaryContactId')::bigint
+                LEFT JOIN n_person ref_lead_p ON ref_lead_p.id = ref_lead_c.person_id
+                LEFT JOIN n_applicant ref_lead_app ON ref_lead_app.id = ref_lead.applicant
+                LEFT JOIN n_person ref_lead_app_p ON ref_lead_app_p.id = ref_lead_app.person_id
+                LEFT JOIN n_applicant ref_app_by_uuid ON ref_app_by_uuid.identifier = r.entity_identifier AND r.entity_type::text = 'APPLICANT'
+                LEFT JOIN n_person ref_app_by_uuid_p ON ref_app_by_uuid_p.id = ref_app_by_uuid.person_id
                 LEFT JOIN n_contact primary_contact ON primary_contact.id = (l.other_details->>'primaryContactId')::bigint
                 LEFT JOIN n_person primary_contact_person ON primary_contact.person_id = primary_contact_person.id
-                LEFT JOIN n_advisor_lead_mapping alm ON alm.lead_id = l.id
-                LEFT JOIN n_advisor advisor ON advisor.id = alm.advisor_id
-                LEFT JOIN n_person advisor_person ON advisor.person_id = advisor_person.id
                 LEFT JOIN LATERAL (
                     SELECT n.content,
                            n.created_at,
@@ -270,9 +301,6 @@ public class LeadRepositoryWrapper {
                 .recentNote(rs.getString("recent_note"))
                 .noteCreatedBy(rs.getString("recent_note_created_by"))
                 .noteCreatedAt(getLocalDateTime(rs, "recent_note_created_at"))
-                .advisorIdentifier(rs.getString("advisor_identifier"))
-                .advisorName(rs.getString("advisor_name"))
-                .advisorNumber(rs.getString("advisor_number"))
                 .lenderIdentifier(rs.getString("lender_identifier"))
                 .lenderName(rs.getString("lender_name"))
                 .lenderStatus(rs.getString("lender_status"))
@@ -286,7 +314,25 @@ public class LeadRepositoryWrapper {
                 .assignedTo(rs.getString("assigned_to"))
                 .assignedAt(getLocalDateTime(rs, "assigned_at"))
                 .enteredAt(getLocalDateTime(rs, "entered_at"))
-                .holdFollowUpDate(getLocalDate(rs, "hold_follow_up_date"));
+                .holdFollowUpDate(getLocalDate(rs, "hold_follow_up_date"))
+                .referredByCode(rs.getString("referred_by_code"))
+                .referredByName(rs.getString("referred_by_name"))
+                .referredByNumber(rs.getString("referred_by_number"));
+
+        String referredByTypeStr = rs.getString("referred_by_type");
+        if (referredByTypeStr != null) {
+            try {
+                builder.referredByType(EntityType.valueOf(referredByTypeStr));
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+        String referredByIdentifierStr = rs.getString("referred_by_identifier");
+        if (referredByIdentifierStr != null) {
+            try {
+                builder.referredByIdentifier(UUID.fromString(referredByIdentifierStr));
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
 
         String status = rs.getString("status");
         if (status != null) {
@@ -304,7 +350,7 @@ public class LeadRepositoryWrapper {
             }
         }
 
-        builder.leadCreatedAt(getLocalDate(rs, "leadCreatedAt"));
+        builder.leadCreatedAt(getLocalDateTime(rs, "leadCreatedAt"));
 
         LeadResponse leadResponse = builder.build();
 
@@ -643,4 +689,320 @@ public class LeadRepositoryWrapper {
             return builder.build();
         }
     }
+
+    /**
+     * Finds the lead identifier for the lead that has a contact whose cb_enquiry_id contains the given enquiry ID.
+     * Used when uploading CB Excel report to the correct lead after CB report is stored.
+     *
+     * @param enquiryId the credit bureau enquiry ID
+     * @return Optional of lead identifier if found, empty otherwise
+     */
+    public Optional<UUID> findLeadIdentifierByCbEnquiryId(Long enquiryId) {
+        String sql = """
+                SELECT l.lead_identifier
+                FROM n_lead l
+                CROSS JOIN LATERAL jsonb_array_elements_text(COALESCE(l.contacts, '[]'::jsonb)) AS cid
+                JOIN n_contact c ON c.id = (cid::bigint)
+                WHERE c.cb_enquiry_id IS NOT NULL
+                  AND EXISTS (
+                      SELECT 1 FROM jsonb_array_elements_text(c.cb_enquiry_id) AS eid
+                      WHERE eid::bigint = ?
+                  )
+                LIMIT 1
+                """;
+        try {
+            List<UUID> results = jdbcTemplate.query(sql, (rs, rowNum) -> (UUID) rs.getObject("lead_identifier"), enquiryId);
+            return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
+        } catch (Exception e) {
+            log.warn("Failed to find lead by cb_enquiry_id for enquiry ID: {}", enquiryId, e);
+            return Optional.empty();
+        }
+    }
+
+    public List<LeadWorkflowDetailsDto> findLeadsByPersonIdsAndStatusesAndSubstatuses(List<Long> personIds,
+            List<LeadStatus> statuses, List<LeadSubStatus> substatuses) {
+        try {
+            List<String> statusesString = statuses.stream().map(LeadStatus::name).toList();
+            List<String> substatusesString = substatuses.stream().map(LeadSubStatus::name).toList();
+
+            String sql = getLeadWorkflowDetailsQuery();
+
+            MapSqlParameterSource params = new MapSqlParameterSource();
+            params.addValue("personIds", personIds.toArray(new Long[0]), Types.ARRAY);
+            params.addValue("statuses", statusesString.toArray(new String[0]), Types.ARRAY);
+            params.addValue("substatuses", substatusesString.toArray(new String[0]), Types.ARRAY);
+
+            return namedParameterJdbcTemplate.query(sql, params, new LeadWorkflowDetailsRowMapper());
+        } catch (DataAccessException e) {
+            throw LeadExceptionFactory.retrieveEntityFailed(messageSource);
+        }
+    }
+
+
+
+    private String getLeadWorkflowDetailsQuery() {
+        StringBuilder sql = new StringBuilder();
+
+        sql.append("SELECT ");
+        sql.append("l.id AS lead_id, ");
+        sql.append("l.lead_identifier AS lead_identifier, ");
+        sql.append("l.workflow_details->>'workflowConfigKey' AS workflow_config_key, ");
+        sql.append("l.workflow_details->'currentStageDetails'->>'stageKey' AS current_stage_key, ");
+        sql.append("l.workflow_details->'currentStageDetails'->>'subStageKey' AS current_sub_stage_key, ");
+        sql.append("l.workflow_details->'currentStageDetails'->>'assignedTo' AS assigned_to ");
+
+        sql.append("FROM n_lead l ");
+
+        sql.append("WHERE ( ");
+        sql.append("EXISTS (SELECT 1 FROM n_contact c WHERE c.id = l.applicant AND c.person_id = ANY (:personIds::bigint[])) ");
+
+        sql.append("OR EXISTS ( ");
+        sql.append("SELECT 1 FROM jsonb_array_elements_text(l.contacts) AS elem ");
+        sql.append("JOIN n_contact c ON c.id = (elem)::bigint ");
+        sql.append("WHERE c.person_id = ANY (:personIds::bigint[]) ");
+        sql.append(") ");
+
+        sql.append("OR EXISTS ( ");
+        sql.append("SELECT 1 FROM jsonb_array_elements_text(l.co_applicants) AS elem ");
+        sql.append("JOIN n_contact c ON c.id = (elem)::bigint ");
+        sql.append("WHERE c.person_id = ANY (:personIds::bigint[]) ");
+        sql.append(") ");
+        sql.append(") ");
+
+        sql.append("AND l.status = ANY (:statuses::text[]) ");
+        sql.append("AND (l.substatus IS NULL OR l.substatus = ANY (:substatuses::text[])) ");
+
+        sql.append("ORDER BY l.created_at DESC ");
+
+        return sql.toString();
+    }
+
+    public LeadBasicResponse findLeadByReferralTrackingCodeWithException(String referralTrackingCode) {
+        try {
+            String sql = getLeadByReferralTrackingCodeQuery();
+            return jdbcTemplate.queryForObject(sql, new LeadBasicResponseMapper(), referralTrackingCode);
+        } catch (EmptyResultDataAccessException e) {
+            throw LeadExceptionFactory.leadNotFoundByReferralTrackingCode(referralTrackingCode, messageSource);
+        } catch (DataAccessException e) {
+            throw LeadExceptionFactory.leadNotFoundByReferralTrackingCode(referralTrackingCode, messageSource);
+        }
+    }
+
+    private String getLeadByReferralTrackingCodeQuery() {
+        StringBuilder sql = new StringBuilder();
+
+        sql.append("SELECT ");
+        sql.append("l.id AS id, ");
+        sql.append("l.lead_identifier AS lead_identifier, ");
+        sql.append("primary_contact.display_name AS primary_contact_name, ");
+        sql.append("(SELECT m->>'number' FROM jsonb_array_elements(COALESCE(primary_contact.mobile_numbers, '[]'::jsonb)) m WHERE (m->>'isPrimary')::boolean = true LIMIT 1) AS primary_contact_phone, ");
+        sql.append("l.requested_amount AS requested_amount, ");
+        sql.append("l.workflow_details->'currentStageDetails'->>'stageKey' AS current_stage, ");
+        sql.append("l.status::text AS status, ");
+        sql.append("l.substatus::text AS substatus, ");
+        sql.append("l.created_at AS created_at, ");
+        sql.append("o.name AS office, ");
+        sql.append("sc.marketing_details->>'referredByCode' AS referred_by_code, ");
+        sql.append("r.entity_type::text AS referred_by_type, ");
+        sql.append("r.entity_identifier AS referred_by_identifier, ");
+        sql.append("COALESCE(ref_adv_p.display_name, ref_st_p.display_name, ref_lead_p.display_name, ref_lead_app_p.display_name, ref_app_by_uuid_p.display_name) AS referred_by_name, ");
+        sql.append("COALESCE(");
+        sql.append("(jsonb_path_query_first(COALESCE(ref_adv_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'), ");
+        sql.append("(jsonb_path_query_first(COALESCE(ref_st_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'), ");
+        sql.append("(jsonb_path_query_first(COALESCE(ref_lead_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'), ");
+        sql.append("(jsonb_path_query_first(COALESCE(ref_lead_app_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'), ");
+        sql.append("(jsonb_path_query_first(COALESCE(ref_app_by_uuid_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') ");
+        sql.append(") AS referred_by_number ");
+        sql.append("FROM n_lead l ");
+        sql.append("LEFT JOIN n_sourcing_channel_details sc ON sc.id = l.sourcing_channel_id ");
+        sql.append("LEFT JOIN n_referral_code_registry r ON r.referral_code = sc.marketing_details->>'referredByCode' ");
+        sql.append("LEFT JOIN n_advisor ref_adv ON ref_adv.identifier = r.entity_identifier AND r.entity_type::text = 'ADVISOR' ");
+        sql.append("LEFT JOIN n_person ref_adv_p ON ref_adv_p.id = ref_adv.person_id ");
+        sql.append("LEFT JOIN n_staff ref_st ON ref_st.identifier = r.entity_identifier AND r.entity_type::text = 'STAFF' ");
+        sql.append("LEFT JOIN n_user ref_st_u ON ref_st_u.id = ref_st.user_id ");
+        sql.append("LEFT JOIN n_person ref_st_p ON ref_st_p.id = ref_st_u.person_id ");
+        sql.append("LEFT JOIN n_lead ref_lead ON ref_lead.lead_identifier = r.entity_identifier AND r.entity_type::text = 'APPLICANT' ");
+        sql.append("LEFT JOIN n_contact ref_lead_c ON ref_lead_c.id = (ref_lead.other_details->>'primaryContactId')::bigint ");
+        sql.append("LEFT JOIN n_person ref_lead_p ON ref_lead_p.id = ref_lead_c.person_id ");
+        sql.append("LEFT JOIN n_applicant ref_lead_app ON ref_lead_app.id = ref_lead.applicant ");
+        sql.append("LEFT JOIN n_person ref_lead_app_p ON ref_lead_app_p.id = ref_lead_app.person_id ");
+        sql.append("LEFT JOIN n_applicant ref_app_by_uuid ON ref_app_by_uuid.identifier = r.entity_identifier AND r.entity_type::text = 'APPLICANT' ");
+        sql.append("LEFT JOIN n_person ref_app_by_uuid_p ON ref_app_by_uuid_p.id = ref_app_by_uuid.person_id ");
+        sql.append("LEFT JOIN n_contact primary_contact_person ON primary_contact_person.id = (l.other_details->>'primaryContactId')::bigint ");
+        sql.append("LEFT JOIN n_person primary_contact ON primary_contact.id = primary_contact_person.person_id ");
+        sql.append("LEFT JOIN n_office o ON o.key = l.office_key ");
+        sql.append("WHERE l.referral_tracking_code = :referralTrackingCode ");
+
+        return sql.toString();
+    }
+
+    public PaginatedResponse<LeadBasicResponse> findLeadsByEntity(
+            EntityType entityType,
+            UUID entityIdentifier,
+            PaginationRequest paginationRequest) {
+
+        try {
+
+            String sortBy = ALLOWED_SORT_COLUMNS_FOR_LEAD_BASIC_RESPONSE
+                    .contains(paginationRequest.getSortBy())
+                            ? paginationRequest.getSortBy()
+                            : "created_at";
+
+            String sortDirection = ALLOWED_SORT_DIRECTIONS
+                    .contains(paginationRequest.getSortDirection())
+                            ? paginationRequest.getSortDirection()
+                            : "DESC";
+
+            String sql = getLeadsByEntityQuery(sortBy, sortDirection);
+
+            List<LeadBasicResponse> results = jdbcTemplate.query(
+                    sql,
+                    new LeadBasicResponseMapper(),
+                    entityType.name(),
+                    entityIdentifier,
+                    paginationRequest.getLimit(),
+                    paginationRequest.getOffset());
+
+            return new PaginatedResponse<>(
+                    results,
+                    buildPaginationInfo(paginationRequest, results.size()));
+
+        } catch (DataAccessException e) {
+            throw LeadExceptionFactory.retrieveEntityFailed(messageSource);
+        }
+    }
+
+    public PaginatedResponse<LeadBasicResponse> findLeadsByReferralCode(
+            String referralCode, PaginationRequest paginationRequest) {
+        if (!StringUtils.hasText(referralCode)) {
+            return new PaginatedResponse<>(Collections.emptyList(),
+                    buildPaginationInfo(paginationRequest, 0));
+        }
+        String sortBy = ALLOWED_SORT_COLUMNS_FOR_LEAD_BASIC_RESPONSE.contains(paginationRequest.getSortBy())
+                ? paginationRequest.getSortBy() : "created_at";
+        String sortDirection = ALLOWED_SORT_DIRECTIONS.contains(paginationRequest.getSortDirection())
+                ? paginationRequest.getSortDirection() : "DESC";
+        String countSql = """
+            SELECT COUNT(*)
+            FROM n_lead l
+            JOIN n_sourcing_channel_details sc ON sc.id = l.sourcing_channel_id
+            WHERE sc.marketing_details->>'referredByCode' = ?
+            """;
+        String dataSql = """
+            SELECT l.id AS id,
+                   l.lead_identifier AS lead_identifier,
+                   p.display_name AS primary_contact_name,
+                   (SELECT m->>'number' FROM jsonb_array_elements(COALESCE(p.mobile_numbers, '[]'::jsonb)) m
+                    WHERE (m->>'isPrimary')::boolean = true LIMIT 1) AS primary_contact_phone,
+                   l.requested_amount AS requested_amount,
+                   l.workflow_details->'currentStageDetails'->>'stageKey' AS current_stage,
+                   l.status::text AS status,
+                   l.substatus::text AS substatus,
+                   l.created_at AS created_at,
+                   o.name AS office,
+                   sc.marketing_details->>'referredByCode' AS referred_by_code,
+                   r.entity_type::text AS referred_by_type,
+                   r.entity_identifier AS referred_by_identifier,
+                   COALESCE(ref_adv_p.display_name, ref_st_p.display_name, ref_lead_p.display_name, ref_lead_app_p.display_name, ref_app_by_uuid_p.display_name) AS referred_by_name,
+                   COALESCE(
+                       (jsonb_path_query_first(COALESCE(ref_adv_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
+                       (jsonb_path_query_first(COALESCE(ref_st_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
+                       (jsonb_path_query_first(COALESCE(ref_lead_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
+                       (jsonb_path_query_first(COALESCE(ref_lead_app_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
+                       (jsonb_path_query_first(COALESCE(ref_app_by_uuid_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number')
+                   ) AS referred_by_number
+            FROM n_lead l
+            JOIN n_sourcing_channel_details sc ON sc.id = l.sourcing_channel_id
+            LEFT JOIN n_referral_code_registry r ON r.referral_code = sc.marketing_details->>'referredByCode'
+            LEFT JOIN n_advisor ref_adv ON ref_adv.identifier = r.entity_identifier AND r.entity_type::text = 'ADVISOR'
+            LEFT JOIN n_person ref_adv_p ON ref_adv_p.id = ref_adv.person_id
+            LEFT JOIN n_staff ref_st ON ref_st.identifier = r.entity_identifier AND r.entity_type::text = 'STAFF'
+            LEFT JOIN n_user ref_st_u ON ref_st_u.id = ref_st.user_id
+            LEFT JOIN n_person ref_st_p ON ref_st_p.id = ref_st_u.person_id
+            LEFT JOIN n_lead ref_lead ON ref_lead.lead_identifier = r.entity_identifier AND r.entity_type::text = 'APPLICANT'
+            LEFT JOIN n_contact ref_lead_c ON ref_lead_c.id = (ref_lead.other_details->>'primaryContactId')::bigint
+            LEFT JOIN n_person ref_lead_p ON ref_lead_p.id = ref_lead_c.person_id
+            LEFT JOIN n_applicant ref_lead_app ON ref_lead_app.id = ref_lead.applicant
+            LEFT JOIN n_person ref_lead_app_p ON ref_lead_app_p.id = ref_lead_app.person_id
+            LEFT JOIN n_applicant ref_app_by_uuid ON ref_app_by_uuid.identifier = r.entity_identifier AND r.entity_type::text = 'APPLICANT'
+            LEFT JOIN n_person ref_app_by_uuid_p ON ref_app_by_uuid_p.id = ref_app_by_uuid.person_id
+            LEFT JOIN n_contact primary_contact_person ON primary_contact_person.id = (l.other_details->>'primaryContactId')::bigint
+            LEFT JOIN n_person p ON p.id = primary_contact_person.person_id
+            LEFT JOIN n_office o ON o.key = l.office_key
+            WHERE sc.marketing_details->>'referredByCode' = ?
+            ORDER BY l.""" + sortBy + " " + sortDirection + """
+             LIMIT ? OFFSET ?
+            """;
+        try {
+            Long totalCount = jdbcTemplate.queryForObject(countSql, Long.class, referralCode.trim());
+            long total = totalCount != null ? totalCount : 0L;
+            List<LeadBasicResponse> results = jdbcTemplate.query(
+                    dataSql,
+                    new LeadBasicResponseMapper(),
+                    referralCode.trim(),
+                    paginationRequest.getLimit(),
+                    paginationRequest.getOffset());
+            return new PaginatedResponse<>(results, buildPaginationInfo(paginationRequest, total));
+        } catch (DataAccessException e) {
+            throw LeadExceptionFactory.retrieveEntityFailed(messageSource);
+        }
+    }
+
+    private String getLeadsByEntityQuery(String sortBy, String sortDirection) {
+
+        StringBuilder sql = new StringBuilder();
+
+        sql.append("SELECT ");
+        sql.append("l.id AS id, ");
+        sql.append("l.lead_identifier AS lead_identifier, ");
+        sql.append("p.display_name AS primary_contact_name, ");
+        sql.append("(SELECT m->>'number' FROM jsonb_array_elements(COALESCE(p.mobile_numbers, '[]'::jsonb)) m WHERE (m->>'isPrimary')::boolean = true LIMIT 1) AS primary_contact_phone, ");
+        sql.append("l.requested_amount AS requested_amount, ");
+        sql.append("l.workflow_details->'currentStageDetails'->>'stageKey' AS current_stage, ");
+        sql.append("l.status::text AS status, ");
+        sql.append("l.substatus::text AS substatus, ");
+        sql.append("l.created_at AS created_at, ");
+        sql.append("o.name AS office, ");
+        sql.append("sc.marketing_details->>'referredByCode' AS referred_by_code, ");
+        sql.append("r.entity_type::text AS referred_by_type, ");
+        sql.append("r.entity_identifier AS referred_by_identifier, ");
+        sql.append("COALESCE(ref_adv_p.display_name, ref_st_p.display_name, ref_lead_p.display_name, ref_lead_app_p.display_name, ref_app_by_uuid_p.display_name) AS referred_by_name, ");
+        sql.append("COALESCE(");
+        sql.append("(jsonb_path_query_first(COALESCE(ref_adv_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'), ");
+        sql.append("(jsonb_path_query_first(COALESCE(ref_st_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'), ");
+        sql.append("(jsonb_path_query_first(COALESCE(ref_lead_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'), ");
+        sql.append("(jsonb_path_query_first(COALESCE(ref_lead_app_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'), ");
+        sql.append("(jsonb_path_query_first(COALESCE(ref_app_by_uuid_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') ");
+        sql.append(") AS referred_by_number ");
+        sql.append("FROM n_lead l ");
+        sql.append("LEFT JOIN n_sourcing_channel_details sc ON sc.id = l.sourcing_channel_id ");
+        sql.append("LEFT JOIN n_referral_code_registry r ON r.referral_code = sc.marketing_details->>'referredByCode' ");
+        sql.append("LEFT JOIN n_advisor ref_adv ON ref_adv.identifier = r.entity_identifier AND r.entity_type::text = 'ADVISOR' ");
+        sql.append("LEFT JOIN n_person ref_adv_p ON ref_adv_p.id = ref_adv.person_id ");
+        sql.append("LEFT JOIN n_staff ref_st ON ref_st.identifier = r.entity_identifier AND r.entity_type::text = 'STAFF' ");
+        sql.append("LEFT JOIN n_user ref_st_u ON ref_st_u.id = ref_st.user_id ");
+        sql.append("LEFT JOIN n_person ref_st_p ON ref_st_p.id = ref_st_u.person_id ");
+        sql.append("LEFT JOIN n_lead ref_lead ON ref_lead.lead_identifier = r.entity_identifier AND r.entity_type::text = 'APPLICANT' ");
+        sql.append("LEFT JOIN n_contact ref_lead_c ON ref_lead_c.id = (ref_lead.other_details->>'primaryContactId')::bigint ");
+        sql.append("LEFT JOIN n_person ref_lead_p ON ref_lead_p.id = ref_lead_c.person_id ");
+        sql.append("LEFT JOIN n_applicant ref_lead_app ON ref_lead_app.id = ref_lead.applicant ");
+        sql.append("LEFT JOIN n_person ref_lead_app_p ON ref_lead_app_p.id = ref_lead_app.person_id ");
+        sql.append("LEFT JOIN n_applicant ref_app_by_uuid ON ref_app_by_uuid.identifier = r.entity_identifier AND r.entity_type::text = 'APPLICANT' ");
+        sql.append("LEFT JOIN n_person ref_app_by_uuid_p ON ref_app_by_uuid_p.id = ref_app_by_uuid.person_id ");
+        sql.append("LEFT JOIN n_contact primary_contact_person ON primary_contact_person.id = (l.other_details->>'primaryContactId')::bigint ");
+        sql.append("LEFT JOIN n_person p ON p.id = primary_contact_person.person_id ");
+        sql.append("LEFT JOIN n_office o ON o.key = l.office_key ");
+        sql.append("WHERE l.entity_type = ? ");
+        sql.append("AND l.entity_identifier = ? ");
+        sql.append("ORDER BY l.").append(sortBy).append(" ").append(sortDirection).append(" ");
+        sql.append("LIMIT ? OFFSET ? ");
+
+        return sql.toString();
+    }
+    
+
+    private static final Set<String> ALLOWED_SORT_COLUMNS_FOR_LEAD_BASIC_RESPONSE = Set.of(
+        "created_at");
+    private static final Set<String> ALLOWED_SORT_DIRECTIONS = Set.of("ASC", "DESC");
+
 }

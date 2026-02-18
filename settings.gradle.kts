@@ -2,10 +2,10 @@ rootProject.name = "navigator"
 
 include("main")
 include("common")
-include("webhooks")
 include("redash")
 
 include(":features:creditbureau")
+include(":features:consent")
 include(":features:advisor")
 include(":features:person")
 include(":features:usermanagement")
@@ -31,4 +31,6 @@ include("features:campaign")
 include("features:bulk-operations")
 include("externals:exotel")
 include("externals:whatsapp")
+include("externals:creditbureau")
+include("features:referral")
 

@@ -2,6 +2,8 @@ package com.nivasafinance.features.lead.dto;
 
 import com.nivasafinance.features.lead.enums.LeadStatus;
 import com.nivasafinance.features.lead.enums.LeadSubStatus;
+import com.nivasafinance.features.referral.enums.EntityType;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -26,4 +28,11 @@ public class LeadBasicResponse {
     LeadSubStatus substatus;
     LocalDateTime createdAt;
     String office;
+
+    //referral details
+    private String referredByCode;
+    private UUID referredByIdentifier;
+    private EntityType referredByType;
+    private String referredByName;
+    private String referredByNumber;
 }

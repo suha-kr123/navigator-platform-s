@@ -42,4 +42,12 @@ public final class AdvisorExceptionFactory {
     public static AdvisorOperationException noCurrentUser(MessageSource messageSource) {
         return new AdvisorOperationException("error.advisor.operation.no.current.user", messageSource);
     }
+
+    public static BadRequestException notFoundByReferralTrackingCode(String referralTrackingCode, MessageSource messageSource) {
+        return new BadRequestException(ExceptionUtils.createLocalizedMessage(
+                "error.advisor.not.found.by.referral.tracking.code",
+                new Object[]{referralTrackingCode},
+                messageSource
+        ));
+    }
 }

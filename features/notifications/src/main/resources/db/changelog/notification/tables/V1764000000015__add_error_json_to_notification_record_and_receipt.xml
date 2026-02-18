@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1764000000015_record" author="system">
+        <addColumn tableName="n_notification_record">
+            <column name="error_json" type="JSONB"/>
+        </addColumn>
+        <rollback>
+            <dropColumn tableName="n_notification_record" columnName="error_json"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="V1764000000015_receipt" author="system">
+        <addColumn tableName="n_notification_receipt">
+            <column name="error_json" type="JSONB"/>
+        </addColumn>
+        <rollback>
+            <dropColumn tableName="n_notification_receipt" columnName="error_json"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

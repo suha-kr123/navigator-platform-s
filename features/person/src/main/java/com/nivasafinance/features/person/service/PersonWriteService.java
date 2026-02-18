@@ -7,7 +7,9 @@ import com.nivasafinance.common.dto.IdentifierRequest;
 import com.nivasafinance.features.person.dto.PersonCreateRequest;
 import com.nivasafinance.features.person.dto.PersonCreateResponse;
 import com.nivasafinance.features.person.dto.PersonUpdateRequest;
+import com.nivasafinance.features.person.entity.Person;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface PersonWriteService {
@@ -21,5 +23,7 @@ public interface PersonWriteService {
     void updateIdentifier(Long personId, UUID identifierId, IdentifierRequest request);
 
     void deleteIdentifier(Long personId, UUID identifierId);
+
+    void updateCreditBureauFields(Long personId, List<Long> cbEnquiryIds, Person.CreditBureauDetails cbDetails);
 }
 

@@ -6,8 +6,9 @@ plugins {
     id("common-feature-conventions")
 }
 
-dependencies{
-
+dependencies {
+    implementation(project(":common"))
+    implementation(project(":integrations"))
 }
 
 springBoot {

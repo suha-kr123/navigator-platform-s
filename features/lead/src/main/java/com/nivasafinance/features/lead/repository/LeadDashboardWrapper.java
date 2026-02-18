@@ -7,6 +7,7 @@ import com.nivasafinance.features.lead.dto.LeadDashboardFilters;
 import com.nivasafinance.features.lead.dto.LeadDashboardResponse;
 import com.nivasafinance.features.lead.enums.LeadStatus;
 import com.nivasafinance.features.lead.enums.LeadSubStatus;
+import com.nivasafinance.features.referral.enums.EntityType;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import com.nivasafinance.features.master.codemaster.service.CodeValueMasterService;
 import com.nivasafinance.features.offices.dto.OfficeResponse;
@@ -120,8 +121,6 @@ public class LeadDashboardWrapper {
                     l.updated_at                   AS last_activity_at,
                     l.updated_by                   AS last_activity_by,
                     lead_owner_person.display_name              AS lead_owner_name,
-                    advisor_person.display_name                 AS advisor_name,
-                    (jsonb_path_query_first(COALESCE(advisor_person.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') AS advisor_number,
                     latest_note.content                         AS note_content,
                     (l.other_details->>'preferredCallStartTime')::time AS preferred_call_start_time,
                     (l.other_details->>'preferredCallEndTime')::time   AS preferred_call_end_time,
@@ -163,7 +162,18 @@ public class LeadDashboardWrapper {
                          AND (l.workflow_details->'currentStageDetails')->>'enteredAt' != ''
                         THEN to_timestamp(((l.workflow_details->'currentStageDetails')->>'enteredAt'), 'DD-MM-YYYY HH24:MI:SS')
                         ELSE NULL
-                    END AS stage_entered_at
+                    END AS stage_entered_at,
+                    sourcing_channel.marketing_details->>'referredByCode' AS referred_by_code,
+                    r.entity_type::text AS referred_by_type,
+                    r.entity_identifier AS referred_by_identifier,
+                    COALESCE(ref_adv_p.display_name, ref_st_p.display_name, ref_lead_p.display_name, ref_lead_app_p.display_name, ref_app_by_uuid_p.display_name) AS referred_by_name,
+                    COALESCE(
+                        (jsonb_path_query_first(COALESCE(ref_adv_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
+                        (jsonb_path_query_first(COALESCE(ref_st_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
+                        (jsonb_path_query_first(COALESCE(ref_lead_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
+                        (jsonb_path_query_first(COALESCE(ref_lead_app_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
+                        (jsonb_path_query_first(COALESCE(ref_app_by_uuid_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number')
+                    ) AS referred_by_number
                 """
                 + fromClause + whereClause +
                 " ORDER BY " + sortColumn + " " + sortDirection +
@@ -550,9 +560,6 @@ public class LeadDashboardWrapper {
                 LEFT JOIN n_person lead_owner_person ON lead_owner_person.id = lead_owner_user.person_id
                 LEFT JOIN n_contact primary_contact ON primary_contact.id = (l.other_details->>'primaryContactId')::bigint
                 LEFT JOIN n_person primary_contact_person ON primary_contact.person_id = primary_contact_person.id
-                LEFT JOIN n_advisor_lead_mapping alm ON alm.lead_id = l.id
-                LEFT JOIN n_advisor advisor ON advisor.id = alm.advisor_id
-                LEFT JOIN n_person advisor_person ON advisor.person_id = advisor_person.id
                 LEFT JOIN LATERAL (
                     SELECT
                         n.content
@@ -572,6 +579,19 @@ public class LeadDashboardWrapper {
                 ) partners ON partners.lead_id = l.id
                 LEFT JOIN n_call_log latest_call ON latest_call.id = (l.other_details->>'lastCallId')::bigint
                 LEFT JOIN n_sourcing_channel_details sourcing_channel ON sourcing_channel.id = l.sourcing_channel_id
+                LEFT JOIN n_referral_code_registry r ON r.referral_code = sourcing_channel.marketing_details->>'referredByCode'
+                LEFT JOIN n_advisor ref_adv ON ref_adv.identifier = r.entity_identifier AND r.entity_type::text = 'ADVISOR'
+                LEFT JOIN n_person ref_adv_p ON ref_adv_p.id = ref_adv.person_id
+                LEFT JOIN n_staff ref_st ON ref_st.identifier = r.entity_identifier AND r.entity_type::text = 'STAFF'
+                LEFT JOIN n_user ref_st_u ON ref_st_u.id = ref_st.user_id
+                LEFT JOIN n_person ref_st_p ON ref_st_p.id = ref_st_u.person_id
+                LEFT JOIN n_lead ref_lead ON ref_lead.lead_identifier = r.entity_identifier AND r.entity_type::text = 'APPLICANT'
+                LEFT JOIN n_contact ref_lead_c ON ref_lead_c.id = (ref_lead.other_details->>'primaryContactId')::bigint
+                LEFT JOIN n_person ref_lead_p ON ref_lead_p.id = ref_lead_c.person_id
+                LEFT JOIN n_applicant ref_lead_app ON ref_lead_app.id = ref_lead.applicant
+                LEFT JOIN n_person ref_lead_app_p ON ref_lead_app_p.id = ref_lead_app.person_id
+                LEFT JOIN n_applicant ref_app_by_uuid ON ref_app_by_uuid.identifier = r.entity_identifier AND r.entity_type::text = 'APPLICANT'
+                LEFT JOIN n_person ref_app_by_uuid_p ON ref_app_by_uuid_p.id = ref_app_by_uuid.person_id
                 """;
     }
 
@@ -635,8 +655,6 @@ public class LeadDashboardWrapper {
                     .lastActivityDate(getLocalDateTime(rs, "last_activity_at"))
                     .lastActivityBy(rs.getString("last_activity_by"))
                     .recentNote(rs.getString("note_content"))
-                    .advisorName(rs.getString("advisor_name"))
-                    .advisorNumber(rs.getString("advisor_number"))
                     .leadOwner(rs.getString("lead_owner_name"))
                     .preferredCallStartTime(getLocalTime(rs, "preferred_call_start_time"))
                     .preferredCallEndTime(getLocalTime(rs, "preferred_call_end_time"))
@@ -724,6 +742,24 @@ public class LeadDashboardWrapper {
                     }
                 } catch (Exception e) {
                     // Ignore if sub-stage not found - leave name as null
+                }
+            }
+
+            builder.referredByCode(rs.getString("referred_by_code"))
+                    .referredByName(rs.getString("referred_by_name"))
+                    .referredByNumber(rs.getString("referred_by_number"));
+            String referredByTypeStr = rs.getString("referred_by_type");
+            if (referredByTypeStr != null) {
+                try {
+                    builder.referredByType(EntityType.valueOf(referredByTypeStr));
+                } catch (IllegalArgumentException ex) {
+                }
+            }
+            String referredByIdentifierStr = rs.getString("referred_by_identifier");
+            if (referredByIdentifierStr != null) {
+                try {
+                    builder.referredByIdentifier(UUID.fromString(referredByIdentifierStr));
+                } catch (IllegalArgumentException ex) {
                 }
             }
 

@@ -3,12 +3,15 @@ package com.nivasafinance.externals.exotel.service.impl;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.common.context.UserContext;
+import com.nivasafinance.common.dto.CallNotificationResponse;
+import com.nivasafinance.common.enums.EntityType;
 import com.nivasafinance.common.enums.SystemEntities;
 import com.nivasafinance.common.utils.PhoneNumberUtils;
 import com.nivasafinance.externals.exotel.service.ExotelService;
 import com.nivasafinance.features.call.dto.CallLogResponse;
 import com.nivasafinance.features.call.entity.CallLog;
 import com.nivasafinance.features.call.enums.CallDirection;
+import com.nivasafinance.features.call.service.CallNotificationService;
 import com.nivasafinance.features.call.service.CallReadService;
 import com.nivasafinance.features.call.enums.CallProvider;
 import com.nivasafinance.features.call.enums.CallStatus;
@@ -23,6 +26,7 @@ import com.nivasafinance.features.lead.dto.LeadSearchResponse;
 import com.nivasafinance.features.lead.dto.UpdateCallDetailsRequest;
 import com.nivasafinance.features.lead.dto.UpdateSourcingDetailsRequest;
 import com.nivasafinance.features.lead.enums.LeadStatus;
+import com.nivasafinance.features.lead.enums.LeadSubStatus;
 import com.nivasafinance.features.advisor.dto.AdvisorBasicResponse;
 import com.nivasafinance.features.advisor.dto.AdvisorSearchRequest;
 import com.nivasafinance.features.advisor.dto.AdvisorUpdateCallLog;
@@ -32,9 +36,16 @@ import com.nivasafinance.features.advisor.service.AdvisorCallWriteService;
 import com.nivasafinance.features.advisor.service.AdvisorReadService;
 import com.nivasafinance.features.advisor.service.AdvisorWriteService;
 import com.nivasafinance.features.lead.dto.LeadUpdateCallLog;
+import com.nivasafinance.features.lead.dto.LeadWorkflowDetailsDto;
 import com.nivasafinance.features.lead.service.LeadCallWriteService;
 import com.nivasafinance.features.lead.service.LeadReadService;
 import com.nivasafinance.features.lead.service.LeadWriteService;
+import com.nivasafinance.features.leadtasks.service.LeadTaskWriteService;
+import com.nivasafinance.features.person.dto.PersonResponse;
+import com.nivasafinance.features.person.service.PersonReadService;
+import com.nivasafinance.features.task.dto.CreateTaskRequest;
+import com.nivasafinance.features.task.dto.TaskDetailsRequest;
+import com.nivasafinance.features.workflow.constants.WorkflowConstants;
 import com.nivasafinance.integrations.framework.ServiceFactory;
 import com.nivasafinance.integrations.framework.config.BusinessContext;
 import com.nivasafinance.integrations.framework.config.ThirdPartyServiceList;
@@ -42,17 +53,24 @@ import com.nivasafinance.services.voice.VoiceHandler;
 import com.nivasafinance.services.voice.dto.VoiceGetCallStatusResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.springframework.util.MultiValueMap;
+
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @SuppressWarnings("ALL")
 @Service
@@ -64,6 +82,8 @@ public class ExotelServiceImpl implements ExotelService {
     private final LeadReadService leadReadService;
     private final LeadWriteService leadWriteService;
     private final LeadCallWriteService leadCallWriteService;
+    private final LeadTaskWriteService leadTaskWriteService;
+    private final PersonReadService personReadService;
     private final AdvisorReadService advisorReadService;
     private final AdvisorWriteService advisorWriteService;
     private final AdvisorCallWriteService advisorCallWriteService;
@@ -71,6 +91,7 @@ public class ExotelServiceImpl implements ExotelService {
     private final CampaignWriteService campaignWriteService;
     private final CallReadService callReadService;
     private final ObjectMapper objectMapper;
+    private final CallNotificationService callNotificationService;
 
     private static final String DIRECT_CALL_SOURCE = "DIRECT_CALL_SOURCE";
     private static final String ENTITY_TYPE_CAMPAIGN = "CAMPAIGN";
@@ -154,6 +175,12 @@ public class ExotelServiceImpl implements ExotelService {
                 log.info("Updated campaign call count for lead: {}", leadIdentifier);
             }
 
+            try {
+                createMissedCallTask(normalizedCallFrom, callSid);
+            } catch (Exception e) {
+                log.error("Error creating missed call task for CallSid: {}", callSid, e);
+                // Don't rethrow - async method should handle exceptions gracefully
+            }
             log.info("Successfully processed missed call for CallSid: {}", callSid);
 
         } catch (Exception e) {
@@ -1263,4 +1290,214 @@ public class ExotelServiceImpl implements ExotelService {
                 .completionDetails(completionDetails)
                 .build();
     }
+
+    private void createMissedCallTask(String mobileNumber, String callSid) {
+        // TODO: we need to save sid in task to make sure that we are not creating duplicate tasks
+        List<Long> personIds = findPersonIdentifiers(mobileNumber);
+        if (personIds == null || personIds.isEmpty()) {
+            log.info("No person found for mobile: {}", mobileNumber);
+            return;
+        }
+        List<LeadWorkflowDetailsDto> leadWorkflowDetails = leadReadService.findLeadsByPersonIdsAndStatusesAndSubstatuses(personIds, getLeadStatuses(), getLeadSubStatuses());
+        if (leadWorkflowDetails == null || leadWorkflowDetails.isEmpty()) {
+            log.info("No lead workflow details found for person ids: {}", personIds);
+            return;
+        }
+        String taskConfigKey = "LEAD_MISSED_CALL_TASK";
+        for (LeadWorkflowDetailsDto leadWorkflowDetail : leadWorkflowDetails) {
+            Map<String, Object> taskDetails = new HashMap<>();
+            taskDetails.put(WorkflowConstants.TaskDetails.STAGE_KEY, leadWorkflowDetail.getCurrentStageKey());
+            CreateTaskRequest createTaskRequest = buildMissedCallTaskRequest(leadWorkflowDetail, taskConfigKey, mobileNumber, callSid);
+            leadTaskWriteService.createTaskAndAssociateWithLead(leadWorkflowDetail.getLeadId(), createTaskRequest, taskDetails);
+        }
+    }
+
+    private List<Long> findPersonIdentifiers(String mobileNumber) {
+        return personReadService.getPersonByMobile(mobileNumber).stream()
+                .map(PersonResponse::getId)
+                .collect(Collectors.toList());
+    }
+
+    private List<LeadStatus> getLeadStatuses() {
+        return List.of(LeadStatus.ACTIVE, LeadStatus.COMPLETED);
+    }
+
+    private List<LeadSubStatus> getLeadSubStatuses() {
+        return List.of(LeadSubStatus.ONHOLD);
+    }
+
+    private CreateTaskRequest buildMissedCallTaskRequest(LeadWorkflowDetailsDto leadWorkflowDetail,
+            String taskConfigKey, String mobileNumber, String callSid) {
+        return CreateTaskRequest.builder()
+                .taskConfigKey(taskConfigKey)
+                .assignedTo(leadWorkflowDetail.getCurrentStageAssignedTo() != null ? leadWorkflowDetail.getCurrentStageAssignedTo() : null)
+                .taskDetails(TaskDetailsRequest.builder()
+                        .entityId(leadWorkflowDetail.getLeadIdentifier())
+                        .entityType(EntityType.LEAD)
+                        .creatorRemarks("Missed call from " + mobileNumber + " call sid: " + callSid)
+                        .build())
+                .build();
+    }
+    
+    /* === incoming call popup webhook === */
+    @Override
+    public Map<String, Object> handleWebhook(MultiValueMap<String, String> formData) {
+    
+        List<String> errors = validateWebhookData(formData);
+        if (!errors.isEmpty()) {
+            return errorResponse("Invalid webhook data", errors);
+        }
+    
+        try {
+            processWebhook(formData);
+            return successResponse("Webhook received");
+        } catch (Exception ex) {
+            log.error("Error processing call webhook", ex);
+            return errorResponse("Error processing webhook: " + ex.getMessage(), null);
+        }
+    }
+    
+
+     /* === helper methods for incoming call popup webhook === */
+    private void processWebhook(MultiValueMap<String, String> formData) {
+
+        String callSid = getRequired(formData, "CallSid");
+        if (callSid == null) {
+            log.warn("Missing CallSid. Skipping webhook.");
+            return;
+        }
+    
+        String callFrom = get(formData, "CallFrom");
+        String callTo = get(formData, "CallTo");
+        String dialWhomNumber = get(formData, "DialWhomNumber");
+        String callStatus = get(formData, "CallStatus");
+        String direction = normalizeDirection(get(formData, "Direction"));
+        String agentEmail = get(formData, "AgentEmail");
+    
+        String eventType = resolveEventType(formData, callStatus);
+        LocalDateTime timestamp = resolveTimestamp(formData);
+    
+        CallNotificationResponse notification = CallNotificationResponse.builder()
+                .callSid(callSid)
+                .callFrom(callFrom)
+                .callTo(callTo)
+                .callStatus(callStatus)
+                .direction(direction)
+                .eventType(eventType)
+                .agentEmail(agentEmail)
+                .timestamp(timestamp)
+                .createdAt(LocalDateTime.now())
+                .build();
+    
+        callNotificationService.sendNotificationAsync(notification, dialWhomNumber);
+    }
+
+    /* === helper methods for incoming call popup webhook === */
+    private List<String> validateWebhookData(MultiValueMap<String, String> formData) {
+
+        List<String> errors = new ArrayList<>();
+    
+        validateRequired(formData, "CallSid", errors);
+        validateRequired(formData, "CallFrom", errors);
+        validateRequired(formData, "CallTo", errors);
+        validateRequired(formData, "Direction", errors);
+    
+        if (isBlank(get(formData, "CallStatus")) && isBlank(get(formData, "Status"))) {
+            errors.add("Missing required parameter: CallStatus or Status");
+        }
+    
+        return errors;
+    }    
+
+    /* === helper methods for incoming call popup webhook === */
+    private String get(MultiValueMap<String, String> formData, String key) {
+        return Optional.ofNullable(formData.getFirst(key))
+                .map(String::trim)
+                .filter(s -> !s.isBlank())
+                .orElse(null);
+    }
+   
+    /* === helper methods for incoming call popup webhook === */
+    private String getRequired(MultiValueMap<String, String> formData, String key) {
+        String value = get(formData, key);
+        return value != null ? value : null;
+    }
+   
+    /* === helper methods for incoming call popup webhook === */
+    private void validateRequired(MultiValueMap<String, String> formData,
+                                  String key,
+                                  List<String> errors) {
+        if (isBlank(get(formData, key))) {
+            errors.add("Missing required parameter: " + key);
+        }
+    }
+    
+    /* === helper methods for incoming call popup webhook === */
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
+    }
+
+    /* === helper methods for incoming call popup webhook === */
+    private String normalizeDirection(String direction) {
+        if (direction == null) return null;
+    
+        return switch (direction.toUpperCase()) {
+            case "INCOMING", "INBOUND" -> "INBOUND";
+            case "OUTBOUND", "OUTBOUND-DIAL" -> "OUTBOUND";
+            default -> direction.toUpperCase();
+        };
+    }
+
+    /* === helper methods for incoming call popup webhook === */
+    private String resolveEventType(MultiValueMap<String, String> formData, String callStatus) {
+        String eventType = get(formData, "EventType");
+    
+        if (!isBlank(eventType)) {
+            return eventType;
+        }
+    
+        return !isBlank(callStatus) ? callStatus : "UNKNOWN";
+    }
+
+    /* === helper methods for incoming call popup webhook === */
+    private LocalDateTime resolveTimestamp(MultiValueMap<String, String> formData) {
+
+        return parseDateTime(get(formData, "Timestamp"))
+                .or(() -> parseDateTime(get(formData, "Created")))
+                .orElse(LocalDateTime.now());
+    }
+   
+    /* === helper methods for incoming call popup webhook === */
+    private Optional<LocalDateTime> parseDateTime(String value) {
+        if (isBlank(value)) return Optional.empty();
+    
+        try {
+            return Optional.of(LocalDateTime.parse(value));
+        } catch (Exception ex) {
+            log.warn("Failed to parse timestamp: {}", value);
+            return Optional.empty();
+        }
+    }
+
+    /* === helper methods for incoming call popup webhook === */
+    private Map<String, Object> successResponse(String message) {
+        return Map.of(
+                "status", "success",
+                "message", message
+        );
+    }
+    
+    /* === helper methods for incoming call popup webhook === */
+    private Map<String, Object> errorResponse(String message, List<String> errors) {
+    
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", "error");
+        response.put("message", message);
+    
+        if (errors != null && !errors.isEmpty()) {
+            response.put("errors", errors);
+        }
+    
+        return response;
+    }    
 }

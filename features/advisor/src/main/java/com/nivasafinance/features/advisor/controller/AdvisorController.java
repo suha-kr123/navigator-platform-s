@@ -76,13 +76,6 @@ public class AdvisorController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/bulk-assign-sales-owner")
-    public ResponseEntity<BulkSalesOwnerAssignmentResponse> bulkAssignSalesOwner(
-            @Valid @RequestBody BulkSalesOwnerAssignmentRequest request) {
-        BulkSalesOwnerAssignmentResponse response = advisorWriteService.bulkAssignSalesOwner(request);
-        return ResponseEntity.ok(response);
-    }
-
     @PutMapping("/{identifier}/qualification-details")
     @RequirePermission(permissionName = "UPDATE_ADVISOR")
     public ResponseEntity<Void> updateQualificationDetails(
@@ -145,16 +138,6 @@ public class AdvisorController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/{id}/leads")
-    @RequirePermission(permissionName = "READ_ADVISOR")
-    public ResponseEntity<PaginatedResponse<AdvisorLeadResponse>> getLeadsByAdvisorId(
-            @PathVariable("id") UUID advisorId,
-            @Valid PaginationRequest paginationRequest) {
-        PaginatedResponse<AdvisorLeadResponse> leads = advisorReadService.getLeadsByAdvisorId(
-                advisorId, paginationRequest);
-        return ResponseEntity.ok(leads);
-    }
-
     @GetMapping("/dashboard")
     @RequirePermission(permissionName = "READ_ADVISOR_DASHBOARD")
     public ResponseEntity<PaginatedResponse<AdvisorDashboardResponse>> getAdvisorDashboard(
@@ -165,6 +148,7 @@ public class AdvisorController {
         return ResponseEntity.ok(response);
     }
 
+    // advisors where the current user is the owner
     @GetMapping("/my-advisors/basic-info")
     @RequirePermission(permissionName = "READ_MY_ADVISORS_BASIC_INFO")
     public ResponseEntity<PaginatedResponse<AdvisorBasicResponse>> getMyAdvisors(
@@ -173,4 +157,13 @@ public class AdvisorController {
         return ResponseEntity.ok(response);
     }
 
+    // advisors by the given referral code
+    @GetMapping("/referral-details/{referralCode}")
+    @RequirePermission(permissionName = "READ_REFERRAL_ADVISOR")
+    public ResponseEntity<PaginatedResponse<AdvisorBasicResponse>> getAdvisorsByReferralCode(
+            @PathVariable String referralCode,
+            @Valid PaginationRequest paginationRequest) {
+        PaginatedResponse<AdvisorBasicResponse> response = advisorReadService.getAdvisorsByReferralCode(referralCode, paginationRequest);
+        return ResponseEntity.ok(response);
+    }
 }

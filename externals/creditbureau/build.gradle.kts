@@ -1,0 +1,22 @@
+plugins {
+    id("java-conventions")
+    id("testing-conventions")
+    id("dokka-conventions")
+    id("spring-conventions")
+    id("common-feature-conventions")
+}
+
+dependencies {
+    implementation(project(":common"))
+    implementation(project(":features:person"))
+    implementation(project(":features:lead"))
+    implementation(project(":features:consent"))
+}
+
+springBoot {
+    mainClass.set("com.nivasafinance.NavigatorApplication")
+}
+
+tasks.jar {
+    archiveBaseName.set("creditbureau-externals")
+}

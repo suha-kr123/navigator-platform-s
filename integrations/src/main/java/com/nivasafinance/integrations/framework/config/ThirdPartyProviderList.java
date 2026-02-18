@@ -3,7 +3,8 @@ package com.nivasafinance.integrations.framework.config;
 public enum ThirdPartyProviderList {
     EXOTEL("exotel"),
     WATI("wati"),
-    GALLABOX("gallabox");
+    GALLABOX("gallabox"),
+    CRIF_HIGHMARK("crif_highmark");
 
 
     private final String provideName;

@@ -9,7 +9,11 @@ import com.nivasafinance.externals.exotel.service.ExotelService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.http.MediaType;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -205,5 +209,22 @@ public class ExotelController {
         // Return immediate response
         return ResponseEntity.ok()
                 .body(Map.of("message", "Advisor call logging request received and processing in background"));
+    }
+
+    /* === incoming call popup webhook === */
+    @GetMapping(value = "/call-popup")
+    public ResponseEntity<Map<String, Object>> handleCallEvent(
+            @RequestParam MultiValueMap<String, String> formData) {
+
+        Map<String, Object> response = exotelService.handleWebhook(formData);
+
+        if ("error".equals(response.get("status"))) {
+            if (response.containsKey("errors")) {
+                return ResponseEntity.badRequest().body(response);
+            }
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+
+        return ResponseEntity.ok(response);
     }
 }

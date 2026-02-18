@@ -5,11 +5,10 @@ import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.common.annotations.RequirePermission;
 import com.nivasafinance.features.lead.dto.*;
-import com.nivasafinance.features.lead.dto.BulkSalesOwnerAssignmentRequest;
-import com.nivasafinance.features.lead.dto.BulkSalesOwnerAssignmentResponse;
 import com.nivasafinance.features.lead.dto.UpdateCallDetailsRequest;
 import com.nivasafinance.features.lead.service.LeadReadService;
 import com.nivasafinance.features.lead.service.LeadWriteService;
+
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -73,13 +72,6 @@ public class LeadController {
             @Valid @RequestBody UpdateLeadRequest request) {
         leadWriteService.updateLead(leadId, request);
         return ResponseEntity.noContent().build();
-    }
-
-    @PostMapping("/bulk-assign-sales-owner")
-    public ResponseEntity<BulkSalesOwnerAssignmentResponse> bulkAssignSalesOwner(
-            @Valid @RequestBody BulkSalesOwnerAssignmentRequest request) {
-        BulkSalesOwnerAssignmentResponse response = leadWriteService.bulkAssignSalesOwner(request);
-        return ResponseEntity.ok(response);
     }
 
     @PutMapping("/{leadId}/preliminary-details")
@@ -291,5 +283,15 @@ public class LeadController {
             @Valid @RequestBody UpdateCallDetailsRequest request) {
         leadWriteService.updateCallDetails(leadId, request);
         return ResponseEntity.noContent().build();
+    }
+
+    // leads by the given referral code
+    @GetMapping("/referral-details/{referralCode}")
+    @RequirePermission(permissionName = "READ_LEAD")
+    public ResponseEntity<PaginatedResponse<LeadBasicResponse>> getLeadsByReferralCode(
+            @PathVariable String referralCode,
+            @Valid PaginationRequest paginationRequest) {
+        PaginatedResponse<LeadBasicResponse> response = leadReadService.getLeadsByReferralCode(referralCode, paginationRequest);
+        return ResponseEntity.ok(response);
     }
 }
