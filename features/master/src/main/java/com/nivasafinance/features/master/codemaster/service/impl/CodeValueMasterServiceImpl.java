@@ -37,7 +37,17 @@ public class CodeValueMasterServiceImpl implements CodeValueMasterService {
     public CodeValueResponse getByKey(String key) {
         return CodeValueResponse.from(masterCodeValueRepositoryWrapper.findByKeyWithException(key));
     }
-    
+
+    @Override
+    public CodeValueResponse getByKeyOrNull(String key) {
+        if (key == null || key.isBlank()) {
+            return null;
+        }
+        return masterCodeValueRepositoryWrapper.findByKey(key)
+                .map(CodeValueResponse::from)
+                .orElse(null);
+    }
+
     @Override
     public List<CodeValueResponse> getByKeys(List<String> keys) {
         return keys.stream()

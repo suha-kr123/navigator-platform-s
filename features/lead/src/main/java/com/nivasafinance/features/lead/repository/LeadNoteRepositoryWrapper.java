@@ -36,7 +36,7 @@ public class LeadNoteRepositoryWrapper {
                   n.updated_by as updatedBy
               FROM n_lead l
               CROSS JOIN LATERAL  jsonb_array_elements(l.notes) note_id
-              JOIN n_note n ON note_id::INT = n.id
+              JOIN n_note n ON (note_id#>>'{}')::bigint = n.id
             """;
     private final MessageSource messageSource;
 
@@ -69,7 +69,7 @@ public class LeadNoteRepositoryWrapper {
         
         int offset = paginationRequest.getOffset();
         int limit = paginationRequest.getLimit();
-        String sortBy = paginationRequest.getSortBy() != null ? paginationRequest.getSortBy() : "createdAt";
+        String sortBy = mapSortByToColumn(paginationRequest.getSortBy());
         String sortDirection = paginationRequest.getSortDirection() != null ? paginationRequest.getSortDirection() : "DESC";
         
         // Count query
@@ -77,7 +77,7 @@ public class LeadNoteRepositoryWrapper {
                 SELECT COUNT(*)
                 FROM n_lead l
                 CROSS JOIN LATERAL jsonb_array_elements(l.notes) note_id
-                JOIN n_note n ON note_id::INT = n.id
+                JOIN n_note n ON (note_id#>>'{}')::bigint = n.id
                 WHERE l.lead_identifier = ?
                 """;
         
@@ -109,6 +109,20 @@ public class LeadNoteRepositoryWrapper {
         } catch (DataAccessException e) {
             throw new RuntimeException("Failed to retrieve notes for lead: " + leadIdentifier, e);
         }
+    }
+
+    private static String mapSortByToColumn(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) {
+            return "created_at";
+        }
+        return switch (sortBy) {
+            case "createdAt" -> "created_at";
+            case "updatedAt" -> "updated_at";
+            case "createdBy" -> "created_by";
+            case "updatedBy" -> "updated_by";
+            case "title", "content" -> sortBy;
+            default -> "created_at";
+        };
     }
 
     /**

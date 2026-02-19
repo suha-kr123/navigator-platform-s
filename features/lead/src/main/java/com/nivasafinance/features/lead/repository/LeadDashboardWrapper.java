@@ -686,21 +686,17 @@ public class LeadDashboardWrapper {
 
             String priorityKey = rs.getString("priority_key");
             if (priorityKey != null) {
-                try {
-                    CodeValueResponse priority = codeValueMasterService.getByKey(priorityKey);
+                CodeValueResponse priority = codeValueMasterService.getByKeyOrNull(priorityKey);
+                if (priority != null) {
                     builder.priority(priority);
-                } catch (Exception e) {
-                    // Ignore if priority not found - leave as null
                 }
             }
 
             String onHoldReasonKey = rs.getString("onhold_reason_key");
             if (onHoldReasonKey != null) {
-                try {
-                    CodeValueResponse onHoldReason = codeValueMasterService.getByKey(onHoldReasonKey);
+                CodeValueResponse onHoldReason = codeValueMasterService.getByKeyOrNull(onHoldReasonKey);
+                if (onHoldReason != null) {
                     builder.onHoldReason(onHoldReason);
-                } catch (Exception e) {
-                    // Ignore if onhold reason not found - leave as null
                 }
             }
 
@@ -716,11 +712,9 @@ public class LeadDashboardWrapper {
 
             String sourcingChannelName = rs.getString("sourcing_channel_name");
             if (sourcingChannelName != null) {
-                try {
-                    CodeValueResponse sourcingChannel = codeValueMasterService.getByKey(sourcingChannelName);
+                CodeValueResponse sourcingChannel = codeValueMasterService.getByKeyOrNull(sourcingChannelName);
+                if (sourcingChannel != null) {
                     builder.sourcingChannel(sourcingChannel);
-                } catch (Exception e) {
-                    // ignore if sourcing channel not found
                 }
             }
 
@@ -735,13 +729,9 @@ public class LeadDashboardWrapper {
             // Populate currentSubStageName
             String currentSubStageKey = rs.getString("current_sub_stage_key");
             if (currentSubStageKey != null && !currentSubStageKey.trim().isEmpty()) {
-                try {
-                    CodeValueResponse subStage = codeValueMasterService.getByKey(currentSubStageKey);
-                    if (subStage != null && subStage.getValue() != null) {
-                        builder.currentSubStageName(subStage.getValue());
-                    }
-                } catch (Exception e) {
-                    // Ignore if sub-stage not found - leave name as null
+                CodeValueResponse subStage = codeValueMasterService.getByKeyOrNull(currentSubStageKey);
+                if (subStage != null && subStage.getValue() != null) {
+                    builder.currentSubStageName(subStage.getValue());
                 }
             }
 
