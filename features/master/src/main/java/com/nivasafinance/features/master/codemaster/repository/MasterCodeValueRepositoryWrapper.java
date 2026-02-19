@@ -9,6 +9,7 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -105,6 +106,10 @@ public class MasterCodeValueRepositoryWrapper {
         }
     }
     
+    public Optional<MasterCodeValue> findByKey(String key) {
+        return masterCodeValueRepository.findByKey(key);
+    }
+
     public MasterCodeValue findByKeyWithException(String key) {
         return masterCodeValueRepository.findByKey(key).orElseThrow(() ->
                 codeMasterExceptionFactory.codeValueKeyNotFound(key, messageSource));

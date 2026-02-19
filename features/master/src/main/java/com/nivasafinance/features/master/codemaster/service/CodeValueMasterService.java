@@ -10,6 +10,8 @@ public interface CodeValueMasterService {
 
     CodeValueResponse getByKey(String key);
 
+    CodeValueResponse getByKeyOrNull(String key);
+
     List<CodeValueResponse> getByKeys(List<String> keys);
 
     CodeValueResponse getCodeValueByKeyAndCodeKey(String key, String codeKey);
