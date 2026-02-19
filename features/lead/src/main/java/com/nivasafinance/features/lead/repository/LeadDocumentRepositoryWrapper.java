@@ -95,8 +95,8 @@ public class LeadDocumentRepositoryWrapper {
         
         int offset = paginationRequest.getOffset();
         int limit = paginationRequest.getLimit();
-        String sortBy = paginationRequest.getSortBy();
-        String sortDirection = paginationRequest.getSortDirection();
+        String sortBy = mapSortByToColumn(paginationRequest.getSortBy());
+        String sortDirection = paginationRequest.getSortDirection() != null ? paginationRequest.getSortDirection() : "DESC";
         
         // Count query
         String countSql = """
@@ -136,6 +136,20 @@ public class LeadDocumentRepositoryWrapper {
         } catch (DataAccessException e) {
             throw new RuntimeException("Failed to retrieve documents for lead: " + leadIdentifier, e);
         }
+    }
+
+    private static String mapSortByToColumn(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) {
+            return "created_at";
+        }
+        return switch (sortBy) {
+            case "createdAt" -> "created_at";
+            case "updatedAt" -> "updated_at";
+            case "createdBy" -> "created_by";
+            case "updatedBy" -> "updated_by";
+            case "name", "type", "size" -> sortBy;
+            default -> "created_at";
+        };
     }
 
     /**
