@@ -32,6 +32,7 @@ public class LeadBasicResponseMapper implements RowMapper<LeadBasicResponse> {
         builder.substatus(substatusStr != null ? LeadSubStatus.valueOf(substatusStr) : null);
         builder.createdAt(createdAtTs != null ? createdAtTs.toLocalDateTime() : null);
         builder.office(rs.getString("office"));
+        builder.productCode(rs.getString("product_code"));
         builder.referredByCode(rs.getString("referred_by_code"));
         String referredByTypeStr = rs.getString("referred_by_type");
         if (referredByTypeStr != null) {

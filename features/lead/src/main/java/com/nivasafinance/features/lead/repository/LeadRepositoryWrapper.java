@@ -802,6 +802,7 @@ public class LeadRepositoryWrapper {
         sql.append("l.substatus::text AS substatus, ");
         sql.append("l.created_at AS created_at, ");
         sql.append("o.name AS office, ");
+        sql.append("l.product_code AS product_code, ");
         sql.append("sc.marketing_details->>'referredByCode' AS referred_by_code, ");
         sql.append("r.entity_type::text AS referred_by_type, ");
         sql.append("r.entity_identifier AS referred_by_identifier, ");
@@ -900,6 +901,7 @@ public class LeadRepositoryWrapper {
                    l.substatus::text AS substatus,
                    l.created_at AS created_at,
                    o.name AS office,
+                   l.product_code AS product_code,
                    sc.marketing_details->>'referredByCode' AS referred_by_code,
                    r.entity_type::text AS referred_by_type,
                    r.entity_identifier AS referred_by_identifier,
@@ -963,6 +965,7 @@ public class LeadRepositoryWrapper {
         sql.append("l.substatus::text AS substatus, ");
         sql.append("l.created_at AS created_at, ");
         sql.append("o.name AS office, ");
+        sql.append("l.product_code AS product_code, ");
         sql.append("sc.marketing_details->>'referredByCode' AS referred_by_code, ");
         sql.append("r.entity_type::text AS referred_by_type, ");
         sql.append("r.entity_identifier AS referred_by_identifier, ");

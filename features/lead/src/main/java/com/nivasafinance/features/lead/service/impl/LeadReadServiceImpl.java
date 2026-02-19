@@ -253,6 +253,7 @@ public class LeadReadServiceImpl implements LeadReadService {
                 .leadIdentifier(leadIdentifier)
                 .status(lead.getStatus())
                 .substatus(lead.getSubstatus())
+                .productCode(lead.getProductCode())
                 .build();
     }
 
