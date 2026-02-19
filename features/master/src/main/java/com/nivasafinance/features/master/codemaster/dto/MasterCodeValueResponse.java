@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.nivasafinance.common.base.model.MasterLanguageResolver;
 import com.nivasafinance.features.master.codemaster.entity.MasterCode;
 import com.nivasafinance.features.master.codemaster.entity.MasterCodeValue;
 
@@ -37,14 +38,16 @@ public class MasterCodeValueResponse {
         private Map<String, String> valueMap;
         private Map<String, String> descriptionMap;
         private Boolean isActive;
+        private Icons icons;
 
         public static Child from(MasterCodeValue value) {
             return Child.builder()
                     .id(value.getId())
                     .key(value.getKey())
-                    .valueMap(value.getValue().toMap())
-                    .descriptionMap(value.getDescription().toMap())
+                    .valueMap(MasterLanguageResolver.getDisplayMap(value.getValue()))
+                    .descriptionMap(MasterLanguageResolver.getDisplayMap(value.getDescription()))
                     .isActive(value.getIsActive())
+                    .icons(Icons.from(value.getIcons()))
                     .build();
         }
     }
@@ -55,8 +58,8 @@ public class MasterCodeValueResponse {
         return MasterCodeValueResponse.builder()
                 .id(masterCode.getId())
                 .key(masterCode.getKey())
-                .valueMap(masterCode.getName().toMap())
-                .descriptionMap(masterCode.getDescription().toMap())
+                .valueMap(MasterLanguageResolver.getDisplayMap(masterCode.getName()))
+                .descriptionMap(MasterLanguageResolver.getDisplayMap(masterCode.getDescription()))
                 .isSystemDefined(masterCode.getIsSystemDefined())
                 .parentId(masterCode.getParentId())
                 .children(

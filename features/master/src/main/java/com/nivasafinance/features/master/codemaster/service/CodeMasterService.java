@@ -15,18 +15,18 @@ import java.util.List;
 
 public interface CodeMasterService {
 
-    List<CodeValueResponse> getAllCodeValuesByCodeKey(String codeKey, Boolean onlyActive);
+    List<CodeValueResponse> getAllCodeValuesByCodeKey(String codeKey, Boolean onlyActive, String context);
 
     PaginatedResponse<CodeValueResponse> getCodeValuesByCodeKeyPaginated(
-            String codeKey, Boolean onlyActive, PaginationRequest paginationRequest);
+            String codeKey, Boolean onlyActive, String context, PaginationRequest paginationRequest);
 
     List<MasterCodeWithValuesResponse> getMasterCodeChildrenWithValues(
             String parentCodeKey,
-            Boolean onlyActive
-    );
+            Boolean onlyActive,
+            String context);
 
     PaginatedResponse<MasterCodeWithValuesResponse> getMasterCodeChildrenWithValuesPaginated(
-            String parentCodeKey, Boolean onlyActive, PaginationRequest paginationRequest);
+            String parentCodeKey, Boolean onlyActive, String context, PaginationRequest paginationRequest);
 
     MasterCodeResponse getMasterCodeByKey(String key);
     List<MasterCodeResponse> getMasterCodesByKeys(List<String> keys);

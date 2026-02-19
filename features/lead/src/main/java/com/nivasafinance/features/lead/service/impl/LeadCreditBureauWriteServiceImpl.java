@@ -17,6 +17,7 @@ import com.nivasafinance.features.creditbureau.service.CreditBureauReadService;
 import com.nivasafinance.common.dto.AddressData;
 import com.nivasafinance.common.dto.IdentifierData;
 import com.nivasafinance.features.lead.dto.InitiateCbEnquiryResponse;
+import com.nivasafinance.features.lead.dto.RecordCbConsentResponse;
 import com.nivasafinance.features.lead.entity.Contact;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.common.exception.BadRequestException;
@@ -28,6 +29,7 @@ import com.nivasafinance.features.lead.service.LeadCreditBureauWriteService;
 import com.nivasafinance.features.person.entity.MobileNumberDetails;
 import com.nivasafinance.features.person.service.PersonReadService;
 import com.nivasafinance.features.person.dto.PersonResponse;
+import com.nivasafinance.features.person.dto.RecordCbConsentResult;
 import com.nivasafinance.features.person.service.PersonCreditBureauService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -95,6 +97,17 @@ public class LeadCreditBureauWriteServiceImpl implements LeadCreditBureauWriteSe
                 .enquiryIdentifier(enquiryResponse.getIdentifier())
                 .status(enquiryResponse.getStatus() != null ? enquiryResponse.getStatus() : CreditBureauEnquiryStatus.INITIATED)
                 .consentIdentifier(enquiryResponse.getConsentIdentifier())
+                .build();
+    }
+
+    @Override
+    public RecordCbConsentResponse recordCbConsentReceived(UUID leadIdentifier, UUID contactIdentifier) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        Contact contact = contactRepositoryWrapper.findByIdentifierWithException(contactIdentifier);
+        validateContactBelongsToLead(lead, contact.getId());
+        RecordCbConsentResult result = personCreditBureauService.recordCbConsentReceived(contact.getPersonId());
+        return RecordCbConsentResponse.builder()
+                .consentIdentifier(result.getConsentIdentifier())
                 .build();
     }
 

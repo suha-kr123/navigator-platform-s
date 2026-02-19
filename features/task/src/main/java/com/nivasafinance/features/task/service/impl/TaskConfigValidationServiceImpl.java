@@ -26,7 +26,7 @@ public class TaskConfigValidationServiceImpl implements TaskConfigValidationServ
         TaskConfig.TaskConfigDetails configDetails = taskConfig.getTaskConfigDetails();
         if (ValidationUtils.isNonNull(configDetails) && ValidationUtils.isNonNullOrEmpty(configDetails.getAllowedOutcomesCodeValueKey())) {
             String codeValueKey = configDetails.getAllowedOutcomesCodeValueKey();
-            List<CodeValueResponse> allowedOutcomes = codeMasterService.getAllCodeValuesByCodeKey(codeValueKey, true);
+            List<CodeValueResponse> allowedOutcomes = codeMasterService.getAllCodeValuesByCodeKey(codeValueKey, true, "default");
             List<String> allowedOutcomeKeys = allowedOutcomes.stream()
                     .map(CodeValueResponse::getKey)
                     .collect(Collectors.toList());

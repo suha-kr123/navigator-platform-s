@@ -7,6 +7,7 @@ import com.nivasafinance.common.events.SystemEvent;
 import com.nivasafinance.common.events.payload.ConsentReceivedEventPayload;
 import com.nivasafinance.common.events.payload.ConsentSentEventPayload;
 import com.nivasafinance.features.consent.dto.AcceptConsentRequest;
+import com.nivasafinance.features.consent.dto.ConsentReceivedRequest;
 import com.nivasafinance.features.consent.dto.CreateAndSendConsent;
 import com.nivasafinance.features.consent.dto.ResendConsentRequest;
 import com.nivasafinance.features.consent.dto.WithdrawConsentRequest;
@@ -70,6 +71,17 @@ public class ConsentWriteServiceImpl implements ConsentWriteService {
                 UserContext.getUsername()));
 
         return saved;
+    }
+
+    @Override
+    public Consent createConsentReceived(ConsentReceivedRequest request) {
+        Consent consent = new Consent();
+        consent.setStatus(ConsentStatus.RECEIVED);
+        consent.setConsentSentDetails(null);
+        String auditId = RequestContext.getRequestMetadata() != null ? RequestContext.getRequestMetadata().getAuditId() : null;
+        consent.setConsentReceivedDetails(new Consent.ConsentReceivedDetails(LocalDateTime.now(), auditId));
+        consent.setConsentWithdrawnDetails(null);
+        return consentRepositoryWrapper.saveWithException(consent);
     }
 
     @Override

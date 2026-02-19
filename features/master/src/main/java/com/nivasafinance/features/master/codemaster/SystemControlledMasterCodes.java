@@ -16,6 +16,7 @@ public final class SystemControlledMasterCodes {
     
     public static final String LEAD_OCCUPATION_PROFILE_MASTER = "LEAD_OCCUPATION_PROFILE_MASTER";
     public static final String LEAD_ROOF_PROFILE_MASTER = "LEAD_ROOF_PROFILE_MASTER";
+    public static final String LEAD_PROPERTY_CONSTRUCTION_STATUS_MASTER = "LEAD_PROPERTY_CONSTRUCTION_STATUS_MASTER";
     public static final String LEAD_LTV_MASTER = "LEAD_LTV_MASTER";
     public static final String LEAD_FOIR_MASTER = "LEAD_FOIR_MASTER";
     public static final String LEAD_MONTHLY_INCOME_MASTER = "LEAD_MONTHLY_INCOME_MASTER";
@@ -23,7 +24,8 @@ public final class SystemControlledMasterCodes {
     public static final String LEAD_LOCATION_MASTER = "LEAD_LOCATION_MASTER";
     public static final String LEAD_BUREAU_RATING_MASTER = "LEAD_BUREAU_RATING_MASTER";
     public static final String LEAD_CUSTOMER_PROFILE_MASTER = "LEAD_CUSTOMER_PROFILE_MASTER";
-    
+    public static final String LEAD_INCOME_SOURCE_MASTER = "LEAD_INCOME_SOURCE_MASTER";
+
     public static final String MARKETING_SOURCE_MASTER = "MARKETING_SOURCE_MASTER";
     public static final String MARKETING_CHANNEL_MASTER = "MARKETING_CHANNEL_MASTER";
     public static final String LEAD_PRIORITY_MASTER = "LEAD_PRIORITY_MASTER";

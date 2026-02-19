@@ -131,10 +131,35 @@ public class LeadController {
         return ResponseEntity.noContent().build();
     }
 
+    @PatchMapping("/{leadId}/property-details")
+    @RequirePermission(permissionName = "UPDATE_LEAD_PROPERTY_DETAILS")
+    public ResponseEntity<Void> patchPropertyDetails(
+            @PathVariable UUID leadId,
+            @RequestBody PatchPropertyDetailsRequest request) {
+        leadWriteService.patchPropertyDetails(leadId, request);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/{leadId}/property-details")
     @RequirePermission(permissionName = "READ_LEAD")
     public ResponseEntity<PropertyDetailsResponse> getPropertyDetails(@PathVariable UUID leadId) {
         PropertyDetailsResponse response = leadReadService.getPropertyDetails(leadId);
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{leadId}/income-obligation-details")
+    @RequirePermission(permissionName = "UPDATE_LEAD_INCOME_OBLIGATION_DETAILS")
+    public ResponseEntity<Void> patchIncomeObligationDetails(
+            @PathVariable UUID leadId,
+            @RequestBody PatchIncomeAndObligationRequest request) {
+        leadWriteService.patchIncomeObligationDetails(leadId, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{leadId}/income-obligation-details")
+    @RequirePermission(permissionName = "READ_LEAD")
+    public ResponseEntity<IncomeObligationDetailsResponse> getIncomeObligationDetails(@PathVariable UUID leadId) {
+        IncomeObligationDetailsResponse response = leadReadService.getIncomeObligationDetails(leadId);
         return ResponseEntity.ok(response);
     }
 

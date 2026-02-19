@@ -17,6 +17,7 @@ public interface LeadReadService {
     CreditDetailsResponse getCreditDetails(UUID leadIdentifier);
     ProposedDetailsResponse getProposedDetails(UUID leadIdentifier);
     PropertyDetailsResponse getPropertyDetails(UUID leadIdentifier);
+    IncomeObligationDetailsResponse getIncomeObligationDetails(UUID leadIdentifier);
     SourcingDetailsResponse getSourcingDetails(UUID leadIdentifier);
     DisbursementDetailsResponse getDisbursementDetails(UUID leadIdentifier);
     TrancheResponse getTrancheByIdentifier(UUID leadIdentifier, UUID trancheIdentifier);
@@ -34,4 +35,8 @@ public interface LeadReadService {
     PaginatedResponse<LeadBasicResponse> getLeadsByEntity(EntityType entityType, UUID entityIdentifier, PaginationRequest paginationRequest);
 
     PaginatedResponse<LeadBasicResponse> getLeadsByReferralCode(String referralCode, PaginationRequest paginationRequest);
+
+    CurrentCustomerFormStepResponse getCurrentCustomerFormStep(UUID leadIdentifier);
+
+    DocumentChecklistResponse getDocumentChecklist(UUID leadIdentifier);
 }

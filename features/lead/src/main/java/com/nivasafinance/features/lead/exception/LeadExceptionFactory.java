@@ -22,4 +22,14 @@ public final class LeadExceptionFactory {
     public static LeadOperationException retrieveEntityFailed(MessageSource messageSource) {
         return new LeadOperationException("error.lead.retrieve.entity.failed", messageSource);
     }
+
+    public static BadRequestException invalidCustomerFormStep(MessageSource messageSource) {
+        return new BadRequestException(
+                ExceptionUtils.createLocalizedMessage("error.lead.customer.form.step.invalid", new Object[]{}, messageSource));
+    }
+
+    public static BadRequestException invalidDocumentChecklistStatus(MessageSource messageSource) {
+        return new BadRequestException(
+                ExceptionUtils.createLocalizedMessage("error.lead.document.checklist.status.invalid", new Object[]{}, messageSource));
+    }
 }

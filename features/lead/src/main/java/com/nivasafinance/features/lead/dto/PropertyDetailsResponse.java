@@ -14,5 +14,17 @@ import lombok.NoArgsConstructor;
 public class PropertyDetailsResponse {
     private AddressData address;
     private GeoData geoData;
+    private String propertyType;
+    private String propertyConstructionStage;
+    private PropertyMeasurementDetailsData propertyMeasurementDetails;
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class PropertyMeasurementDetailsData {
+        private String buildUpArea;
+        private String siteArea;
+    }
 }
 

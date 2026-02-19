@@ -1,6 +1,8 @@
 package com.nivasafinance.features.master.codemaster.dto;
 
+import com.nivasafinance.common.base.model.MasterLanguageResolver;
 import com.nivasafinance.features.master.codemaster.entity.MasterCodeValue;
+import com.nivasafinance.features.master.codemaster.enums.IconContext;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,17 +19,30 @@ public class CodeValueResponse {
     private String value;
     private String description;
     private Boolean isActive;
-    
+    private Object icons;
+
     public static CodeValueResponse from(MasterCodeValue masterCodeValue) {
         return CodeValueResponse.builder()
                 .id(masterCodeValue.getId())
                 .key(masterCodeValue.getKey())
                 .codeKey(masterCodeValue.getCodeKey())
-                .value(masterCodeValue.getValue() != null && masterCodeValue.getValue().getDefaultValue() != null
-                        ? masterCodeValue.getValue().getDefaultValue() : "")
-                .description(masterCodeValue.getDescription() != null && masterCodeValue.getDescription().getDefaultValue() != null
-                        ? masterCodeValue.getDescription().getDefaultValue() : "")
+                .value(MasterLanguageResolver.getDisplayValue(masterCodeValue.getValue()))
+                .description(MasterLanguageResolver.getDisplayValue(masterCodeValue.getDescription()))
                 .isActive(masterCodeValue.getIsActive())
+                .icons(Icons.from(masterCodeValue.getIcons()))
+                .build();
+    }
+
+    public static CodeValueResponse from(MasterCodeValue masterCodeValue, IconContext context) {
+        IconSize iconUrls = context != null ? context.getIconSizeFrom(masterCodeValue.getIcons()) : null;
+        return CodeValueResponse.builder()
+                .id(masterCodeValue.getId())
+                .key(masterCodeValue.getKey())
+                .codeKey(masterCodeValue.getCodeKey())
+                .value(MasterLanguageResolver.getDisplayValue(masterCodeValue.getValue()))
+                .description(MasterLanguageResolver.getDisplayValue(masterCodeValue.getDescription()))
+                .isActive(masterCodeValue.getIsActive())
+                .icons(iconUrls)
                 .build();
     }
 }

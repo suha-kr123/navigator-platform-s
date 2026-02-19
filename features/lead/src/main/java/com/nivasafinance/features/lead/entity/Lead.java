@@ -149,6 +149,11 @@ public class Lead extends AuditableEntity {
     @Column(name = "external_ids", columnDefinition = "jsonb")
     private Map<String, String> externalIds;
 
+    @Type(JsonType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "income_obligation_details", columnDefinition = "jsonb")
+    private IncomeObligationDetails incomeObligationDetails;
+
     // Nested data classes for JSONB fields
 
     @Data
@@ -274,6 +279,7 @@ public class Lead extends AuditableEntity {
         private LocalTime preferredCallStartTime;
         private LocalTime preferredCallEndTime;
         private Long noOfCampaignCalls;
+        private String currentCustomerFormStep;
     }
 
     @Data
@@ -283,6 +289,30 @@ public class Lead extends AuditableEntity {
     public static class PropertyDetails {
         private AddressData address;
         private GeoData geoData;
+        private String propertyType;
+        private String propertyConstructionStage;
+        private PropertyMeasurementDetails propertyMeasurementDetails;
+        private DocumentChecklist documentChecklist;
+
+        @Data
+        @NoArgsConstructor
+        @AllArgsConstructor
+        @Builder
+        public static class PropertyMeasurementDetails {
+            private String buildUpArea;
+            private String siteArea;
+        }
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class DocumentChecklist {
+        private String aKhata;
+        private String bKhata;
+        private String saleDeed;
+        private String propertyTax;
     }
 
     @Data
@@ -339,6 +369,33 @@ public class Lead extends AuditableEntity {
         private Boolean isWhatsAppDIYFormCompleted;
         private Map<String, String> whatsAppDIYForm;
         private BigDecimal monthlyFamilyIncome;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class IncomeObligationDetails {
+        private List<IncomeDetails> incomeDetails;
+        private ObligationDetails obligationDetails;
+        private BigDecimal monthlyFamilyIncome;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class IncomeDetails {
+        private String incomeSource;
+        private BigDecimal amount;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class ObligationDetails {
+        private BigDecimal existingEmi;
     }
 
 }

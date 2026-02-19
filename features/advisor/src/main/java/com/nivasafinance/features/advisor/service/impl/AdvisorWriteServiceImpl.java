@@ -247,7 +247,7 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
         // Validate highestQualification against global QUALIFICATION_MASTER
         if (request.getHighestQualification() != null) {
             List<CodeValueResponse> qualifications =
-                    codeMasterService.getAllCodeValuesByCodeKey(SystemControlledMasterCodes.QUALIFICATION_MASTER, true);
+                    codeMasterService.getAllCodeValuesByCodeKey(SystemControlledMasterCodes.QUALIFICATION_MASTER, true, "default");
             String provided = request.getHighestQualification();
             boolean isValid = qualifications.stream()
                     .anyMatch(cv ->
@@ -281,7 +281,7 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
         // Validate occupationType against OCCUPATION_TYPE_MASTER
         if (request.getOccupationType() != null) {
             List<CodeValueResponse> occupationTypes =
-                    codeMasterService.getAllCodeValuesByCodeKey(SystemControlledMasterCodes.OCCUPATION_TYPE_MASTER, true);
+                    codeMasterService.getAllCodeValuesByCodeKey(SystemControlledMasterCodes.OCCUPATION_TYPE_MASTER, true, "default");
             String providedType = request.getOccupationType();
             boolean isValidType = occupationTypes.stream()
                     .anyMatch(cv ->
@@ -296,7 +296,7 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
         // Validate occupation against OCCUPATION_MASTER
         if (request.getOccupation() != null) {
             List<CodeValueResponse> occupations =
-                    codeMasterService.getAllCodeValuesByCodeKey(SystemControlledMasterCodes.OCCUPATION_MASTER, true);
+                    codeMasterService.getAllCodeValuesByCodeKey(SystemControlledMasterCodes.OCCUPATION_MASTER, true, "default");
             String providedOcc = request.getOccupation();
             boolean isValidOcc = occupations.stream()
                     .anyMatch(cv ->
@@ -331,7 +331,7 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
         // Validate segmentation against SEGMENTATION_MASTER
         if (request.getSegmentation() != null) {
             List<CodeValueResponse> segmentations =
-                    codeMasterService.getAllCodeValuesByCodeKey(SystemControlledMasterCodes.SEGMENTATION_MASTER, true);
+                    codeMasterService.getAllCodeValuesByCodeKey(SystemControlledMasterCodes.SEGMENTATION_MASTER, true, "default");
             String provided = request.getSegmentation();
             boolean isValid = segmentations.stream()
                     .anyMatch(cv ->

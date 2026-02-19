@@ -96,17 +96,17 @@ public class AdvisorReadServiceImpl implements AdvisorReadService {
     @Override
     public AdvisorTemplateResponse getAdvisorTemplate() {
         List<CodeValueResponse> rejectionReasons = codeMasterService.getAllCodeValuesByCodeKey(
-                SystemControlledMasterCodes.ADVISOR_REJECTION_REASON_MASTER, true);
+                SystemControlledMasterCodes.ADVISOR_REJECTION_REASON_MASTER, true, "default");
         List<CodeValueResponse> dormantReasons = codeMasterService.getAllCodeValuesByCodeKey(
-                SystemControlledMasterCodes.ADVISOR_DORMANT_REASON_MASTER, true);
+                SystemControlledMasterCodes.ADVISOR_DORMANT_REASON_MASTER, true, "default");
         List<CodeValueResponse> occupationTypes = codeMasterService.getAllCodeValuesByCodeKey(
-                SystemControlledMasterCodes.OCCUPATION_TYPE_MASTER, true);
+                SystemControlledMasterCodes.OCCUPATION_TYPE_MASTER, true, "default");
         List<CodeValueResponse> occupations = codeMasterService.getAllCodeValuesByCodeKey(
-                SystemControlledMasterCodes.OCCUPATION_MASTER, true);
+                SystemControlledMasterCodes.OCCUPATION_MASTER, true, "default");
         List<CodeValueResponse> qualifications = codeMasterService.getAllCodeValuesByCodeKey(
-                SystemControlledMasterCodes.QUALIFICATION_MASTER, true);
+                SystemControlledMasterCodes.QUALIFICATION_MASTER, true, "default");
         List<CodeValueResponse> segmentations = codeMasterService.getAllCodeValuesByCodeKey(
-                SystemControlledMasterCodes.SEGMENTATION_MASTER, true);
+                SystemControlledMasterCodes.SEGMENTATION_MASTER, true, "default");
         return AdvisorTemplateResponse.builder()
                 .advisorRejectionReasons(rejectionReasons)
                 .advisorDormantReasons(dormantReasons)

@@ -68,7 +68,7 @@ public class StageReadServiceImpl implements StageReadService, ApplicationContex
         }
         
         try {
-            List<CodeValueResponse> codeValues = codeMasterService.getAllCodeValuesByCodeKey(subStagesCode, true);
+            List<CodeValueResponse> codeValues = codeMasterService.getAllCodeValuesByCodeKey(subStagesCode, true, "default");
             return codeValues != null ? codeValues : Collections.emptyList();
         } catch (Exception e) {
             // Log error but return empty list to prevent failure

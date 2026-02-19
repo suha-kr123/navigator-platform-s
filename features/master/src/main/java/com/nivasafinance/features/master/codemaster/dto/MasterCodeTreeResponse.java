@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.nivasafinance.common.base.model.MasterLanguageData;
+import com.nivasafinance.common.base.model.MasterLanguageResolver;
 import com.nivasafinance.features.master.codemaster.entity.MasterCode;
 import com.nivasafinance.features.master.codemaster.entity.MasterCodeValue;
 
@@ -31,8 +32,8 @@ public class MasterCodeTreeResponse {
         return MasterCodeTreeResponse.builder()
                 .id(masterCode.getId())
                 .key(masterCode.getKey())
-                .valueMap(masterCode.getName().toMap())
-                .descriptionMap(masterCode.getDescription().toMap())
+                .valueMap(MasterLanguageResolver.getDisplayMap(masterCode.getName()))
+                .descriptionMap(MasterLanguageResolver.getDisplayMap(masterCode.getDescription()))
                 .isSystemDefined(masterCode.getIsSystemDefined())
                 .parentId(masterCode.getParentId())
                 .children(children)
@@ -44,12 +45,8 @@ public class MasterCodeTreeResponse {
                 .key(key)
                 .codeKey(codeKey)
                 .isActive(true)
-                .value(MasterLanguageData.builder()
-                        .defaultValue(valueMap.get("default"))
-                        .build())
-                .description(MasterLanguageData.builder()
-                        .defaultValue(descriptionMap.get("default"))
-                        .build())
+                .value(MasterLanguageData.fromMap(valueMap))
+                .description(MasterLanguageData.fromMap(descriptionMap))
                 .build();
     }
 

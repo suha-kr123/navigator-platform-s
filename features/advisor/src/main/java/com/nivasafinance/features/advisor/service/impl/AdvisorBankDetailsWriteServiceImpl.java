@@ -115,7 +115,7 @@ public class AdvisorBankDetailsWriteServiceImpl implements AdvisorBankDetailsWri
 
     private void validateBankName(String bankNameKey) {
         List<CodeValueResponse> banks =
-                codeMasterService.getAllCodeValuesByCodeKey(SystemControlledMasterCodes.BANK_NAME_MASTER, true);
+                codeMasterService.getAllCodeValuesByCodeKey(SystemControlledMasterCodes.BANK_NAME_MASTER, true, "default");
         boolean isValid = banks.stream().anyMatch(cv -> bankNameKey.equals(cv.getKey()));
         if (!isValid) {
             throw new IllegalArgumentException("Invalid bankName. Provide a valid master key from BANK_NAME_MASTER.");

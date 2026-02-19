@@ -32,6 +32,7 @@ include("features:bulk-operations")
 include("externals:exotel")
 include("externals:whatsapp")
 include("externals:creditbureau")
+include("externals:customer")
 include("features:referral")
 include("features:bre")
 

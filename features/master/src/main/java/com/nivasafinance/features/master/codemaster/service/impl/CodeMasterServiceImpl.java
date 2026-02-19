@@ -1,10 +1,12 @@
 package com.nivasafinance.features.master.codemaster.service.impl;
 
 import com.nivasafinance.common.base.model.MasterLanguageData;
+import com.nivasafinance.common.base.model.MasterLanguageResolver;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.features.master.codemaster.dto.*;
 import com.nivasafinance.features.master.codemaster.entity.MasterCode;
+import com.nivasafinance.features.master.codemaster.enums.IconContext;
 import com.nivasafinance.features.master.codemaster.entity.MasterCodeValue;
 import com.nivasafinance.features.master.codemaster.repository.MasterCodeRepositoryWrapper;
 import com.nivasafinance.features.master.codemaster.repository.MasterCodeValueRepositoryWrapper;
@@ -34,38 +36,48 @@ public class CodeMasterServiceImpl implements CodeMasterService {
 	private final MasterCodeValueRepositoryWrapper masterCodeValueRepositoryWrapper;
 
 	@Override
-	public List<CodeValueResponse> getAllCodeValuesByCodeKey(String codeKey, Boolean onlyActive) {
+	public List<CodeValueResponse> getAllCodeValuesByCodeKey(String codeKey, Boolean onlyActive, String context) {
 		masterCodeRepositoryWrapper.findByKeyWithException(codeKey);
 
 		List<MasterCodeValue> codeValues = Boolean.TRUE.equals(onlyActive)
 				? masterCodeValueRepositoryWrapper.findByCodeKeyAndIsActiveTrueWithException(codeKey)
 				: masterCodeValueRepositoryWrapper.findByCodeKeyWithException(codeKey);
 
+		boolean filterByContext = context != null && !context.isBlank();
+		IconContext iconContext = filterByContext ? IconContext.from(context) : null;
+
 		return codeValues.stream()
-				.map(CodeValueResponse::from)
+				.map(mv -> filterByContext ? CodeValueResponse.from(mv, iconContext) : CodeValueResponse.from(mv))
 				.collect(Collectors.toList());
 	}
 
 	@Override
 	public PaginatedResponse<CodeValueResponse> getCodeValuesByCodeKeyPaginated(
-			String codeKey, Boolean onlyActive, PaginationRequest paginationRequest) {
+			String codeKey, Boolean onlyActive, String context, PaginationRequest paginationRequest) {
 		masterCodeRepositoryWrapper.findByKeyWithException(codeKey);
 		PaginatedResponse<MasterCodeValue> paginated = masterCodeValueRepositoryWrapper
 				.findByCodeKeyWithException(codeKey, onlyActive, paginationRequest);
-		return new PaginatedResponse<>(
-				paginated.getContent().stream().map(CodeValueResponse::from).collect(Collectors.toList()),
-				paginated.getPagination());
+		boolean filterByContext = context != null && !context.isBlank();
+		IconContext iconContext = filterByContext ? IconContext.from(context) : null;
+		List<CodeValueResponse> content = paginated.getContent().stream()
+				.map(mv -> filterByContext ? CodeValueResponse.from(mv, iconContext) : CodeValueResponse.from(mv))
+				.collect(Collectors.toList());
+		return new PaginatedResponse<>(content, paginated.getPagination());
 	}
 
 	@Override
 	public List<MasterCodeWithValuesResponse> getMasterCodeChildrenWithValues(
 			String parentCodeKey,
-			Boolean onlyActive) {
+			Boolean onlyActive,
+			String context) {
 		MasterCode parentMasterCode = masterCodeRepositoryWrapper.findByKeyWithException(parentCodeKey);
 
 		if (parentMasterCode.getId() == null) {
 			throw new IllegalStateException("Parent master code ID is null");
 		}
+
+		boolean filterByContext = context != null && !context.isBlank();
+		IconContext iconContext = filterByContext ? IconContext.from(context) : null;
 
 		List<MasterCode> children = masterCodeRepositoryWrapper
 				.findByParentIdWithException(parentMasterCode.getId());
@@ -79,17 +91,12 @@ public class CodeMasterServiceImpl implements CodeMasterService {
 					return MasterCodeWithValuesResponse.builder()
 							.id(child.getId())
 							.key(child.getKey())
-							.name(child.getName() != null && child.getName().getDefaultValue() != null
-									? child.getName().getDefaultValue()
-									: "")
-							.description(
-									child.getDescription() != null && child.getDescription().getDefaultValue() != null
-											? child.getDescription().getDefaultValue()
-											: "")
+							.name(MasterLanguageResolver.getDisplayValue(child.getName()))
+							.description(MasterLanguageResolver.getDisplayValue(child.getDescription()))
 							.isSystemDefined(child.getIsSystemDefined())
 							.parentId(child.getParentId())
 							.values(childValues.stream()
-									.map(CodeValueResponse::from)
+									.map(mv -> filterByContext ? CodeValueResponse.from(mv, iconContext) : CodeValueResponse.from(mv))
 									.collect(Collectors.toList()))
 							.build();
 				})
@@ -98,11 +105,13 @@ public class CodeMasterServiceImpl implements CodeMasterService {
 
 	@Override
 	public PaginatedResponse<MasterCodeWithValuesResponse> getMasterCodeChildrenWithValuesPaginated(
-			String parentCodeKey, Boolean onlyActive, PaginationRequest paginationRequest) {
+			String parentCodeKey, Boolean onlyActive, String context, PaginationRequest paginationRequest) {
 		MasterCode parentMasterCode = masterCodeRepositoryWrapper.findByKeyWithException(parentCodeKey);
 		if (parentMasterCode.getId() == null) {
 			throw new IllegalStateException("Parent master code ID is null");
 		}
+		boolean filterByContext = context != null && !context.isBlank();
+		IconContext iconContext = filterByContext ? IconContext.from(context) : null;
 		PaginatedResponse<MasterCode> paginatedChildren = masterCodeRepositoryWrapper
 				.findByParentIdWithException(parentMasterCode.getId(), paginationRequest);
 		List<MasterCodeWithValuesResponse> content = paginatedChildren.getContent().stream()
@@ -113,17 +122,12 @@ public class CodeMasterServiceImpl implements CodeMasterService {
 					return MasterCodeWithValuesResponse.builder()
 							.id(child.getId())
 							.key(child.getKey())
-							.name(child.getName() != null && child.getName().getDefaultValue() != null
-									? child.getName().getDefaultValue()
-									: "")
-							.description(
-									child.getDescription() != null && child.getDescription().getDefaultValue() != null
-											? child.getDescription().getDefaultValue()
-											: "")
+							.name(MasterLanguageResolver.getDisplayValue(child.getName()))
+							.description(MasterLanguageResolver.getDisplayValue(child.getDescription()))
 							.isSystemDefined(child.getIsSystemDefined())
 							.parentId(child.getParentId())
 							.values(childValues.stream()
-									.map(CodeValueResponse::from)
+									.map(mv -> filterByContext ? CodeValueResponse.from(mv, iconContext) : CodeValueResponse.from(mv))
 									.collect(Collectors.toList()))
 							.build();
 				})
@@ -219,9 +223,7 @@ public class CodeMasterServiceImpl implements CodeMasterService {
 	}
 
 	private MasterLanguageData buildLanguageData(Map<String, String> map) {
-		return MasterLanguageData.builder()
-				.defaultValue(map.get("default"))
-				.build();
+		return MasterLanguageData.fromMap(map);
 	}
 
 	private boolean hasDefaultValue(Map<String, String> map) {

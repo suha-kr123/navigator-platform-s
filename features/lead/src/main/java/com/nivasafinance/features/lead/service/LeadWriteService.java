@@ -1,21 +1,6 @@
 package com.nivasafinance.features.lead.service;
 
-import com.nivasafinance.features.lead.dto.CreateLeadRequest;
-import com.nivasafinance.features.lead.dto.CreateLeadResponse;
-import com.nivasafinance.features.lead.dto.CreateTrancheRequest;
-import com.nivasafinance.features.lead.dto.DropoffLeadRequest;
-import com.nivasafinance.features.lead.dto.OnholdLeadRequest;
-import com.nivasafinance.features.lead.dto.RejectLeadRequest;
-import com.nivasafinance.features.lead.dto.UpdateCreditDetailsRequest;
-import com.nivasafinance.features.lead.dto.UpdateDisbursementDetailsRequest;
-import com.nivasafinance.features.lead.dto.UpdateLeadRequest;
-import com.nivasafinance.features.lead.dto.UpdatePreliminaryDetailsRequest;
-import com.nivasafinance.features.lead.dto.UpdatePropertyDetailsRequest;
-import com.nivasafinance.features.lead.dto.UpdateProposedDetailsRequest;
-import com.nivasafinance.features.lead.dto.UpdateSourcingDetailsRequest;
-import com.nivasafinance.features.lead.dto.UpdateTrancheRequest;
-import com.nivasafinance.features.lead.dto.WithdrawLeadRequest;
-import com.nivasafinance.features.lead.dto.UpdateCallDetailsRequest;
+import com.nivasafinance.features.lead.dto.*;
 
 import java.util.UUID;
 
@@ -41,4 +26,7 @@ public interface LeadWriteService {
     void onholdLead(UUID leadIdentifier, OnholdLeadRequest request);
     void resumeLead(UUID leadIdentifier);
     void dropoffLead(UUID leadIdentifier, DropoffLeadRequest request);
+    void patchPropertyDetails(UUID leadIdentifier, PatchPropertyDetailsRequest request);
+    void patchIncomeObligationDetails(UUID leadIdentifier, PatchIncomeAndObligationRequest request);
+    void patchLead(UUID leadIdentifier, PatchLeadRequest request);
 }

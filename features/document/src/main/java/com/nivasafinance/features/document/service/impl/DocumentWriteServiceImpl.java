@@ -23,14 +23,14 @@ import java.util.UUID;
 @Service
 @Transactional
 public class DocumentWriteServiceImpl implements DocumentWriteService {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(DocumentWriteServiceImpl.class);
-    
+
     private final DocumentRepositoryWrapper documentRepositoryWrapper;
     private final ContentRepositoryFactory contentRepositoryFactory;
     private final DocumentStorageProperties documentStorageProperties;
     private final DocumentExceptionFactory documentExceptionFactory;
-    
+
     public DocumentWriteServiceImpl(
             DocumentRepositoryWrapper documentRepositoryWrapper,
             ContentRepositoryFactory contentRepositoryFactory,
@@ -41,7 +41,7 @@ public class DocumentWriteServiceImpl implements DocumentWriteService {
         this.documentStorageProperties = documentStorageProperties;
         this.documentExceptionFactory = new DocumentExceptionFactory(messageSource);
     }
-    
+
     @Override
     @Transactional
     public DocumentCreateResponse createDocument(DocumentCreateRequest createRequest) {
@@ -93,7 +93,7 @@ public class DocumentWriteServiceImpl implements DocumentWriteService {
         document.setSize(size);
         document.setProvider(DocumentStorageProvider.valueOf(documentStorageProperties.getProvider()));
         document.setPath(storageKey);
-        
+
         Document savedDocument = documentRepositoryWrapper.saveWithException(document);
         return DocumentCreateResponse.builder()
                 .id(savedDocument.getId())
@@ -128,4 +128,3 @@ public class DocumentWriteServiceImpl implements DocumentWriteService {
         return "documents/" + timestamp + "_" + fileName;
     }
 }
-
