@@ -3,6 +3,8 @@ package com.nivasafinance.features.master.codemaster.controller;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import com.nivasafinance.features.master.codemaster.dto.MasterCodeResponse;
 import com.nivasafinance.features.master.codemaster.dto.MasterCodeTreeResponse;
+import com.nivasafinance.features.master.codemaster.dto.MasterCodeSearchMultiSectionResponse;
+import com.nivasafinance.features.master.codemaster.dto.MasterCodeSearchRequest;
 import com.nivasafinance.features.master.codemaster.dto.MasterCodeValueRequest;
 import com.nivasafinance.features.master.codemaster.dto.MasterCodeWithValuesRequest;
 import com.nivasafinance.features.master.codemaster.dto.MasterCodeValueResponse;
@@ -34,9 +36,20 @@ import java.util.List;
 @RequestMapping("/api/v1/code")
 @RequiredArgsConstructor
 public class CodeMasterController {
-    
+
     private final CodeMasterService codeMasterService;
     private final CodeValueMasterService codeValueMasterService;
+
+    @PostMapping("/search")
+    @RequireRole(value = { "ADMIN" })
+    public ResponseEntity<MasterCodeSearchMultiSectionResponse> searchMasterCodes(
+            @Valid @RequestBody MasterCodeSearchRequest searchRequest,
+            @Valid PaginationRequest paginationRequest) {
+        MasterCodeSearchMultiSectionResponse response = codeMasterService.searchMasterCodes(
+                searchRequest.getSearchTerm(), searchRequest.getSearchContexts(), searchRequest.getCodeKey(),
+                paginationRequest);
+        return ResponseEntity.ok(response);
+    }
 
     @GetMapping("/master-codes/all")
     @RequireRole(value = { "ADMIN" })
@@ -54,7 +67,7 @@ public class CodeMasterController {
         List<CodeValueResponse> response = codeMasterService.getAllCodeValuesByCodeKey(codeKey, onlyActive);
         return ResponseEntity.ok(response);
     }
-    
+
     @GetMapping("/{codeKey}/childs")
     @RequirePermission(permissionName = "READ_MASTER_CODE")
     public ResponseEntity<List<MasterCodeWithValuesResponse>> getMasterCodeChildrenWithValues(
@@ -62,6 +75,24 @@ public class CodeMasterController {
             @RequestParam(defaultValue = "true") Boolean onlyActive) {
         List<MasterCodeWithValuesResponse> response = codeMasterService.getMasterCodeChildrenWithValues(codeKey, onlyActive);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{codeKey}/values/paginated")
+    @RequirePermission(permissionName = "READ_MASTER_CODE")
+    public ResponseEntity<PaginatedResponse<CodeValueResponse>> getCodeValuesByCodeKeyPaginated(
+            @PathVariable String codeKey,
+            @RequestParam(defaultValue = "true") Boolean onlyActive,
+            @Valid PaginationRequest paginationRequest) {
+        return ResponseEntity.ok(codeMasterService.getCodeValuesByCodeKeyPaginated(codeKey, onlyActive, paginationRequest));
+    }
+
+    @GetMapping("/{codeKey}/childs/paginated")
+    @RequirePermission(permissionName = "READ_MASTER_CODE")
+    public ResponseEntity<PaginatedResponse<MasterCodeWithValuesResponse>> getMasterCodeChildrenWithValuesPaginated(
+            @PathVariable String codeKey,
+            @RequestParam(defaultValue = "true") Boolean onlyActive,
+            @Valid PaginationRequest paginationRequest) {
+        return ResponseEntity.ok(codeMasterService.getMasterCodeChildrenWithValuesPaginated(codeKey, onlyActive, paginationRequest));
     }
 
     @PostMapping("/{masterCodeKey}/values")
