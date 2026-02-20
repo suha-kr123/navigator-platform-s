@@ -27,7 +27,7 @@ public class NotificationListener {
     private final NotificationRecordService notificationRecordService;
     private final MessagePublisherFactory messagePublisherFactory;
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void handleEvent(SystemEvent<?> event) {
         String eventType = event.getEventType();
         log.debug("Received system event: {}", eventType);
