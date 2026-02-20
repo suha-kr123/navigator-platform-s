@@ -68,43 +68,106 @@ public class NotificationReceiptConstructorListener {
     private final PlatformTransactionManager transactionManager;
 
     private final AtomicBoolean polling = new AtomicBoolean(false);
+    private int pollCount = 0;
+
+    @jakarta.annotation.PostConstruct
+    public void init() {
+        log.info("NotificationReceiptConstructorListener initialized. Provider: {}, SqsClient available: {}",
+                messagingProperties.getProvider(),
+                sqsClientProvider.getIfAvailable() != null);
+        if (messagingProperties.getProvider() == MessageProvider.SQS) {
+            try {
+                String queueUrl = messagingProperties.getSqs().resolveQueueUrl(QueueType.NOTIFICATION);
+                log.info("NOTIFICATION queue URL: {}", queueUrl);
+                log.info("Poll delay: {}ms, Wait time: {}s, Max messages: {}",
+                        messagingProperties.getSqs().getPollDelayMs(),
+                        messagingProperties.getSqs().getWaitTimeSeconds(),
+                        messagingProperties.getSqs().getMaxMessages());
+            } catch (Exception ex) {
+                log.error("Failed to resolve NOTIFICATION queue URL", ex);
+            }
+        } else {
+            log.warn("NotificationReceiptConstructorListener will not poll - provider is not SQS: {}", messagingProperties.getProvider());
+        }
+    }
 
     /**
      * Polls the NOTIFICATION queue for notification records and creates receipts.
      */
     @Scheduled(fixedDelayString = "${messaging.sqs.poll-delay-ms:1000}")
     public void pollQueue() {
+        pollCount++;
+        if (pollCount % 30 == 0) {
+            log.info("NotificationReceiptConstructorListener polling (attempt #{}). Provider: {}, SqsClient available: {}",
+                    pollCount,
+                    messagingProperties.getProvider(),
+                    sqsClientProvider.getIfAvailable() != null);
+        }
         // Only poll SQS if provider is SQS and SqsClient is available
         if (messagingProperties.getProvider() != MessageProvider.SQS) {
+            if (pollCount % 30 == 0) {
+                log.warn("Skipping poll - provider is not SQS: {}", messagingProperties.getProvider());
+            }
             return;
         }
 
         SqsClient sqsClient = sqsClientProvider.getIfAvailable();
         if (sqsClient == null) {
+            if (pollCount % 30 == 0) {
+                log.warn("Skipping poll - SqsClient is not available");
+            }
             return;
         }
 
         if (!polling.compareAndSet(false, true)) {
+            if (pollCount % 30 == 0) {
+                log.warn("Skipping poll - previous poll still in progress");
+            }
             return;
         }
 
         try {
             String queueUrl = messagingProperties.getSqs().resolveQueueUrl(QueueType.NOTIFICATION);
+            if (pollCount % 30 == 0) {
+                log.info("Polling NOTIFICATION queue: {} (waitTime: {}s, maxMessages: {})",
+                        queueUrl,
+                        messagingProperties.getSqs().getWaitTimeSeconds(),
+                        messagingProperties.getSqs().getMaxMessages());
+            }
             ReceiveMessageRequest request = ReceiveMessageRequest.builder()
                     .queueUrl(queueUrl)
                     .waitTimeSeconds(messagingProperties.getSqs().getWaitTimeSeconds())
                     .maxNumberOfMessages(messagingProperties.getSqs().getMaxMessages())
                     .build();
 
-            ReceiveMessageResponse response = sqsClient.receiveMessage(request);
+            ReceiveMessageResponse response;
+            try {
+                response = sqsClient.receiveMessage(request);
+            } catch (Exception receiveEx) {
+                log.error("Exception during receiveMessage call on NOTIFICATION queue (poll attempt #{})",
+                        pollCount, receiveEx);
+                throw receiveEx;
+            }
+            int messageCount = response.messages().size();
+            if (messageCount > 0) {
+                log.info("Received {} message(s) from NOTIFICATION queue: {}", messageCount, queueUrl);
+            } else {
+                if (pollCount % 30 == 0) {
+                    log.debug("No messages in NOTIFICATION queue (poll attempt #{})", pollCount);
+                }
+            }
             for (Message message : response.messages()) {
+                log.info("Processing message from NOTIFICATION queue. Message body: {}", message.body());
                 boolean processed = processMessage(message.body());
                 if (processed) {
                     deleteMessage(queueUrl, message, sqsClient);
+                    log.debug("Deleted processed message from NOTIFICATION queue");
+                } else {
+                    log.warn("Message not processed successfully, will remain in queue for retry: {}", message.body());
                 }
             }
         } catch (Exception ex) {
-            log.error("Failed to poll NOTIFICATION queue", ex);
+            log.error("Failed to poll NOTIFICATION queue (poll attempt #{})", pollCount, ex);
         } finally {
             polling.set(false);
         }
