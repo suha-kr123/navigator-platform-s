@@ -425,7 +425,11 @@ public class NotificationReceiptConstructorListener {
                         receipt.getId(), recordId);
             } catch (Exception ex) {
                 log.error("Failed to publish receipt {} to executor queue", receipt.getId(), ex);
-                throw ex;
+                Map<String, Object> errorJson = new java.util.HashMap<>();
+                errorJson.put("message", ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName());
+                errorJson.put("exceptionType", ex.getClass().getSimpleName());
+                notificationReceiptService.markReceiptFailed(receipt.getId(), errorJson);
+                return false;
             }
         } else {
             // Has schedule - don't publish yet, scheduled job will handle it
@@ -616,4 +620,3 @@ public class NotificationReceiptConstructorListener {
                 .orElse(null);
     }
 }
-
