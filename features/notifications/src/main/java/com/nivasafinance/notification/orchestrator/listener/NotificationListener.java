@@ -27,7 +27,7 @@ public class NotificationListener {
     private final NotificationRecordService notificationRecordService;
     private final MessagePublisherFactory messagePublisherFactory;
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleEvent(SystemEvent<?> event) {
         String eventType = event.getEventType();
         log.debug("Received system event: {}", eventType);
@@ -44,15 +44,6 @@ public class NotificationListener {
                 processMapping(event, eventType, mapping);
             } catch (Exception ex) {
                 log.error("Failed to create notification record for event {} mapping {}", eventType, mapping.getId(), ex);
-                String message = ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName();
-                String exceptionType = ex.getClass().getSimpleName();
-                notificationRecordService.createFailedNotificationRecordFromEvent(
-                        mapping,
-                        eventType,
-                        event.getPayload(),
-                        message,
-                        exceptionType
-                );
             }
         }
     }
@@ -67,13 +58,6 @@ public class NotificationListener {
         if (recordOpt.isEmpty()) {
             log.warn("Failed to create notification record for event {} mapping {}. createNotificationRecordFromEvent returned empty Optional.",
                     eventType, mapping.getId());
-            notificationRecordService.createFailedNotificationRecordFromEvent(
-                    mapping,
-                    eventType,
-                    event.getPayload(),
-                    "Record creation returned empty Optional",
-                    "NO_RECORD_CREATED"
-            );
             return;
         }
 
@@ -99,12 +83,8 @@ public class NotificationListener {
             log.info("Notification record published to queue: {}", record.getId());
         } catch (Exception ex) {
             log.error("Failed to publish notification record {} to queue", record.getId(), ex);
-            Map<String, Object> errorJson = Map.of(
-                    "message", ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName(),
-                    "exceptionType", ex.getClass().getSimpleName(),
-                    "eventType", eventType
-            );
-            notificationRecordService.updateStatusAndErrorIfExists(record.getId(), NotificationStatus.FAILED, errorJson);
         }
     }
 }
+
+

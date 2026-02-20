@@ -225,14 +225,6 @@ public class NotificationExecutorListener {
                 notificationReceiptService.executeReceipt(receiptId);
                 log.info("Successfully executed receipt {}", receiptId);
                 return true;
-            } catch (IllegalStateException ex) {
-                if (ex.getMessage() != null && ex.getMessage().contains("Failed to parse SQS message body")) {
-                    log.error("Corrupt SQS message body, deleting from queue to prevent infinite retry. Message: {}", rawMessage, ex);
-                    return true;
-                }
-                log.error("Failed to process executor message: {}", rawMessage, ex);
-                status.setRollbackOnly();
-                return false;
             } catch (IllegalArgumentException ex) {
                 // Handle case where receipt doesn't exist (thrown by executeReceipt)
                 if (ex.getMessage() != null && ex.getMessage().contains("Notification receipt not found")) {
