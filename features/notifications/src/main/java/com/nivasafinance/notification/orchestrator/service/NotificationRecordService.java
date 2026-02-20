@@ -170,47 +170,6 @@ public class NotificationRecordService {
             return fallback;
         }
     }
-
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public Optional<NotificationRecord> createFailedNotificationRecordFromEvent(
-            com.nivasafinance.notification.orchestrator.entity.NotificationEventMapping mapping,
-            String eventCode,
-            Object eventPayload,
-            String message,
-            String exceptionType) {
-        try {
-            Map<String, Object> notificationPayload = convertToMap(eventPayload);
-            Map<String, Object> details = new HashMap<>();
-            details.put("event_type", eventCode);
-
-            NotificationRecord record = NotificationRecord.builder()
-                    .id(UUID.randomUUID())
-                    .notificationConfigId(mapping.getNotificationConfig().getId())
-                    .idempotencyKey(null)
-                    .notificationPayload(notificationPayload)
-                    .details(details)
-                    .status(NotificationStatus.FAILED)
-                    .build();
-
-            Map<String, Object> errorJson = new HashMap<>();
-            errorJson.put("message", message != null ? message : "Record creation failed");
-            if (exceptionType != null) {
-                errorJson.put("exceptionType", exceptionType);
-            }
-            record.setErrorJson(errorJson);
-
-            record.setCreatedBy("system");
-            record.setUpdatedBy("system");
-
-            NotificationRecord saved = notificationRecordRepository.save(record);
-            notificationRecordRepository.flush();
-            log.warn("Created FAILED notification record {} for event {} mapping {} due to error: {}",
-                    saved.getId(), eventCode, mapping.getId(), message);
-            return Optional.of(saved);
-        } catch (Exception ex) {
-            log.error("Failed to create FAILED notification record for event {} mapping {}", eventCode, mapping.getId(), ex);
-            return Optional.empty();
-        }
-    }
 }
+
 
