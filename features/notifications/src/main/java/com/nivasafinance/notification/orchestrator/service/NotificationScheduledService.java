@@ -126,6 +126,14 @@ public class NotificationScheduledService {
                 } catch (Exception ex) {
                     log.warn("Failed to parse schedule times for receipt {}: start={}, end={}", 
                             receipt.getId(), startTimeStr, endTimeStr, ex);
+                    receipt.setStatus(NotificationStatus.FAILED);
+                    Map<String, Object> remarks = new java.util.HashMap<>(receipt.getRemarks() != null ? receipt.getRemarks() : java.util.Map.of());
+                    remarks.put("error", "Invalid schedule time");
+                    remarks.put("timestamp", System.currentTimeMillis());
+                    receipt.setRemarks(remarks);
+                    receipt.setUpdatedBy("system");
+                    notificationReceiptRepository.save(receipt);
+                    return false;
                 }
             }
         }
