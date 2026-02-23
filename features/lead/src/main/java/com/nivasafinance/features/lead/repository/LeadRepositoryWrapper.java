@@ -53,6 +53,12 @@ import java.util.UUID;
 @Slf4j
 public class LeadRepositoryWrapper {
 
+    private static final String LOG_SEARCH_PHONE_STAFF_MS = "searchLeadsByPhoneNumber: getCurrentStaff took {} ms";
+    private static final String LOG_SEARCH_PHONE_OFFICE_MS = "searchLeadsByPhoneNumber: getOfficeByKey took {} ms";
+    private static final String LOG_SEARCH_PHONE_COUNT_MS = "searchLeadsByPhoneNumber: count query took {} ms";
+    private static final String LOG_SEARCH_PHONE_DATA_MS = "searchLeadsByPhoneNumber: data query took {} ms";
+    private static final String LOG_SEARCH_PHONE_TOTAL_MS = "searchLeadsByPhoneNumber: total (incl. hierarchy) took {} ms";
+
     private final LeadRepository leadRepository;
     private final MessageSource messageSource;
     private final JdbcTemplate jdbcTemplate;
@@ -517,31 +523,44 @@ public class LeadRepositoryWrapper {
         String mobileNumber = request.getMobileNumber().trim();
         String phoneJson = buildPhoneNumberJsonb(mobileNumber);
 
+        long t0 = System.nanoTime();
         // Get current staff office and code for hierarchy filtering
         String currentUserOfficeKey = staffReadService.getCurrentStaff().getOfficeKey();
-        String currentUserOfficeCode = officeReadService.getOfficeByKey(currentUserOfficeKey).getCode();
+        log.debug(LOG_SEARCH_PHONE_STAFF_MS, (System.nanoTime() - t0) / 1_000_000);
 
-        // Person-first query: use GIN index on n_person.mobile_numbers (@>), then contact ids, then leads
+        long t1 = System.nanoTime();
+        String currentUserOfficeCode = officeReadService.getOfficeByKey(currentUserOfficeKey).getCode();
+        log.debug(LOG_SEARCH_PHONE_OFFICE_MS, (System.nanoTime() - t1) / 1_000_000);
+
+        // Contact→lead first (subquery fence), then office filter; prevents planner from starting from n_office → n_lead
         String countSql = """
-            WITH person_with_phone AS (SELECT id FROM n_person WHERE mobile_numbers @> ?::jsonb),
-                 contact_ids_with_phone AS (SELECT c.id FROM n_contact c INNER JOIN person_with_phone p ON c.person_id = p.id)
-            SELECT COUNT(DISTINCT l.id)
-            FROM n_lead l
-            LEFT JOIN n_office o ON o.key = l.office_key
+            WITH person_with_phone AS MATERIALIZED (SELECT id FROM n_person WHERE mobile_numbers @> ?::jsonb),
+                 contact_ids_with_phone AS MATERIALIZED (SELECT c.id FROM n_contact c INNER JOIN person_with_phone p ON c.person_id = p.id),
+                 lead_match AS MATERIALIZED (
+                    SELECT l.id, l.office_key
+                    FROM contact_ids_with_phone cip
+                    JOIN n_lead l ON l.contacts @> jsonb_build_array(cip.id)
+                 )
+            SELECT COUNT(DISTINCT lm.id)
+            FROM lead_match lm
+            LEFT JOIN n_office o ON o.key = lm.office_key
             WHERE o.code LIKE ?
-            AND EXISTS (
-                SELECT 1 FROM jsonb_array_elements_text(COALESCE(l.contacts, '[]'::jsonb)) AS e
-                INNER JOIN contact_ids_with_phone cip ON cip.id = (e)::bigint
-            )
             """;
 
         String dataSql = """
-            WITH person_with_phone AS (SELECT id FROM n_person WHERE mobile_numbers @> ?::jsonb),
-                 contact_ids_with_phone AS (SELECT c.id FROM n_contact c INNER JOIN person_with_phone p ON c.person_id = p.id)
+            WITH person_with_phone AS MATERIALIZED (SELECT id FROM n_person WHERE mobile_numbers @> ?::jsonb),
+                 contact_ids_with_phone AS MATERIALIZED (SELECT c.id FROM n_contact c INNER JOIN person_with_phone p ON c.person_id = p.id),
+                 lead_match AS MATERIALIZED (
+                    SELECT cip.id AS cip_id,
+                           l.lead_identifier, l.requested_amount, l.other_details, l.product_code,
+                           l.status, l.substatus, l.created_at, l.updated_at, l.office_key
+                    FROM contact_ids_with_phone cip
+                    JOIN n_lead l ON l.contacts @> jsonb_build_array(cip.id)
+                 )
             SELECT DISTINCT
-                l.lead_identifier,
-                l.requested_amount,
-                l.other_details->>'noOfCampaignCalls' as no_of_campaign_calls,
+                lm.lead_identifier,
+                lm.requested_amount,
+                lm.other_details->>'noOfCampaignCalls' as no_of_campaign_calls,
                 p.name as product_name,
                 primary_contact.identifier as primary_person_identifier,
                 primary_person.display_name as primary_person_name,
@@ -549,32 +568,31 @@ public class LeadRepositoryWrapper {
                 matching_contact.identifier as contact_person_identifier,
                 matching_person.display_name as contact_person_name,
                 (jsonb_path_query_first(COALESCE(matching_person.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') AS contact_person_number,
-                l.status,
-                l.substatus,
-                l.created_at as lead_created_at,
-                l.updated_at as last_activity_date
-            FROM n_lead l
-            LEFT JOIN n_office o ON o.key = l.office_key
-            JOIN LATERAL (SELECT (e)::bigint AS id FROM jsonb_array_elements_text(COALESCE(l.contacts, '[]'::jsonb)) AS e) contact_ids ON true
-            JOIN contact_ids_with_phone cip ON cip.id = contact_ids.id
-            JOIN n_contact matching_contact ON matching_contact.id = cip.id
+                lm.status,
+                lm.substatus,
+                lm.created_at as lead_created_at,
+                lm.updated_at as last_activity_date
+            FROM lead_match lm
+            LEFT JOIN n_office o ON o.key = lm.office_key
+            JOIN n_contact matching_contact ON matching_contact.id = lm.cip_id
             JOIN n_person matching_person ON matching_person.id = matching_contact.person_id
-            LEFT JOIN n_contact primary_contact ON primary_contact.id = (l.other_details->>'primaryContactId')::bigint
+            LEFT JOIN n_contact primary_contact ON primary_contact.id = (lm.other_details->>'primaryContactId')::bigint
             LEFT JOIN n_person primary_person ON primary_contact.person_id = primary_person.id
-            LEFT JOIN n_product p ON p.code = l.product_code
+            LEFT JOIN n_product p ON p.code = lm.product_code
             WHERE o.code LIKE ?
-            ORDER BY l.updated_at DESC
+            ORDER BY lm.updated_at DESC
             LIMIT ? OFFSET ?
             """;
 
         try {
             String officePattern = currentUserOfficeCode + "%";
 
-            // Get total count
+            long t2 = System.nanoTime();
             Long totalCount = jdbcTemplate.queryForObject(countSql, Long.class, phoneJson, officePattern);
             long total = totalCount != null ? totalCount : 0L;
+            log.debug(LOG_SEARCH_PHONE_COUNT_MS, (System.nanoTime() - t2) / 1_000_000);
 
-            // Get paginated data
+            long t3 = System.nanoTime();
             List<LeadSearchResponse> results = jdbcTemplate.query(
                     dataSql,
                     new LeadSearchRowMapper(),
@@ -583,6 +601,9 @@ public class LeadRepositoryWrapper {
                     paginationRequest.getLimit(),
                     paginationRequest.getOffset()
             );
+            log.debug(LOG_SEARCH_PHONE_DATA_MS, (System.nanoTime() - t3) / 1_000_000);
+
+            log.debug(LOG_SEARCH_PHONE_TOTAL_MS, (System.nanoTime() - t0) / 1_000_000);
 
             PaginationInfo paginationInfo = buildPaginationInfo(paginationRequest, total);
             return new PaginatedResponse<>(results, paginationInfo);
