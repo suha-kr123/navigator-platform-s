@@ -154,17 +154,18 @@ public class AdvisorRepositoryWrapper {
         String currentUserOfficeKey = staffReadService.getCurrentStaff().getOfficeKey();
         String currentUserOfficeCode = officeReadService.getOfficeByKey(currentUserOfficeKey).getCode();
 
-        // Use GIN-friendly predicate (@>) on n_person.mobile_numbers for index use
+        // Person-first: CTE uses GIN on n_person.mobile_numbers; join advisors by person_id
         String countSql = """
+            WITH person_with_phone AS (SELECT id FROM n_person WHERE mobile_numbers @> ?::jsonb)
             SELECT COUNT(DISTINCT a.id)
-            FROM n_advisor a
+            FROM person_with_phone pwp
+            JOIN n_advisor a ON a.person_id = pwp.id
             LEFT JOIN n_office o ON o.key = a.office_key
-            JOIN n_person p ON p.id = a.person_id
-            WHERE p.mobile_numbers @> ?::jsonb
-            AND o.code LIKE ?
+            WHERE o.code LIKE ?
             """;
 
         String dataSql = """
+            WITH person_with_phone AS (SELECT id FROM n_person WHERE mobile_numbers @> ?::jsonb)
             SELECT DISTINCT
                 a.identifier as advisor_identifier,
                 p.display_name as person_name,
@@ -184,9 +185,10 @@ public class AdvisorRepositoryWrapper {
                     (jsonb_path_query_first(COALESCE(ref_lead_app_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
                     (jsonb_path_query_first(COALESCE(ref_app_by_uuid_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number')
                 ) AS referred_by_number
-            FROM n_advisor a
-            LEFT JOIN n_office o ON o.key = a.office_key
+            FROM person_with_phone pwp
+            JOIN n_advisor a ON a.person_id = pwp.id
             JOIN n_person p ON p.id = a.person_id
+            LEFT JOIN n_office o ON o.key = a.office_key
             LEFT JOIN n_sourcing_channel_details sc ON sc.id = a.source_channel_id
             LEFT JOIN n_referral_code_registry r ON r.referral_code = sc.marketing_details->>'referredByCode'
             LEFT JOIN n_advisor ref_adv ON ref_adv.identifier = r.entity_identifier AND r.entity_type::text = 'ADVISOR'
@@ -201,8 +203,7 @@ public class AdvisorRepositoryWrapper {
             LEFT JOIN n_person ref_lead_app_p ON ref_lead_app_p.id = ref_lead_app.person_id
             LEFT JOIN n_applicant ref_app_by_uuid ON ref_app_by_uuid.identifier = r.entity_identifier AND r.entity_type::text = 'APPLICANT'
             LEFT JOIN n_person ref_app_by_uuid_p ON ref_app_by_uuid_p.id = ref_app_by_uuid.person_id
-            WHERE p.mobile_numbers @> ?::jsonb
-            AND o.code LIKE ?
+            WHERE o.code LIKE ?
             ORDER BY a.updated_at DESC
             LIMIT ? OFFSET ?
             """;

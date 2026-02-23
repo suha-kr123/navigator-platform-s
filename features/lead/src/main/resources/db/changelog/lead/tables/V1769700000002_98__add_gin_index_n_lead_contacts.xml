@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1769700000002_98" author="system" context="default">
+        <comment>GIN index on n_lead.contacts for lead search by phone (contact containment)</comment>
+        <sql>CREATE INDEX IF NOT EXISTS idx_n_lead_contacts_gin ON n_lead USING GIN (contacts);</sql>
+        <sql>COMMENT ON INDEX idx_n_lead_contacts_gin IS 'GIN index on n_lead.contacts for lead search by phone number (contacts @> array of contact id)';</sql>
+    </changeSet>
+
+</databaseChangeLog>
