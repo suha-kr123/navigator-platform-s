@@ -6,18 +6,17 @@ import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.common.annotations.RequirePermission;
 import com.nivasafinance.common.context.UserContext;
 import com.nivasafinance.common.enums.EntityType;
-import com.nivasafinance.common.utils.ValidationUtils;
 import com.nivasafinance.features.rolemanagement.role.dto.UserAssignmentResponse;
-import com.nivasafinance.features.rolemanagement.role.service.EntityOfficeKeyService;
-import com.nivasafinance.features.rolemanagement.role.service.UserQueryService;
 import com.nivasafinance.features.task.dto.BulkReassignTaskRequest;
 import com.nivasafinance.features.task.dto.BulkReassignTaskResponse;
+import com.nivasafinance.features.task.dto.CompleteTaskRequest;
+import com.nivasafinance.features.task.dto.ReassignTaskRequest;
+import com.nivasafinance.features.task.dto.RescheduleTaskRequest;
 import com.nivasafinance.features.task.dto.TaskResponse;
 import com.nivasafinance.features.task.dto.TaskTemplateResponse;
 import com.nivasafinance.features.task.dto.UpdateDueDateRequest;
 import com.nivasafinance.features.task.dto.UpdateTaskNameRequest;
-import com.nivasafinance.features.task.entity.TaskConfig;
-import com.nivasafinance.features.task.repository.TaskConfigRepositoryWrapper;
+import com.nivasafinance.features.task.dto.CreateAdhocTaskRequest;
 import com.nivasafinance.features.task.service.TaskReadService;
 import com.nivasafinance.features.task.service.TaskTemplateService;
 import com.nivasafinance.features.task.service.TaskWriteService;
@@ -26,7 +25,6 @@ import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -37,10 +35,7 @@ public class TaskController {
 
     private final TaskReadService taskReadService;
     private final TaskWriteService taskWriteService;
-    private final TaskConfigRepositoryWrapper taskConfigRepositoryWrapper;
-    private final UserQueryService userQueryService;
     private final TaskTemplateService taskTemplateService;
-    private final EntityOfficeKeyService entityOfficeKeyService;
 
     @GetMapping("/assigned-to-me")
     @RequirePermission(permissionName = "READ_TASK")
@@ -61,29 +56,17 @@ public class TaskController {
     @GetMapping("/{taskConfigKey}/template")
     @RequirePermission(permissionName = "READ_TASK")
     public ResponseEntity<TaskTemplateResponse> getTaskTemplate(
-            @PathVariable String taskConfigKey,
-            @RequestParam(required = false) String officeKey) {
-        return ResponseEntity.ok(taskTemplateService.getTaskTemplate(taskConfigKey, officeKey));
+            @PathVariable String taskConfigKey) {
+        return ResponseEntity.ok(taskTemplateService.getTaskTemplate(taskConfigKey));
     }
 
     @GetMapping("/{taskConfigKey}/assignable-users")
     @RequirePermission(permissionName = "READ_TASK")
     public ResponseEntity<List<UserAssignmentResponse>> getAssignableUsersForTask(
             @PathVariable String taskConfigKey,
-            @RequestParam EntityType entityType,
-            @RequestParam UUID entityId) {
-        TaskConfig taskConfig = taskConfigRepositoryWrapper.findActiveByTaskConfigKey(taskConfigKey);
-        List<String> allowedRoles = ValidationUtils.isNonNull(taskConfig.getTaskConfigDetails()) 
-                ? taskConfig.getTaskConfigDetails().getAllowedRoles() 
-                : Collections.emptyList();
-        
-        // Get entity's office to determine which users to show
-        String officeKey = entityOfficeKeyService.getOfficeKey(entityType, entityId);
-        if (!ValidationUtils.isNonNull(officeKey)) {
-            return ResponseEntity.ok(Collections.emptyList());
-        }
-        
-        return ResponseEntity.ok(userQueryService.getUsersByOfficeAndRoles(allowedRoles, officeKey));
+            @RequestParam(required = false) EntityType entityType,
+            @RequestParam(required = false) UUID entityId) {
+        return ResponseEntity.ok(taskTemplateService.getAssignableUsersForTask(taskConfigKey, entityType, entityId));
     }
 
     @PutMapping("/{taskIdentifier}/due-date")
@@ -106,5 +89,64 @@ public class TaskController {
         return ResponseEntity.ok(response);
     }
 
-}
+    @GetMapping("/all")
+    @RequirePermission(permissionName = "READ_TASK")
+    public ResponseEntity<PaginatedResponse<TaskResponse>> getTasksForEntity(
+            @RequestParam(required = false) EntityType entityType,
+            @RequestParam(required = false) UUID entityId,
+            @Valid PaginationRequest paginationRequest) {
+        return ResponseEntity.ok(taskReadService.getAllTasks(entityType, entityId, paginationRequest));
+    }
 
+    //complete task
+    @PostMapping("/{taskIdentifier}/complete")
+    @RequirePermission(permissionName = "UPDATE_TASK")
+    public ResponseEntity<TaskResponse> completeTask(
+            @PathVariable UUID taskIdentifier,
+            @Valid @RequestBody CompleteTaskRequest request) {
+        request.setTaskIdentifier(taskIdentifier);
+        TaskResponse response = taskWriteService.completeTask(request);
+        return ResponseEntity.ok(response);
+    }
+
+    // reassign task
+    @PostMapping("/{taskIdentifier}/reassign")
+    @RequirePermission(permissionName = "UPDATE_TASK")
+    public ResponseEntity<TaskResponse> reassignTask(
+            @PathVariable UUID taskIdentifier,
+            @Valid @RequestBody ReassignTaskRequest request) {
+        request.setTaskIdentifier(taskIdentifier);
+        TaskResponse response = taskWriteService.reassignTask(request);
+        return ResponseEntity.ok(response);
+    }
+
+    // reschedule task
+    @PostMapping("/{taskIdentifier}/reschedule")
+    @RequirePermission(permissionName = "UPDATE_TASK")
+    public ResponseEntity<TaskResponse> rescheduleTask(
+            @PathVariable UUID taskIdentifier,
+            @Valid @RequestBody RescheduleTaskRequest request) {
+        request.setTaskIdentifier(taskIdentifier);
+        TaskResponse response = taskWriteService.rescheduleTask(request);
+        return ResponseEntity.ok(response);
+    }
+
+    // get adhoc tasks 
+    @GetMapping("/adhoc")
+    @RequirePermission(permissionName = "READ_TASK")
+    public ResponseEntity<List<TaskTemplateResponse>> getAdhocTasksTemplates(
+            @RequestParam(required = false) EntityType entityType,
+            @RequestParam(required = false) UUID entityId) {
+        return ResponseEntity.ok(taskTemplateService.getAdhocTasksTemplates(entityType, entityId));
+    }
+
+    // post adhoc task
+    @PostMapping("/adhoc")
+    @RequirePermission(permissionName = "CREATE_TASK")
+    public ResponseEntity<TaskResponse> createAdhocTask(
+            @Valid @RequestBody CreateAdhocTaskRequest request) {
+        TaskResponse response = taskWriteService.createAdhocTask(request);
+        return ResponseEntity.ok(response);
+    }
+
+}

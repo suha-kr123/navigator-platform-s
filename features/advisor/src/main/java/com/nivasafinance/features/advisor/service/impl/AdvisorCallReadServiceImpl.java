@@ -45,16 +45,23 @@ public class AdvisorCallReadServiceImpl implements AdvisorCallReadService {
         List<AdvisorCallLogResponse> advisorCallLogResponses = callLogResponses.stream()
                 .map(AdvisorCallLogResponse::new)
                 .collect(Collectors.toList());
+        int total = callLogDetails.size();
+        int limit = paginationRequest.getLimit();
+        int offset = paginationRequest.getOffset();
+        int totalPages = (int) Math.ceil((double) total / limit);
+        int currentPage = offset / limit;
+        boolean hasNext = offset + limit < total;
+        boolean hasPrevious = offset > 0;
         return new PaginatedResponse<>(
                 advisorCallLogResponses,
                 PaginationInfo.builder()
-                        .limit(paginationRequest.getLimit())
-                        .offset(paginationRequest.getOffset())
-                        .totalElements(callLogResponses.size())
-                        .totalPages(callLogResponses.size() / paginationRequest.getLimit())
-                        .currentPage(paginationRequest.getOffset() / paginationRequest.getLimit())
-                        .hasNext(paginationRequest.getOffset() + paginationRequest.getLimit() < callLogResponses.size())
-                        .hasPrevious(paginationRequest.getOffset() > 0)
+                        .limit(limit)
+                        .offset(offset)
+                        .totalElements(total)
+                        .totalPages(totalPages)
+                        .currentPage(currentPage)
+                        .hasNext(hasNext)
+                        .hasPrevious(hasPrevious)
                         .build()
         );
     }

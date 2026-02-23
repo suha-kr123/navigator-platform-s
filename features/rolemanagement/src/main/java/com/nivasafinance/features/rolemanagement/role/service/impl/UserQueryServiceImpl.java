@@ -125,7 +125,7 @@ public class UserQueryServiceImpl implements UserQueryService, ApplicationContex
             Object staff = staffOpt.get();
             String staffOfficeKey = getStaffOfficeKey(staff);
 
-            if (!allowedOfficeKeys.contains(staffOfficeKey)) {
+            if (!allowedOfficeKeys.isEmpty() && !allowedOfficeKeys.contains(staffOfficeKey)) {
                 return null;
             }
 
@@ -328,6 +328,17 @@ public class UserQueryServiceImpl implements UserQueryService, ApplicationContex
         } catch (Exception e) {
             return null;
         }
+    }
+
+    @Override
+    public List<UserAssignmentResponse> getUsersByRoles(List<String> roles) {
+        return userRoleMappingRepository.findByRoleIn(roles).stream()
+                .map(UserRoleMapping::getUsername)
+                .map(username -> buildUserAssignmentResponse(username, new HashSet<>()))
+                .filter(Objects::nonNull)
+                .distinct()
+                .sorted(Comparator.comparing(UserAssignmentResponse::getUsername))
+                .collect(Collectors.toList());
     }
 }
 

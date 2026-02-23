@@ -28,11 +28,8 @@ public class ConsentWriteServiceImpl implements ConsentWriteService {
     private final ApplicationEventPublisher eventPublisher;
     private final MessageSource messageSource;
 
-    @Value("${consent.accept-url-base:}")
-    private String acceptUrlBase;
-
-    @Value("${consent.withdraw-url-base:}")
-    private String withdrawUrlBase;
+    @Value("${consent.url-base:}")
+    private String consentUrlBase;
 
     public ConsentWriteServiceImpl(ConsentRepositoryWrapper consentRepositoryWrapper,
                                    ApplicationEventPublisher eventPublisher,
@@ -52,7 +49,7 @@ public class ConsentWriteServiceImpl implements ConsentWriteService {
 
         Consent saved = consentRepositoryWrapper.saveWithException(consent);
 
-        String consentLink = buildConsentLink(acceptUrlBase, saved.getIdentifier().toString(),
+        String consentLink = buildConsentLink(consentUrlBase, saved.getIdentifier().toString(),
                 command.getEnquiryIdentifier().toString(),
                 command.getLeadIdentifier() != null ? command.getLeadIdentifier().toString() : null,
                 command.getContactIdentifier() != null ? command.getContactIdentifier().toString() : null);
@@ -91,7 +88,7 @@ public class ConsentWriteServiceImpl implements ConsentWriteService {
             command.getContactIdentifier() != null &&
             command.getPersonId() != null) {
             
-            String withdrawalLink = buildWithdrawalLink(withdrawUrlBase,
+            String withdrawalLink = buildWithdrawalLink(consentUrlBase,
                     command.getConsentIdentifier().toString(),
                     command.getEnquiryIdentifier().toString(),
                     command.getLeadIdentifier().toString(),

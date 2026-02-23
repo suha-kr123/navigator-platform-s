@@ -515,32 +515,29 @@ public class LeadRepositoryWrapper {
         }
 
         String mobileNumber = request.getMobileNumber().trim();
+        String phoneJson = buildPhoneNumberJsonb(mobileNumber);
 
         // Get current staff office and code for hierarchy filtering
         String currentUserOfficeKey = staffReadService.getCurrentStaff().getOfficeKey();
         String currentUserOfficeCode = officeReadService.getOfficeByKey(currentUserOfficeKey).getCode();
 
-        // Build SQL query to search leads by phone number
-        // Start with lead, join to contacts, then to person with matching phone number
-        // Apply office hierarchy filter to restrict to current staff's office hierarchy
+        // Person-first query: use GIN index on n_person.mobile_numbers (@>), then contact ids, then leads
         String countSql = """
+            WITH person_with_phone AS (SELECT id FROM n_person WHERE mobile_numbers @> ?::jsonb),
+                 contact_ids_with_phone AS (SELECT c.id FROM n_contact c INNER JOIN person_with_phone p ON c.person_id = p.id)
             SELECT COUNT(DISTINCT l.id)
             FROM n_lead l
             LEFT JOIN n_office o ON o.key = l.office_key
-            JOIN LATERAL (
-                SELECT (contact_id)::bigint as id
-                FROM jsonb_array_elements_text(COALESCE(l.contacts, '[]'::jsonb)) AS contact_id
-            ) contact_ids ON true
-            JOIN n_contact matching_contact ON matching_contact.id = contact_ids.id
-            JOIN n_person matching_person ON matching_person.id = matching_contact.person_id
-            WHERE EXISTS (
-                SELECT 1 FROM jsonb_array_elements(COALESCE(matching_person.mobile_numbers, '[]'::jsonb)) AS m
-                WHERE m->>'number' = ?
+            WHERE o.code LIKE ?
+            AND EXISTS (
+                SELECT 1 FROM jsonb_array_elements_text(COALESCE(l.contacts, '[]'::jsonb)) AS e
+                INNER JOIN contact_ids_with_phone cip ON cip.id = (e)::bigint
             )
-            AND o.code LIKE ?
             """;
 
         String dataSql = """
+            WITH person_with_phone AS (SELECT id FROM n_person WHERE mobile_numbers @> ?::jsonb),
+                 contact_ids_with_phone AS (SELECT c.id FROM n_contact c INNER JOIN person_with_phone p ON c.person_id = p.id)
             SELECT DISTINCT
                 l.lead_identifier,
                 l.requested_amount,
@@ -558,20 +555,14 @@ public class LeadRepositoryWrapper {
                 l.updated_at as last_activity_date
             FROM n_lead l
             LEFT JOIN n_office o ON o.key = l.office_key
-            JOIN LATERAL (
-                SELECT (contact_id)::bigint as id
-                FROM jsonb_array_elements_text(COALESCE(l.contacts, '[]'::jsonb)) AS contact_id
-            ) contact_ids ON true
-            JOIN n_contact matching_contact ON matching_contact.id = contact_ids.id
+            JOIN LATERAL (SELECT (e)::bigint AS id FROM jsonb_array_elements_text(COALESCE(l.contacts, '[]'::jsonb)) AS e) contact_ids ON true
+            JOIN contact_ids_with_phone cip ON cip.id = contact_ids.id
+            JOIN n_contact matching_contact ON matching_contact.id = cip.id
             JOIN n_person matching_person ON matching_person.id = matching_contact.person_id
             LEFT JOIN n_contact primary_contact ON primary_contact.id = (l.other_details->>'primaryContactId')::bigint
             LEFT JOIN n_person primary_person ON primary_contact.person_id = primary_person.id
             LEFT JOIN n_product p ON p.code = l.product_code
-            WHERE EXISTS (
-                SELECT 1 FROM jsonb_array_elements(COALESCE(matching_person.mobile_numbers, '[]'::jsonb)) AS m
-                WHERE m->>'number' = ?
-            )
-            AND o.code LIKE ?
+            WHERE o.code LIKE ?
             ORDER BY l.updated_at DESC
             LIMIT ? OFFSET ?
             """;
@@ -580,14 +571,14 @@ public class LeadRepositoryWrapper {
             String officePattern = currentUserOfficeCode + "%";
 
             // Get total count
-            Long totalCount = jdbcTemplate.queryForObject(countSql, Long.class, mobileNumber, officePattern);
+            Long totalCount = jdbcTemplate.queryForObject(countSql, Long.class, phoneJson, officePattern);
             long total = totalCount != null ? totalCount : 0L;
 
             // Get paginated data
             List<LeadSearchResponse> results = jdbcTemplate.query(
                     dataSql,
                     new LeadSearchRowMapper(),
-                    mobileNumber,
+                    phoneJson,
                     officePattern,
                     paginationRequest.getLimit(),
                     paginationRequest.getOffset()
@@ -601,6 +592,11 @@ public class LeadRepositoryWrapper {
         } catch (DataAccessException e) {
             throw new RuntimeException("Failed to search leads by phone number", e);
         }
+    }
+
+    private static String buildPhoneNumberJsonb(String mobileNumber) {
+        String escaped = mobileNumber.replace("\\", "\\\\").replace("\"", "\\\"");
+        return "[{\"number\":\"" + escaped + "\"}]";
     }
 
     private PaginationInfo buildPaginationInfo(PaginationRequest paginationRequest, long totalElements) {
@@ -802,6 +798,7 @@ public class LeadRepositoryWrapper {
         sql.append("l.substatus::text AS substatus, ");
         sql.append("l.created_at AS created_at, ");
         sql.append("o.name AS office, ");
+        sql.append("l.product_code AS product_code, ");
         sql.append("sc.marketing_details->>'referredByCode' AS referred_by_code, ");
         sql.append("r.entity_type::text AS referred_by_type, ");
         sql.append("r.entity_identifier AS referred_by_identifier, ");
@@ -900,6 +897,7 @@ public class LeadRepositoryWrapper {
                    l.substatus::text AS substatus,
                    l.created_at AS created_at,
                    o.name AS office,
+                   l.product_code AS product_code,
                    sc.marketing_details->>'referredByCode' AS referred_by_code,
                    r.entity_type::text AS referred_by_type,
                    r.entity_identifier AS referred_by_identifier,
@@ -963,6 +961,7 @@ public class LeadRepositoryWrapper {
         sql.append("l.substatus::text AS substatus, ");
         sql.append("l.created_at AS created_at, ");
         sql.append("o.name AS office, ");
+        sql.append("l.product_code AS product_code, ");
         sql.append("sc.marketing_details->>'referredByCode' AS referred_by_code, ");
         sql.append("r.entity_type::text AS referred_by_type, ");
         sql.append("r.entity_identifier AS referred_by_identifier, ");

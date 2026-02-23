@@ -31,7 +31,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -164,7 +163,7 @@ public class WorkflowOrchestratorServiceImpl implements WorkflowOrchestratorServ
             try {
                 // Pass dueAt as-is (can be null). Task service will calculate from task config if needed.
                 CreateTaskRequest createTaskRequest = buildCreateTaskRequest(
-                        taskConfig, entityId, entityType, assignedTo, dueAt, preferredCallWindow, entityInfo, adapter);
+                        taskConfig, entityId, entityType, stageKey, assignedTo, dueAt, preferredCallWindow, entityInfo, adapter);
                 adapter.createTaskAndAssociate(entityId, createTaskRequest, taskDetails);
             } catch (Exception e) {
                 String errorMessage = ValidationUtils.isNonNull(e.getMessage()) ? e.getMessage() : e.getClass().getSimpleName();
@@ -181,6 +180,7 @@ public class WorkflowOrchestratorServiceImpl implements WorkflowOrchestratorServ
             com.nivasafinance.features.workflow.dto.TaskConfig taskConfig,
             Long entityId,
             EntityType entityType,
+            String stageKey,
             String assignedTo,
             LocalDateTime dueAt,
             TaskDetailsRequest.PreferredCallWindow preferredCallWindow,
@@ -194,6 +194,7 @@ public class WorkflowOrchestratorServiceImpl implements WorkflowOrchestratorServ
         TaskDetailsRequest taskDetails = TaskDetailsRequest.builder()
                 .entityId(entityIdentifier)
                 .entityType(entityType)
+                .stageKey(stageKey)
                 .creatorRemarks(null)
                 .preferredCallWindow(preferredCallWindow)
                 .build();
@@ -254,63 +255,6 @@ public class WorkflowOrchestratorServiceImpl implements WorkflowOrchestratorServ
     }
 
     @Override
-    @Transactional
-    public Object createAdhocTaskForStage(Long entityId, EntityType entityType, String stageKey, String taskConfigKey) {
-        // Input validation
-        ValidationUtils.requireNonNull(entityId, WorkflowValidationException::nullEntityId);
-        ValidationUtils.requireNonNull(entityType, WorkflowValidationException::nullEntityType);
-        ValidationUtils.requireNonNullOrEmpty(stageKey, WorkflowValidationException::nullOrEmptyStageKey);
-        ValidationUtils.requireNonNullOrEmpty(taskConfigKey, WorkflowValidationException::nullOrEmptyTaskConfigKey);
-        
-        // Get adapter once and reuse
-        EntityWorkflowAdapter adapter = adapterRegistry.getAdapter(entityType);
-
-        Object entity = adapter.getEntity(entityId);
-        if (!ValidationUtils.isNonNull(entity)) {
-            throw new IllegalStateException("Entity not found: " + entityId);
-        }
-
-        String workflowConfigKey = adapter.getWorkflowConfigKey(entityId);
-        if (!ValidationUtils.isNonNull(workflowConfigKey)) {
-            throw new IllegalStateException("Workflow config key not found for entity: " + entityId);
-        }
-
-        com.nivasafinance.features.workflow.entity.WorkflowConfig workflowConfig = workflowConfigReadService
-                .getWorkflowConfigByKey(workflowConfigKey);
-
-        validateAdhocTaskForStage(workflowConfig, stageKey, taskConfigKey);
-
-        UUID entityIdentifier = adapter.getEntityIdentifier(entity);
-        Object createAdhocTaskRequest = adapter.createAdhocTaskRequest(taskConfigKey, stageKey);
-        return adapter.createAdhocTask(entityIdentifier, createAdhocTaskRequest);
-    }
-
-    private void validateAdhocTaskForStage(
-            com.nivasafinance.features.workflow.entity.WorkflowConfig workflowConfig,
-            String stageKey,
-            String taskConfigKey) {
-        WorkflowConfigDto workflowConfigDto = parseWorkflowConfig(workflowConfig);
-
-        WorkflowStageConfig stageConfig = findStageConfig(workflowConfigDto, stageKey);
-
-        if (!ValidationUtils.isNonNull(stageConfig)) {
-            throw WorkflowConfigValidationException.stageNotFoundInWorkflow(stageKey,
-                    workflowConfig.getWorkflowConfigKey(), messageSource);
-        }
-
-        List<String> allowedAdhocTasks = stageConfig.getAllowedAdhocTasks();
-
-        if (!ValidationUtils.isNonNull(allowedAdhocTasks) || !allowedAdhocTasks.contains(taskConfigKey)) {
-            throw WorkflowConfigValidationException.adhocTaskNotAllowedForStage(stageKey, taskConfigKey, messageSource);
-        }
-
-        taskConfigRepositoryWrapper.findActiveByTaskConfigKey(taskConfigKey);
-    }
-
-
-
-
-    @Override
     public void validateStageTransition(Long entityId, EntityType entityType, String stageKey, String assignedTo, boolean hasExistingHistory) {
         // Input validation
         ValidationUtils.requireNonNull(entityId, WorkflowValidationException::nullEntityId);
@@ -358,40 +302,7 @@ public class WorkflowOrchestratorServiceImpl implements WorkflowOrchestratorServ
                 .updatedBy(stageConfig.getUpdatedBy())
                 .build();
     }
-
-
-    @Override
-    public List<String> getAdhocTaskKeysForStage(String workflowConfigKey, String stageKey) {
-        // Input validation
-        ValidationUtils.requireNonNullOrEmpty(workflowConfigKey, WorkflowValidationException::nullOrEmptyWorkflowConfigKey);
-        ValidationUtils.requireNonNullOrEmpty(stageKey, WorkflowValidationException::nullOrEmptyStageKey);
-        com.nivasafinance.features.workflow.entity.WorkflowConfig workflowConfig = workflowConfigReadService
-                .getWorkflowConfigByKey(workflowConfigKey);
-
-        if (!ValidationUtils.isNonNull(workflowConfig) 
-                || !ValidationUtils.isNonNull(workflowConfig.getWorkflowConfigDetails())
-                || !ValidationUtils.isNonNull(workflowConfig.getWorkflowConfigDetails().getStages())) {
-            return new ArrayList<>();
-        }
-
-        Optional<WorkflowStageConfig> stageConfigOpt = workflowConfig.getWorkflowConfigDetails().getStages().stream()
-                .filter(stage -> stageKey.equals(stage.getStageKey()))
-                .findFirst();
-
-        if (stageConfigOpt.isEmpty()) {
-            return new ArrayList<>();
-        }
-
-        WorkflowStageConfig stageConfig = stageConfigOpt.get();
-        List<String> allowedAdhocTaskKeys = stageConfig.getAllowedAdhocTasks();
-
-        if (!ValidationUtils.isNonNull(allowedAdhocTaskKeys) || allowedAdhocTaskKeys.isEmpty()) {
-            return new ArrayList<>();
-        }
-
-        return allowedAdhocTaskKeys;
-    }
-
+    
     private List<CodeValueResponse> fetchSubStages(String subStagesCode) {
         if (!ValidationUtils.isNonNull(subStagesCode)) {
             return List.of();

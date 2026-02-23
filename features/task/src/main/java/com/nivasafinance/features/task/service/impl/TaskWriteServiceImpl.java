@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nivasafinance.features.task.dto.BulkReassignTaskRequest;
 import com.nivasafinance.features.task.dto.BulkReassignTaskResponse;
 import com.nivasafinance.features.task.dto.CompleteTaskRequest;
+import com.nivasafinance.features.task.dto.CreateAdhocTaskRequest;
 import com.nivasafinance.features.task.dto.CreateTaskRequest;
 import com.nivasafinance.features.task.dto.TaskDetailsRequest;
 import com.nivasafinance.features.task.dto.ReassignTaskRequest;
@@ -20,6 +21,8 @@ import com.nivasafinance.features.task.repository.TaskConfigRepositoryWrapper;
 import com.nivasafinance.features.task.repository.TaskRepositoryWrapper;
 import com.nivasafinance.features.task.service.DueDateCalculatorService;
 import com.nivasafinance.features.task.service.TaskConfigValidationService;
+import com.nivasafinance.features.task.service.TaskEntityService;
+import com.nivasafinance.features.task.service.TaskEntityServiceFactory;
 import com.nivasafinance.features.task.service.TaskWriteService;
 import com.nivasafinance.common.context.UserContext;
 import com.nivasafinance.common.events.BusinessEvent;
@@ -56,6 +59,7 @@ public class TaskWriteServiceImpl implements TaskWriteService {
     private final MessageSource messageSource;
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final TaskEntityServiceFactory taskEntityServiceFactory;
 
     @Override
     public TaskResponse createTask(CreateTaskRequest request) {
@@ -66,6 +70,29 @@ public class TaskWriteServiceImpl implements TaskWriteService {
         Task savedTask = taskRepositoryWrapper.saveWithException(task);
         publishTaskAssignedIfAssigned(savedTask);
         return TaskResponse.from(savedTask, taskConfig, objectMapper);
+    }
+
+    @Override
+    public TaskResponse createAdhocTask(CreateAdhocTaskRequest request) {
+        validateCreateAdhocTaskRequest(request, request.getTaskConfigKey());
+        LocalDateTime dueAt = request.getDueAt();
+        if (!ValidationUtils.isNonNull(request.getDueAt())) {
+            TaskConfig taskConfig = getActiveTaskConfig(request.getTaskConfigKey());
+            CreateTaskRequest createTaskRequest = CreateTaskRequest.builder()
+                    .taskConfigKey(request.getTaskConfigKey())
+                    .assignedTo(request.getAssignedTo())
+                    .taskDetails(request.getTaskDetails())
+                    .build();
+            dueAt = calculateDueDateFromConfig(taskConfig, createTaskRequest);
+            request.setDueAt(dueAt);
+        }
+        CreateTaskRequest createTaskRequest = CreateTaskRequest.builder()
+                .taskConfigKey(request.getTaskConfigKey())
+                .assignedTo(request.getAssignedTo())
+                .dueAt(dueAt)
+                .taskDetails(request.getTaskDetails())
+                .build();
+        return createTask(createTaskRequest);
     }
 
     @Override
@@ -100,24 +127,69 @@ public class TaskWriteServiceImpl implements TaskWriteService {
     public TaskResponse rescheduleTask(RescheduleTaskRequest request) {
         Task oldTask = validateRescheduleTaskRequest(request);
         TaskConfig taskConfig = getActiveTaskConfig(oldTask.getTaskConfigKey());
-        
+
         taskConfigValidationService.validateRescheduleAllowed(taskConfig);
-        
+
         closeTaskWithRescheduledOutcome(oldTask, request);
         taskRepositoryWrapper.saveWithException(oldTask);
-        
+
+        CreateTaskRequest createTaskRequest = changeTaskDetailsForReschedule(request, oldTask);
+
+        Task newTask = buildTaskFromRequest(createTaskRequest, taskConfig);
+        Task savedTask = taskRepositoryWrapper.saveWithException(newTask);
+        publishTaskAssignedIfAssigned(savedTask);
+
         return TaskResponse.from(oldTask, taskConfig, objectMapper);
     }
 
     @Override
     public TaskResponse completeTask(CompleteTaskRequest request) {
         TaskValidationResult validationResult = validateCompleteTaskRequest(request);
-    
+
         Task.OutcomeDetails outcomeDetails = buildOutcomeDetails(request);
-        
+
         updateTaskOutcome(validationResult.task, request.getOutcomeCodeValueKey(), outcomeDetails);
         Task savedTask = taskRepositoryWrapper.saveWithException(validationResult.task);
         return TaskResponse.from(savedTask, validationResult.taskConfig, objectMapper);
+    }
+
+    private CreateTaskRequest changeTaskDetailsForReschedule(RescheduleTaskRequest request, Task oldTask) {
+        Task.TaskDetails oldDetails = oldTask.getTaskDetails();
+        TaskDetailsRequest newTaskDetails = null;
+        if (ValidationUtils.isNonNull(oldDetails)) {
+            Task.OutcomeDetails oldOutcome = oldTask.getOutcomeDetails();
+            newTaskDetails = TaskDetailsRequest.builder()
+                    .entityId(oldDetails.getEntityId())
+                    .entityType(oldDetails.getEntityType())
+                    .stageKey(oldDetails.getStageKey())
+                    .preferredCallWindow(TaskDetailsRequest.PreferredCallWindow.builder()
+                            .start(request.getPreferredStartTime())
+                            .end(request.getPreferredEndTime())
+                            .build())
+                    .creatorRemarks(request.getCreatorRemarks())
+                    .iterationCount(ValidationUtils.isNonNull(oldDetails.getIterationCount()) ? oldDetails.getIterationCount() + 1 : 1)
+                    .rescheduledFromTaskIdentifier(oldTask.getTaskIdentifier())
+                    .rescheduleReasonCodeValueKey(request.getReasonCodeValueKey())
+                    .rescheduledFromTaskRemarks(oldOutcome != null ? oldOutcome.getRemarks() : null)
+                    .build();
+        } else {
+            newTaskDetails = TaskDetailsRequest.builder()
+                    .creatorRemarks(request.getCreatorRemarks())
+                    .iterationCount(1)
+                    .rescheduledFromTaskIdentifier(oldTask.getTaskIdentifier())
+                    .rescheduleReasonCodeValueKey(request.getReasonCodeValueKey())
+                    .preferredCallWindow(TaskDetailsRequest.PreferredCallWindow.builder()
+                            .start(request.getPreferredStartTime())
+                            .end(request.getPreferredEndTime())
+                            .build())
+                    .build();
+        }
+        return CreateTaskRequest.builder()
+                .taskConfigKey(oldTask.getTaskConfigKey())
+                .assignedTo(oldTask.getAssignedTo())
+                .dueAt(request.getPreferredEndTime())
+                .taskDetails(newTaskDetails)
+                .build();
     }
 
     private Task.OutcomeDetails buildOutcomeDetails(CompleteTaskRequest request) {
@@ -137,6 +209,28 @@ public class TaskWriteServiceImpl implements TaskWriteService {
         validateRequestNotNull(request);
         validateIfTaskConfigExistsAndIsActive(request.getTaskConfigKey());
         validateDueDate(request.getDueAt(), request.getTaskConfigKey());
+        validateEntityDetails(request.getTaskDetails(), request.getTaskConfigKey());
+    }
+
+    private void validateEntityDetails(TaskDetailsRequest taskDetails, String taskConfigKey) {
+        if (!ValidationUtils.isNonNull(taskDetails)) {
+            return;
+        }
+        boolean hasEntityId = ValidationUtils.isNonNull(taskDetails.getEntityId());
+        boolean hasEntityType = ValidationUtils.isNonNull(taskDetails.getEntityType());
+        if (!hasEntityId && !hasEntityType) {
+            return;
+        }
+        if (hasEntityId && !hasEntityType) {
+            throw TaskValidationException.entityTypeRequired(messageSource);
+        }
+        if (hasEntityType && !hasEntityId) {
+            throw TaskValidationException.entityIdRequired(messageSource);
+        }
+        TaskEntityService taskEntityService = taskEntityServiceFactory
+                .getTaskEntityService(taskDetails.getEntityType());
+
+        taskEntityService.validate(taskDetails.getEntityId());
     }
 
     private LocalDateTime calculateDueDate(CreateTaskRequest request, TaskConfig taskConfig) {
@@ -212,7 +306,6 @@ public class TaskWriteServiceImpl implements TaskWriteService {
             }
         }
     }
-    
 
     private void validateDueDate(LocalDateTime dueAt, String taskConfigKey) {
         if (ValidationUtils.isNonNull(dueAt) && dueAt.isBefore(LocalDateTime.now())) {
@@ -224,14 +317,13 @@ public class TaskWriteServiceImpl implements TaskWriteService {
         taskConfigRepositoryWrapper.findActiveByTaskConfigKey(taskConfigKey);
     }
 
-
     private Task buildTaskFromRequest(CreateTaskRequest request, TaskConfig taskConfig) {
         Task task = new Task();
         task.setTaskConfigKey(request.getTaskConfigKey());
         task.setName(taskConfig != null ? taskConfig.getName() : null);
         task.setAssignedTo(request.getAssignedTo());
         task.setDueAt(request.getDueAt());
-        
+
         configureTask(task, request, taskConfig);
         return task;
     }
@@ -252,16 +344,19 @@ public class TaskWriteServiceImpl implements TaskWriteService {
         return Task.TaskDetails.builder()
                 .entityId(details.getEntityId())
                 .entityType(details.getEntityType())
+                .stageKey(details.getStageKey())
                 .preferredCallWindow(buildPreferredCallWindow(details.getPreferredCallWindow()))
                 .creatorRemarks(details.getCreatorRemarks())
-                .iterationCount(ValidationUtils.isNonNull(details.getIterationCount()) ? details.getIterationCount() : 0)
+                .iterationCount(
+                        ValidationUtils.isNonNull(details.getIterationCount()) ? details.getIterationCount() : 0)
                 .rescheduledFromTaskIdentifier(details.getRescheduledFromTaskIdentifier())
                 .rescheduleReasonCodeValueKey(details.getRescheduleReasonCodeValueKey())
                 .rescheduledFromTaskRemarks(details.getRescheduledFromTaskRemarks())
                 .build();
     }
 
-    private Task.TaskDetails.PreferredCallWindow buildPreferredCallWindow(TaskDetailsRequest.PreferredCallWindow preferredCallWindow) {
+    private Task.TaskDetails.PreferredCallWindow buildPreferredCallWindow(
+            TaskDetailsRequest.PreferredCallWindow preferredCallWindow) {
         if (preferredCallWindow == null) {
             return null;
         }
@@ -311,6 +406,23 @@ public class TaskWriteServiceImpl implements TaskWriteService {
         task.setAssignedTo(assignedTo);
     }
 
+    private void validateCreateAdhocTaskRequest(CreateAdhocTaskRequest request, String taskConfigKey) {
+        validateRequestNotNull(request);
+        if (!ValidationUtils.isNonNullOrEmpty(request.getTaskConfigKey())) {
+            throw TaskValidationException.taskConfigKeyRequired(messageSource);
+        }
+        TaskDetailsRequest taskDetails = request.getTaskDetails();
+        if (ValidationUtils.isNonNull(taskDetails)
+                && ValidationUtils.isNonNull(taskDetails.getEntityType())
+                && ValidationUtils.isNonNull(taskDetails.getEntityId())) {
+            TaskEntityService taskEntityService = taskEntityServiceFactory
+                    .getTaskEntityService(taskDetails.getEntityType());
+            taskEntityService.canCreateAdhocTask(taskDetails, taskConfigKey);
+        } else {
+            checkIfAdhocTaskCanBeCreated(taskConfigKey);
+        }
+    }
+
     private void publishTaskAssignedIfAssigned(Task task) {
         String assignedTo = task.getAssignedTo();
         if (ValidationUtils.isNonNullOrEmpty(assignedTo)) {
@@ -336,7 +448,6 @@ public class TaskWriteServiceImpl implements TaskWriteService {
         updateTaskOutcome(task, OUTCOME_RESCHEDULED, outcomeDetails);
     }
 
-
     private void updateTaskOutcome(Task task, String outcome, Task.OutcomeDetails outcomeDetails) {
         task.setOutcome(outcome);
         task.setOutcomeDetails(outcomeDetails);
@@ -360,7 +471,7 @@ public class TaskWriteServiceImpl implements TaskWriteService {
                 .completedBy(UserContext.getUsername())
                 .build();
     }
-    
+
     private String getRemarksForOutcome(String outcome) {
         switch (outcome) {
             case "REJECTED":
@@ -380,7 +491,7 @@ public class TaskWriteServiceImpl implements TaskWriteService {
     public BulkReassignTaskResponse bulkReassignTasks(BulkReassignTaskRequest request) {
         List<UUID> successfulTaskIdentifiers = new ArrayList<>();
         List<BulkReassignTaskResponse.BulkAssignmentError> errors = new ArrayList<>();
-        
+
         for (UUID taskIdentifier : request.getTaskIdentifiers()) {
             try {
                 reassignTask(buildReassignTaskRequest(taskIdentifier, request.getNewAssignedTo()));
@@ -400,7 +511,8 @@ public class TaskWriteServiceImpl implements TaskWriteService {
                 .build();
     }
 
-    private BulkReassignTaskResponse buildBulkReassignTaskResponse(BulkReassignTaskRequest request, List<UUID> successfulTaskIdentifiers, List<BulkReassignTaskResponse.BulkAssignmentError> errors) {
+    private BulkReassignTaskResponse buildBulkReassignTaskResponse(BulkReassignTaskRequest request,
+            List<UUID> successfulTaskIdentifiers, List<BulkReassignTaskResponse.BulkAssignmentError> errors) {
         return BulkReassignTaskResponse.builder()
                 .totalRequested(request.getTaskIdentifiers().size())
                 .successful(successfulTaskIdentifiers.size())
@@ -410,7 +522,8 @@ public class TaskWriteServiceImpl implements TaskWriteService {
                 .build();
     }
 
-    private void addError(List<BulkReassignTaskResponse.BulkAssignmentError> errors, UUID taskIdentifier, String errorMessage) {
+    private void addError(List<BulkReassignTaskResponse.BulkAssignmentError> errors, UUID taskIdentifier,
+            String errorMessage) {
         errors.add(BulkReassignTaskResponse.BulkAssignmentError.builder()
                 .taskIdentifier(taskIdentifier)
                 .errorMessage(errorMessage)
@@ -426,5 +539,14 @@ public class TaskWriteServiceImpl implements TaskWriteService {
             this.taskConfig = taskConfig;
         }
     }
-}
 
+    private void checkIfAdhocTaskCanBeCreated(String taskConfigKey) {
+        TaskConfig taskConfig = getActiveTaskConfig(taskConfigKey);
+        if (taskConfig == null) {
+            throw TaskValidationException.taskConfigKeyRequired(messageSource);
+        }
+        if (!taskConfig.getTaskConfigDetails().getIsAdhocTaskAllowed()) {
+            throw TaskOperationException.adhocTaskNotAllowed(taskConfigKey, messageSource);
+        }
+    }
+}

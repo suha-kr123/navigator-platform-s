@@ -148,23 +148,19 @@ public class AdvisorRepositoryWrapper {
         }
 
         String mobileNumber = request.getMobileNumber().trim();
-        
+        String phoneJson = buildPhoneNumberJsonb(mobileNumber);
+
         // Get current staff office and code for hierarchy filtering
         String currentUserOfficeKey = staffReadService.getCurrentStaff().getOfficeKey();
         String currentUserOfficeCode = officeReadService.getOfficeByKey(currentUserOfficeKey).getCode();
 
-        // Build SQL query to search advisors by phone number
-        // Join advisor -> person -> mobile_numbers JSONB
-        // Apply office hierarchy filter to restrict to current staff's office hierarchy
+        // Use GIN-friendly predicate (@>) on n_person.mobile_numbers for index use
         String countSql = """
             SELECT COUNT(DISTINCT a.id)
             FROM n_advisor a
             LEFT JOIN n_office o ON o.key = a.office_key
             JOIN n_person p ON p.id = a.person_id
-            WHERE EXISTS (
-                SELECT 1 FROM jsonb_array_elements(COALESCE(p.mobile_numbers, '[]'::jsonb)) AS m
-                WHERE m->>'number' = ?
-            )
+            WHERE p.mobile_numbers @> ?::jsonb
             AND o.code LIKE ?
             """;
 
@@ -205,10 +201,7 @@ public class AdvisorRepositoryWrapper {
             LEFT JOIN n_person ref_lead_app_p ON ref_lead_app_p.id = ref_lead_app.person_id
             LEFT JOIN n_applicant ref_app_by_uuid ON ref_app_by_uuid.identifier = r.entity_identifier AND r.entity_type::text = 'APPLICANT'
             LEFT JOIN n_person ref_app_by_uuid_p ON ref_app_by_uuid_p.id = ref_app_by_uuid.person_id
-            WHERE EXISTS (
-                SELECT 1 FROM jsonb_array_elements(COALESCE(p.mobile_numbers, '[]'::jsonb)) AS m
-                WHERE m->>'number' = ?
-            )
+            WHERE p.mobile_numbers @> ?::jsonb
             AND o.code LIKE ?
             ORDER BY a.updated_at DESC
             LIMIT ? OFFSET ?
@@ -216,16 +209,16 @@ public class AdvisorRepositoryWrapper {
 
         try {
             String officePattern = currentUserOfficeCode + "%";
-            
+
             // Get total count
-            Long totalCount = jdbcTemplate.queryForObject(countSql, Long.class, mobileNumber, officePattern);
+            Long totalCount = jdbcTemplate.queryForObject(countSql, Long.class, phoneJson, officePattern);
             long total = totalCount != null ? totalCount : 0L;
 
             // Get paginated data
             List<AdvisorBasicResponse> results = jdbcTemplate.query(
                     dataSql,
                     new AdvisorSearchRowMapper(),
-                    mobileNumber,
+                    phoneJson,
                     officePattern,
                     paginationRequest.getLimit(),
                     paginationRequest.getOffset()
@@ -564,6 +557,11 @@ public class AdvisorRepositoryWrapper {
     }
 
     public record ReferrerDisplayInfo(String name, String phone) {}
+
+    private static String buildPhoneNumberJsonb(String mobileNumber) {
+        String escaped = mobileNumber.replace("\\", "\\\\").replace("\"", "\\\"");
+        return "[{\"number\":\"" + escaped + "\"}]";
+    }
 
     private PaginationInfo buildPaginationInfo(PaginationRequest paginationRequest, long totalElements) {
         int limit = paginationRequest.getLimit();

@@ -40,10 +40,10 @@ import com.nivasafinance.features.lead.dto.LeadWorkflowDetailsDto;
 import com.nivasafinance.features.lead.service.LeadCallWriteService;
 import com.nivasafinance.features.lead.service.LeadReadService;
 import com.nivasafinance.features.lead.service.LeadWriteService;
-import com.nivasafinance.features.leadtasks.service.LeadTaskWriteService;
+import com.nivasafinance.features.task.service.TaskWriteService;
 import com.nivasafinance.features.person.dto.PersonResponse;
 import com.nivasafinance.features.person.service.PersonReadService;
-import com.nivasafinance.features.task.dto.CreateTaskRequest;
+import com.nivasafinance.features.task.dto.CreateAdhocTaskRequest;
 import com.nivasafinance.features.task.dto.TaskDetailsRequest;
 import com.nivasafinance.features.workflow.constants.WorkflowConstants;
 import com.nivasafinance.integrations.framework.ServiceFactory;
@@ -82,7 +82,7 @@ public class ExotelServiceImpl implements ExotelService {
     private final LeadReadService leadReadService;
     private final LeadWriteService leadWriteService;
     private final LeadCallWriteService leadCallWriteService;
-    private final LeadTaskWriteService leadTaskWriteService;
+    private final TaskWriteService taskWriteService;
     private final PersonReadService personReadService;
     private final AdvisorReadService advisorReadService;
     private final AdvisorWriteService advisorWriteService;
@@ -451,21 +451,6 @@ public class ExotelServiceImpl implements ExotelService {
             return CallStatus.FAILED;
         }
         return CallStatus.fromVoiceStatus(voiceStatus);
-    }
-
-    /**
-     * Map direction string to CallDirection enum.
-     */
-    private CallDirection mapToCallDirection(String direction) {
-        if (direction == null) {
-            return CallDirection.INBOUND;
-        }
-
-        return switch (direction.toLowerCase()) {
-            case "outbound", "outbound-api" -> CallDirection.OUTBOUND;
-            case "inbound" -> CallDirection.INBOUND;
-            default -> CallDirection.INBOUND;
-        };
     }
 
     /**
@@ -1307,8 +1292,8 @@ public class ExotelServiceImpl implements ExotelService {
         for (LeadWorkflowDetailsDto leadWorkflowDetail : leadWorkflowDetails) {
             Map<String, Object> taskDetails = new HashMap<>();
             taskDetails.put(WorkflowConstants.TaskDetails.STAGE_KEY, leadWorkflowDetail.getCurrentStageKey());
-            CreateTaskRequest createTaskRequest = buildMissedCallTaskRequest(leadWorkflowDetail, taskConfigKey, mobileNumber, callSid);
-            leadTaskWriteService.createTaskAndAssociateWithLead(leadWorkflowDetail.getLeadId(), createTaskRequest, taskDetails);
+            CreateAdhocTaskRequest createTaskRequest = buildMissedCallTaskRequest(leadWorkflowDetail, taskConfigKey, mobileNumber, callSid);
+            taskWriteService.createAdhocTask(createTaskRequest);
         }
     }
 
@@ -1326,14 +1311,17 @@ public class ExotelServiceImpl implements ExotelService {
         return List.of(LeadSubStatus.ONHOLD);
     }
 
-    private CreateTaskRequest buildMissedCallTaskRequest(LeadWorkflowDetailsDto leadWorkflowDetail,
+    private CreateAdhocTaskRequest buildMissedCallTaskRequest(LeadWorkflowDetailsDto leadWorkflowDetail,
             String taskConfigKey, String mobileNumber, String callSid) {
-        return CreateTaskRequest.builder()
+        return CreateAdhocTaskRequest.builder()
                 .taskConfigKey(taskConfigKey)
-                .assignedTo(leadWorkflowDetail.getCurrentStageAssignedTo() != null ? leadWorkflowDetail.getCurrentStageAssignedTo() : null)
+                .assignedTo(leadWorkflowDetail.getCurrentStageAssignedTo() != null
+                        ? leadWorkflowDetail.getCurrentStageAssignedTo()
+                        : null)
                 .taskDetails(TaskDetailsRequest.builder()
                         .entityId(leadWorkflowDetail.getLeadIdentifier())
                         .entityType(EntityType.LEAD)
+                        .stageKey(leadWorkflowDetail.getCurrentStageKey())
                         .creatorRemarks("Missed call from " + mobileNumber + " call sid: " + callSid)
                         .build())
                 .build();

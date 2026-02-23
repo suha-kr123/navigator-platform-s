@@ -3,13 +3,7 @@ package com.nivasafinance.features.master.codemaster.service.impl;
 import com.nivasafinance.common.base.model.MasterLanguageData;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
-import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
-import com.nivasafinance.features.master.codemaster.dto.MasterCodeResponse;
-import com.nivasafinance.features.master.codemaster.dto.MasterCodeTreeResponse;
-import com.nivasafinance.features.master.codemaster.dto.MasterCodeValueRequest;
-import com.nivasafinance.features.master.codemaster.dto.MasterCodeValueResponse;
-import com.nivasafinance.features.master.codemaster.dto.MasterCodeWithValuesRequest;
-import com.nivasafinance.features.master.codemaster.dto.MasterCodeWithValuesResponse;
+import com.nivasafinance.features.master.codemaster.dto.*;
 import com.nivasafinance.features.master.codemaster.entity.MasterCode;
 import com.nivasafinance.features.master.codemaster.entity.MasterCodeValue;
 import com.nivasafinance.features.master.codemaster.repository.MasterCodeRepositoryWrapper;
@@ -17,9 +11,11 @@ import com.nivasafinance.features.master.codemaster.repository.MasterCodeValueRe
 import com.nivasafinance.features.master.codemaster.service.CodeMasterService;
 import com.nivasafinance.features.master.codemaster.utils.MasterCodeKeyUtil;
 
+import com.nivasafinance.common.exception.BadRequestException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -51,17 +47,27 @@ public class CodeMasterServiceImpl implements CodeMasterService {
 	}
 
 	@Override
+	public PaginatedResponse<CodeValueResponse> getCodeValuesByCodeKeyPaginated(
+			String codeKey, Boolean onlyActive, PaginationRequest paginationRequest) {
+		masterCodeRepositoryWrapper.findByKeyWithException(codeKey);
+		PaginatedResponse<MasterCodeValue> paginated = masterCodeValueRepositoryWrapper
+				.findByCodeKeyWithException(codeKey, onlyActive, paginationRequest);
+		return new PaginatedResponse<>(
+				paginated.getContent().stream().map(CodeValueResponse::from).collect(Collectors.toList()),
+				paginated.getPagination());
+	}
+
+	@Override
 	public List<MasterCodeWithValuesResponse> getMasterCodeChildrenWithValues(
 			String parentCodeKey,
 			Boolean onlyActive) {
-		com.nivasafinance.features.master.codemaster.entity.MasterCode parentMasterCode = masterCodeRepositoryWrapper
-				.findByKeyWithException(parentCodeKey);
+		MasterCode parentMasterCode = masterCodeRepositoryWrapper.findByKeyWithException(parentCodeKey);
 
 		if (parentMasterCode.getId() == null) {
 			throw new IllegalStateException("Parent master code ID is null");
 		}
 
-		List<com.nivasafinance.features.master.codemaster.entity.MasterCode> children = masterCodeRepositoryWrapper
+		List<MasterCode> children = masterCodeRepositoryWrapper
 				.findByParentIdWithException(parentMasterCode.getId());
 
 		return children.stream()
@@ -88,6 +94,41 @@ public class CodeMasterServiceImpl implements CodeMasterService {
 							.build();
 				})
 				.collect(Collectors.toList());
+	}
+
+	@Override
+	public PaginatedResponse<MasterCodeWithValuesResponse> getMasterCodeChildrenWithValuesPaginated(
+			String parentCodeKey, Boolean onlyActive, PaginationRequest paginationRequest) {
+		MasterCode parentMasterCode = masterCodeRepositoryWrapper.findByKeyWithException(parentCodeKey);
+		if (parentMasterCode.getId() == null) {
+			throw new IllegalStateException("Parent master code ID is null");
+		}
+		PaginatedResponse<MasterCode> paginatedChildren = masterCodeRepositoryWrapper
+				.findByParentIdWithException(parentMasterCode.getId(), paginationRequest);
+		List<MasterCodeWithValuesResponse> content = paginatedChildren.getContent().stream()
+				.map(child -> {
+					List<MasterCodeValue> childValues = Boolean.TRUE.equals(onlyActive)
+							? masterCodeValueRepositoryWrapper.findByCodeKeyAndIsActiveTrueWithException(child.getKey())
+							: masterCodeValueRepositoryWrapper.findByCodeKeyWithException(child.getKey());
+					return MasterCodeWithValuesResponse.builder()
+							.id(child.getId())
+							.key(child.getKey())
+							.name(child.getName() != null && child.getName().getDefaultValue() != null
+									? child.getName().getDefaultValue()
+									: "")
+							.description(
+									child.getDescription() != null && child.getDescription().getDefaultValue() != null
+											? child.getDescription().getDefaultValue()
+											: "")
+							.isSystemDefined(child.getIsSystemDefined())
+							.parentId(child.getParentId())
+							.values(childValues.stream()
+									.map(CodeValueResponse::from)
+									.collect(Collectors.toList()))
+							.build();
+				})
+				.collect(Collectors.toList());
+		return new PaginatedResponse<>(content, paginatedChildren.getPagination());
 	}
 
 	@Override
@@ -230,5 +271,42 @@ public class CodeMasterServiceImpl implements CodeMasterService {
 		return getMasterCodeTree(parentCodeKey);
 	}
 
+	@Override
+	public MasterCodeSearchMultiSectionResponse searchMasterCodes(String searchTerm,
+																  List<SearchContext> searchContexts, String codeKey, PaginationRequest paginationRequest) {
+		String normalizedTerm = normalizeSearchTerm(searchTerm);
+		List<SearchContext> distinctContexts = searchContexts.stream().distinct().toList();
+
+		if (distinctContexts.contains(SearchContext.VALUE) && !StringUtils.hasText(codeKey)) {
+			throw new BadRequestException("codeKey is required when searching values");
+		}
+
+		var builder = MasterCodeSearchMultiSectionResponse.builder();
+
+		for (SearchContext context : distinctContexts) {
+			switch (context) {
+				case MASTER ->
+						builder.masterMatches(masterCodeRepositoryWrapper.searchMasterCodesOnly(normalizedTerm, paginationRequest));
+				case CHILD ->
+						builder.childMatches(masterCodeRepositoryWrapper.searchChildCodesOnly(normalizedTerm, paginationRequest));
+				case VALUE ->
+						builder.valueMatches(masterCodeValueRepositoryWrapper.searchMasterCodeValues(normalizedTerm, codeKey, paginationRequest));
+			}
+		}
+
+		return builder.build();
+	}
+
+	private String normalizeSearchTerm(String searchTerm) {
+		if (!StringUtils.hasText(searchTerm)) {
+			throw new BadRequestException("Search term is required");
+		}
+		String trimmed = searchTerm.trim();
+		if (trimmed.length() < MasterCodeSearchRequest.MIN_SEARCH_TERM_LENGTH) {
+			throw new BadRequestException("Search term must be at least "
+					+ MasterCodeSearchRequest.MIN_SEARCH_TERM_LENGTH + " characters long");
+		}
+		return trimmed;
+	}
 
 }

@@ -3,7 +3,6 @@ package com.nivasafinance.features.workflow.orchestrator;
 import com.nivasafinance.common.enums.EntityType;
 import com.nivasafinance.features.workflow.dto.StageConfigResponse;
 
-import java.util.List;
 import java.util.Map;
 
 public interface WorkflowOrchestratorService {
@@ -20,14 +19,10 @@ public interface WorkflowOrchestratorService {
             String workflowConfigKey,
             Map<String, Object> context
     );
-
-    Object createAdhocTaskForStage(Long entityId, EntityType entityType, String stageKey, String taskConfigKey);
     
     void validateStageTransition(Long entityId, EntityType entityType, String stageKey, String assignedTo, boolean hasExistingHistory);
     
     StageConfigResponse getStageConfig(String stageKey);
-    
-    List<String> getAdhocTaskKeysForStage(String workflowConfigKey, String stageKey);
     
     /**
      * Gets the default substage for a stage from the workflow configuration.

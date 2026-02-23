@@ -84,5 +84,23 @@ public class TaskValidationException extends ValidationException {
                 new Object[]{assignedTo, taskConfigKey}, messageSource)
         );
     }
+
+    public static TaskValidationException entityTypeRequired(MessageSource messageSource) {
+        return new TaskValidationException(
+            ExceptionUtils.createLocalizedMessage("error.task.entity.type.required", null, messageSource)
+        );
+    }
+
+    public static TaskValidationException entityIdRequired(MessageSource messageSource) {
+        return new TaskValidationException(
+            ExceptionUtils.createLocalizedMessage("error.task.entity.id.required", null, messageSource)
+        );
+    }
+
+    public static TaskValidationException entityDetailsRequired(MessageSource messageSource) {
+        return new TaskValidationException(
+            ExceptionUtils.createLocalizedMessage("error.task.entity.details.required", null, messageSource)
+        );
+    }
 }
 

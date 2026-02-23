@@ -28,6 +28,7 @@ public class LeadBasicResponse {
     LeadSubStatus substatus;
     LocalDateTime createdAt;
     String office;
+    String productCode;
 
     //referral details
     private String referredByCode;

@@ -16,6 +16,7 @@ import java.util.UUID;
 public class TaskDetailsResponse {
     private UUID entityId;
     private EntityType entityType;
+    private String stageKey;
     private PreferredCallWindow preferredCallWindow;
     private String creatorRemarks;
     private Integer iterationCount;

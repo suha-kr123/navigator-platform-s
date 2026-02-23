@@ -20,5 +20,8 @@ public interface UserQueryService {
      * @return List of assignable users
      */
     List<UserAssignmentResponse> getUsersByOfficeAndRolesDownHierarchy(List<String> roles, String officeKey);
+
+
+    List<UserAssignmentResponse> getUsersByRoles(List<String> roles);
 }
 
