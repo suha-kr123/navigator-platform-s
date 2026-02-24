@@ -13,5 +13,6 @@ public enum ModuleEnum {
     USER_PREFERENCES,
     STAGE,
     LENDER,
-    CAMPAIGN
+    CAMPAIGN,
+    DEVICE
 }
