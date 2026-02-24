@@ -22,4 +22,5 @@ public class WhatsAppLeadResponse {
     private String substatus;  // Changed to String to support "empty" value
     private String reasons;  // Changed to String to support "empty" value
     private String stage;
+    private String name;
 }
