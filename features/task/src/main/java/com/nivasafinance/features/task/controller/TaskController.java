@@ -94,8 +94,9 @@ public class TaskController {
     public ResponseEntity<PaginatedResponse<TaskResponse>> getTasksForEntity(
             @RequestParam(required = false) EntityType entityType,
             @RequestParam(required = false) UUID entityId,
+            @RequestParam(required = false, defaultValue = "false") boolean includeCompleted,
             @Valid PaginationRequest paginationRequest) {
-        return ResponseEntity.ok(taskReadService.getAllTasks(entityType, entityId, paginationRequest));
+        return ResponseEntity.ok(taskReadService.getAllTasks(entityType, entityId, includeCompleted, paginationRequest));
     }
 
     //complete task

@@ -11,5 +11,5 @@ public interface TaskReadService {
     PaginatedResponse<TaskResponse> getTasksByAssignedTo(String assignedTo, boolean includeCompleted, PaginationRequest paginationRequest);
 
     
-    PaginatedResponse<TaskResponse> getAllTasks(EntityType entityType, UUID entityId, PaginationRequest paginationRequest);
+    PaginatedResponse<TaskResponse> getAllTasks(EntityType entityType, UUID entityId, boolean includeCompleted, PaginationRequest paginationRequest);
 }
