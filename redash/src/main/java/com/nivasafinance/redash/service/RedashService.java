@@ -1,5 +1,7 @@
 package com.nivasafinance.redash.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nivasafinance.redash.client.RedashClient;
 import com.nivasafinance.redash.dto.ExcelMergeInput;
@@ -289,5 +291,85 @@ public class RedashService {
         }
         // Fallback to a generic error message if parsing fails
         return "Failed to execute Redash query";
+    }
+
+    /**
+     * Executes a Redash query (with poll-and-download pattern), downloads result as JSON,
+     * and returns the first row as a map. Caller is responsible for looping over multiple query IDs.
+     *
+     * @param queryId     Redash query ID
+     * @param parameters  optional query parameters (can be null)
+     * @return first row from query_result.data.rows, or null if no rows
+     */
+    public Map<String, Object> getQueryResult(Long queryId, Map<String, Object> parameters) {
+        try {
+            RedashQueryResultRequest queryRequest = RedashQueryResultRequest.builder()
+                    .queryId(queryId)
+                    .parameters(parameters != null ? parameters : Map.of())
+                    .maxAge(0L)
+                    .build();
+
+            log.info("Executing Redash query with ID: {}", queryId);
+            RedashQueryResponse queryResponse = redashClient.executeQuery(queryId, queryRequest);
+            if (queryResponse == null || queryResponse.getJob() == null || queryResponse.getJob().getId() == null) {
+                throw new RuntimeException("Failed to start query execution: Invalid response from Redash");
+            }
+
+            String jobId = queryResponse.getJob().getId();
+            String queryResultId = pollForQueryResultId(jobId);
+
+            String json = redashClient.downloadQueryResultAsJson(queryResultId);
+            if (json == null || json.isBlank()) {
+                return null;
+            }
+
+            JsonNode root = objectMapper.readTree(json);
+            JsonNode rows = root.path("query_result").path("data").path("rows");
+            if (!rows.isArray() || rows.isEmpty()) {
+                return null;
+            }
+            JsonNode firstRow = rows.get(0);
+            return objectMapper.convertValue(firstRow, new TypeReference<Map<String, Object>>() { });
+        } catch (FeignException e) {
+            String errorMessage = extractErrorFromFeignException(e);
+            log.error("Feign error in getQueryResult: {}", errorMessage, e);
+            throw new RuntimeException(errorMessage);
+        } catch (Exception e) {
+            log.error("Error in getQueryResult for queryId {}", queryId, e);
+            throw new RuntimeException("Failed to get query result: " + e.getMessage(), e);
+        }
+    }
+
+    private String pollForQueryResultId(String jobId) throws InterruptedException, TimeoutException {
+        long startTime = System.currentTimeMillis();
+        RedashQueryResponse.Job job;
+        do {
+            long elapsedTime = (System.currentTimeMillis() - startTime) / 1000;
+            if (elapsedTime >= MAX_TIMEOUT_SECONDS) {
+                throw new TimeoutException("Query execution timed out after " + MAX_TIMEOUT_SECONDS + " seconds");
+            }
+            Thread.sleep(POLLING_INTERVAL_SECONDS * 1000L);
+            log.debug("Polling job status for job ID: {}", jobId);
+            RedashQueryResponse jobStatusResponse = redashClient.getJobStatus(jobId);
+            if (jobStatusResponse == null || jobStatusResponse.getJob() == null) {
+                throw new RuntimeException("Failed to get job status: Invalid response from Redash");
+            }
+            job = jobStatusResponse.getJob();
+            Long status = job.getStatus();
+            if (status == 4) {
+                String errorMessage = job.getError() != null ? job.getError() : "Query execution failed";
+                throw new RuntimeException("Query execution failed: " + errorMessage);
+            }
+            if (status == 5) {
+                throw new RuntimeException("Query execution was cancelled");
+            }
+            if (status == 3) {
+                if (job.getQueryResultId() == null || job.getQueryResultId().isEmpty()) {
+                    throw new RuntimeException("Query execution succeeded but query_result_id is missing");
+                }
+                log.info("Query execution completed with result ID: {}", job.getQueryResultId());
+                return job.getQueryResultId();
+            }
+        } while (true);
     }
 }

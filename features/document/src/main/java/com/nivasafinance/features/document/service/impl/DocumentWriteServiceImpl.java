@@ -105,13 +105,24 @@ public class DocumentWriteServiceImpl implements DocumentWriteService {
     @Transactional
     public void deleteDocumentById(UUID id) {
         Document document = documentRepositoryWrapper.findByIdentifierWithException(id);
+        deleteDocumentFromStorageAndDb(document);
+    }
+
+    @Override
+    @Transactional
+    public void deleteDocumentById(Long id) {
+        Document document = documentRepositoryWrapper.findByIdWithException(id);
+        deleteDocumentFromStorageAndDb(document);
+    }
+
+    private void deleteDocumentFromStorageAndDb(Document document) {
         ContentRepository contentRepository =
                 contentRepositoryFactory.getRepository(document.getProvider().name());
         contentRepository.deleteFile(document.getPath());
         logger.debug("Successfully deleted file from storage: {}", document.getPath());
         documentRepositoryWrapper.deleteByIdWithException(document.getId());
     }
-    
+
     private String generateDocumentPath(String fileName) {
         long timestamp = System.currentTimeMillis();
         return "documents/" + timestamp + "_" + fileName;

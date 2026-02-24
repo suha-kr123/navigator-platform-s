@@ -13,6 +13,8 @@ public interface DocumentWriteService {
     DocumentCreateResponse createDocument(DocumentCreateRequestInputStream createRequest);
 
     void deleteDocumentById(UUID id);
+
+    void deleteDocumentById(Long id);
 }
 
 

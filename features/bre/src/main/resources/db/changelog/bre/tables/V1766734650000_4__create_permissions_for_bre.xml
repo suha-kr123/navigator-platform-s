@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1766734650000_4a" author="system" context="default">
+        <comment>Insert BRE module permissions</comment>
+
+        <insert tableName="n_permissions">
+            <column name="name" value="READ_BRE_CONFIG"/>
+            <column name="action" value="READ"/>
+            <column name="module" value="BRE"/>
+            <column name="operation" value="READ_BRE_CONFIG"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="n_permissions">
+            <column name="name" value="CREATE_BRE_CONFIG"/>
+            <column name="action" value="CREATE"/>
+            <column name="module" value="BRE"/>
+            <column name="operation" value="CREATE_BRE_CONFIG"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="n_permissions">
+            <column name="name" value="EXECUTE_BRE"/>
+            <column name="action" value="CREATE"/>
+            <column name="module" value="BRE"/>
+            <column name="operation" value="EXECUTE_BRE"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+
+    </changeSet>
+
+    <changeSet id="V1766734650000_4b" author="system" context="default">
+        <comment>Insert BRE module permission group</comment>
+
+        <insert tableName="n_permission_group">
+            <column name="name" value="BRE_FULL_ACCESS"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+
+    </changeSet>
+
+    <changeSet id="V1766734650000_4c" author="system" context="default">
+        <comment>Map BRE module permissions to permission group</comment>
+
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'READ_BRE_CONFIG')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'BRE_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'CREATE_BRE_CONFIG')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'BRE_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'EXECUTE_BRE')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'BRE_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+
+    </changeSet>
+
+</databaseChangeLog>
