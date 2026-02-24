@@ -63,13 +63,13 @@ public class TaskReadServiceImpl implements TaskReadService {
 
     @Override
     public PaginatedResponse<TaskResponse> getAllTasks(EntityType entityType, UUID entityId,
-            PaginationRequest paginationRequest) {
+            boolean includeCompleted, PaginationRequest paginationRequest) {
         if (ValidationUtils.isNonNull(entityType) && ValidationUtils.isNonNull(entityId)) {
             TaskEntityService taskEntityService = taskEntityServiceFactory.getTaskEntityService(entityType);
             taskEntityService.validate(entityId);
-            return taskRepositoryWrapper.findTasksByEntityPaginated(entityType, entityId, paginationRequest);
+            return taskRepositoryWrapper.findTasksByEntityPaginated(entityType, entityId, includeCompleted, paginationRequest);
         }
-        return taskRepositoryWrapper.findAllTasksPaginated(paginationRequest);
+        return taskRepositoryWrapper.findAllTasksPaginated(includeCompleted, paginationRequest);
     }
 
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
