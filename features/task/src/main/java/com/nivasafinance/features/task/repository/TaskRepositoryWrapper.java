@@ -62,8 +62,15 @@ public class TaskRepositoryWrapper {
 
     private static final String COUNT_QUERY_PREFIX = "SELECT COUNT(*) FROM n_tasks t ";
 
-    public Long countTasks() {
-        Long total = jdbcTemplate.queryForObject(COUNT_QUERY_PREFIX, Long.class);
+    public Long countTasks(boolean includeCompleted) {
+        List<Object> params = new ArrayList<>();
+        StringBuilder sb = new StringBuilder();
+        sb.append(COUNT_QUERY_PREFIX);
+        if (!includeCompleted) {
+            sb.append("AND t.outcome IS NULL ");
+        }
+        String countQuery = sb.toString();
+        Long total = jdbcTemplate.queryForObject(countQuery, Long.class, params.toArray());
         return total != null ? total : 0L;
     }
 
@@ -104,23 +111,29 @@ public class TaskRepositoryWrapper {
         return jdbcTemplate.query(sb.toString(), new TaskResponseRowMapper(objectMapper), entityType.name(), entityId);
     }
 
-    public Long countTasksByEntity(EntityType entityType, UUID entityId) {
+    public Long countTasksByEntity(EntityType entityType, UUID entityId, boolean includeCompleted) {
         List<Object> params = new ArrayList<>();
         StringBuilder sb = new StringBuilder();
         sb.append(COUNT_QUERY_PREFIX);
         sb.append("WHERE (t.task_details->>'entityType') = ? AND (t.task_details->>'entityId')::uuid = ? ");
+        if (!includeCompleted) {
+            sb.append("AND t.outcome IS NULL ");
+        }
         params.add(entityType.name());
         params.add(entityId);
         Long total = jdbcTemplate.queryForObject(sb.toString(), Long.class, params.toArray());
         return total != null ? total : 0L;
     }
 
-    public java.util.List<TaskResponse> findTasksByEntity(EntityType entityType, UUID entityId,
+    public java.util.List<TaskResponse> findTasksByEntity(EntityType entityType, UUID entityId, boolean includeCompleted,
             PaginationRequest paginationRequest) {
         List<Object> params = new ArrayList<>();
         StringBuilder sb = new StringBuilder();
         sb.append(BASE_QUERY);
         sb.append("WHERE (t.task_details->>'entityType') = ? AND (t.task_details->>'entityId')::uuid = ? ");
+        if (!includeCompleted) {
+            sb.append("AND t.outcome IS NULL ");
+        }
         sb.append(buildOrderByClause(paginationRequest));
         sb.append(" LIMIT ? OFFSET ?");
         params.add(entityType.name());
@@ -130,12 +143,16 @@ public class TaskRepositoryWrapper {
         return jdbcTemplate.query(sb.toString(), new TaskResponseRowMapper(objectMapper), params.toArray());
     }
 
-    public java.util.List<TaskResponse> findAllTasks(PaginationRequest paginationRequest) {
-        String orderBy = buildOrderByClause(paginationRequest);
-        String query = BASE_QUERY + orderBy + " LIMIT ? OFFSET ?";
-        return jdbcTemplate.query(query, new TaskResponseRowMapper(objectMapper),
-                paginationRequest.getLimit(), paginationRequest.getOffset());
-    }
+    public java.util.List<TaskResponse> findAllTasks(boolean includeCompleted, PaginationRequest paginationRequest) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(BASE_QUERY);
+        if (!includeCompleted) {
+            sb.append("AND t.outcome IS NULL ");
+        }
+        sb.append(buildOrderByClause(paginationRequest));
+        sb.append(" LIMIT ? OFFSET ?");
+        return jdbcTemplate.query(sb.toString(), new TaskResponseRowMapper(objectMapper), paginationRequest.getLimit(), paginationRequest.getOffset());
+}
 
     private String buildOrderByClause(PaginationRequest paginationRequest) {
         String sortBy = paginationRequest.getSortBy();
@@ -202,15 +219,15 @@ public class TaskRepositoryWrapper {
     }
 
     public PaginatedResponse<TaskResponse> findTasksByEntityPaginated(
-            EntityType entityType, UUID entityId, PaginationRequest paginationRequest) {
-        Long totalElements = countTasksByEntity(entityType, entityId);
-        java.util.List<TaskResponse> tasks = findTasksByEntity(entityType, entityId, paginationRequest);
+            EntityType entityType, UUID entityId, boolean includeCompleted, PaginationRequest paginationRequest) {
+        Long totalElements = countTasksByEntity(entityType, entityId, includeCompleted);
+        java.util.List<TaskResponse> tasks = findTasksByEntity(entityType, entityId, includeCompleted, paginationRequest);
         return buildPaginatedResponse(tasks, paginationRequest, totalElements);
     }
 
-    public PaginatedResponse<TaskResponse> findAllTasksPaginated(PaginationRequest paginationRequest) {
-        Long totalElements = countTasks();
-        java.util.List<TaskResponse> tasks = findAllTasks(paginationRequest);
+    public PaginatedResponse<TaskResponse> findAllTasksPaginated(boolean includeCompleted, PaginationRequest paginationRequest) {
+        Long totalElements = countTasks(includeCompleted);
+        java.util.List<TaskResponse> tasks = findAllTasks(includeCompleted, paginationRequest);
         return buildPaginatedResponse(tasks, paginationRequest, totalElements);
     }
 }
