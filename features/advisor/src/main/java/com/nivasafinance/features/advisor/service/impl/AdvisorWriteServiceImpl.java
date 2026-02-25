@@ -12,6 +12,7 @@ import com.nivasafinance.features.advisor.enums.AdvisorStatus;
 import com.nivasafinance.features.advisor.repository.AdvisorRepositoryWrapper;
 import com.nivasafinance.features.advisor.service.AdvisorWriteService;
 import com.nivasafinance.features.offices.service.OfficeReadService;
+import com.nivasafinance.features.referral.dto.ReferralCodeRegistryResponse;
 import com.nivasafinance.features.referral.enums.EntityType;
 import com.nivasafinance.features.referral.service.ReferralCodeRegistryService;
 import com.nivasafinance.features.person.dto.PersonCreateRequest;
@@ -115,10 +116,7 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
         //set sales owner as the current user
         advisor.setOwner(UserContext.getUsername());
 
-        advisor.setReferralCode(
-            referralCodeRegistryService.generateReferralCode(EntityType.ADVISOR, advisor.getIdentifier()).getReferralCode()
-        );
-        
+        generateReferralCode(advisor);
         Advisor savedAdvisor = advisorRepositoryWrapper.saveWithException(advisor);
 
         handleSourcingChannel(savedAdvisor, request.getSourcingChannelRequest());
@@ -548,6 +546,14 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
                 advisorRepositoryWrapper.saveWithException(advisor);
             }
         }
+    }
+
+    private void generateReferralCode(Advisor advisor) {
+        ReferralCodeRegistryResponse response = referralCodeRegistryService.generateReferralCode(EntityType.ADVISOR, advisor.getIdentifier());
+        if (response == null) {
+            throw AdvisorExceptionFactory.createFailed(messageSource);
+        }
+        advisor.setReferralCode(response.getReferralCode());
     }
 
 }
