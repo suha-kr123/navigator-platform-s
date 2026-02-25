@@ -22,8 +22,9 @@ import com.nivasafinance.features.lead.repository.ApplicantRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.ContactRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadContactWriteService;
-import com.nivasafinance.features.referral.service.ReferralCodeRegistryService;
+import com.nivasafinance.features.referral.dto.ReferralCodeRegistryResponse;
 import com.nivasafinance.features.referral.enums.EntityType;
+import com.nivasafinance.features.referral.service.ReferralCodeRegistryService;
 import org.springframework.context.MessageSource;
 import com.nivasafinance.features.person.dto.PersonCreateRequest;
 import com.nivasafinance.features.person.dto.PersonCreateResponse;
@@ -230,7 +231,7 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
             Applicant newApplicant = new Applicant();
             newApplicant.setIdentifier(UUID.randomUUID());
             newApplicant.setPersonId(contact.getPersonId());
-            newApplicant.setReferralCode(referralCodeRegistryService.generateReferralCode(EntityType.APPLICANT, lead.getLeadIdentifier()).getReferralCode());    
+            setApplicantReferralCode(newApplicant);
             Applicant savedApplicant = applicantRepositoryWrapper.saveWithException(newApplicant);
 
             // Update lead
@@ -241,7 +242,7 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
             Applicant coApplicant = new Applicant();
             coApplicant.setIdentifier(UUID.randomUUID());
             coApplicant.setPersonId(contact.getPersonId());
-            coApplicant.setReferralCode(referralCodeRegistryService.generateReferralCode(EntityType.APPLICANT, lead.getLeadIdentifier()).getReferralCode());
+            setApplicantReferralCode(coApplicant);
             Applicant savedCoApplicant = applicantRepositoryWrapper.saveWithException(coApplicant);
 
             // Add to co-applicants list
@@ -252,6 +253,15 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
             coApplicants.add(savedCoApplicant.getId());
             lead.setCoApplicants(coApplicants);
         }
+    }
+
+    private void setApplicantReferralCode(Applicant applicant) {
+        ReferralCodeRegistryResponse response = referralCodeRegistryService.generateReferralCode(
+                EntityType.APPLICANT, applicant.getIdentifier());
+        if (response == null || response.getReferralCode() == null) {
+            throw new LeadContactValidationException("Referral code could not be generated for applicant");
+        }
+        applicant.setReferralCode(response.getReferralCode());
     }
 
     private void removeApplicantType(Lead lead, Contact contact, LeadContactPersonType type) {
