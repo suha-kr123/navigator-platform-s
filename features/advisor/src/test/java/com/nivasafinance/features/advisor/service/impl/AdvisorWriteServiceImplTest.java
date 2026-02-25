@@ -22,6 +22,9 @@ import com.nivasafinance.features.referral.enums.EntityType;
 import com.nivasafinance.features.referral.service.ReferralCodeRegistryService;
 import com.nivasafinance.features.sourcechannel.dto.SourcingChannelResponse;
 import com.nivasafinance.features.sourcechannel.service.SourcingChannelWriteService;
+import com.nivasafinance.features.usermanagement.dto.UserResponse;
+import com.nivasafinance.features.usermanagement.service.UserReadService;
+import com.nivasafinance.features.usermanagement.service.UserWriteService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,6 +38,7 @@ import org.springframework.context.MessageSource;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -74,8 +78,17 @@ class AdvisorWriteServiceImplTest {
     @Mock
     private ReferralCodeRegistryService referralCodeRegistryService;
 
+    @Mock
+    private UserReadService userReadService;
+
+    @Mock
+    private UserWriteService userWriteService;
+
     @InjectMocks
     private AdvisorWriteServiceImpl advisorWriteService;
+
+    private static final Long TEST_PERSON_ID = 2L;
+    private static final String TEST_ADVISOR_USERNAME = "advisorUser";
 
     private UUID identifier;
     private Advisor advisor;
@@ -87,7 +100,7 @@ class AdvisorWriteServiceImplTest {
         advisor = new Advisor();
         advisor.setId(1L);
         advisor.setIdentifier(identifier);
-        advisor.setPersonId(2L);
+        advisor.setUsername(TEST_ADVISOR_USERNAME);
         advisor.setStatus(AdvisorStatus.CREATED);
         advisor.setOfficeKey("HQ");
 
@@ -101,9 +114,12 @@ class AdvisorWriteServiceImplTest {
 
     @Test
     void createAdvisor_newPerson_success() {
+        when(userReadService.findUsersByPersonPhoneNumber("9876543210")).thenReturn(Collections.emptyList());
         when(personRepositoryWrapper.findByPrimaryMobileNumber("9876543210")).thenReturn(Optional.empty());
-        PersonCreateResponse personResponse = PersonCreateResponse.builder().id(2L).build();
+        PersonCreateResponse personResponse = PersonCreateResponse.builder().id(TEST_PERSON_ID).build();
         when(personWriteService.createPerson(any(PersonCreateRequest.class))).thenReturn(personResponse);
+        when(advisorRepositoryWrapper.findByUsername("9876543210")).thenReturn(Optional.empty());
+        when(userWriteService.createUserForExistingPerson(any(), eq(TEST_PERSON_ID))).thenReturn(UserResponse.builder().build());
         Advisor savedAdvisor = new Advisor();
         savedAdvisor.setId(1L);
         savedAdvisor.setIdentifier(identifier);
@@ -131,9 +147,11 @@ class AdvisorWriteServiceImplTest {
     @Test
     void createAdvisor_existingPersonNoAdvisor_success() {
         Person existingPerson = new Person();
-        existingPerson.setId(2L);
+        existingPerson.setId(TEST_PERSON_ID);
+        when(userReadService.findUsersByPersonPhoneNumber("9876543210")).thenReturn(Collections.emptyList());
         when(personRepositoryWrapper.findByPrimaryMobileNumber("9876543210")).thenReturn(Optional.of(existingPerson));
-        when(advisorRepositoryWrapper.findByPersonId(2L)).thenReturn(Optional.empty());
+        when(advisorRepositoryWrapper.findByUsername("9876543210")).thenReturn(Optional.empty());
+        when(userWriteService.createUserForExistingPerson(any(), eq(TEST_PERSON_ID))).thenReturn(UserResponse.builder().build());
         Advisor savedAdvisor = new Advisor();
         savedAdvisor.setIdentifier(identifier);
         when(advisorRepositoryWrapper.saveWithException(any(Advisor.class))).thenReturn(savedAdvisor);
@@ -153,9 +171,10 @@ class AdvisorWriteServiceImplTest {
     @Test
     void createAdvisor_existingPersonWithAdvisor_throwsException() {
         Person existingPerson = new Person();
-        existingPerson.setId(2L);
+        existingPerson.setId(TEST_PERSON_ID);
+        when(userReadService.findUsersByPersonPhoneNumber("9876543210")).thenReturn(Collections.emptyList());
         when(personRepositoryWrapper.findByPrimaryMobileNumber("9876543210")).thenReturn(Optional.of(existingPerson));
-        when(advisorRepositoryWrapper.findByPersonId(2L)).thenReturn(Optional.of(advisor));
+        when(advisorRepositoryWrapper.findByUsername("9876543210")).thenReturn(Optional.of(advisor));
 
         assertThrows(BadRequestException.class, () -> advisorWriteService.createAdvisor(createRequest));
         verify(advisorRepositoryWrapper, never()).saveWithException(any());
@@ -165,8 +184,9 @@ class AdvisorWriteServiceImplTest {
     void createAdvisor_preferredCallStartAfterEnd_throwsException() {
         createRequest.setPreferredCallStartTime(LocalTime.of(18, 0));
         createRequest.setPreferredCallEndTime(LocalTime.of(9, 0));
+        when(userReadService.findUsersByPersonPhoneNumber("9876543210")).thenReturn(Collections.emptyList());
         when(personRepositoryWrapper.findByPrimaryMobileNumber("9876543210")).thenReturn(Optional.empty());
-        when(personWriteService.createPerson(any(PersonCreateRequest.class))).thenReturn(PersonCreateResponse.builder().id(2L).build());
+        when(personWriteService.createPerson(any(PersonCreateRequest.class))).thenReturn(PersonCreateResponse.builder().id(TEST_PERSON_ID).build());
 
         try (MockedStatic<UserContext> userContext = mockStatic(UserContext.class)) {
             userContext.when(UserContext::getUsername).thenReturn("user1");
@@ -178,8 +198,9 @@ class AdvisorWriteServiceImplTest {
     @Test
     void createAdvisor_onlyOnePreferredCallTime_throwsException() {
         createRequest.setPreferredCallStartTime(LocalTime.of(9, 0));
+        when(userReadService.findUsersByPersonPhoneNumber("9876543210")).thenReturn(Collections.emptyList());
         when(personRepositoryWrapper.findByPrimaryMobileNumber("9876543210")).thenReturn(Optional.empty());
-        when(personWriteService.createPerson(any(PersonCreateRequest.class))).thenReturn(PersonCreateResponse.builder().id(2L).build());
+        when(personWriteService.createPerson(any(PersonCreateRequest.class))).thenReturn(PersonCreateResponse.builder().id(TEST_PERSON_ID).build());
 
         try (MockedStatic<UserContext> userContext = mockStatic(UserContext.class)) {
             userContext.when(UserContext::getUsername).thenReturn("user1");
@@ -191,7 +212,7 @@ class AdvisorWriteServiceImplTest {
     void createAdvisor_withOfficeKey_validatesOffice() {
         createRequest.setOfficeKey("OFF1");
         when(personRepositoryWrapper.findByPrimaryMobileNumber("9876543210")).thenReturn(Optional.empty());
-        when(personWriteService.createPerson(any(PersonCreateRequest.class))).thenReturn(PersonCreateResponse.builder().id(2L).build());
+        when(personWriteService.createPerson(any(PersonCreateRequest.class))).thenReturn(PersonCreateResponse.builder().id(TEST_PERSON_ID).build());
         when(officeReadService.getOfficeByKey("OFF1")).thenReturn(new com.nivasafinance.features.offices.dto.OfficeResponse(1L, "Office", "OFF1", "O1", null, null));
         Advisor savedAdvisor = new Advisor();
         savedAdvisor.setIdentifier(identifier);
@@ -214,11 +235,12 @@ class AdvisorWriteServiceImplTest {
         UpdateAdvisorRequest request = new UpdateAdvisorRequest();
         request.setOfficeKey("OFF1");
         when(advisorRepositoryWrapper.findByIdentifierWithException(identifier)).thenReturn(advisor);
+        when(userReadService.getPersonIdByUsername(TEST_ADVISOR_USERNAME)).thenReturn(TEST_PERSON_ID);
         when(advisorRepositoryWrapper.saveWithException(any(Advisor.class))).thenReturn(advisor);
 
         try (MockedStatic<UserContext> userContext = mockStatic(UserContext.class)) {
             userContext.when(UserContext::getUsername).thenReturn("user1");
-            when(personRepositoryWrapper.findByIdWithException(2L)).thenReturn(new Person());
+            when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(new Person());
 
             advisorWriteService.updateAdvisor(identifier, request);
 
@@ -249,12 +271,13 @@ class AdvisorWriteServiceImplTest {
         SourcingChannelResponse channelResponse = new SourcingChannelResponse(10L, UUID.randomUUID(), null, null, null);
 
         when(advisorRepositoryWrapper.findByIdentifierWithException(identifier)).thenReturn(advisor);
+        when(userReadService.getPersonIdByUsername(TEST_ADVISOR_USERNAME)).thenReturn(TEST_PERSON_ID);
         when(sourcingChannelWriteService.update(eq(10L), any())).thenReturn(channelResponse);
         when(advisorRepositoryWrapper.saveWithException(any(Advisor.class))).thenReturn(advisor);
 
         try (MockedStatic<UserContext> userContext = mockStatic(UserContext.class)) {
             userContext.when(UserContext::getUsername).thenReturn("user1");
-            when(personRepositoryWrapper.findByIdWithException(2L)).thenReturn(new Person());
+            when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(new Person());
 
             advisorWriteService.updateSourcingDetails(identifier, request);
 
@@ -271,12 +294,13 @@ class AdvisorWriteServiceImplTest {
         SourcingChannelResponse channelResponse = new SourcingChannelResponse(11L, UUID.randomUUID(), null, null, null);
 
         when(advisorRepositoryWrapper.findByIdentifierWithException(identifier)).thenReturn(advisor);
+        when(userReadService.getPersonIdByUsername(TEST_ADVISOR_USERNAME)).thenReturn(TEST_PERSON_ID);
         when(sourcingChannelWriteService.create(any())).thenReturn(channelResponse);
         when(advisorRepositoryWrapper.saveWithException(any(Advisor.class))).thenReturn(advisor);
 
         try (MockedStatic<UserContext> userContext = mockStatic(UserContext.class)) {
             userContext.when(UserContext::getUsername).thenReturn("user1");
-            when(personRepositoryWrapper.findByIdWithException(2L)).thenReturn(new Person());
+            when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(new Person());
 
             advisorWriteService.updateSourcingDetails(identifier, request);
 
@@ -294,12 +318,13 @@ class AdvisorWriteServiceImplTest {
         CodeValueResponse cv = new CodeValueResponse();
         cv.setKey("HIGH_SCHOOL");
         when(advisorRepositoryWrapper.findByIdentifierWithException(identifier)).thenReturn(advisor);
+        when(userReadService.getPersonIdByUsername(TEST_ADVISOR_USERNAME)).thenReturn(TEST_PERSON_ID);
         when(codeMasterService.getAllCodeValuesByCodeKey(any(), eq(true))).thenReturn(List.of(cv));
         when(advisorRepositoryWrapper.saveWithException(any(Advisor.class))).thenReturn(advisor);
 
         try (MockedStatic<UserContext> userContext = mockStatic(UserContext.class)) {
             userContext.when(UserContext::getUsername).thenReturn("user1");
-            when(personRepositoryWrapper.findByIdWithException(2L)).thenReturn(new Person());
+            when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(new Person());
 
             advisorWriteService.updateQualificationDetails(identifier, request);
 
@@ -330,6 +355,7 @@ class AdvisorWriteServiceImplTest {
         CodeValueResponse cv2 = new CodeValueResponse();
         cv2.setKey("ENGINEER");
         when(advisorRepositoryWrapper.findByIdentifierWithException(identifier)).thenReturn(advisor);
+        when(userReadService.getPersonIdByUsername(TEST_ADVISOR_USERNAME)).thenReturn(TEST_PERSON_ID);
         when(codeMasterService.getAllCodeValuesByCodeKey(any(), eq(true)))
                 .thenReturn(List.of(cv1))
                 .thenReturn(List.of(cv2));
@@ -337,7 +363,7 @@ class AdvisorWriteServiceImplTest {
 
         try (MockedStatic<UserContext> userContext = mockStatic(UserContext.class)) {
             userContext.when(UserContext::getUsername).thenReturn("user1");
-            when(personRepositoryWrapper.findByIdWithException(2L)).thenReturn(new Person());
+            when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(new Person());
 
             advisorWriteService.updateOccupationDetails(identifier, request);
 
@@ -352,12 +378,13 @@ class AdvisorWriteServiceImplTest {
         CodeValueResponse cv = new CodeValueResponse();
         cv.setKey("SEG1");
         when(advisorRepositoryWrapper.findByIdentifierWithException(identifier)).thenReturn(advisor);
+        when(userReadService.getPersonIdByUsername(TEST_ADVISOR_USERNAME)).thenReturn(TEST_PERSON_ID);
         when(codeMasterService.getAllCodeValuesByCodeKey(any(), eq(true))).thenReturn(List.of(cv));
         when(advisorRepositoryWrapper.saveWithException(any(Advisor.class))).thenReturn(advisor);
 
         try (MockedStatic<UserContext> userContext = mockStatic(UserContext.class)) {
             userContext.when(UserContext::getUsername).thenReturn("user1");
-            when(personRepositoryWrapper.findByIdWithException(2L)).thenReturn(new Person());
+            when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(new Person());
 
             advisorWriteService.updateSegmentationDetails(identifier, request);
 
@@ -444,11 +471,12 @@ class AdvisorWriteServiceImplTest {
         request.setPreferredCallStartTime(LocalTime.of(9, 0));
 
         when(advisorRepositoryWrapper.findByIdentifierWithException(identifier)).thenReturn(advisor);
+        when(userReadService.getPersonIdByUsername(TEST_ADVISOR_USERNAME)).thenReturn(TEST_PERSON_ID);
         when(advisorRepositoryWrapper.saveWithException(any(Advisor.class))).thenReturn(advisor);
 
         try (MockedStatic<UserContext> userContext = mockStatic(UserContext.class)) {
             userContext.when(UserContext::getUsername).thenReturn("user1");
-            when(personRepositoryWrapper.findByIdWithException(2L)).thenReturn(new Person());
+            when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(new Person());
 
             advisorWriteService.updateAdvisor(identifier, request);
 
@@ -465,11 +493,12 @@ class AdvisorWriteServiceImplTest {
                 .sourcingChannel("CH")
                 .build();
         when(advisorRepositoryWrapper.findByIdentifierWithException(identifier)).thenReturn(advisor);
+        when(userReadService.getPersonIdByUsername(TEST_ADVISOR_USERNAME)).thenReturn(TEST_PERSON_ID);
         when(sourcingChannelWriteService.create(any())).thenReturn(new SourcingChannelResponse(null, UUID.randomUUID(), null, null, null));
 
         try (MockedStatic<UserContext> userContext = mockStatic(UserContext.class)) {
             userContext.when(UserContext::getUsername).thenReturn("user1");
-            when(personRepositoryWrapper.findByIdWithException(2L)).thenReturn(new Person());
+            when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(new Person());
 
             advisorWriteService.updateSourcingDetails(identifier, request);
 
@@ -533,11 +562,12 @@ class AdvisorWriteServiceImplTest {
         advisor.setQualificationDetails(null);
 
         when(advisorRepositoryWrapper.findByIdentifierWithException(identifier)).thenReturn(advisor);
+        when(userReadService.getPersonIdByUsername(TEST_ADVISOR_USERNAME)).thenReturn(TEST_PERSON_ID);
         when(advisorRepositoryWrapper.saveWithException(any(Advisor.class))).thenReturn(advisor);
 
         try (MockedStatic<UserContext> userContext = mockStatic(UserContext.class)) {
             userContext.when(UserContext::getUsername).thenReturn("user1");
-            when(personRepositoryWrapper.findByIdWithException(2L)).thenReturn(new Person());
+            when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(new Person());
 
             advisorWriteService.updateQualificationDetails(identifier, request);
 
@@ -573,7 +603,7 @@ class AdvisorWriteServiceImplTest {
         createRequest.setSourcingChannelRequest(
                 new com.nivasafinance.features.sourcechannel.dto.SourcingChannelRequest("CH", "MS", null));
         when(personRepositoryWrapper.findByPrimaryMobileNumber("9876543210")).thenReturn(Optional.empty());
-        when(personWriteService.createPerson(any(PersonCreateRequest.class))).thenReturn(PersonCreateResponse.builder().id(2L).build());
+        when(personWriteService.createPerson(any(PersonCreateRequest.class))).thenReturn(PersonCreateResponse.builder().id(TEST_PERSON_ID).build());
         Advisor savedAdvisor = new Advisor();
         savedAdvisor.setId(1L);
         savedAdvisor.setIdentifier(identifier);
@@ -602,16 +632,17 @@ class AdvisorWriteServiceImplTest {
         request.setMobileNumberDetails(List.of(mobileDetails));
 
         when(advisorRepositoryWrapper.findByIdentifierWithException(identifier)).thenReturn(advisor);
+        when(userReadService.getPersonIdByUsername(TEST_ADVISOR_USERNAME)).thenReturn(TEST_PERSON_ID);
         when(advisorRepositoryWrapper.saveWithException(any(Advisor.class))).thenReturn(advisor);
 
         try (MockedStatic<UserContext> userContext = mockStatic(UserContext.class)) {
             userContext.when(UserContext::getUsername).thenReturn("user1");
-            when(personRepositoryWrapper.findByIdWithException(2L)).thenReturn(new Person());
+            when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(new Person());
 
             advisorWriteService.updateAdvisor(identifier, request);
 
             ArgumentCaptor<PersonUpdateRequest> captor = ArgumentCaptor.forClass(PersonUpdateRequest.class);
-            verify(personWriteService).updatePerson(eq(2L), captor.capture());
+            verify(personWriteService).updatePerson(eq(TEST_PERSON_ID), captor.capture());
             assertNotNull(captor.getValue().getMobileNumbers());
             assertEquals(1, captor.getValue().getMobileNumbers().size());
             assertEquals("9999888877", captor.getValue().getMobileNumbers().get(0).getNumber());
@@ -628,11 +659,12 @@ class AdvisorWriteServiceImplTest {
         UpdateAdvisorRequest request = new UpdateAdvisorRequest();
         request.setOfficeKey("OFF1");
         when(advisorRepositoryWrapper.findByIdentifierWithException(identifier)).thenReturn(advisor);
+        when(userReadService.getPersonIdByUsername(TEST_ADVISOR_USERNAME)).thenReturn(TEST_PERSON_ID);
         when(advisorRepositoryWrapper.saveWithException(any(Advisor.class))).thenReturn(advisor);
 
         try (MockedStatic<UserContext> userContext = mockStatic(UserContext.class)) {
             userContext.when(UserContext::getUsername).thenReturn("user1");
-            when(personRepositoryWrapper.findByIdWithException(2L)).thenReturn(personWithMobile);
+            when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(personWithMobile);
 
             advisorWriteService.updateAdvisor(identifier, request);
 
@@ -653,16 +685,17 @@ class AdvisorWriteServiceImplTest {
         request.setPersonalDetails(personalDetails);
 
         when(advisorRepositoryWrapper.findByIdentifierWithException(identifier)).thenReturn(advisor);
+        when(userReadService.getPersonIdByUsername(TEST_ADVISOR_USERNAME)).thenReturn(TEST_PERSON_ID);
         when(advisorRepositoryWrapper.saveWithException(any(Advisor.class))).thenReturn(advisor);
 
         try (MockedStatic<UserContext> userContext = mockStatic(UserContext.class)) {
             userContext.when(UserContext::getUsername).thenReturn("user1");
-            when(personRepositoryWrapper.findByIdWithException(2L)).thenReturn(new Person());
+            when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(new Person());
 
             advisorWriteService.updateAdvisor(identifier, request);
 
             ArgumentCaptor<PersonUpdateRequest> captor = ArgumentCaptor.forClass(PersonUpdateRequest.class);
-            verify(personWriteService).updatePerson(eq(2L), captor.capture());
+            verify(personWriteService).updatePerson(eq(TEST_PERSON_ID), captor.capture());
             assertEquals("Jane", captor.getValue().getFirstName());
             assertEquals("Doe", captor.getValue().getLastName());
         }
