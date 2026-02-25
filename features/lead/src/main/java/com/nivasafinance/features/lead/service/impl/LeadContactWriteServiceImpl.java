@@ -22,6 +22,8 @@ import com.nivasafinance.features.lead.repository.ApplicantRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.ContactRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadContactWriteService;
+import com.nivasafinance.features.referral.service.ReferralCodeRegistryService;
+import com.nivasafinance.features.referral.enums.EntityType;
 import org.springframework.context.MessageSource;
 import com.nivasafinance.features.person.dto.PersonCreateRequest;
 import com.nivasafinance.features.person.dto.PersonCreateResponse;
@@ -55,6 +57,7 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
     private final MessageSource messageSource;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final LeadContactReadService leadContactReadService;
+    private final ReferralCodeRegistryService referralCodeRegistryService;
 
     @Override
     @Transactional
@@ -227,6 +230,7 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
             Applicant newApplicant = new Applicant();
             newApplicant.setIdentifier(UUID.randomUUID());
             newApplicant.setPersonId(contact.getPersonId());
+            newApplicant.setReferralCode(referralCodeRegistryService.generateReferralCode(EntityType.APPLICANT, lead.getLeadIdentifier()).getReferralCode());    
             Applicant savedApplicant = applicantRepositoryWrapper.saveWithException(newApplicant);
 
             // Update lead
@@ -237,6 +241,7 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
             Applicant coApplicant = new Applicant();
             coApplicant.setIdentifier(UUID.randomUUID());
             coApplicant.setPersonId(contact.getPersonId());
+            coApplicant.setReferralCode(referralCodeRegistryService.generateReferralCode(EntityType.APPLICANT, lead.getLeadIdentifier()).getReferralCode());
             Applicant savedCoApplicant = applicantRepositoryWrapper.saveWithException(coApplicant);
 
             // Add to co-applicants list

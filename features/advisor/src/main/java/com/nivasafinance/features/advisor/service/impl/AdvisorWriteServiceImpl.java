@@ -115,11 +115,13 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
         //set sales owner as the current user
         advisor.setOwner(UserContext.getUsername());
 
+        advisor.setReferralCode(
+            referralCodeRegistryService.generateReferralCode(EntityType.ADVISOR, advisor.getIdentifier()).getReferralCode()
+        );
+        
         Advisor savedAdvisor = advisorRepositoryWrapper.saveWithException(advisor);
 
         handleSourcingChannel(savedAdvisor, request.getSourcingChannelRequest());
-
-        generateReferralCode(savedAdvisor);
 
         // Publish ADVISOR_CREATED event
         String mobileNumber = request.getMobileNumberDetails() != null
@@ -545,14 +547,6 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
                 advisor.setSourceChannelId(response.getId());
                 advisorRepositoryWrapper.saveWithException(advisor);
             }
-        }
-    }
-
-    private void generateReferralCode(Advisor advisor) {
-        var response = referralCodeRegistryService.generateReferralCode(EntityType.ADVISOR, advisor.getIdentifier());
-        if (response != null) {
-            advisor.setReferralCode(response.getReferralCode());
-            advisorRepositoryWrapper.saveWithException(advisor);
         }
     }
 
