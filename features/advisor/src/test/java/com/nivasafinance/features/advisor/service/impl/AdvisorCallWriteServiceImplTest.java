@@ -60,6 +60,9 @@ class AdvisorCallWriteServiceImplTest {
     @InjectMocks
     private AdvisorCallWriteServiceImpl advisorCallWriteService;
 
+    private static final Long TEST_PERSON_ID = 2L;
+    private static final String TEST_ADVISOR_USERNAME = "advisorUser";
+
     private UUID advisorIdentifier;
     private Advisor advisor;
     private CreateAdvisorCallRequest createRequest;
@@ -70,7 +73,7 @@ class AdvisorCallWriteServiceImplTest {
         advisor = new Advisor();
         advisor.setId(1L);
         advisor.setIdentifier(advisorIdentifier);
-        advisor.setPersonId(2L);
+        advisor.setUsername(TEST_ADVISOR_USERNAME);
         advisor.setCallLogDetails(null);
         advisor.setOtherDetails(null);
 
@@ -100,7 +103,8 @@ class AdvisorCallWriteServiceImplTest {
                 .build();
 
         when(advisorRepositoryWrapper.findByIdentifierWithException(advisorIdentifier)).thenReturn(advisor);
-        when(personReadService.getPersonById(2L)).thenReturn(person);
+        when(userReadService.getPersonIdByUsername(TEST_ADVISOR_USERNAME)).thenReturn(TEST_PERSON_ID);
+        when(personReadService.getPersonById(TEST_PERSON_ID)).thenReturn(person);
         when(userReadService.getUserByUsername(any())).thenReturn(userResponse);
         when(callWriteService.call(any())).thenReturn(initiateResponse);
         when(advisorRepositoryWrapper.saveWithException(any(Advisor.class))).thenReturn(advisor);
@@ -123,7 +127,8 @@ class AdvisorCallWriteServiceImplTest {
         PersonResponse person = new PersonResponse();
         person.setMobileNumbers(List.of());
         when(advisorRepositoryWrapper.findByIdentifierWithException(advisorIdentifier)).thenReturn(advisor);
-        when(personReadService.getPersonById(2L)).thenReturn(person);
+        when(userReadService.getPersonIdByUsername(TEST_ADVISOR_USERNAME)).thenReturn(TEST_PERSON_ID);
+        when(personReadService.getPersonById(TEST_PERSON_ID)).thenReturn(person);
 
         assertThrows(com.nivasafinance.common.exception.BadRequestException.class,
                 () -> advisorCallWriteService.callPerson(advisorIdentifier, createRequest));
@@ -174,7 +179,8 @@ class AdvisorCallWriteServiceImplTest {
                 .build();
 
         when(advisorRepositoryWrapper.findByIdentifierWithException(advisorIdentifier)).thenReturn(advisor);
-        when(personReadService.getPersonById(2L)).thenReturn(person);
+        when(userReadService.getPersonIdByUsername(TEST_ADVISOR_USERNAME)).thenReturn(TEST_PERSON_ID);
+        when(personReadService.getPersonById(TEST_PERSON_ID)).thenReturn(person);
         when(callWriteService.createCallLog(any())).thenReturn(savedCallLog);
         when(advisorRepositoryWrapper.saveWithException(any(Advisor.class))).thenReturn(advisor);
 

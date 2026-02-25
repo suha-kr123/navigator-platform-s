@@ -30,6 +30,7 @@ import com.nivasafinance.features.staff.dto.StaffResponse;
 import com.nivasafinance.features.staff.service.StaffReadService;
 import com.nivasafinance.features.person.dto.PersonResponse;
 import com.nivasafinance.features.usermanagement.dto.UserResponse;
+import com.nivasafinance.features.usermanagement.service.UserReadService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,7 +46,6 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -79,8 +79,16 @@ class AdvisorReadServiceImplTest {
     @Mock
     private StaffReadService staffReadService;
 
+    @Mock
+    private UserReadService userReadService;
+
     @InjectMocks
     private AdvisorReadServiceImpl advisorReadService;
+
+    private static final Long TEST_PERSON_ID = 2L;
+    private static final Long REFERRER_PERSON_ID = 3L;
+    private static final String TEST_ADVISOR_USERNAME = "advisorUser";
+    private static final String REFERRER_ADVISOR_USERNAME = "referrerAdvisorUser";
 
     private UUID identifier;
     private Advisor advisor;
@@ -95,14 +103,14 @@ class AdvisorReadServiceImplTest {
         advisor = new Advisor();
         advisor.setId(1L);
         advisor.setIdentifier(identifier);
-        advisor.setPersonId(2L);
+        advisor.setUsername(TEST_ADVISOR_USERNAME);
         advisor.setStatus(AdvisorStatus.CREATED);
         advisor.setOfficeKey("HQ");
         advisor.setSourceChannelId(null);
         advisor.setReferralCode(null);
 
         person = new Person();
-        person.setId(2L);
+        person.setId(TEST_PERSON_ID);
         person.setFirstName("John");
         person.setLastName("Doe");
         person.setMobileNumbers(null);
@@ -111,7 +119,8 @@ class AdvisorReadServiceImplTest {
     @Test
     void getAdvisorByIdentifier_success_returnsMappedResponse() {
         when(advisorRepositoryWrapper.findByIdentifierWithException(identifier)).thenReturn(advisor);
-        when(personRepositoryWrapper.findByIdWithException(2L)).thenReturn(person);
+        when(userReadService.getPersonIdByUsername(TEST_ADVISOR_USERNAME)).thenReturn(TEST_PERSON_ID);
+        when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(person);
         when(officeReadService.getOfficeByKey("HQ")).thenReturn(new com.nivasafinance.features.offices.dto.OfficeResponse(1L, "Headquarters", "HQ", "HQ", null, null));
 
         AdvisorResponse result = advisorReadService.getAdvisorByIdentifier(identifier);
@@ -122,14 +131,15 @@ class AdvisorReadServiceImplTest {
         assertEquals("HQ", result.getOfficeKey());
         assertEquals("Headquarters", result.getOfficeName());
         verify(advisorRepositoryWrapper).findByIdentifierWithException(identifier);
-        verify(personRepositoryWrapper).findByIdWithException(2L);
+        verify(personRepositoryWrapper).findByIdWithException(TEST_PERSON_ID);
     }
 
     @Test
     void getAdvisorByIdentifier_officeKeyNull_setsOfficeNameNull() {
         advisor.setOfficeKey(null);
         when(advisorRepositoryWrapper.findByIdentifierWithException(identifier)).thenReturn(advisor);
-        when(personRepositoryWrapper.findByIdWithException(2L)).thenReturn(person);
+        when(userReadService.getPersonIdByUsername(TEST_ADVISOR_USERNAME)).thenReturn(TEST_PERSON_ID);
+        when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(person);
 
         AdvisorResponse result = advisorReadService.getAdvisorByIdentifier(identifier);
 
@@ -142,7 +152,8 @@ class AdvisorReadServiceImplTest {
     @Test
     void getAdvisorByIdentifier_officeNotFound_setsOfficeNameNull() {
         when(advisorRepositoryWrapper.findByIdentifierWithException(identifier)).thenReturn(advisor);
-        when(personRepositoryWrapper.findByIdWithException(2L)).thenReturn(person);
+        when(userReadService.getPersonIdByUsername(TEST_ADVISOR_USERNAME)).thenReturn(TEST_PERSON_ID);
+        when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(person);
         when(messageSource.getMessage(eq("error.office.key.not.found"), any(Object[].class), any())).thenReturn("Not found");
         doThrow(new OfficeNotFoundException("HQ", messageSource)).when(officeReadService).getOfficeByKey("HQ");
 
@@ -292,7 +303,8 @@ class AdvisorReadServiceImplTest {
         SourcingChannelResponse channelResponse = new SourcingChannelResponse(1L, UUID.randomUUID(), null, null, null);
 
         when(advisorRepositoryWrapper.findByIdentifierWithException(identifier)).thenReturn(advisor);
-        when(personRepositoryWrapper.findByIdWithException(2L)).thenReturn(person);
+        when(userReadService.getPersonIdByUsername(TEST_ADVISOR_USERNAME)).thenReturn(TEST_PERSON_ID);
+        when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(person);
         when(officeReadService.getOfficeByKey("HQ")).thenReturn(new com.nivasafinance.features.offices.dto.OfficeResponse(1L, "HQ", "HQ", "HQ", null, null));
         when(sourcingChannelRepositoryWrapper.findByIdAsResponseWithException(sourceChannelId)).thenReturn(channelResponse);
 
@@ -314,7 +326,8 @@ class AdvisorReadServiceImplTest {
         channelResponse.setMarketingDetails(marketingDetails);
 
         when(advisorRepositoryWrapper.findByIdentifierWithException(identifier)).thenReturn(advisor);
-        when(personRepositoryWrapper.findByIdWithException(2L)).thenReturn(person);
+        when(userReadService.getPersonIdByUsername(TEST_ADVISOR_USERNAME)).thenReturn(TEST_PERSON_ID);
+        when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(person);
         when(officeReadService.getOfficeByKey("HQ")).thenReturn(new com.nivasafinance.features.offices.dto.OfficeResponse(1L, "HQ", "HQ", "HQ", null, null));
         when(sourcingChannelRepositoryWrapper.findByIdAsResponseWithException(sourceChannelId)).thenReturn(channelResponse);
         when(referralCodeRegistryService.getReferralCodeByCode("REFCODE")).thenReturn(null);
@@ -345,7 +358,8 @@ class AdvisorReadServiceImplTest {
                 new AdvisorRepositoryWrapper.ReferrerDisplayInfo("Applicant Name", "9999999999");
 
         when(advisorRepositoryWrapper.findByIdentifierWithException(identifier)).thenReturn(advisor);
-        when(personRepositoryWrapper.findByIdWithException(2L)).thenReturn(person);
+        when(userReadService.getPersonIdByUsername(TEST_ADVISOR_USERNAME)).thenReturn(TEST_PERSON_ID);
+        when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(person);
         when(officeReadService.getOfficeByKey("HQ")).thenReturn(new com.nivasafinance.features.offices.dto.OfficeResponse(1L, "HQ", "HQ", "HQ", null, null));
         when(sourcingChannelRepositoryWrapper.findByIdAsResponseWithException(sourceChannelId)).thenReturn(channelResponse);
         when(referralCodeRegistryService.getReferralCodeByCode("REF_APP")).thenReturn(registry);
@@ -377,7 +391,7 @@ class AdvisorReadServiceImplTest {
                 .entityIdentifier(referrerAdvisorId)
                 .build();
         Advisor referrerAdvisor = new Advisor();
-        referrerAdvisor.setPersonId(3L);
+        referrerAdvisor.setUsername(REFERRER_ADVISOR_USERNAME);
         Person referrerPerson = new Person();
         referrerPerson.setDisplayName("Referrer Advisor");
         com.nivasafinance.features.person.entity.MobileNumberDetails primaryMobile =
@@ -385,12 +399,14 @@ class AdvisorReadServiceImplTest {
         referrerPerson.setMobileNumbers(List.of(primaryMobile));
 
         when(advisorRepositoryWrapper.findByIdentifierWithException(identifier)).thenReturn(advisor);
-        when(personRepositoryWrapper.findByIdWithException(2L)).thenReturn(person);
+        when(userReadService.getPersonIdByUsername(TEST_ADVISOR_USERNAME)).thenReturn(TEST_PERSON_ID);
+        when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(person);
         when(officeReadService.getOfficeByKey("HQ")).thenReturn(new com.nivasafinance.features.offices.dto.OfficeResponse(1L, "HQ", "HQ", "HQ", null, null));
         when(sourcingChannelRepositoryWrapper.findByIdAsResponseWithException(sourceChannelId)).thenReturn(channelResponse);
         when(referralCodeRegistryService.getReferralCodeByCode("REF_ADV")).thenReturn(registry);
         when(advisorRepositoryWrapper.findByIdentifierWithException(referrerAdvisorId)).thenReturn(referrerAdvisor);
-        when(personRepositoryWrapper.findByIdWithException(3L)).thenReturn(referrerPerson);
+        when(userReadService.getPersonIdByUsername(REFERRER_ADVISOR_USERNAME)).thenReturn(REFERRER_PERSON_ID);
+        when(personRepositoryWrapper.findByIdWithException(REFERRER_PERSON_ID)).thenReturn(referrerPerson);
 
         AdvisorResponse result = advisorReadService.getAdvisorByIdentifier(identifier);
 
@@ -410,7 +426,8 @@ class AdvisorReadServiceImplTest {
         person.setDisplayName("John Doe");
 
         when(advisorRepositoryWrapper.findByIdentifierWithException(identifier)).thenReturn(advisor);
-        when(personRepositoryWrapper.findByIdWithException(2L)).thenReturn(person);
+        when(userReadService.getPersonIdByUsername(TEST_ADVISOR_USERNAME)).thenReturn(TEST_PERSON_ID);
+        when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(person);
         when(officeReadService.getOfficeByKey("HQ")).thenReturn(new com.nivasafinance.features.offices.dto.OfficeResponse(1L, "HQ", "HQ", "HQ", null, null));
 
         AdvisorResponse result = advisorReadService.getAdvisorByIdentifier(identifier);
@@ -435,7 +452,8 @@ class AdvisorReadServiceImplTest {
                 .build();
 
         when(advisorRepositoryWrapper.findByIdentifierWithException(identifier)).thenReturn(advisor);
-        when(personRepositoryWrapper.findByIdWithException(2L)).thenReturn(person);
+        when(userReadService.getPersonIdByUsername(TEST_ADVISOR_USERNAME)).thenReturn(TEST_PERSON_ID);
+        when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(person);
         when(officeReadService.getOfficeByKey("HQ")).thenReturn(new com.nivasafinance.features.offices.dto.OfficeResponse(1L, "HQ", "HQ", "HQ", null, null));
         when(sourcingChannelRepositoryWrapper.findByIdAsResponseWithException(sourceChannelId)).thenReturn(channelResponse);
         when(referralCodeRegistryService.getReferralCodeByCode("REF_NULL")).thenReturn(registry);
@@ -473,7 +491,8 @@ class AdvisorReadServiceImplTest {
         StaffResponse staffResponse = StaffResponse.builder().userResponse(userResponse).build();
 
         when(advisorRepositoryWrapper.findByIdentifierWithException(identifier)).thenReturn(advisor);
-        when(personRepositoryWrapper.findByIdWithException(2L)).thenReturn(person);
+        when(userReadService.getPersonIdByUsername(TEST_ADVISOR_USERNAME)).thenReturn(TEST_PERSON_ID);
+        when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(person);
         when(officeReadService.getOfficeByKey("HQ")).thenReturn(new com.nivasafinance.features.offices.dto.OfficeResponse(1L, "HQ", "HQ", "HQ", null, null));
         when(sourcingChannelRepositoryWrapper.findByIdAsResponseWithException(sourceChannelId)).thenReturn(channelResponse);
         when(referralCodeRegistryService.getReferralCodeByCode("REF_STAFF")).thenReturn(registry);
@@ -497,7 +516,8 @@ class AdvisorReadServiceImplTest {
         person.setDisplayName("John Doe");
 
         when(advisorRepositoryWrapper.findByIdentifierWithException(identifier)).thenReturn(advisor);
-        when(personRepositoryWrapper.findByIdWithException(2L)).thenReturn(person);
+        when(userReadService.getPersonIdByUsername(TEST_ADVISOR_USERNAME)).thenReturn(TEST_PERSON_ID);
+        when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(person);
         when(officeReadService.getOfficeByKey("HQ")).thenReturn(new com.nivasafinance.features.offices.dto.OfficeResponse(1L, "HQ", "HQ", "HQ", null, null));
 
         AdvisorResponse result = advisorReadService.getAdvisorByIdentifier(identifier);

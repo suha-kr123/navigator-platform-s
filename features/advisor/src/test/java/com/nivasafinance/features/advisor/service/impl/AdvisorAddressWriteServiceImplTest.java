@@ -8,6 +8,7 @@ import com.nivasafinance.features.advisor.repository.AdvisorRepositoryWrapper;
 import com.nivasafinance.features.person.entity.Person;
 import com.nivasafinance.features.person.repository.PersonRepositoryWrapper;
 import com.nivasafinance.features.person.service.PersonWriteService;
+import com.nivasafinance.features.usermanagement.service.UserReadService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,7 +22,6 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -39,8 +39,14 @@ class AdvisorAddressWriteServiceImplTest {
     @Mock
     private PersonRepositoryWrapper personRepositoryWrapper;
 
+    @Mock
+    private UserReadService userReadService;
+
     @InjectMocks
     private AdvisorAddressWriteServiceImpl advisorAddressWriteService;
+
+    private static final Long TEST_PERSON_ID = 2L;
+    private static final String TEST_ADVISOR_USERNAME = "advisorUser";
 
     private UUID advisorIdentifier;
     private Advisor advisor;
@@ -51,7 +57,7 @@ class AdvisorAddressWriteServiceImplTest {
         advisor = new Advisor();
         advisor.setId(1L);
         advisor.setIdentifier(advisorIdentifier);
-        advisor.setPersonId(2L);
+        advisor.setUsername(TEST_ADVISOR_USERNAME);
     }
 
     @Test
@@ -59,8 +65,9 @@ class AdvisorAddressWriteServiceImplTest {
         AddressRequest request = new AddressRequest();
         String addressId = "addr-123";
         when(advisorRepositoryWrapper.findByIdentifierWithException(advisorIdentifier)).thenReturn(advisor);
-        when(personWriteService.addAddress(2L, request)).thenReturn(addressId);
-        when(personRepositoryWrapper.findByIdWithException(2L)).thenReturn(new Person());
+        when(userReadService.getPersonIdByUsername(TEST_ADVISOR_USERNAME)).thenReturn(TEST_PERSON_ID);
+        when(personWriteService.addAddress(TEST_PERSON_ID, request)).thenReturn(addressId);
+        when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(new Person());
 
         try (MockedStatic<UserContext> userContext = mockStatic(UserContext.class)) {
             userContext.when(UserContext::getUsername).thenReturn("user1");
@@ -68,7 +75,7 @@ class AdvisorAddressWriteServiceImplTest {
             String result = advisorAddressWriteService.addAddress(advisorIdentifier, request);
 
             assertEquals(addressId, result);
-            verify(personWriteService).addAddress(2L, request);
+            verify(personWriteService).addAddress(TEST_PERSON_ID, request);
             verify(applicationEventPublisher).publishEvent(any(Object.class));
         }
     }
@@ -79,8 +86,9 @@ class AdvisorAddressWriteServiceImplTest {
         AddressRequest request = new AddressRequest();
         AddressData expected = new AddressData();
         when(advisorRepositoryWrapper.findByIdentifierWithException(advisorIdentifier)).thenReturn(advisor);
-        when(personWriteService.updateAddress(2L, addressId, request)).thenReturn(expected);
-        when(personRepositoryWrapper.findByIdWithException(2L)).thenReturn(new Person());
+        when(userReadService.getPersonIdByUsername(TEST_ADVISOR_USERNAME)).thenReturn(TEST_PERSON_ID);
+        when(personWriteService.updateAddress(TEST_PERSON_ID, addressId, request)).thenReturn(expected);
+        when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(new Person());
 
         try (MockedStatic<UserContext> userContext = mockStatic(UserContext.class)) {
             userContext.when(UserContext::getUsername).thenReturn("user1");
@@ -89,7 +97,7 @@ class AdvisorAddressWriteServiceImplTest {
 
             assertNotNull(result);
             assertEquals(expected, result);
-            verify(personWriteService).updateAddress(2L, addressId, request);
+            verify(personWriteService).updateAddress(TEST_PERSON_ID, addressId, request);
             verify(applicationEventPublisher).publishEvent(any(Object.class));
         }
     }
