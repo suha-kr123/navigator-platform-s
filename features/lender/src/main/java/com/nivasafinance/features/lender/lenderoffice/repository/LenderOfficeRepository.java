@@ -2,6 +2,8 @@ package com.nivasafinance.features.lender.lenderoffice.repository;
 
 import com.nivasafinance.features.lender.lenderoffice.entity.LenderOffice;
 import com.nivasafinance.features.lender.lenderoffice.enums.LenderOfficeStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,10 +17,21 @@ import java.util.UUID;
 public interface LenderOfficeRepository extends JpaRepository<LenderOffice, UUID> {
     Optional<LenderOffice> findByKey(String key);
 
+    List<LenderOffice> findByLenderKey(String lenderKey);
+
+    Page<LenderOffice> findByLenderKey(String lenderKey, Pageable pageable);
+
     @Query("SELECT lo FROM LenderOffice lo WHERE lo.lenderKey = :lenderKey AND lo.status = :status")
     List<LenderOffice> findByLenderKeyAndStatus(
             @Param("lenderKey") String lenderKey,
             @Param("status") LenderOfficeStatus status
+    );
+
+    @Query("SELECT lo FROM LenderOffice lo WHERE lo.lenderKey = :lenderKey AND lo.status = :status")
+    Page<LenderOffice> findByLenderKeyAndStatus(
+            @Param("lenderKey") String lenderKey,
+            @Param("status") LenderOfficeStatus status,
+            Pageable pageable
     );
 }
 

@@ -12,5 +12,9 @@ public class LenderOperationException extends RuntimeException {
     public LenderOperationException(String messageKey, MessageSource messageSource) {
         super(com.nivasafinance.common.exception.ExceptionUtils.createLocalizedMessage(messageKey, null, messageSource));
     }
+
+    public LenderOperationException(String message) {
+        super(message);
+    }
 }
 
