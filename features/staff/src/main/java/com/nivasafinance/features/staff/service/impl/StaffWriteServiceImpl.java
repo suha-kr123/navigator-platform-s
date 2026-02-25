@@ -11,6 +11,8 @@ import com.nivasafinance.features.usermanagement.dto.UserCreateRequest;
 import com.nivasafinance.features.usermanagement.service.UserReadService;
 import com.nivasafinance.features.usermanagement.service.UserWriteService;
 import com.nivasafinance.features.offices.service.OfficeReadService;
+import com.nivasafinance.features.referral.enums.EntityType;
+import com.nivasafinance.features.referral.service.ReferralCodeRegistryService;
 import com.nivasafinance.features.rolemanagement.role.service.UserRoleService;
 import com.nivasafinance.features.staff.dto.StaffCreateRequest.Role;
 import com.nivasafinance.common.exception.ValidationException;
@@ -31,6 +33,8 @@ public class StaffWriteServiceImpl implements StaffWriteService {
     private final UserWriteService userWriteService;
     private final OfficeReadService officeReadService;
     private final UserRoleService userRoleService;
+    private final ReferralCodeRegistryService referralCodeRegistryService;
+
     @Override
     public StaffResponse createStaff(StaffCreateRequest request) {
         officeReadService.getOfficeByKey(request.getOfficeKey());
@@ -62,9 +66,8 @@ public class StaffWriteServiceImpl implements StaffWriteService {
         staff.setIdentifier(UUID.randomUUID());
         staff.setUserId(createdUser.getId());
         staff.setOfficeKey(request.getOfficeKey());
-
+        staff.setReferralCode(referralCodeRegistryService.generateReferralCode(EntityType.STAFF, staff.getIdentifier()).getReferralCode());
         Staff saved = staffRepositoryWrapper.saveWithException(staff);
-
         return mapToResponse(saved, createdUser);
     }
 

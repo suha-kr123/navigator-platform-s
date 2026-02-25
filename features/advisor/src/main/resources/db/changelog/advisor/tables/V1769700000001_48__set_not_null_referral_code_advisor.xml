@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1769700000001_48__set_not_null_referral_code_advisor" author="system">
+        <addNotNullConstraint
+                tableName="n_advisor"
+                columnName="referral_code"
+                columnDataType="VARCHAR(255)"/>
+    </changeSet>
+
+</databaseChangeLog>
