@@ -217,7 +217,7 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
                         .sourceId(request.getSourceId())
                         .sourceUrl(request.getSourceUrl())
                         .campaignId(request.getCampaignId())
-                        .referredByCode(request.getReferralCode())
+                        .referredByCode(request.getReferredByCode())
                         .build();
 
         // Build sourcing channel request
