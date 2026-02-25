@@ -1062,6 +1062,14 @@ public class ExotelServiceImpl implements ExotelService {
 
             // 7. Log the call
             advisorCallWriteService.createExternalCallLog(advisorIdentifier, callLogRequest);
+
+            // 8. Create missed call task
+            try {
+                createAdvisorMissedCallTask(advisorInfo.getMobileNumber(), callSid);
+            } catch (Exception e) {
+                log.error("Error creating missed call task for advisor: {}, CallSid: {}", advisorIdentifier, callSid, e);
+            }
+
             log.info("Created external call log for advisor: {}, CallSid: {}", advisorIdentifier, callSid);
 
             log.info("Successfully processed advisor missed call for CallSid: {}", callSid);
@@ -1487,5 +1495,34 @@ public class ExotelServiceImpl implements ExotelService {
         }
     
         return response;
-    }    
+    } 
+    
+    private void createAdvisorMissedCallTask(String mobileNumber, String callSid) {
+        PaginatedResponse<AdvisorBasicResponse> advisorResponses = advisorReadService.searchAdvisors(
+                new PaginationRequest(0, 1, null, null), new AdvisorSearchRequest(mobileNumber));
+        if (advisorResponses == null || advisorResponses.getContent() == null
+                || advisorResponses.getContent().isEmpty()) {
+            log.info("No advisor found for mobile: {}", mobileNumber);
+            return;
+        }
+        for (AdvisorBasicResponse advisorResponse : advisorResponses.getContent()) {
+            CreateAdhocTaskRequest createTaskRequest = buildAdvisorMissedCallTaskRequest(advisorResponse, callSid);
+            taskWriteService.createAdhocTask(createTaskRequest);
+        }
+    }
+
+    private CreateAdhocTaskRequest buildAdvisorMissedCallTaskRequest(AdvisorBasicResponse advisorResponse,
+            String callSid) {
+        return CreateAdhocTaskRequest.builder()
+                .taskConfigKey("ADVISOR_MISSED_CALL_TASK")
+                .assignedTo("ganga_adv")
+                .dueAt(LocalDateTime.now().plusMinutes(30))
+                .taskDetails(TaskDetailsRequest.builder()
+                        .entityId(advisorResponse.getAdvisorIdentifier())
+                        .entityType(EntityType.ADVISOR)
+                        .creatorRemarks(
+                                "Missed call from " + advisorResponse.getMobileNumber() + " call sid: " + callSid)
+                        .build())
+                .build();
+    }
 }
