@@ -12,6 +12,8 @@
              relativeToChangelogFile="true"/>
     <include file="tables/V1769700000000_43__add_referral_code_to_staff.xml"
              relativeToChangelogFile="true"/>
+    <include file="tables/V1769700000001_44__set_not_null_referral_code_staff.xml"
+             relativeToChangelogFile="true"/>
 
 </databaseChangeLog>
 

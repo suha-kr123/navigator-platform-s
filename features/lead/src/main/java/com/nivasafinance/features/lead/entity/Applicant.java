@@ -27,6 +27,6 @@ public class Applicant extends AuditableEntity {
     @Column(name = "person_id", nullable = false)
     private Long personId;
 
-    @Column(name = "referral_code", length = 255)
+    @Column(name = "referral_code", length = 255, unique = true, nullable = false)
     private String referralCode;
 }
