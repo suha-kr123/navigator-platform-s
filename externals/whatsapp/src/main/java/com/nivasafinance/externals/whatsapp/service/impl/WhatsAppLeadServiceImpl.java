@@ -142,6 +142,17 @@ public class WhatsAppLeadServiceImpl implements WhatsAppLeadService {
                     stage = "empty";
                 }
                 
+                // Get name from person ("empty" if not exists)
+                String name = "empty";
+                if (contactIdentifier != null) {
+                    Contact contact = contactRepositoryWrapper.findByIdentifierWithException(contactIdentifier);
+                    Person person = personRepositoryWrapper.findByIdWithException(contact.getPersonId());
+                    String displayName = person.getDisplayName();
+                    if (displayName != null && !displayName.isBlank()) {
+                        name = displayName;
+                    }
+                }
+                
                 return WhatsAppLeadResponse.builder()
                         .leadIdentifier(leadIdentifier)
                         .contactIdentifier(contactIdentifier)
@@ -151,6 +162,7 @@ public class WhatsAppLeadServiceImpl implements WhatsAppLeadService {
                         .substatus(substatus)
                         .reasons(reasons)
                         .stage(stage)
+                        .name(name)
                         .build();
             }
         }
