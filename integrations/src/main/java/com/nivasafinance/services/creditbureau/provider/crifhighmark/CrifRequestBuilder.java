@@ -31,6 +31,10 @@ public class CrifRequestBuilder {
     private static final String JSON_FLAG = "Y";
     private static final String REDIRECT_URL = "https://cir.crifhighmark.com/Inquiry/B2B/secureService.action";
     private static final String DEFAULT_EMAIL = "abc@abc.com";
+    private static final String DEFAULT_PINCODE = "570001";
+    private static final String DEFAULT_ADDRESS_LINE = "Bengaluru";
+    private static final String DEFAULT_DOB = "01-01-1990";
+    private static final String DEFAULT_AGE = "40";
 
     private String sanitizeField(String value) {
         return value == null || value.trim().isEmpty() ? "" : value;
@@ -58,13 +62,13 @@ public class CrifRequestBuilder {
         // 4. gender (NULLABLE)
         fields.add(sanitizeField(formatGender(personData.getGender())));
 
-        // 5. dob (EITHER dob OR age REQUIRED)
+        // 5. dob (uses DEFAULT_DOB when not provided)
         String dob = formatDob(personData.getDateOfBirth());
-        fields.add(dob);
+        fields.add(StringUtils.hasText(dob) ? dob : DEFAULT_DOB);
 
-        // 6. ageAsOnToday (EITHER age OR dob REQUIRED)
+        // 6. ageAsOnToday (uses DEFAULT_AGE when not provided)
         String age = calculateAge(personData.getDateOfBirth());
-        fields.add(age);
+        fields.add(StringUtils.hasText(age) ? age : DEFAULT_AGE);
 
         // 7. maritalStatus (NULLABLE)
         fields.add("");
@@ -99,11 +103,11 @@ public class CrifRequestBuilder {
 
         // 24-29. first address (addressLine1, village1, city1, state1, pincode1, country1 NOT NULL)
         AddressData address1 = addresses != null && !addresses.isEmpty() ? addresses.get(0) : null;
-        fields.add(sanitizeField(address1 != null ? address1.getAddress() : ""));
+        fields.add(sanitizeField(address1 != null && StringUtils.hasText(address1.getAddress()) ? address1.getAddress() : DEFAULT_ADDRESS_LINE));
         fields.add(sanitizeField(address1 != null ? address1.getVillageName() : ""));
         fields.add(sanitizeField(address1 != null && StringUtils.hasText(address1.getTaluka()) ? address1.getTaluka() : ""));
         fields.add(sanitizeField(address1 != null && StringUtils.hasText(address1.getState()) ? address1.getState() : ""));
-        fields.add(sanitizeField(address1 != null ? address1.getPincode() : ""));
+        fields.add(sanitizeField(address1 != null && StringUtils.hasText(address1.getPincode()) ? address1.getPincode() : DEFAULT_PINCODE));
         fields.add(sanitizeField(address1 != null && StringUtils.hasText(address1.getCountry()) ? address1.getCountry() : "INDIA"));
 
         // 30-35. second address (all NULLABLE) - addressLine2, village2, city2, state2, pincode2, country2
@@ -112,7 +116,7 @@ public class CrifRequestBuilder {
         fields.add(sanitizeField(address2 != null ? address2.getVillageName() : ""));
         fields.add(sanitizeField(address2 != null ? address2.getTaluka() : ""));
         fields.add(sanitizeField(address2 != null ? address2.getState() : ""));
-        fields.add(sanitizeField(address2 != null ? address2.getPincode() : ""));
+        fields.add(sanitizeField(address2 != null && StringUtils.hasText(address2.getPincode()) ? address2.getPincode() : ""));
         fields.add(sanitizeField(address2 != null ? address2.getCountry() : ""));
 
         // 36. customerId (NOT NULL)
@@ -185,16 +189,10 @@ public class CrifRequestBuilder {
             errors.add("At least one mobile number is required");
         }
         // Email validation removed - will use default email if not available
-
-        AddressData address1 = addresses != null && !addresses.isEmpty() ? addresses.get(0) : null;
-        if (address1 == null || !StringUtils.hasText(address1.getAddress())) {
-            errors.add("addressLine1 is required");
-        }
-        if (address1 == null || !StringUtils.hasText(address1.getPincode())) {
-            errors.add("pincode1 is required");
-        }
+        // addressLine1 uses DEFAULT_ADDRESS_LINE when not provided
+        // pincode1 uses DEFAULT_PINCODE when not provided
+        // dob and age use DEFAULT_DOB and DEFAULT_AGE when not provided
         // city1 (taluka), state1, and country1 will use defaults if not provided
-        // DOB validation removed - age will be calculated as empty string if DOB is null
 
         if (!errors.isEmpty()) {
             throw new NavigatorIntegrationClientException("Missing mandatory fields: " + String.join(", ", errors));

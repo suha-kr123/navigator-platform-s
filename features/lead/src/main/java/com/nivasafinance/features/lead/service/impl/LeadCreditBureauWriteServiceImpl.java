@@ -174,12 +174,10 @@ public class LeadCreditBureauWriteServiceImpl implements LeadCreditBureauWriteSe
             errors.add("identifier");
         }
         AddressData address1 = addresses != null && !addresses.isEmpty() ? addresses.get(0) : null;
-        if (address1 == null || !StringUtils.hasText(address1.getAddress())) {
+        if (address1 == null) {
             errors.add("address");
         }
-        if (address1 == null || !StringUtils.hasText(address1.getPincode())) {
-            errors.add("pincode");
-        }
+        // address line and pincode use default values for CRIF when not provided
 
         if (!errors.isEmpty()) {
             throw LeadExceptionFactory.cbDataIncomplete(String.join(", ", errors), messageSource);
