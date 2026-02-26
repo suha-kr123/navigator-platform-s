@@ -37,6 +37,20 @@ public enum BulkOperationType {
             "Change Lead Substage",
             "Bulk change lead substage within current stage",
             Arrays.asList("lead_identifier", "stage_key", "substage_key"),
+            Collections.emptyList()),
+
+    STAGE_ASSIGNMENT_CHANGE(
+            "STAGE_ASSIGNMENT_CHANGE",
+            "Change Stage Assignment",
+            "Bulk change stage assignment for leads at a given stage",
+            Arrays.asList("lead_identifier", "stage_key", "assigned_to"),
+            Collections.emptyList()),
+
+    TASK_REASSIGN(
+            "TASK_REASSIGN",
+            "Reassign Tasks",
+            "Bulk reassign tasks to a user or role",
+            Arrays.asList("task_identifier", "assigned_to"),
             Collections.emptyList());
 
     private final String identifier;
