@@ -4,10 +4,13 @@ import com.nivasafinance.features.rolemanagement.mapping.entity.RolePermissionMa
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
 import java.util.List;
 
 @Repository
 public interface RolePermissionMappingRepository extends JpaRepository<RolePermissionMapping, Long> {
     List<RolePermissionMapping> findByRoleIn(List<String> roles);
+    List<RolePermissionMapping> findByRole(String role);
+    Optional<RolePermissionMapping> findByRoleAndPermissionId(String role, Long permissionId);
+    void deleteByRoleAndPermissionId(String role, Long permissionId);
 }
-

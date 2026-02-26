@@ -4,6 +4,8 @@ import com.nivasafinance.features.rolemanagement.exception.RoleManagementExcepti
 import com.nivasafinance.features.rolemanagement.role.entity.Role;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -14,6 +16,26 @@ public class RoleRepositoryWrapper {
     
     private final RoleRepository roleRepository;
     private final MessageSource messageSource;
+    
+    public List<Role> findAll() {
+        return roleRepository.findAll();
+    }
+    
+    public Page<Role> findAll(Pageable pageable) {
+        return roleRepository.findAll(pageable);
+    }
+    
+    public Page<Role> findByNameContainingIgnoreCase(String name, Pageable pageable) {
+        return roleRepository.findByNameContainingIgnoreCase(name, pageable);
+    }
+    
+    public java.util.Optional<Role> findByNameIgnoreCase(String name) {
+        return roleRepository.findByNameIgnoreCase(name);
+    }
+    
+    public Role save(Role role) {
+        return roleRepository.save(role);
+    }
     
     public List<Role> findByNameIn(List<String> names) {
         return roleRepository.findByNameIn(names);
@@ -31,4 +53,3 @@ public class RoleRepositoryWrapper {
         return role;
     }
 }
-

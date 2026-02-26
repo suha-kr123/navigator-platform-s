@@ -13,5 +13,7 @@ public interface UserRoleMappingRepository extends JpaRepository<UserRoleMapping
     List<UserRoleMapping> findByUsername(String username);
     Optional<UserRoleMapping> findByUsernameAndIsPrimary(String username, Boolean isPrimary);
     List<UserRoleMapping> findByRoleIn(List<String> roles);
+    Optional<UserRoleMapping> findByUsernameAndRole(String username, String role);
+    boolean existsByUsernameAndRole(String username, String role);
+    void deleteByUsernameAndRole(String username, String role);
 }
-
