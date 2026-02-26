@@ -206,4 +206,3 @@ jobs:
           echo "🔧 Task Definition: ${{ steps.task-def.outputs.task-def-arn }}"
           echo "🔄 Revision: ${{ steps.task-def.outputs.task-def-revision }}"
           echo "🏷️  Tag: ${{ needs.build-and-push.outputs.tag }}"
-
