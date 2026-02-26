@@ -6,7 +6,7 @@ on:
     inputs:
       docker_tag:
         description: 'Tag'
-        required: true
+        required: false
         type: string
 
 # Environment variables
@@ -35,22 +35,11 @@ jobs:
       image-uri: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{ steps.tag.outputs.tag }}
 
     steps:
-      - name: 🏷️ Validate tag
-        id: tag
-        run: |
-          TAG="${{ github.event.inputs.docker_tag }}"
-          if [ -z "$TAG" ]; then
-            echo "❌ Error: tag is required!"
-            exit 1
-          fi
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
-          echo "✅ Using tag: $TAG"
-
       - name: 🛎️ Checkout source code from tag
         uses: actions/checkout@v4
         with:
           repository: ${{ env.SOURCE_REPO }}
-          ref: ${{ github.event.inputs.docker_tag }}
+          ref: ${{ github.event.inputs.docker_tag || github.ref_name }}
           path: .
           fetch-depth: 0
           token: ${{ secrets.SOURCE_REPO_TOKEN }}
