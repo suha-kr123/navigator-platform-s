@@ -57,14 +57,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import com.nivasafinance.features.workflow.constants.WorkflowConstants;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.util.MultiValueMap;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.springframework.util.MultiValueMap;
 
 import java.time.LocalDateTime;
@@ -95,7 +89,6 @@ public class ExotelServiceImpl implements ExotelService {
     private final CampaignReadService campaignReadService;
     private final CampaignWriteService campaignWriteService;
     private final CallReadService callReadService;
-    private final ObjectMapper objectMapper;
     private final ObjectMapper objectMapper;
     private final CallNotificationService callNotificationService;
 
