@@ -6,7 +6,7 @@ on:
     inputs:
       docker_tag:
         description: 'Tag'
-        required: false
+        required: true
         type: string
 
 # Environment variables
@@ -20,7 +20,6 @@ env:
   ECS_TASK_DEFINITION: 'navigator-platform'  # Update with your actual task definition family name
   # For OIDC: Replace with your IAM Role ARN after setting up OIDC
   AWS_ROLE_ARN: 'arn:aws:iam::600627336794:role/GitHubActions-ECR-Role'
-  SOURCE_REPO: 'Nivasa-Finance/navigator-platform'
 
 jobs:
   build-and-push:
@@ -35,14 +34,11 @@ jobs:
       image-uri: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{ steps.tag.outputs.tag }}
 
     steps:
-      - name: 🛎️ Checkout source code from tag
+
+      - name: 🛎️ Checkout repository
         uses: actions/checkout@v4
         with:
-          repository: ${{ env.SOURCE_REPO }}
-          ref: ${{ github.event.inputs.docker_tag || github.ref_name }}
-          path: .
           fetch-depth: 0
-          token: ${{ secrets.SOURCE_REPO_TOKEN }}
 
       # Step 2: Set up Java
       - name: ☕ Set up Java ${{ env.JAVA_VERSION }}
