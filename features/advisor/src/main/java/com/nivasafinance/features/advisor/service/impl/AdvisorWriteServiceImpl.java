@@ -13,13 +13,13 @@ import com.nivasafinance.features.advisor.repository.AdvisorRepositoryWrapper;
 import com.nivasafinance.features.advisor.service.AdvisorWriteService;
 import com.nivasafinance.features.offices.service.OfficeReadService;
 import com.nivasafinance.features.referral.dto.ReferralCodeRegistryResponse;
+import com.nivasafinance.features.usermanagement.service.UserReadService;
+import com.nivasafinance.features.usermanagement.service.UserWriteService;
+import com.nivasafinance.features.referral.dto.ReferralCodeRegistryResponse;
 import com.nivasafinance.features.referral.enums.EntityType;
 import com.nivasafinance.features.referral.service.ReferralCodeRegistryService;
 import com.nivasafinance.features.person.dto.PersonCreateRequest;
-import com.nivasafinance.features.person.dto.PersonCreateResponse;
 import com.nivasafinance.features.person.dto.PersonUpdateRequest;
-import com.nivasafinance.features.person.repository.PersonRepositoryWrapper;
-import com.nivasafinance.features.person.service.PersonWriteService;
 import com.nivasafinance.features.sourcechannel.dto.SourcingChannelRequest;
 import com.nivasafinance.features.sourcechannel.dto.SourcingChannelResponse;
 import com.nivasafinance.features.sourcechannel.service.SourcingChannelWriteService;
@@ -29,7 +29,8 @@ import com.nivasafinance.features.master.codemaster.service.CodeMasterService;
 import com.nivasafinance.common.exception.BadRequestException;
 import com.nivasafinance.common.utils.ValidationUtils;
 import com.nivasafinance.features.advisor.exception.AdvisorExceptionFactory;
-import com.nivasafinance.features.person.entity.Person;
+import com.nivasafinance.features.usermanagement.dto.UserResponse;
+import com.nivasafinance.features.usermanagement.exception.UserAlreadyExistsException;
 import lombok.AllArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.MessageSource;
@@ -39,11 +40,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
-import java.util.UUID;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @Transactional
@@ -51,45 +51,37 @@ import java.util.List;
 public class AdvisorWriteServiceImpl implements AdvisorWriteService {
 
     private final AdvisorRepositoryWrapper advisorRepositoryWrapper;
-    private final PersonWriteService personWriteService;
-    private final PersonRepositoryWrapper personRepositoryWrapper;
     private final SourcingChannelWriteService sourcingChannelWriteService;
     private final CodeMasterService codeMasterService;
     private final OfficeReadService officeReadService;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final MessageSource messageSource;
     private final ReferralCodeRegistryService referralCodeRegistryService;
+    private final UserReadService userReadService;
+    private final UserWriteService userWriteService;
 
     @Override
     public UUID createAdvisor(CreateAdvisorRequest request) {
-        // Extract primary mobile number
-        String primaryMobile = request.getMobileNumberDetails() != null 
-                ? request.getMobileNumberDetails().getMobileNumber() 
-                : null;
-        
-        Long personId;
-        
-        // Check if person already exists with this mobile number
-        Optional<Person> existingPerson = personRepositoryWrapper.findByPrimaryMobileNumber(primaryMobile);
-        if (existingPerson.isPresent()) {
-            personId = existingPerson.get().getId();
-            
-            // Check if advisor already exists for this person
-            Optional<Advisor> existingAdvisor = advisorRepositoryWrapper.findByPersonId(personId);
-            if (existingAdvisor.isPresent()) {
-                throw AdvisorExceptionFactory.personAlreadyExists(personId, messageSource);
-            }
-        } else {
-            // Create new person
-            PersonCreateRequest personRequest = buildPersonCreateRequest(request);
-            PersonCreateResponse personResponse = personWriteService.createPerson(personRequest);
-            personId = personResponse.getId();
+        String mobile = getPrimaryMobile(request);
+        if (mobile == null || mobile.isBlank()) {
+            throw new BadRequestException("Primary mobile number is required");
         }
 
-        // Create advisor
+        String advisorUsername;
+        try {
+            advisorUsername = userReadService.findUserByPersonMobile(mobile)
+                    .map(UserResponse::getUsername)
+                    .orElseGet(() -> userWriteService.createUserForMobile(mobile, buildPersonCreateRequest(request)).getUsername());
+        } catch (UserAlreadyExistsException e) {
+            throw AdvisorExceptionFactory.advisorAlreadyExistsForMobileNumber(mobile, messageSource);
+        }
+        if (advisorRepositoryWrapper.findByUsername(advisorUsername).isPresent()) {
+            throw AdvisorExceptionFactory.advisorAlreadyExistsForMobileNumber(mobile, messageSource);
+        }
+
         Advisor advisor = new Advisor();
         advisor.setIdentifier(UUID.randomUUID());
-        advisor.setPersonId(personId);
+        advisor.setUsername(advisorUsername);
         advisor.setStatus(AdvisorStatus.CREATED);
         if (request.getOfficeKey() != null) {
             officeReadService.getOfficeByKey(request.getOfficeKey()); //validate
@@ -122,14 +114,10 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
         handleSourcingChannel(savedAdvisor, request.getSourcingChannelRequest());
 
         // Publish ADVISOR_CREATED event
-        String mobileNumber = request.getMobileNumberDetails() != null
-                ? request.getMobileNumberDetails().getMobileNumber()
-                : null;
-
         AdvisorCreationEventPayload payload = AdvisorCreationEventPayload.builder()
                 .id(savedAdvisor.getId())
                 .advisorIdentifier(savedAdvisor.getIdentifier())
-                .mobileNumber(mobileNumber)
+                .mobileNumber(mobile)
                 .build();
 
         String username = UserContext.getUsername();
@@ -144,9 +132,7 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
     public void updateAdvisor(UUID identifier, UpdateAdvisorRequest request) {
         Advisor advisor = advisorRepositoryWrapper.findByIdentifierWithException(identifier);
 
-        // Update person details
-        PersonUpdateRequest personUpdateRequest = buildPersonUpdateRequest(request);
-        personWriteService.updatePerson(advisor.getPersonId(), personUpdateRequest);
+        userWriteService.updatePersonForUser(advisor.getUsername(), buildPersonUpdateRequest(request));
 
         // Update office key if provided
         if (request.getOfficeKey() != null) {
@@ -183,9 +169,7 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
     }
 
     private void publishAdvisorUpdatedEvent(Advisor advisor) {
-        // Get primary mobile number from person entity
-        com.nivasafinance.features.person.entity.Person person = 
-                personRepositoryWrapper.findByIdWithException(advisor.getPersonId());
+        com.nivasafinance.features.person.dto.PersonResponse person = userReadService.getPersonForUser(advisor.getUsername());
         String mobileNumber = null;
         if (person.getMobileNumbers() != null && !person.getMobileNumbers().isEmpty()) {
             mobileNumber = person.getMobileNumbers().stream()
@@ -309,7 +293,7 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
             boolean isValidOcc = occupations.stream()
                     .anyMatch(cv ->
                             providedOcc.equalsIgnoreCase(cv.getKey()) ||
-                            (cv.getValue() != null && providedOcc.equalsIgnoreCase(cv.getValue()))
+                                    (cv.getValue() != null && providedOcc.equalsIgnoreCase(cv.getValue()))
                     );
             if (!isValidOcc) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -460,6 +444,12 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
         applicationEventPublisher.publishEvent(
                 new SystemEvent<>(event.toString(), payload, username)
         );
+    }
+
+    private String getPrimaryMobile(CreateAdvisorRequest request) {
+        return request.getMobileNumberDetails() != null
+                ? request.getMobileNumberDetails().getMobileNumber()
+                : null;
     }
 
     // Convert CreateAdvisorRequest to PersonCreateRequest

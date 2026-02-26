@@ -34,8 +34,8 @@ public class Advisor extends AuditableEntity {
     @Column(name = "identifier", nullable = false, unique = true)
     private UUID identifier;
 
-    @Column(name = "person_id", nullable = false)
-    private Long personId;
+    @Column(name = "username", length = 255)
+    private String username;
 
     @Column(name = "status", nullable = false, length = 50)
     @Enumerated(EnumType.STRING)

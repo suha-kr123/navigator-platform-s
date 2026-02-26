@@ -39,6 +39,14 @@ public final class AdvisorExceptionFactory {
         ));
     }
 
+    public static BadRequestException advisorAlreadyExistsForMobileNumber(String mobileNumber, MessageSource messageSource) {
+        return new BadRequestException(ExceptionUtils.createLocalizedMessage(
+                "error.advisor.mobile.already.exists",
+                new Object[]{mobileNumber},
+                messageSource
+        ));
+    }
+
     public static AdvisorOperationException noCurrentUser(MessageSource messageSource) {
         return new AdvisorOperationException("error.advisor.operation.no.current.user", messageSource);
     }

@@ -4,7 +4,7 @@ import com.nivasafinance.common.dto.AddressData;
 import com.nivasafinance.features.advisor.entity.Advisor;
 import com.nivasafinance.features.advisor.repository.AdvisorRepositoryWrapper;
 import com.nivasafinance.features.advisor.service.AdvisorAddressReadService;
-import com.nivasafinance.features.person.service.PersonReadService;
+import com.nivasafinance.features.usermanagement.service.UserReadService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -20,19 +20,19 @@ import java.util.UUID;
 public class AdvisorAddressReadServiceImpl implements AdvisorAddressReadService {
 
     private final AdvisorRepositoryWrapper advisorRepositoryWrapper;
-    private final PersonReadService personReadService;
+    private final UserReadService userReadService;
 
     @Override
     public List<AddressData> getAddresses(UUID advisorIdentifier) {
         Advisor advisor = advisorRepositoryWrapper.findByIdentifierWithException(advisorIdentifier);
-        return personReadService.getAddresses(advisor.getPersonId());
+        return userReadService.getAddressesForUser(advisor.getUsername());
     }
 
     @Override
     public AddressData getAddress(UUID advisorIdentifier, String addressId) {
         Advisor advisor = advisorRepositoryWrapper.findByIdentifierWithException(advisorIdentifier);
         try {
-            return personReadService.getAddress(advisor.getPersonId(), addressId);
+            return userReadService.getAddressForUser(advisor.getUsername(), addressId);
         } catch (ResponseStatusException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Address not found for advisor");
         }

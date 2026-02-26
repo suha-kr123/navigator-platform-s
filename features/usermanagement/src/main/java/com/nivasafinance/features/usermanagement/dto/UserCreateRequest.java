@@ -21,7 +21,6 @@ public class UserCreateRequest {
 
     private UserStatus status;
 
-    @NotNull
     @Valid
     private PersonCreateRequest person;
 }

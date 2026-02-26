@@ -9,9 +9,10 @@ import com.nivasafinance.features.advisor.dto.UpdateSegmentationDetailsRequest;
 import com.nivasafinance.features.advisor.dto.UpdateSourcingDetailsRequest;
 import com.nivasafinance.features.advisor.entity.Advisor;
 import com.nivasafinance.features.advisor.repository.AdvisorRepositoryWrapper;
+import com.nivasafinance.features.advisor.service.AdvisorReadService;
 import com.nivasafinance.features.advisor.service.AdvisorWriteService;
-import com.nivasafinance.features.person.entity.Person;
-import com.nivasafinance.features.person.repository.PersonRepositoryWrapper;
+import com.nivasafinance.features.person.dto.PersonResponse;
+import com.nivasafinance.features.usermanagement.service.UserReadService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,7 +26,8 @@ import java.util.UUID;
 @Slf4j
 public class WhatsAppAdvisorServiceImpl implements WhatsAppAdvisorService {
 
-    private final PersonRepositoryWrapper personRepositoryWrapper;
+    private final UserReadService userReadService;
+    private final AdvisorReadService advisorReadService;
     private final AdvisorRepositoryWrapper advisorRepositoryWrapper;
     private final AdvisorWriteService advisorWriteService;
 
@@ -42,43 +44,28 @@ public class WhatsAppAdvisorServiceImpl implements WhatsAppAdvisorService {
         );
         createAdvisorRequest.setMobileNumberDetails(mobileNumberDetails);
 
-        // Check if person exists with this phone number
-        Optional<Person> existingPerson = personRepositoryWrapper
-                .findByPrimaryMobileNumber(request.getMobileNumber());
+        Optional<Advisor> existingAdvisor = userReadService.findUserByPersonMobile(request.getMobileNumber())
+                .flatMap(userResponse -> advisorReadService.findAdvisorByUsername(userResponse.getUsername()));
 
         UUID advisorIdentifier;
 
-        if (existingPerson.isPresent()) {
-            // Person exists, check if they are an advisor
-            Optional<Advisor> existingAdvisor = advisorRepositoryWrapper
-                    .findByPersonId(existingPerson.get().getId());
+        if (existingAdvisor.isPresent()) {
+            Advisor advisor = existingAdvisor.get();
+            advisorIdentifier = advisor.getIdentifier();
 
-            if (existingAdvisor.isPresent()) {
-                // Advisor exists, return existing advisor details
-                Advisor advisor = existingAdvisor.get();
-                advisorIdentifier = advisor.getIdentifier();
-                
-                // Get person's display name
-                Person person = existingPerson.get();
-                String name = person.getDisplayName();
-                if (name == null || name.isBlank()) {
-                    name = "empty";
-                }
-
-                String referralCode = advisor.getReferralCode();
-                if (referralCode == null || referralCode.isBlank()) {
-                    referralCode = "empty";
-                }
-
-                String status = advisor.getStatus() != null ? advisor.getStatus().name() : null;
-
-                return WhatsAppAdvisorResponse.builder()
-                        .advisorIdentifier(advisorIdentifier)
-                        .name(name)
-                        .referralCode(referralCode)
-                        .status(status)
-                        .build();
+            String name = toDisplayName(userReadService.getPersonForUser(advisor.getUsername()));
+            String referralCode = advisor.getReferralCode();
+            if (referralCode == null || referralCode.isBlank()) {
+                referralCode = "empty";
             }
+            String status = advisor.getStatus() != null ? advisor.getStatus().name() : null;
+
+            return WhatsAppAdvisorResponse.builder()
+                    .advisorIdentifier(advisorIdentifier)
+                    .name(name)
+                    .referralCode(referralCode)
+                    .status(status)
+                    .build();
         }
 
         // Advisor doesn't exist, delegate to features/advisor service to create it
@@ -94,13 +81,8 @@ public class WhatsAppAdvisorServiceImpl implements WhatsAppAdvisorService {
             updateSourcingDetails(advisorIdentifier, request);
         }
 
-        // Get advisor to retrieve person's name
         Advisor advisor = advisorRepositoryWrapper.findByIdentifierWithException(advisorIdentifier);
-        Person person = personRepositoryWrapper.findByIdWithException(advisor.getPersonId());
-        String name = person.getDisplayName();
-        if (name == null || name.isBlank()) {
-            name = "empty";
-        }
+        String name = toDisplayName(userReadService.getPersonForUser(advisor.getUsername()));
 
         String referralCode = advisor.getReferralCode();
         if (referralCode == null || referralCode.isBlank()) {
@@ -144,5 +126,13 @@ public class WhatsAppAdvisorServiceImpl implements WhatsAppAdvisorService {
         }
 
         advisorWriteService.updateSourcingDetails(advisorIdentifier, sourcingRequest);
+    }
+
+    private static String toDisplayName(PersonResponse person) {
+        if (person == null) {
+            return "empty";
+        }
+        String name = person.getDisplayName();
+        return (name == null || name.isBlank()) ? "empty" : name;
     }
 }

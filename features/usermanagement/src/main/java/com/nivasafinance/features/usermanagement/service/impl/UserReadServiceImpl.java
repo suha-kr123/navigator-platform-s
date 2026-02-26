@@ -1,5 +1,6 @@
 package com.nivasafinance.features.usermanagement.service.impl;
 
+import com.nivasafinance.common.dto.AddressData;
 import com.nivasafinance.common.exception.BadRequestException;
 import com.nivasafinance.features.person.dto.PersonResponse;
 import com.nivasafinance.features.person.service.PersonReadService;
@@ -30,6 +31,14 @@ public class UserReadServiceImpl implements UserReadService {
 
     private final UserRepositoryWrapper userRepositoryWrapper;
     private final PersonReadService personReadService;
+
+    @Override
+    public Optional<UserResponse> findUserByPersonMobile(String mobile) {
+        return userRepositoryWrapper.findByPersonPhoneNumber(mobile).stream()
+                .filter(u -> u.getPerson() != null)
+                .findFirst()
+                .map(this::mapToResponse);
+    }
 
     @Override
     public UserResponse getUserById(Long userId) {
@@ -88,6 +97,38 @@ public class UserReadServiceImpl implements UserReadService {
                 .pagination(info)
                 .build();
     }
+    @Override
+    public Long getPersonIdByUsername(String username) {
+        UserResponse user = getUserByUsername(username);
+        if (user.getPersonResponse() == null || user.getPersonResponse().getId() == null) {
+            throw new BadRequestException("User has no linked person: " + username);
+        }
+        return user.getPersonResponse().getId();
+    }
+
+
+
+    @Override
+    public PersonResponse getPersonForUser(String username) {
+        Long personId = getPersonIdByUsername(username);
+        return personReadService.getPersonById(personId);
+    }
+
+
+
+    @Override
+    public List<AddressData> getAddressesForUser(String username) {
+        Long personId = getPersonIdByUsername(username);
+        return personReadService.getAddresses(personId);
+    }
+
+
+    @Override
+    public AddressData getAddressForUser(String username, String addressId) {
+        Long personId = getPersonIdByUsername(username);
+        return personReadService.getAddress(personId, addressId);
+    }
+
     private UserResponse mapToResponse(User user) {
         // Fetch PersonResponse if person is linked
         PersonResponse personResponse = null;

@@ -3,10 +3,14 @@ package com.nivasafinance.features.advisor.service;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.features.advisor.dto.*;
+import com.nivasafinance.features.advisor.entity.Advisor;
 
+import java.util.Optional;
 import java.util.UUID;
 
 public interface AdvisorReadService {
+
+    Optional<Advisor> findAdvisorByUsername(String username);
 
     AdvisorResponse getAdvisorByIdentifier(UUID identifier);
 
