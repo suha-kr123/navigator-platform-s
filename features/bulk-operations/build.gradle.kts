@@ -10,6 +10,7 @@ dependencies {
     implementation(project(":features:usermanagement"))
     implementation(project(":features:master"))
     implementation(project(":features:rolemanagement"))
+    implementation(project(":features:task"))
     implementation(project(":features:document"))
     
 

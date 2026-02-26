@@ -7,6 +7,7 @@ public enum ModuleEnum {
     MASTER,
     OFFICE,
     NOTIFICATION,
+    DEVICE,
     STAFF,
     TASK,
     WORKFLOW,
@@ -14,5 +15,6 @@ public enum ModuleEnum {
     STAGE,
     LENDER,
     CAMPAIGN,
-    DEVICE
+    BULK_OPERATION,
+    ROLE_MANAGEMENT
 }

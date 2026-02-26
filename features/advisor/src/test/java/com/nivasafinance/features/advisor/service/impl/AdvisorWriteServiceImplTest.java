@@ -668,6 +668,7 @@ class AdvisorWriteServiceImplTest {
 
             advisorWriteService.updateAdvisor(identifier, request);
 
+            @SuppressWarnings("rawtypes")
             ArgumentCaptor<SystemEvent> eventCaptor = ArgumentCaptor.forClass(SystemEvent.class);
             verify(applicationEventPublisher).publishEvent(eventCaptor.capture());
             Object payload = eventCaptor.getValue().getPayload();

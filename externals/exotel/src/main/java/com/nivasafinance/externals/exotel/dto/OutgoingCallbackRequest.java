@@ -1,8 +1,6 @@
 package com.nivasafinance.externals.exotel.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.nivasafinance.services.voice.provider.exotel.data.ExotelV3CallResponse;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

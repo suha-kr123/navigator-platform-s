@@ -14,13 +14,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -253,18 +250,5 @@ public class MasterCodeValueRepositoryWrapper {
         }
     }
 
-    private static class MasterCodeValueSearchRowMapper implements RowMapper<MasterCodeSearchResponse> {
-        @Override
-        public MasterCodeSearchResponse mapRow(ResultSet rs, int rowNum) throws SQLException {
-            return MasterCodeSearchResponse.builder()
-                    .key(rs.getString("key"))
-                    .codeKey(rs.getString("code_key"))
-                    .displayText(rs.getString("display_text"))
-                    .description(rs.getString("description"))
-                    .parentId(null)
-                    .isActive(rs.getBoolean("is_active"))
-                    .build();
-        }
-    }
 }   
 

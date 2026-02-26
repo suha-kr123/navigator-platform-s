@@ -8,11 +8,20 @@ import com.nivasafinance.features.usermanagement.entity.User;
 import com.nivasafinance.features.usermanagement.repository.UserRepositoryWrapper;
 import com.nivasafinance.features.usermanagement.service.UserReadService;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.Objects;
+import com.nivasafinance.common.base.model.PaginationRequest;
+import com.nivasafinance.common.base.model.PaginatedResponse;
+import com.nivasafinance.common.base.model.PaginationInfo;
 
 @Service
 @AllArgsConstructor
@@ -51,6 +60,34 @@ public class UserReadServiceImpl implements UserReadService {
         return userRepositoryWrapper.findByPersonPhoneNumber(phoneNumber);
     }
 
+    @Override
+    public PaginatedResponse<UserResponse> getUsers(PaginationRequest pagination, String q) {
+        int limit = Math.max(1, pagination.getLimit());
+        int pageNumber = Math.max(0, pagination.getOffset() / limit);
+        Sort.Direction dir = Sort.Direction.fromOptionalString(pagination.getSortDirection()).orElse(Sort.Direction.DESC);
+        Sort sort = Sort.by(dir, pagination.getSortBy());
+        Pageable pageable = PageRequest.of(pageNumber, limit, sort);
+        Page<User> page;
+        if (q != null && !q.isBlank()) {
+            page = userRepositoryWrapper.findByUsernameContainingIgnoreCase(q.trim(), pageable);
+        } else {
+            page = userRepositoryWrapper.findAll(pageable);
+        }
+        List<UserResponse> content = page.getContent().stream().map(this::mapToResponse).filter(Objects::nonNull).collect(Collectors.toList());
+        PaginationInfo info = PaginationInfo.builder()
+                .offset(pagination.getOffset())
+                .limit(limit)
+                .totalElements(page.getTotalElements())
+                .totalPages(page.getTotalPages())
+                .currentPage(page.getNumber())
+                .hasNext(page.hasNext())
+                .hasPrevious(page.hasPrevious())
+                .build();
+        return PaginatedResponse.<UserResponse>builder()
+                .content(content)
+                .pagination(info)
+                .build();
+    }
     private UserResponse mapToResponse(User user) {
         // Fetch PersonResponse if person is linked
         PersonResponse personResponse = null;

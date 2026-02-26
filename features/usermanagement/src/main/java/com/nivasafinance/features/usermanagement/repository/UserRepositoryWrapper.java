@@ -4,6 +4,8 @@ import com.nivasafinance.features.usermanagement.entity.User;
 import com.nivasafinance.features.usermanagement.exception.UserExceptionFactory;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
@@ -39,5 +41,12 @@ public class UserRepositoryWrapper {
     public List<User> findByPersonPhoneNumber(String phoneNumber) {
         return userRepository.findByPersonPhoneNumber(phoneNumber);
     }
+    
+    public Page<User> findAll(Pageable pageable) {
+        return userRepository.findAll(pageable);
+    }
+    
+    public Page<User> findByUsernameContainingIgnoreCase(String username, Pageable pageable) {
+        return userRepository.findByUsernameContainingIgnoreCase(username, pageable);
+    }
 }
-

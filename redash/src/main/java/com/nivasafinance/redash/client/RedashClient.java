@@ -21,4 +21,7 @@ public interface RedashClient {
 
     @GetMapping("/api/query_results/{queryResultId}.{fileExtension}")
     Response downloadQueryResult(@PathVariable("queryResultId") String queryResultId, @PathVariable("fileExtension") String fileExtension);
+
+    @GetMapping("/api/query_results/{queryResultId}.json")
+    String downloadQueryResultAsJson(@PathVariable("queryResultId") String queryResultId);
 }

@@ -4,6 +4,7 @@ import com.nivasafinance.common.annotations.RequirePermission;
 import com.nivasafinance.common.constants.ApiConstants;
 import com.nivasafinance.features.creditbureau.dto.*;
 import com.nivasafinance.features.lead.dto.EnquiryConsentStatusResponse;
+import com.nivasafinance.features.lead.dto.EnquiryDetailsResponse;
 import com.nivasafinance.features.lead.dto.InitiateCbEnquiryResponse;
 import com.nivasafinance.features.lead.service.LeadCreditBureauReadService;
 import com.nivasafinance.features.lead.service.LeadCreditBureauWriteService;
@@ -31,6 +32,16 @@ public class LeadCreditBureauController {
             @PathVariable UUID contactIdentifier) {
         InitiateCbEnquiryResponse response = leadCreditBureauWriteService.initiateEnquiry(leadIdentifier, contactIdentifier);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping("/enquiry")
+    @RequirePermission(permissionName = "READ_LEAD_CREDIT_DETAILS")
+    public ResponseEntity<EnquiryDetailsResponse> getEnquiryDetails(
+            @PathVariable UUID leadIdentifier,
+            @PathVariable UUID contactIdentifier) {
+        return leadCreditBureauReadService.getEnquiryDetailsForContact(leadIdentifier, contactIdentifier)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/enquiry/{enquiryIdentifier}/customer-enquiry")

@@ -6,12 +6,15 @@ import com.nivasafinance.features.consent.service.ConsentReadService;
 import com.nivasafinance.features.creditbureau.dto.*;
 import com.nivasafinance.features.creditbureau.entity.CreditBureauEnquiry;
 import com.nivasafinance.features.creditbureau.service.CreditBureauReadService;
+import com.nivasafinance.features.lead.dto.EnquiryDetailsResponse;
 import com.nivasafinance.features.lead.dto.EnquiryConsentStatusResponse;
 import com.nivasafinance.features.lead.entity.Contact;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.repository.ContactRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadCreditBureauReadService;
+import com.nivasafinance.features.person.dto.PersonResponse;
+import com.nivasafinance.features.person.service.PersonReadService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +33,38 @@ public class LeadCreditBureauReadServiceImpl implements LeadCreditBureauReadServ
     private final ConsentReadService consentReadService;
     private final LeadRepositoryWrapper leadRepositoryWrapper;
     private final ContactRepositoryWrapper contactRepositoryWrapper;
+    private final PersonReadService personReadService;
+
+    @Override
+    public Optional<EnquiryDetailsResponse> getEnquiryDetailsForContact(UUID leadIdentifier, UUID contactIdentifier) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        Contact contact = contactRepositoryWrapper.findByIdentifierWithException(contactIdentifier);
+        validateContactBelongsToLead(lead, contact.getId());
+
+        PersonResponse personResponse = personReadService.getPersonById(contact.getPersonId());
+        if (personResponse.getCbDetails() == null || personResponse.getCbDetails().getLatestEnquiryId() == null) {
+            return Optional.empty();
+        }
+
+        Long latestEnquiryId = personResponse.getCbDetails().getLatestEnquiryId();
+        if (CollectionUtils.isEmpty(contact.getCbEnquiryId()) || !contact.getCbEnquiryId().contains(latestEnquiryId)) {
+            return Optional.empty();
+        }
+
+        CreditBureauEnquiry enquiry = creditBureauReadService.getCbEnquiryEntityById(latestEnquiryId);
+
+        EnquiryDetailsResponse.EnquiryDetailsResponseBuilder builder = EnquiryDetailsResponse.builder()
+                .enquiryIdentifier(enquiry.getIdentifier())
+                .enquiryStatus(enquiry.getStatus());
+
+        if (enquiry.getConsentId() == null) {
+            return Optional.of(builder.consentStatus(null).build());
+        }
+
+        return consentReadService.findById(enquiry.getConsentId())
+                .map(consent -> builder.consentStatus(consent.getStatus()).build())
+                .or(() -> Optional.of(builder.consentStatus(null).build()));
+    }
 
     @Override
     public List<CustomerEnquiryResponse> getCustomerEnquiryByEnquiryIdentifier(UUID leadIdentifier, UUID contactIdentifier, UUID enquiryIdentifier) {

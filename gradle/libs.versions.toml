@@ -30,6 +30,9 @@ protobuf-java = "4.28.2"
 # Apache POI for Excel
 poi = "5.2.5"
 
+# GoRules ZEN Engine
+zen-engine = "0.4.7"
+
 # versions
 commons-csv = "1.14.1"
 
@@ -78,6 +81,8 @@ junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "jun
 lombok = { module = "org.projectlombok:lombok", version.ref = "lombok-ver" }
 # csv
 commons-csv = { module = "org.apache.commons:commons-csv", version.ref = "commons-csv" }
+# GoRules ZEN Engine
+zen-engine = { module = "io.gorules:zen-engine", version.ref = "zen-engine" }
 
 
 [bundles]
