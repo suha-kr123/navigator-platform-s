@@ -10,6 +10,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -165,6 +166,27 @@ public class GlobalExceptionHandler {
         apiError.setError("Invalid format: " + ex.getMessage());
         apiError.setStatusCode(HttpStatus.BAD_REQUEST);
         apiError.setErrorCode("INVALID_FORMAT");
+        apiError.setRequestId(requestId);
+        apiError.setPath(path);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(apiError);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiError> handleMethodArgumentTypeMismatchException(
+            MethodArgumentTypeMismatchException ex, WebRequest request) {
+        String requestId = generateRequestId();
+        String path = request.getDescription(false);
+        String parameterName = ex.getName();
+        String errorMessage = String.format("Invalid value for parameter '%s': %s. Expected type: %s", 
+                parameterName, ex.getValue(), ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "unknown");
+        
+        logger.warn("Invalid path parameter - RequestId: {}, Path: {}, Parameter: {}, Value: {}, Error: {}", 
+                requestId, path, parameterName, ex.getValue(), ex.getMessage());
+        
+        ApiError apiError = new ApiError();
+        apiError.setError(errorMessage);
+        apiError.setStatusCode(HttpStatus.BAD_REQUEST);
+        apiError.setErrorCode("INVALID_PATH_PARAMETER");
         apiError.setRequestId(requestId);
         apiError.setPath(path);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(apiError);
