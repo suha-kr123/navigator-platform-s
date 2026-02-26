@@ -4,6 +4,8 @@ import com.nivasafinance.features.rolemanagement.exception.RoleManagementExcepti
 import com.nivasafinance.features.rolemanagement.permissiongroup.entity.PermissionGroup;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -19,6 +21,14 @@ public class PermissionGroupRepositoryWrapper {
         return repository.findAll();
     }
     
+    public Page<PermissionGroup> findAll(Pageable pageable) {
+        return repository.findAll(pageable);
+    }
+    
+    public Page<PermissionGroup> findByNameContainingIgnoreCase(String name, Pageable pageable) {
+        return repository.findByNameContainingIgnoreCase(name, pageable);
+    }
+    
     public PermissionGroup findById(Long id) {
         return repository.findById(id).orElse(null);
     }
@@ -31,4 +41,3 @@ public class PermissionGroupRepositoryWrapper {
         return group;
     }
 }
-
