@@ -2,9 +2,10 @@ package com.nivasafinance.features.lender.lenderoffice.entity;
 
 import com.nivasafinance.common.audit.AuditableEntity;
 import com.nivasafinance.common.dto.AddressData;
+import com.nivasafinance.features.lender.lenderoffice.converter.AddressDetailsConverter;
 import com.nivasafinance.features.lender.lenderoffice.enums.LenderOfficeStatus;
-import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -17,9 +18,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.annotations.Type;
-import org.hibernate.type.SqlTypes;
 
 import java.util.UUID;
 
@@ -44,8 +42,7 @@ public class LenderOffice extends AuditableEntity {
     @Column(name = "lender_key", nullable = false, length = 20)
     private String lenderKey;
 
-    @Type(JsonType.class)
-    @JdbcTypeCode(SqlTypes.JSON)
+    @Convert(converter = AddressDetailsConverter.class)
     @Column(name = "address", columnDefinition = "jsonb")
     private AddressDetails addressDetails;
 
