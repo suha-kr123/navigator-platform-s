@@ -18,6 +18,8 @@ dependencies {
     implementation(project(":features:call"))
     implementation(project(":features:usermanagement"))
     implementation(project(":features:referral"))
+    implementation(project(":features:lead"))
+    implementation(project(":features:rolemanagement"))
 }
 
 springBoot {

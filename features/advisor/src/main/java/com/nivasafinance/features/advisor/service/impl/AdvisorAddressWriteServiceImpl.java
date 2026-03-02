@@ -7,6 +7,7 @@ import com.nivasafinance.common.events.BusinessEvent;
 import com.nivasafinance.common.events.SystemEvent;
 import com.nivasafinance.common.events.payload.AdvisorUpdateEventPayload;
 import com.nivasafinance.features.advisor.entity.Advisor;
+import com.nivasafinance.features.advisor.exception.AdvisorExceptionFactory;
 import com.nivasafinance.features.advisor.repository.AdvisorRepositoryWrapper;
 import com.nivasafinance.features.advisor.service.AdvisorAddressWriteService;
 import com.nivasafinance.features.person.dto.PersonResponse;
@@ -14,6 +15,7 @@ import com.nivasafinance.features.usermanagement.service.UserReadService;
 import com.nivasafinance.features.usermanagement.service.UserWriteService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +30,7 @@ public class AdvisorAddressWriteServiceImpl implements AdvisorAddressWriteServic
     private final UserWriteService userWriteService;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final UserReadService userReadService;
+    private final MessageSource messageSource;
 
     @Override
     public String addAddress(UUID advisorIdentifier, AddressRequest request) {
@@ -41,6 +44,11 @@ public class AdvisorAddressWriteServiceImpl implements AdvisorAddressWriteServic
 
     @Override
     public AddressData updateAddress(UUID advisorIdentifier, String addressId, AddressRequest request) {
+        if (request.getAddress() == null || request.getAddress().isBlank()
+                || request.getPincode() == null
+                || request.getPincode().getPincode() == null || request.getPincode().getPincode().isBlank()) {
+            throw AdvisorExceptionFactory.addressRequiredFieldsCannotBeCleared(messageSource);
+        }
         Advisor advisor = advisorRepositoryWrapper.findByIdentifierWithException(advisorIdentifier);
         AddressData result = userWriteService.updateAddressForUser(advisor.getUsername(), addressId, request);
 

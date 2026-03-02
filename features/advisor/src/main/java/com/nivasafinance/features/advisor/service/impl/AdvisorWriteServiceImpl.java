@@ -12,12 +12,13 @@ import com.nivasafinance.features.advisor.enums.AdvisorStatus;
 import com.nivasafinance.features.advisor.repository.AdvisorRepositoryWrapper;
 import com.nivasafinance.features.advisor.service.AdvisorWriteService;
 import com.nivasafinance.features.offices.service.OfficeReadService;
-import com.nivasafinance.features.referral.dto.ReferralCodeRegistryResponse;
 import com.nivasafinance.features.usermanagement.service.UserReadService;
 import com.nivasafinance.features.usermanagement.service.UserWriteService;
 import com.nivasafinance.features.referral.dto.ReferralCodeRegistryResponse;
 import com.nivasafinance.features.referral.enums.EntityType;
 import com.nivasafinance.features.referral.service.ReferralCodeRegistryService;
+import com.nivasafinance.features.rolemanagement.admin.service.AdminUserRoleService;
+import com.nivasafinance.features.rolemanagement.role.dto.AddUserRolesRequest;
 import com.nivasafinance.features.person.dto.PersonCreateRequest;
 import com.nivasafinance.features.person.dto.PersonUpdateRequest;
 import com.nivasafinance.features.sourcechannel.dto.SourcingChannelRequest;
@@ -59,6 +60,9 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
     private final ReferralCodeRegistryService referralCodeRegistryService;
     private final UserReadService userReadService;
     private final UserWriteService userWriteService;
+    private final AdminUserRoleService adminUserRoleService;
+
+    private static final String ROLE_ADVISOR_SELF = "ADVISOR_SELF";
 
     @Override
     public UUID createAdvisor(CreateAdvisorRequest request) {
@@ -112,6 +116,12 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
         Advisor savedAdvisor = advisorRepositoryWrapper.saveWithException(advisor);
 
         handleSourcingChannel(savedAdvisor, request.getSourcingChannelRequest());
+
+        // addUserRoles with primaryRole invokes setPrimaryRole internally, which sets any existing primary to isPrimary=false before setting the new one.
+        AddUserRolesRequest roleRequest = new AddUserRolesRequest();
+        roleRequest.setRoles(Collections.singletonList(ROLE_ADVISOR_SELF));
+        roleRequest.setPrimaryRole(ROLE_ADVISOR_SELF);
+        adminUserRoleService.addUserRoles(savedAdvisor.getUsername(), roleRequest);
 
         // Publish ADVISOR_CREATED event
         AdvisorCreationEventPayload payload = AdvisorCreationEventPayload.builder()
@@ -255,9 +265,7 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
             qualificationDetails = new QualificationDetails();
         }
 
-        if (request.getHighestQualification() != null) {
         qualificationDetails.setHighestQualification(request.getHighestQualification());
-        }
         advisor.setQualificationDetails(qualificationDetails);
 
         advisorRepositoryWrapper.saveWithException(advisor);
@@ -306,12 +314,8 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
             otherDetails = new OtherDetails();
         }
 
-        if (request.getOccupationType() != null) {
         otherDetails.setOccupationType(request.getOccupationType());
-        }
-        if (request.getOccupation() != null) {
         otherDetails.setOccupation(request.getOccupation());
-        }
         advisor.setOtherDetails(otherDetails);
 
         advisorRepositoryWrapper.saveWithException(advisor);
@@ -503,11 +507,13 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
     private PersonUpdateRequest buildPersonUpdateRequest(UpdateAdvisorRequest request) {
         PersonUpdateRequest personRequest = new PersonUpdateRequest();
 
-        // Map mobile numbers
-        if (request.getMobileNumberDetails() != null) {
+        // Map mobile numbers (from mobileNumberDetails or from personalDetails.mobileNumbers e.g. Self API)
+        if (request.getMobileNumberDetails() != null && !request.getMobileNumberDetails().isEmpty()) {
             List<com.nivasafinance.features.person.entity.MobileNumberDetails> mobiles =
                     mapUpdateMobileNumbers(request.getMobileNumberDetails());
             personRequest.setMobileNumbers(mobiles);
+        } else if (request.getPersonalDetails() != null && request.getPersonalDetails().getMobileNumbers() != null) {
+            personRequest.setMobileNumbers(request.getPersonalDetails().getMobileNumbers());
         }
 
         // Map personal details

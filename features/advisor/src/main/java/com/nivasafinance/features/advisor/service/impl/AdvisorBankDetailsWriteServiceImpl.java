@@ -9,6 +9,7 @@ import com.nivasafinance.features.advisor.dto.BankDetails;
 import com.nivasafinance.features.advisor.dto.UpdateBankDetailsRequest;
 import com.nivasafinance.features.advisor.entity.Advisor;
 import com.nivasafinance.features.advisor.enums.BankDetailsStatus;
+import com.nivasafinance.features.advisor.exception.AdvisorExceptionFactory;
 import com.nivasafinance.features.advisor.repository.AdvisorRepositoryWrapper;
 import com.nivasafinance.features.advisor.service.AdvisorBankDetailsWriteService;
 import com.nivasafinance.features.master.codemaster.SystemControlledMasterCodes;
@@ -18,6 +19,7 @@ import com.nivasafinance.features.person.dto.PersonResponse;
 import com.nivasafinance.features.usermanagement.service.UserReadService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +36,7 @@ public class AdvisorBankDetailsWriteServiceImpl implements AdvisorBankDetailsWri
     private final CodeMasterService codeMasterService;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final UserReadService userReadService;
+    private final MessageSource messageSource;
 
     @Override
     public UUID addBankDetails(UUID advisorIdentifier, AddBankDetailsRequest request) {
@@ -76,6 +79,13 @@ public class AdvisorBankDetailsWriteServiceImpl implements AdvisorBankDetailsWri
     public void updateBankDetails(UUID advisorIdentifier, UUID bankIdentifier, UpdateBankDetailsRequest request) {
         Advisor advisor = getAdvisor(advisorIdentifier);
         BankDetails bankDetail = getBankDetail(advisor, bankIdentifier);
+
+        if (request.getNameAsPerPassbook() == null || request.getNameAsPerPassbook().isBlank()
+                || request.getAccountNo() == null || request.getAccountNo().isBlank()
+                || request.getIfscCode() == null || request.getIfscCode().isBlank()
+                || request.getBankName() == null || request.getBankName().isBlank()) {
+            throw AdvisorExceptionFactory.bankDetailsRequiredFieldsMissing(messageSource);
+        }
 
         if (request.getBankName() != null) {
             validateBankName(request.getBankName());

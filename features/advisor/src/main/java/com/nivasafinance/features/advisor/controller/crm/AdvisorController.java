@@ -1,4 +1,4 @@
-package com.nivasafinance.features.advisor.controller;
+package com.nivasafinance.features.advisor.controller.crm;
 
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;

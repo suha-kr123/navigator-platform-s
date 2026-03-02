@@ -51,10 +51,38 @@ public final class AdvisorExceptionFactory {
         return new AdvisorOperationException("error.advisor.operation.no.current.user", messageSource);
     }
 
+    public static AdvisorOperationException notFoundForCurrentUser(MessageSource messageSource) {
+        return new AdvisorOperationException("error.advisor.not.found.for.current.user", messageSource);
+    }
+
     public static BadRequestException notFoundByReferralTrackingCode(String referralTrackingCode, MessageSource messageSource) {
         return new BadRequestException(ExceptionUtils.createLocalizedMessage(
                 "error.advisor.not.found.by.referral.tracking.code",
                 new Object[]{referralTrackingCode},
+                messageSource
+        ));
+    }
+
+    public static BadRequestException bankDetailsRequiredFieldsMissing(MessageSource messageSource) {
+        return new BadRequestException(ExceptionUtils.createLocalizedMessage(
+                "error.advisor.bank.details.required.fields",
+                new Object[0],
+                messageSource
+        ));
+    }
+
+    public static BadRequestException personalDetailsMobileNumbersRequired(MessageSource messageSource) {
+        return new BadRequestException(ExceptionUtils.createLocalizedMessage(
+                "error.advisor.self.personalDetails.mobileNumbers.required",
+                new Object[0],
+                messageSource
+        ));
+    }
+
+    public static BadRequestException addressRequiredFieldsCannotBeCleared(MessageSource messageSource) {
+        return new BadRequestException(ExceptionUtils.createLocalizedMessage(
+                "error.advisor.address.required.fields",
+                new Object[0],
                 messageSource
         ));
     }

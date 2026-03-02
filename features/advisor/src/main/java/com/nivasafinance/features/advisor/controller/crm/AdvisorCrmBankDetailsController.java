@@ -1,4 +1,4 @@
-package com.nivasafinance.features.advisor.controller;
+package com.nivasafinance.features.advisor.controller.crm;
 
 import com.nivasafinance.common.constants.ApiConstants;
 import com.nivasafinance.features.advisor.dto.*;
@@ -18,7 +18,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping(ApiConstants.V1 + "/advisors")
 @RequiredArgsConstructor
-public class AdvisorBankDetailsController {
+public class AdvisorCrmBankDetailsController {
 
     private final AdvisorBankDetailsWriteService advisorBankDetailsWriteService;
     private final AdvisorBankDetailsReadService advisorBankDetailsReadService;
