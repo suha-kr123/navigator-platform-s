@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1769700000100_53a" author="system" context="default">
+        <comment>Guardrail: enforce campaign status at DB level</comment>
+        <sql>ALTER TABLE n_campaign ADD CONSTRAINT chk_n_campaign_status CHECK (status IN ('DRAFT', 'CANCELLED', 'SUBMISSION_IN_PROGRESS', 'SUBMITTED', 'IN_PROGRESS', 'COMPLETED', 'FAILED', 'PAUSED'))</sql>
+    </changeSet>
+    <changeSet id="V1769700000100_53b" author="system" context="default">
+        <comment>Guardrail: enforce campaign_config status at DB level</comment>
+        <sql>ALTER TABLE n_campaign_config ADD CONSTRAINT chk_n_campaign_config_status CHECK (status IN ('ACTIVE', 'INACTIVE'))</sql>
+    </changeSet>
+
+</databaseChangeLog>

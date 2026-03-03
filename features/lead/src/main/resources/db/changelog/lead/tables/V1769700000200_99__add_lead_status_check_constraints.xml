@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1769700000200_99" author="system" context="default">
+        <comment>Guardrail: enforce lead status allowed values (ACTIVE, REJECTED, WITHDRAWN, COMPLETED) at DB level</comment>
+        <sql>ALTER TABLE n_lead ADD CONSTRAINT chk_n_lead_status CHECK (status IS NULL OR status IN ('ACTIVE', 'REJECTED', 'WITHDRAWN', 'COMPLETED'))</sql>
+    </changeSet>
+    <changeSet id="V1769700000200_99b" author="system" context="default">
+        <comment>Guardrail: enforce lead substatus allowed values (ONHOLD, DROPOFF) at DB level</comment>
+        <sql>ALTER TABLE n_lead ADD CONSTRAINT chk_n_lead_substatus CHECK (substatus IS NULL OR substatus IN ('ONHOLD', 'DROPOFF'))</sql>
+    </changeSet>
+
+</databaseChangeLog>

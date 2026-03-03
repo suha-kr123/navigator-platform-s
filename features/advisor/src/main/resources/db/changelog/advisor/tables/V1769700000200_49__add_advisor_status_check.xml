@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1769700000200_49" author="system" context="default">
+        <comment>Guardrail: enforce advisor status allowed values at DB level</comment>
+        <sql>ALTER TABLE n_advisor ADD CONSTRAINT chk_n_advisor_status CHECK (status IN ('CREATED', 'ACTIVE', 'REJECTED', 'DORMANT', 'OUT_OF_GEO'))</sql>
+    </changeSet>
+
+</databaseChangeLog>
