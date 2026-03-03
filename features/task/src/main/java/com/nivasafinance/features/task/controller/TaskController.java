@@ -25,8 +25,12 @@ import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.format.annotation.DateTimeFormat.ISO;
 
 @RestController
 @RequestMapping(ApiConstants.V1 + "/tasks")
@@ -41,9 +45,11 @@ public class TaskController {
     @RequirePermission(permissionName = "READ_TASK")
     public ResponseEntity<PaginatedResponse<TaskResponse>> getTasksAssignedToMe(
             @RequestParam(defaultValue = "false") boolean includeCompleted,
+            @RequestParam(required = false) @DateTimeFormat(iso = ISO.DATE) LocalDate dueDateFrom,
+            @RequestParam(required = false) @DateTimeFormat(iso = ISO.DATE) LocalDate dueDateTo,
             @Valid PaginationRequest paginationRequest) {
         String currentUsername = UserContext.getUsername();
-        return ResponseEntity.ok(taskReadService.getTasksByAssignedTo(currentUsername, includeCompleted, paginationRequest));
+        return ResponseEntity.ok(taskReadService.getTasksByAssignedTo(currentUsername, includeCompleted, dueDateFrom, dueDateTo, paginationRequest));
     }
 
     @PostMapping("/bulk-reassign")
