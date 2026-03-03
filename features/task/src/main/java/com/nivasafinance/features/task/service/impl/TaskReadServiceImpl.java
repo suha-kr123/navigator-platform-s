@@ -42,9 +42,9 @@ public class TaskReadServiceImpl implements TaskReadService {
 
     @Override
     public PaginatedResponse<TaskResponse> getTasksByAssignedTo(String assignedTo, boolean includeCompleted,
-            PaginationRequest paginationRequest) {
+            java.time.LocalDate dueDateFrom, java.time.LocalDate dueDateTo, PaginationRequest paginationRequest) {
         PaginatedResponse<TaskResponse> repoResponse = taskRepositoryWrapper.findTasksByAssignedToPaginated(assignedTo,
-                includeCompleted, paginationRequest);
+                includeCompleted, dueDateFrom, dueDateTo, paginationRequest);
         List<TaskResponse> tasks = repoResponse.getContent();
 
         try {

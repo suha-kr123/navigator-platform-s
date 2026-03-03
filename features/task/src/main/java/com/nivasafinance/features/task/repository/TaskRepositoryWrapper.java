@@ -15,10 +15,11 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import com.nivasafinance.features.task.repository.mapper.TaskResponseRowMapper;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.ArrayList;
 
 @Service
 @RequiredArgsConstructor
@@ -74,31 +75,45 @@ public class TaskRepositoryWrapper {
         return total != null ? total : 0L;
     }
 
-    public Long countTasksByAssignedTo(String assignedTo, boolean includeCompleted) {
+    public Long countTasksByAssignedTo(String assignedTo, boolean includeCompleted,
+            LocalDate dueDateFrom, LocalDate dueDateTo) {
         List<Object> params = new ArrayList<>();
         StringBuilder where = new StringBuilder("WHERE t.assigned_to = ? ");
         params.add(assignedTo);
         if (!includeCompleted) {
             where.append("AND t.outcome IS NULL ");
         }
+        appendDueDateFilter(where, params, dueDateFrom, dueDateTo);
         String countQuery = COUNT_QUERY_PREFIX + where;
         Long total = jdbcTemplate.queryForObject(countQuery, Long.class, params.toArray());
         return total != null ? total : 0L;
     }
 
     public java.util.List<TaskResponse> findTasksByAssignedTo(String assignedTo, boolean includeCompleted,
-            PaginationRequest paginationRequest) {
+            LocalDate dueDateFrom, LocalDate dueDateTo, PaginationRequest paginationRequest) {
         List<Object> params = new ArrayList<>();
         StringBuilder where = new StringBuilder("WHERE t.assigned_to = ? ");
         params.add(assignedTo);
         if (!includeCompleted) {
             where.append("AND t.outcome IS NULL ");
         }
+        appendDueDateFilter(where, params, dueDateFrom, dueDateTo);
         String orderBy = buildOrderByClause(paginationRequest);
         params.add(paginationRequest.getLimit());
         params.add(paginationRequest.getOffset());
         String query = BASE_QUERY + where + orderBy + " LIMIT ? OFFSET ?";
         return jdbcTemplate.query(query, new TaskResponseRowMapper(objectMapper), params.toArray());
+    }
+
+    private void appendDueDateFilter(StringBuilder where, List<Object> params, LocalDate dueDateFrom, LocalDate dueDateTo) {
+        if (dueDateFrom != null) {
+            where.append("AND t.due_at >= ? ");
+            params.add(java.sql.Timestamp.valueOf(dueDateFrom.atStartOfDay()));
+        }
+        if (dueDateTo != null) {
+            where.append("AND t.due_at < ? ");
+            params.add(java.sql.Timestamp.valueOf(dueDateTo.plusDays(1).atStartOfDay()));
+        }
     }
 
     public java.util.List<TaskResponse> findAdhocTasksByEntity(EntityType entityType, UUID entityId) {
@@ -212,9 +227,10 @@ public class TaskRepositoryWrapper {
     }
 
     public PaginatedResponse<TaskResponse> findTasksByAssignedToPaginated(
-            String assignedTo, boolean includeCompleted, PaginationRequest paginationRequest) {
-        Long totalElements = countTasksByAssignedTo(assignedTo, includeCompleted);
-        java.util.List<TaskResponse> tasks = findTasksByAssignedTo(assignedTo, includeCompleted, paginationRequest);
+            String assignedTo, boolean includeCompleted, LocalDate dueDateFrom, LocalDate dueDateTo,
+            PaginationRequest paginationRequest) {
+        Long totalElements = countTasksByAssignedTo(assignedTo, includeCompleted, dueDateFrom, dueDateTo);
+        java.util.List<TaskResponse> tasks = findTasksByAssignedTo(assignedTo, includeCompleted, dueDateFrom, dueDateTo, paginationRequest);
         return buildPaginatedResponse(tasks, paginationRequest, totalElements);
     }
 
