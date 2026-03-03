@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1769700000100_22" author="system" context="default">
+        <comment>Guardrail: enforce person gender allowed values (MALE, FEMALE) at DB level</comment>
+        <sql>ALTER TABLE n_person ADD CONSTRAINT chk_n_person_gender CHECK (gender IS NULL OR gender IN ('MALE', 'FEMALE'))</sql>
+    </changeSet>
+
+</databaseChangeLog>

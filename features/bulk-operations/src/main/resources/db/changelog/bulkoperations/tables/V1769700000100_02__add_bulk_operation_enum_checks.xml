@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1769700000100_02a" author="system" context="default">
+        <comment>Guardrail: enforce bulk_operation operation_type at DB level</comment>
+        <sql>ALTER TABLE n_bulk_operation ADD CONSTRAINT chk_n_bulk_operation_type CHECK (operation_type IN ('DROPOFF', 'ONHOLD', 'REJECTED', 'SUBSTAGE_CHANGE', 'STAGE_ASSIGNMENT_CHANGE', 'TASK_REASSIGN'))</sql>
+    </changeSet>
+    <changeSet id="V1769700000100_02b" author="system" context="default">
+        <comment>Guardrail: enforce bulk_operation status at DB level</comment>
+        <sql>ALTER TABLE n_bulk_operation ADD CONSTRAINT chk_n_bulk_operation_status CHECK (status IN ('UPLOADED', 'UPLOADED_DRY_RUN', 'VALIDATION_IN_PROGRESS', 'VALIDATION_IN_PROGRESS_DRY_RUN', 'VALIDATED', 'VALIDATED_DRY_RUN', 'VALIDATION_FAILED', 'PROCESSING_IN_PROGRESS', 'COMPLETED', 'PARTIALLY_COMPLETED', 'FAILED', 'CANCELLED', 'DRY_RUN_COMPLETED'))</sql>
+    </changeSet>
+
+</databaseChangeLog>

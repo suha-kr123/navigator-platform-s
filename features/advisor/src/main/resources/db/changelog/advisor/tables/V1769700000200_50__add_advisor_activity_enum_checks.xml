@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1769700000200_50a" author="system" context="default">
+        <comment>Guardrail: enforce advisor_activity resource_type at DB level</comment>
+        <sql>ALTER TABLE n_advisor_activity ADD CONSTRAINT chk_n_advisor_activity_resource_type CHECK (resource_type IS NULL OR resource_type IN ('ADVISOR', 'NOTES', 'CALL_LOG'))</sql>
+    </changeSet>
+    <changeSet id="V1769700000200_50b" author="system" context="default">
+        <comment>Guardrail: enforce advisor_activity resource_action at DB level</comment>
+        <sql>ALTER TABLE n_advisor_activity ADD CONSTRAINT chk_n_advisor_activity_resource_action CHECK (resource_action IS NULL OR resource_action IN ('CREATE', 'UPDATE', 'DELETE', 'STATUS_CHANGE'))</sql>
+    </changeSet>
+
+</databaseChangeLog>

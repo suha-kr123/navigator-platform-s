@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1769700000100_88" author="system" context="default">
+        <comment>Guardrail: enforce lender status allowed values (ACTIVE, INACTIVE) at DB level</comment>
+        <sql>UPDATE n_lender SET status = 'INACTIVE' WHERE status IS NOT NULL AND status NOT IN ('ACTIVE', 'INACTIVE')</sql>
+        <sql>ALTER TABLE n_lender ADD CONSTRAINT chk_n_lender_status CHECK (status IN ('ACTIVE', 'INACTIVE'))</sql>
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1769700000100_12a" author="system" context="default">
+        <comment>Guardrail: enforce call_log provider at DB level</comment>
+        <sql>ALTER TABLE n_call_log ADD CONSTRAINT chk_n_call_log_provider CHECK (provider IN ('EXOTEL'))</sql>
+    </changeSet>
+    <changeSet id="V1769700000100_12b" author="system" context="default">
+        <comment>Guardrail: enforce call_log direction at DB level</comment>
+        <sql>ALTER TABLE n_call_log ADD CONSTRAINT chk_n_call_log_direction CHECK (direction IS NULL OR direction IN ('OUTBOUND', 'INBOUND'))</sql>
+    </changeSet>
+    <changeSet id="V1769700000100_12c" author="system" context="default">
+        <comment>Guardrail: enforce call_log source at DB level</comment>
+        <sql>ALTER TABLE n_call_log ADD CONSTRAINT chk_n_call_log_source CHECK (source IS NULL OR source IN ('CRM', 'API'))</sql>
+    </changeSet>
+    <changeSet id="V1769700000100_12d" author="system" context="default">
+        <comment>Guardrail: enforce call_log status at DB level</comment>
+        <sql>ALTER TABLE n_call_log ADD CONSTRAINT chk_n_call_log_status CHECK (status IS NULL OR status IN ('QUEUED', 'IN_PROGRESS', 'COMPLETED', 'FAILED', 'BUSY', 'NO_ANSWER'))</sql>
+    </changeSet>
+
+</databaseChangeLog>

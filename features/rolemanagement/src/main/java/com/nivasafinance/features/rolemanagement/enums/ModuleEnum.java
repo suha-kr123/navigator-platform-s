@@ -16,5 +16,6 @@ public enum ModuleEnum {
     LENDER,
     CAMPAIGN,
     BULK_OPERATION,
-    ROLE_MANAGEMENT
+    ROLE_MANAGEMENT,
+    BRE
 }

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1769700000200_59" author="system" context="default">
+        <comment>Guardrail: enforce lead lender status allowed values (SELECTED, SUBMITTED, REJECTED) at DB level</comment>
+        <sql>ALTER TABLE n_lead_lender ADD CONSTRAINT chk_n_lead_lender_status CHECK (status IN ('SELECTED', 'SUBMITTED', 'REJECTED'))</sql>
+    </changeSet>
+
+</databaseChangeLog>
