@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1769700000100_consent_status" author="system" context="default">
+        <comment>Guardrail: enforce consent status allowed values at DB level</comment>
+        <sql>ALTER TABLE n_consent ADD CONSTRAINT chk_n_consent_status CHECK (status IS NULL OR status IN ('SENT', 'RECEIVED', 'WITHDRAWN', 'REQUEST_FOR_WITHDRAWAL'))</sql>
+    </changeSet>
+
+</databaseChangeLog>

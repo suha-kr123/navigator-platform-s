@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1769700000200_84a" author="system" context="default">
+        <comment>Guardrail: enforce lead_activity resource_type at DB level</comment>
+        <sql>ALTER TABLE n_lead_activity ADD CONSTRAINT chk_n_lead_activity_resource_type CHECK (resource_type IS NULL OR resource_type IN ('LEAD', 'NOTES', 'DOCUMENTS', 'CONTACT', 'CALL_LOG', 'LENDER'))</sql>
+    </changeSet>
+    <changeSet id="V1769700000200_84b" author="system" context="default">
+        <comment>Guardrail: enforce lead_activity resource_action at DB level</comment>
+        <sql>ALTER TABLE n_lead_activity ADD CONSTRAINT chk_n_lead_activity_resource_action CHECK (resource_action IS NULL OR resource_action IN ('CREATE', 'UPDATE', 'DELETE', 'STATUS_CHANGE'))</sql>
+    </changeSet>
+
+</databaseChangeLog>

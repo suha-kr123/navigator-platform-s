@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1769700000100_05" author="system" context="default">
+        <comment>Guardrail: enforce referral entity_type allowed values (ADVISOR, STAFF, APPLICANT) at DB level</comment>
+        <sql>ALTER TABLE n_referral_code_registry ADD CONSTRAINT chk_n_referral_code_registry_entity_type CHECK (entity_type IS NULL OR entity_type IN ('ADVISOR', 'STAFF', 'APPLICANT'))</sql>
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1769700000100_17a" author="system" context="default">
+        <comment>Guardrail: enforce notification_record status at DB level</comment>
+        <sql>ALTER TABLE n_notification_record ADD CONSTRAINT chk_n_notification_record_status CHECK (status IN ('INITIATED', 'PROCESSING', 'COMPLETED', 'FAILED', 'PARTIALLY_COMPLETED', 'CANCELLED', 'SKIPPED'))</sql>
+    </changeSet>
+    <changeSet id="V1769700000100_17b" author="system" context="default">
+        <comment>Guardrail: enforce notification_receipt status at DB level</comment>
+        <sql>ALTER TABLE n_notification_receipt ADD CONSTRAINT chk_n_notification_receipt_status CHECK (status IN ('INITIATED', 'PROCESSING', 'COMPLETED', 'FAILED', 'PARTIALLY_COMPLETED', 'CANCELLED', 'SKIPPED'))</sql>
+    </changeSet>
+    <changeSet id="V1769700000100_17c" author="system" context="default">
+        <comment>Guardrail: enforce app_notification status at DB level</comment>
+        <sql>ALTER TABLE n_app_notification ADD CONSTRAINT chk_n_app_notification_status CHECK (status IN ('SENT', 'FAILED'))</sql>
+    </changeSet>
+    <changeSet id="V1769700000100_17d" author="system" context="default">
+        <comment>Guardrail: enforce device platform at DB level</comment>
+        <sql>ALTER TABLE n_device ADD CONSTRAINT chk_n_device_platform CHECK (platform IN ('ANDROID'))</sql>
+    </changeSet>
+    <changeSet id="V1769700000100_17e" author="system" context="default">
+        <comment>Guardrail: enforce lead_whatsapp_notification status at DB level</comment>
+        <sql>ALTER TABLE n_lead_whatsapp_notification ADD CONSTRAINT chk_n_lead_whatsapp_status CHECK (status IN ('SENT', 'DELIVERED', 'FAILED', 'REPLIED'))</sql>
+    </changeSet>
+    <changeSet id="V1769700000100_17f" author="system" context="default">
+        <comment>Guardrail: enforce advisor_whatsapp_notification status at DB level</comment>
+        <sql>ALTER TABLE n_advisor_whatsapp_notification ADD CONSTRAINT chk_n_advisor_whatsapp_status CHECK (status IN ('SENT', 'DELIVERED', 'FAILED', 'REPLIED'))</sql>
+    </changeSet>
+
+</databaseChangeLog>
