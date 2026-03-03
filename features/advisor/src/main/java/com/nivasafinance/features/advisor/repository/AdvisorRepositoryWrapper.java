@@ -131,6 +131,49 @@ public class AdvisorRepositoryWrapper {
     }
 
     /**
+     * Find the latest advisor by mobile number (no office hierarchy filtering).
+     * For use in open API flows where staff context is not available.
+     *
+     * @param mobileNo 10-digit mobile number
+     * @return Optional with AdvisorBasicResponse if found, empty otherwise
+     */
+    public Optional<AdvisorBasicResponse> findAdvisorByMobileNo(String mobileNo) {
+        if (!StringUtils.hasText(mobileNo)) {
+            return Optional.empty();
+        }
+        String phoneJson = buildPhoneNumberJsonb(mobileNo.trim());
+        String sql = """
+            SELECT a.identifier as advisor_identifier,
+                p.display_name as person_name,
+                (jsonb_path_query_first(COALESCE(p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') AS mobile_number,
+                a.status,
+                a.created_at,
+                a.updated_at,
+                a.office_key as office_key,
+                a.username as advisor_username,
+                NULL::text AS referred_by_code,
+                NULL::text AS referred_by_type,
+                NULL::uuid AS referred_by_identifier,
+                NULL::text AS referred_by_name,
+                NULL::text AS referred_by_number
+            FROM n_person p
+            JOIN n_user u ON u.person_id = p.id
+            JOIN n_advisor a ON a.username = u.username
+            WHERE p.mobile_numbers @> ?::jsonb
+            ORDER BY a.updated_at DESC
+            LIMIT 1
+            """;
+        try {
+            List<AdvisorBasicResponse> results = jdbcTemplate.query(sql, new AdvisorSearchRowMapper(), phoneJson);
+            return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
+        } catch (DataAccessException e) {
+            AdvisorOperationException exception = AdvisorExceptionFactory.retrieveEntityFailed(messageSource);
+            exception.initCause(e);
+            throw exception;
+        }
+    }
+
+    /**
      * Search advisors by phone number.
      * Finds advisors with persons that have the given phone number.
      * Applies office hierarchy filter to restrict to current staff's office hierarchy.
@@ -175,6 +218,7 @@ public class AdvisorRepositoryWrapper {
                 a.created_at,
                 a.updated_at,
                 a.office_key as office_key,
+                a.username as advisor_username,
                 sc.marketing_details->>'referredByCode' AS referred_by_code,
                 r.entity_type::text AS referred_by_type,
                 r.entity_identifier AS referred_by_identifier,
@@ -312,6 +356,7 @@ public class AdvisorRepositoryWrapper {
                 a.created_at,
                 a.updated_at,
                 a.office_key as office_key,
+                a.username as advisor_username,
                 sc.marketing_details->>'referredByCode' AS referred_by_code,
                 r.entity_type::text AS referred_by_type,
                 r.entity_identifier AS referred_by_identifier,
@@ -393,6 +438,7 @@ public class AdvisorRepositoryWrapper {
                 a.created_at,
                 a.updated_at,
                 a.office_key as office_key,
+                a.username as advisor_username,
                 sc.marketing_details->>'referredByCode' AS referred_by_code,
                 r.entity_type::text AS referred_by_type,
                 r.entity_identifier AS referred_by_identifier,
@@ -468,6 +514,7 @@ public class AdvisorRepositoryWrapper {
                 a.created_at,
                 a.updated_at,
                 a.office_key as office_key,
+                a.username as advisor_username,
                 sc.marketing_details->>'referredByCode' AS referred_by_code,
                 r.entity_type::text AS referred_by_type,
                 r.entity_identifier AS referred_by_identifier,
@@ -628,6 +675,7 @@ public class AdvisorRepositoryWrapper {
             }
 
             builder.officeKey(rs.getString("office_key"));
+            builder.username(rs.getString("advisor_username"));
 
             builder.referredByCode(rs.getString("referred_by_code"));
             String referredByTypeStr = rs.getString("referred_by_type");

@@ -14,6 +14,12 @@ import com.nivasafinance.features.advisor.service.AdvisorBankDetailsReadService;
 import com.nivasafinance.features.advisor.service.AdvisorBankDetailsWriteService;
 import com.nivasafinance.features.advisor.service.AdvisorReadService;
 import com.nivasafinance.features.advisor.service.AdvisorWriteService;
+import com.nivasafinance.integrations.framework.ServiceFactory;
+import com.nivasafinance.integrations.framework.config.BusinessContext;
+import com.nivasafinance.integrations.framework.config.ThirdPartyServiceList;
+import com.nivasafinance.services.authentication.AuthenticationHandler;
+import com.nivasafinance.services.authentication.dto.AuthSendOtpRequest;
+import com.nivasafinance.services.authentication.dto.AuthVerifyOtpRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
@@ -21,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -37,7 +44,8 @@ public class AdvisorSelfServiceImpl implements AdvisorSelfService {
     private final AdvisorBankDetailsWriteService advisorBankDetailsWriteService;
     private final AdvisorRepositoryWrapper advisorRepositoryWrapper;
     private final MessageSource messageSource;
- 
+    private final ServiceFactory<AuthenticationHandler> authenticationServiceFactory;
+
 
     @Override
     public void updateMyProfile(SelfAdvisorProfileRequest request) {
@@ -190,6 +198,55 @@ public class AdvisorSelfServiceImpl implements AdvisorSelfService {
     public SelfBankDetailsResponse getMyBankDetails(UUID bankIdentifier) {
         BankDetailsResponse bank = findBankDetailsByIdentifier(resolveMeIdentifier(), bankIdentifier);
         return toSelfBankDetailsResponse(bank);
+    }
+
+    @Override
+    public void sendOtp(SelfSendOtpRequest request) {
+        String mobileNo = request.getMobileNo();
+        if (mobileNo == null || mobileNo.isBlank()) {
+            throw AdvisorExceptionFactory.badRequest(messageSource);
+        }
+        String username = advisorRepositoryWrapper.findAdvisorByMobileNo(mobileNo.trim())
+                .map(AdvisorBasicResponse::getUsername)
+                .orElse(mobileNo.trim());
+        AuthenticationHandler handler = authenticationServiceFactory.getHandler(ThirdPartyServiceList.AUTHENTICATION);
+        handler.sendOtp(
+                new AuthSendOtpRequest(mobileNo.trim(), username),
+                new BusinessContext("ADVISOR", null, "SEND_OTP"));
+    }
+
+    @Override
+    public SelfVerifyOtpResponse verifyOtp(SelfVerifyOtpRequest request) {
+        String mobileNo = request.getMobileNo();
+        String otp = request.getOtp();
+        if (mobileNo == null || mobileNo.isBlank() || otp == null || otp.isBlank()) {
+            throw AdvisorExceptionFactory.badRequest(messageSource);
+        }
+        AuthenticationHandler handler = authenticationServiceFactory.getHandler(ThirdPartyServiceList.AUTHENTICATION);
+        var authResponse = handler.verifyOtp(
+                new AuthVerifyOtpRequest(mobileNo.trim(), otp),
+                new BusinessContext("ADVISOR", null, "VERIFY_OTP"));
+        Optional<AdvisorBasicResponse> existing = advisorRepositoryWrapper.findAdvisorByMobileNo(mobileNo.trim());
+        if (existing.isPresent()) {
+            return SelfVerifyOtpResponse.builder()
+                    .username(existing.get().getUsername())
+                    .accessToken(authResponse.getAccessToken())
+                    .refreshToken(authResponse.getRefreshToken())
+                    .expiresAt(authResponse.getExpiresAt())
+                    .isNewUser(false)
+                    .build();
+        }
+        CreateAdvisorRequest createRequest = new CreateAdvisorRequest(
+                new MobileNumberDetails(mobileNo.trim(), true, null),
+                null, null, null, null, null);
+        advisorWriteService.createAdvisor(createRequest);
+        return SelfVerifyOtpResponse.builder()
+                .username(mobileNo.trim())
+                .accessToken(authResponse.getAccessToken())
+                .refreshToken(authResponse.getRefreshToken())
+                .expiresAt(authResponse.getExpiresAt())
+                .isNewUser(true)
+                .build();
     }
 
     private SelfBankDetailsResponse toSelfBankDetailsResponse(BankDetailsResponse b) {

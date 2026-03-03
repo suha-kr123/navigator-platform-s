@@ -9,6 +9,9 @@ import com.nivasafinance.features.advisor.dto.self.SelfAdvisorProfileRequest;
 import com.nivasafinance.features.advisor.dto.self.SelfAdvisorResponse;
 import com.nivasafinance.features.advisor.dto.self.SelfBankDetailsRequest;
 import com.nivasafinance.features.advisor.dto.self.SelfBankDetailsResponse;
+import com.nivasafinance.features.advisor.dto.self.SelfSendOtpRequest;
+import com.nivasafinance.features.advisor.dto.self.SelfVerifyOtpRequest;
+import com.nivasafinance.features.advisor.dto.self.SelfVerifyOtpResponse;
 
 import java.util.List;
 import java.util.UUID;
@@ -34,4 +37,8 @@ public interface AdvisorSelfService {
     List<SelfBankDetailsResponse> getMyBankDetails();
 
     SelfBankDetailsResponse getMyBankDetails(UUID bankIdentifier);
+
+    void sendOtp(SelfSendOtpRequest request);
+
+    SelfVerifyOtpResponse verifyOtp(SelfVerifyOtpRequest request);
 }

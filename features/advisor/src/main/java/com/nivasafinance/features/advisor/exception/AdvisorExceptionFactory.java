@@ -86,4 +86,12 @@ public final class AdvisorExceptionFactory {
                 messageSource
         ));
     }
+
+    public static BadRequestException badRequest(MessageSource messageSource) {
+        return new BadRequestException(ExceptionUtils.createLocalizedMessage(
+                "error.advisor.bad.request",
+                new Object[0],
+                messageSource
+        ));
+    }
 }

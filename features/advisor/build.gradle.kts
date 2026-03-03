@@ -16,6 +16,7 @@ dependencies {
     implementation(project(":features:offices"))
     implementation(project(":features:staff"))
     implementation(project(":features:call"))
+    implementation(project(":integrations"))
     implementation(project(":features:usermanagement"))
     implementation(project(":features:referral"))
     implementation(project(":features:lead"))
