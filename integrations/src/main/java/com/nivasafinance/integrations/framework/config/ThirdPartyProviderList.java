@@ -4,7 +4,8 @@ public enum ThirdPartyProviderList {
     EXOTEL("exotel"),
     WATI("wati"),
     GALLABOX("gallabox"),
-    CRIF_HIGHMARK("crif_highmark");
+    CRIF_HIGHMARK("crif_highmark"),
+    SUPABASE("supabase");
 
 
     private final String provideName;
