@@ -2,6 +2,7 @@ package com.nivasafinance.services.authentication.provider.supabase;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nivasafinance.common.awssecretmanager.service.SecretManagerService;
 import com.nivasafinance.integrations.framework.config.BusinessContext;
 import com.nivasafinance.integrations.framework.config.ThirdPartyProviderList;
 import com.nivasafinance.integrations.framework.core.NavigatorRestService;
@@ -37,6 +38,7 @@ public class SupabaseAuthProvider implements AuthenticationProvider {
 
     private final NavigatorRestService restService;
     private final ObjectMapper objectMapper;
+    private final SecretManagerService secretManagerService;
 
     @Override
     public ThirdPartyProviderList getKey() {
@@ -48,6 +50,15 @@ public class SupabaseAuthProvider implements AuthenticationProvider {
         if (map == null || map.isEmpty()) {
             throw new NavigatorIntegrationServerException("Supabase configuration is empty.");
         }
+
+        if(map.containsKey("secret_key")) {
+            Map<String,Object> secretMap = secretManagerService.getSecret(map.get("secret_key"));
+            return new SupabaseConfiguration(
+                    secretMap.get("projectRef").toString(),
+                    secretMap.get("apiKey").toString()
+            );
+        }
+
         return new SupabaseConfiguration(
                 map.get("projectRef"),
                 map.get("apiKey")
