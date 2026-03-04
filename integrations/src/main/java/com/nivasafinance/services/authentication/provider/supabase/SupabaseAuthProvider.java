@@ -54,8 +54,8 @@ public class SupabaseAuthProvider implements AuthenticationProvider {
         if(map.containsKey("secret_key")) {
             Map<String,Object> secretMap = secretManagerService.getSecret(map.get("secret_key"));
             return new SupabaseConfiguration(
-                    secretMap.get("projectRef").toString(),
-                    secretMap.get("apiKey").toString()
+                    secretMap.get("SUPABASE_PROJECT_REF").toString(),
+                    secretMap.get("SUPABASE_API_KEY").toString()
             );
         }
 
