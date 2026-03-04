@@ -21,7 +21,7 @@ public class AdvisorSelfOpenController {
     private final AdvisorSelfService advisorSelfService;
 
     @PostMapping("/send-otp")
-    public ResponseEntity<Void> sendOtp(@RequestBody SelfSendOtpRequest request) {
+    public ResponseEntity<Void> sendOtp(@RequestBody @Valid SelfSendOtpRequest request) {
         advisorSelfService.sendOtp(request);
         return ResponseEntity.ok().build();
     }
