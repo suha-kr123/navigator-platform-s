@@ -8,6 +8,7 @@ import com.nivasafinance.common.events.payload.ConsentReceivedEventPayload;
 import com.nivasafinance.common.events.payload.ConsentSentEventPayload;
 import com.nivasafinance.features.consent.dto.AcceptConsentRequest;
 import com.nivasafinance.features.consent.dto.CreateAndSendConsent;
+import com.nivasafinance.features.consent.dto.ResendConsentRequest;
 import com.nivasafinance.features.consent.dto.WithdrawConsentRequest;
 import com.nivasafinance.features.consent.entity.Consent;
 import com.nivasafinance.features.consent.enums.ConsentStatus;
@@ -108,6 +109,35 @@ public class ConsentWriteServiceImpl implements ConsentWriteService {
                     payload,
                     UserContext.getUsername()));
         }
+    }
+
+    @Override
+    public void resendConsent(ResendConsentRequest request) {
+        Consent consent = consentRepositoryWrapper.findByIdentifierWithException(request.getConsentIdentifier());
+        if (consent.getStatus() != ConsentStatus.SENT) {
+            throw ConsentExceptionFactory.invalidStatusForResend(consent.getStatus(), messageSource);
+        }
+        consent.setConsentSentDetails(new Consent.ConsentSentDetails(LocalDateTime.now()));
+        consentRepositoryWrapper.saveWithException(consent);
+
+        String consentLink = buildConsentLink(consentUrlBase, consent.getIdentifier().toString(),
+                request.getEnquiryIdentifier().toString(),
+                request.getLeadIdentifier() != null ? request.getLeadIdentifier().toString() : null,
+                request.getContactIdentifier() != null ? request.getContactIdentifier().toString() : null);
+
+        ConsentSentEventPayload payload = ConsentSentEventPayload.builder()
+                .personId(request.getPersonId())
+                .consentId(consent.getId())
+                .consentIdentifier(consent.getIdentifier())
+                .enquiryIdentifier(request.getEnquiryIdentifier())
+                .consentLink(consentLink)
+                .recipientContact(request.getRecipientPhone())
+                .build();
+
+        eventPublisher.publishEvent(new SystemEvent<>(
+                BusinessEvent.CB_CONSENT_SENT.toString(),
+                payload,
+                UserContext.getUsername()));
     }
 
     @Override

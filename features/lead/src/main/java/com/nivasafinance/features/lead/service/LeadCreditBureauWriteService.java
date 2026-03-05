@@ -9,6 +9,8 @@ public interface LeadCreditBureauWriteService {
 
     void acceptConsent(UUID leadIdentifier, UUID contactIdentifier, UUID enquiryIdentifier, UUID consentIdentifier);
 
+    void resendConsent(UUID leadIdentifier, UUID contactIdentifier, UUID enquiryIdentifier, UUID consentIdentifier);
+
     void withdrawConsent(UUID leadIdentifier, UUID contactIdentifier, UUID enquiryIdentifier, UUID consentIdentifier);
 
     void regenerateCbReport(UUID leadIdentifier, UUID contactIdentifier, UUID enquiryIdentifier);

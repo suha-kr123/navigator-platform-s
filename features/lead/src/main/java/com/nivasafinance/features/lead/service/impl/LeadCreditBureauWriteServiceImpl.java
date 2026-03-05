@@ -5,6 +5,7 @@ import com.nivasafinance.common.events.BusinessEvent;
 import com.nivasafinance.common.events.SystemEvent;
 import com.nivasafinance.common.events.payload.CbReportStoredEventPayload;
 import com.nivasafinance.features.consent.dto.AcceptConsentRequest;
+import com.nivasafinance.features.consent.dto.ResendConsentRequest;
 import com.nivasafinance.features.consent.dto.WithdrawConsentRequest;
 import com.nivasafinance.features.consent.service.ConsentReadService;
 import com.nivasafinance.features.consent.service.ConsentWriteService;
@@ -130,6 +131,42 @@ public class LeadCreditBureauWriteServiceImpl implements LeadCreditBureauWriteSe
                 .recipientPhone(recipientPhone)
                 .build());
         personCreditBureauService.onConsentGranted(consentId, enquiryIdentifier);
+    }
+
+    @Override
+    public void resendConsent(UUID leadIdentifier, UUID contactIdentifier, UUID enquiryIdentifier, UUID consentIdentifier) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        Contact contact = contactRepositoryWrapper.findByIdentifierWithException(contactIdentifier);
+        validateContactBelongsToLead(lead, contact.getId());
+
+        CreditBureauEnquiry enquiry = creditBureauReadService.getCbEnquiryEntityByIdentifier(enquiryIdentifier);
+        if (CollectionUtils.isEmpty(contact.getCbEnquiryId()) || !contact.getCbEnquiryId().contains(enquiry.getId())) {
+            throw new BadRequestException("Enquiry does not belong to the provided contact");
+        }
+
+        Long consentId = consentReadService.findByIdentifierWithException(consentIdentifier).getId();
+        if (!Objects.equals(enquiry.getConsentId(), consentId)) {
+            throw new BadRequestException("Consent does not belong to the provided enquiry");
+        }
+
+        PersonResponse personResponse = personReadService.getPersonById(contact.getPersonId());
+        String recipientPhone = null;
+        if (personResponse.getMobileNumbers() != null && !personResponse.getMobileNumbers().isEmpty()) {
+            recipientPhone = personResponse.getMobileNumbers().stream()
+                    .map(MobileNumberDetails::getNumber)
+                    .filter(Objects::nonNull)
+                    .findFirst()
+                    .orElse(null);
+        }
+
+        consentWriteService.resendConsent(ResendConsentRequest.builder()
+                .consentIdentifier(consentIdentifier)
+                .enquiryIdentifier(enquiryIdentifier)
+                .leadIdentifier(leadIdentifier)
+                .contactIdentifier(contactIdentifier)
+                .personId(personResponse.getId())
+                .recipientPhone(recipientPhone)
+                .build());
     }
 
     @Override
