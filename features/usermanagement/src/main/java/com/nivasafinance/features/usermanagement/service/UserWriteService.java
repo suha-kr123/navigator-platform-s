@@ -11,6 +11,8 @@ public interface UserWriteService {
 
     UserResponse createUser(UserCreateRequest request);
 
+    UserResponse activateDeactivateUser(String username);
+
     UserResponse createUserForExistingPerson(UserCreateRequest request, Long personId);
 
     UserResponse createUserForMobile(String mobile, PersonCreateRequest personDetailsForCreate);
