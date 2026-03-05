@@ -68,6 +68,14 @@ public class StaffRepositoryWrapper {
         }
     }
 
+    public Optional<Staff> findByUserId(Long userId) {
+        try {
+            return staffRepository.findByUserId(userId);
+        } catch (DataAccessException ex) {
+            throw StaffExceptionFactory.retrieveEntityFailed(messageSource);
+        }
+    }
+
     public Staff findByUserIdWithException(Long userId) {
         try {
             return staffRepository.findByUserId(userId)
@@ -263,5 +271,4 @@ public class StaffRepositoryWrapper {
         };
     }
 }
-
 

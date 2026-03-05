@@ -27,9 +27,10 @@ public class OfficeController {
     public ResponseEntity<PaginatedResponse<OfficeResponse>> getOffices(
             @RequestParam(value = "parentKey", required = false) String parentKey,
             @RequestParam(value = "name", required = false) String name,
+            @RequestParam(value = "activeOnly", required = false) Boolean activeOnly,
             @Valid PaginationRequest paginationRequest
     ) {
-        PaginatedResponse<OfficeResponse> offices = officeReadService.getOffices(parentKey, name, paginationRequest);
+        PaginatedResponse<OfficeResponse> offices = officeReadService.getOffices(parentKey, name, activeOnly, paginationRequest);
         return ResponseEntity.ok(offices);
     }
 
