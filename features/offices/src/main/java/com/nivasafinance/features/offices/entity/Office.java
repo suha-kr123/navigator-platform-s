@@ -44,5 +44,7 @@ public class Office extends AuditableEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_id", insertable = false, updatable = false)
     private Office parent;
-}
 
+    @Column(name = "is_active")
+    private Boolean isActive;
+}

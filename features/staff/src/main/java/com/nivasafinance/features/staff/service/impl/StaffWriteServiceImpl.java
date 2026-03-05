@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -71,6 +72,25 @@ public class StaffWriteServiceImpl implements StaffWriteService {
         return mapToResponse(saved, createdUser);
     }
 
+    @Override
+    public void mapUserToOffice(String username, String officeKey) {
+        officeReadService.getOfficeByKey(officeKey);
+        UserResponse user = userReadService.getUserByUsername(username);
+        Optional<Staff> existingOpt = staffRepositoryWrapper.findByUserId(user.getId());
+        if (existingOpt.isPresent()) {
+            Staff staff = existingOpt.get();
+            staff.setOfficeKey(officeKey);
+            staffRepositoryWrapper.saveWithException(staff);
+        } else {
+            Staff staff = new Staff();
+            staff.setIdentifier(UUID.randomUUID());
+            staff.setUserId(user.getId());
+            staff.setOfficeKey(officeKey);
+            staff.setReferralCode(referralCodeRegistryService.generateReferralCode(EntityType.STAFF, staff.getIdentifier()).getReferralCode());
+            staffRepositoryWrapper.saveWithException(staff);
+        }
+    }
+
     private StaffResponse mapToResponse(Staff staff, UserResponse userResponse) {
         UserResponse resolvedUser = userResponse != null
                 ? userResponse
@@ -94,4 +114,3 @@ public class StaffWriteServiceImpl implements StaffWriteService {
         }
     }
 }
-

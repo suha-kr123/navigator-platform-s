@@ -15,5 +15,5 @@ public class OfficeResponse {
     private String code;
     private AddressData address;
     private Long parentId;
+    private Boolean isActive;
 }
-
