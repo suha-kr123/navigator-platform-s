@@ -8,7 +8,6 @@ import com.nivasafinance.features.advisor.repository.AdvisorRepositoryWrapper;
 import com.nivasafinance.features.person.entity.Person;
 import com.nivasafinance.features.person.repository.PersonRepositoryWrapper;
 import com.nivasafinance.features.person.service.PersonWriteService;
-import com.nivasafinance.features.usermanagement.service.UserReadService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,14 +38,10 @@ class AdvisorAddressWriteServiceImplTest {
     @Mock
     private PersonRepositoryWrapper personRepositoryWrapper;
 
-    @Mock
-    private UserReadService userReadService;
-
     @InjectMocks
     private AdvisorAddressWriteServiceImpl advisorAddressWriteService;
 
     private static final Long TEST_PERSON_ID = 2L;
-    private static final String TEST_ADVISOR_USERNAME = "advisorUser";
 
     private UUID advisorIdentifier;
     private Advisor advisor;
@@ -57,7 +52,7 @@ class AdvisorAddressWriteServiceImplTest {
         advisor = new Advisor();
         advisor.setId(1L);
         advisor.setIdentifier(advisorIdentifier);
-        advisor.setUsername(TEST_ADVISOR_USERNAME);
+        advisor.setPersonId(TEST_PERSON_ID);
     }
 
     @Test
@@ -65,7 +60,6 @@ class AdvisorAddressWriteServiceImplTest {
         AddressRequest request = new AddressRequest();
         String addressId = "addr-123";
         when(advisorRepositoryWrapper.findByIdentifierWithException(advisorIdentifier)).thenReturn(advisor);
-        when(userReadService.getPersonIdByUsername(TEST_ADVISOR_USERNAME)).thenReturn(TEST_PERSON_ID);
         when(personWriteService.addAddress(TEST_PERSON_ID, request)).thenReturn(addressId);
         when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(new Person());
 
@@ -86,7 +80,6 @@ class AdvisorAddressWriteServiceImplTest {
         AddressRequest request = new AddressRequest();
         AddressData expected = new AddressData();
         when(advisorRepositoryWrapper.findByIdentifierWithException(advisorIdentifier)).thenReturn(advisor);
-        when(userReadService.getPersonIdByUsername(TEST_ADVISOR_USERNAME)).thenReturn(TEST_PERSON_ID);
         when(personWriteService.updateAddress(TEST_PERSON_ID, addressId, request)).thenReturn(expected);
         when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(new Person());
 

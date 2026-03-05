@@ -109,7 +109,8 @@ class LeadLenderWriteServiceImplTest {
                 "Test Office",
                 lenderOfficeKey,
                 lenderKey,
-                null
+                null,
+                com.nivasafinance.features.lender.lenderoffice.enums.LenderOfficeStatus.ACTIVE
         );
 
         codeValueResponse = new CodeValueResponse();
@@ -513,7 +514,8 @@ class LeadLenderWriteServiceImplTest {
                 "Invalid Office",
                 lenderOfficeKey,
                 "DIFFERENT_LENDER_KEY", // Different lender key
-                null
+                null,
+                com.nivasafinance.features.lender.lenderoffice.enums.LenderOfficeStatus.ACTIVE
         );
 
         when(leadReadService.getLeadBasicByIdentifier(leadIdentifier)).thenReturn(leadBasicResponse);
@@ -999,4 +1001,3 @@ class LeadLenderWriteServiceImplTest {
         assertEquals(lenderIdentifier, payload.getLenderIdentifier());
     }
 }
-

@@ -11,6 +11,7 @@ import com.nivasafinance.features.leadlender.repository.LeadLenderRepositoryWrap
 import com.nivasafinance.features.lender.lender.dto.LenderResponseData;
 import com.nivasafinance.features.lender.lender.service.LenderReadService;
 import com.nivasafinance.features.lender.lenderoffice.dto.LenderOfficeReponseData;
+import com.nivasafinance.features.lender.lenderoffice.enums.LenderOfficeStatus;
 import com.nivasafinance.features.lender.lenderoffice.service.LenderOfficeReadService;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import com.nivasafinance.features.master.codemaster.service.CodeValueMasterService;
@@ -89,7 +90,8 @@ class LeadLenderReadServiceImplTest {
                 "Test Office",
                 lenderOfficeKey,
                 lenderKey,
-                null
+                null,
+                LenderOfficeStatus.ACTIVE
         );
 
         stageResponse = new CodeValueResponse();
@@ -546,4 +548,3 @@ class LeadLenderReadServiceImplTest {
         return leadLender;
     }
 }
-
