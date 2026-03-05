@@ -105,6 +105,23 @@ public class UserWriteServiceImpl implements UserWriteService {
         return createUserForExistingPerson(userRequest, personId);
     }
 
+    @Override
+    public UserResponse activateDeactivateUser(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> UserExceptionFactory.userNotFoundByUsername(username));
+        user.setStatus(user.getStatus() == UserStatus.ACTIVE ? UserStatus.INACTIVE : UserStatus.ACTIVE);
+        User savedUser = userRepository.save(user);
+        PersonResponse personResponse = null;
+        if (savedUser.getPerson() != null) {
+            personResponse = personReadService.getPersonById(savedUser.getPerson().getId());
+        }
+        return UserResponse.builder()
+                .id(savedUser.getId())
+                .username(savedUser.getUsername())
+                .status(savedUser.getStatus())
+                .personResponse(personResponse)
+                .build();
+    }
 
     @Override
     public void updatePersonForUser(String username, PersonUpdateRequest request) {
