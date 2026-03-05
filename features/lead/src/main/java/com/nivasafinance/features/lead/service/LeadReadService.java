@@ -25,6 +25,11 @@ public interface LeadReadService {
             PaginationRequest paginationRequest,
             LeadDashboardFilters filters);
     PaginatedResponse<LeadSearchResponse> searchLeads(PaginationRequest paginationRequest, LeadSearchRequest request);
+
+    /**
+     * Returns whether at least one lead exists for the given mobile number.
+     */
+    boolean hasLeadWithMobileNumber(String mobileNumber);
     LeadDashboardFiltersResponse getLeadDashboardFilters(LeadDashboardFiltersFilters filters);
     List<LeadWorkflowDetailsDto> findLeadsByPersonIdsAndStatusesAndSubstatuses(List<Long> personIds,
         List<LeadStatus> statuses, List<LeadSubStatus> substatuses);
