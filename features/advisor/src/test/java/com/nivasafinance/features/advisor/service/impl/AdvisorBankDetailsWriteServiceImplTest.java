@@ -11,7 +11,6 @@ import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import com.nivasafinance.features.master.codemaster.service.CodeMasterService;
 import com.nivasafinance.features.person.entity.Person;
 import com.nivasafinance.features.person.repository.PersonRepositoryWrapper;
-import com.nivasafinance.features.usermanagement.service.UserReadService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,14 +44,10 @@ class AdvisorBankDetailsWriteServiceImplTest {
     @Mock
     private PersonRepositoryWrapper personRepositoryWrapper;
 
-    @Mock
-    private UserReadService userReadService;
-
     @InjectMocks
     private AdvisorBankDetailsWriteServiceImpl advisorBankDetailsWriteService;
 
     private static final Long TEST_PERSON_ID = 2L;
-    private static final String TEST_ADVISOR_USERNAME = "advisorUser";
 
     private UUID advisorIdentifier;
     private UUID bankIdentifier;
@@ -65,7 +60,7 @@ class AdvisorBankDetailsWriteServiceImplTest {
         advisor = new Advisor();
         advisor.setId(1L);
         advisor.setIdentifier(advisorIdentifier);
-        advisor.setUsername(TEST_ADVISOR_USERNAME);
+        advisor.setPersonId(TEST_PERSON_ID);
         advisor.setBankDetails(new ArrayList<>());
     }
 
@@ -76,7 +71,6 @@ class AdvisorBankDetailsWriteServiceImplTest {
         request.setAccountNo("123");
         request.setIsPrimary(false);
         when(advisorRepositoryWrapper.findByIdentifierWithException(advisorIdentifier)).thenReturn(advisor);
-        when(userReadService.getPersonIdByUsername(TEST_ADVISOR_USERNAME)).thenReturn(TEST_PERSON_ID);
         when(advisorRepositoryWrapper.saveWithException(any(Advisor.class))).thenReturn(advisor);
         when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(new Person());
 
@@ -100,7 +94,6 @@ class AdvisorBankDetailsWriteServiceImplTest {
         CodeValueResponse cv = new CodeValueResponse();
         cv.setKey("BANK_KEY");
         when(advisorRepositoryWrapper.findByIdentifierWithException(advisorIdentifier)).thenReturn(advisor);
-        when(userReadService.getPersonIdByUsername(TEST_ADVISOR_USERNAME)).thenReturn(TEST_PERSON_ID);
         when(codeMasterService.getAllCodeValuesByCodeKey(any(), eq(true))).thenReturn(List.of(cv));
         when(advisorRepositoryWrapper.saveWithException(any(Advisor.class))).thenReturn(advisor);
         when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(new Person());
@@ -127,7 +120,6 @@ class AdvisorBankDetailsWriteServiceImplTest {
         request.setNameAsPerPassbook("New Name");
         request.setAccountNo("456");
         when(advisorRepositoryWrapper.findByIdentifierWithException(advisorIdentifier)).thenReturn(advisor);
-        when(userReadService.getPersonIdByUsername(TEST_ADVISOR_USERNAME)).thenReturn(TEST_PERSON_ID);
         when(advisorRepositoryWrapper.saveWithException(any(Advisor.class))).thenReturn(advisor);
         when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(new Person());
 
@@ -151,7 +143,6 @@ class AdvisorBankDetailsWriteServiceImplTest {
         advisor.getBankDetails().add(existing);
 
         when(advisorRepositoryWrapper.findByIdentifierWithException(advisorIdentifier)).thenReturn(advisor);
-        when(userReadService.getPersonIdByUsername(TEST_ADVISOR_USERNAME)).thenReturn(TEST_PERSON_ID);
         when(advisorRepositoryWrapper.saveWithException(any(Advisor.class))).thenReturn(advisor);
         when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(new Person());
 
@@ -174,7 +165,6 @@ class AdvisorBankDetailsWriteServiceImplTest {
         advisor.getBankDetails().add(existing);
 
         when(advisorRepositoryWrapper.findByIdentifierWithException(advisorIdentifier)).thenReturn(advisor);
-        when(userReadService.getPersonIdByUsername(TEST_ADVISOR_USERNAME)).thenReturn(TEST_PERSON_ID);
         when(advisorRepositoryWrapper.saveWithException(any(Advisor.class))).thenReturn(advisor);
         when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(new Person());
 

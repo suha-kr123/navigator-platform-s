@@ -4,7 +4,6 @@ import com.nivasafinance.common.dto.AddressData;
 import com.nivasafinance.features.advisor.entity.Advisor;
 import com.nivasafinance.features.advisor.repository.AdvisorRepositoryWrapper;
 import com.nivasafinance.features.person.service.PersonReadService;
-import com.nivasafinance.features.usermanagement.service.UserReadService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,14 +27,10 @@ class AdvisorAddressReadServiceImplTest {
     @Mock
     private PersonReadService personReadService;
 
-    @Mock
-    private UserReadService userReadService;
-
     @InjectMocks
     private AdvisorAddressReadServiceImpl advisorAddressReadService;
 
     private static final Long TEST_PERSON_ID = 2L;
-    private static final String TEST_ADVISOR_USERNAME = "advisorUser";
 
     private UUID advisorIdentifier;
     private Advisor advisor;
@@ -46,14 +41,13 @@ class AdvisorAddressReadServiceImplTest {
         advisor = new Advisor();
         advisor.setId(1L);
         advisor.setIdentifier(advisorIdentifier);
-        advisor.setUsername(TEST_ADVISOR_USERNAME);
+        advisor.setPersonId(TEST_PERSON_ID);
     }
 
     @Test
     void getAddresses_success_delegatesToPersonReadService() {
         List<AddressData> expected = List.of(new AddressData());
         when(advisorRepositoryWrapper.findByIdentifierWithException(advisorIdentifier)).thenReturn(advisor);
-        when(userReadService.getPersonIdByUsername(TEST_ADVISOR_USERNAME)).thenReturn(TEST_PERSON_ID);
         when(personReadService.getAddresses(TEST_PERSON_ID)).thenReturn(expected);
 
         List<AddressData> result = advisorAddressReadService.getAddresses(advisorIdentifier);
@@ -68,7 +62,6 @@ class AdvisorAddressReadServiceImplTest {
         String addressId = "addr-1";
         AddressData expected = new AddressData();
         when(advisorRepositoryWrapper.findByIdentifierWithException(advisorIdentifier)).thenReturn(advisor);
-        when(userReadService.getPersonIdByUsername(TEST_ADVISOR_USERNAME)).thenReturn(TEST_PERSON_ID);
         when(personReadService.getAddress(TEST_PERSON_ID, addressId)).thenReturn(expected);
 
         AddressData result = advisorAddressReadService.getAddress(advisorIdentifier, addressId);
@@ -82,7 +75,6 @@ class AdvisorAddressReadServiceImplTest {
     void getAddress_personThrowsResponseStatusException_throwsNotFound() {
         String addressId = "addr-1";
         when(advisorRepositoryWrapper.findByIdentifierWithException(advisorIdentifier)).thenReturn(advisor);
-        when(userReadService.getPersonIdByUsername(TEST_ADVISOR_USERNAME)).thenReturn(TEST_PERSON_ID);
         when(personReadService.getAddress(TEST_PERSON_ID, addressId)).thenThrow(new ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Not found"));
 
         assertThrows(ResponseStatusException.class,
