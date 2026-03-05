@@ -359,10 +359,15 @@ public class LeadReadServiceImpl implements LeadReadService {
             LeadDashboardFilters filters) {
         return leadDashboardWrapper.findLeadDashboard(paginationRequest, filters);
     }
-
+//    Results are scoped by office hierarchy
     @Override
     public PaginatedResponse<LeadSearchResponse> searchLeads(PaginationRequest paginationRequest, LeadSearchRequest request) {
         return leadRepositoryWrapper.searchLeadsByPhoneNumber(paginationRequest, request);
+    }
+    /** Does not apply office hierarchy. */
+    @Override
+    public boolean hasLeadWithMobileNumber(String mobileNumber) {
+        return leadRepositoryWrapper.existsLeadWithMobileNumber(mobileNumber);
     }
 
     @Override

@@ -25,7 +25,7 @@ public class AdvisorController {
     private final AdvisorReadService advisorReadService;
 
     @GetMapping("/template")
-    @RequirePermission(permissionName = "READ_ADVISOR")
+    @RequirePermission(permissionName = "READ_ADVISOR_TEMPLATE")
     public ResponseEntity<AdvisorTemplateResponse> getAdvisorTemplate() {
         AdvisorTemplateResponse response = advisorReadService.getAdvisorTemplate();
         return ResponseEntity.ok(response);

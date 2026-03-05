@@ -3,6 +3,7 @@ package com.nivasafinance.features.leadstages.repository;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationInfo;
 import com.nivasafinance.common.base.model.PaginationRequest;
+import com.nivasafinance.features.leadstages.dto.LeadStageHistoryDisplayResponse;
 import com.nivasafinance.features.leadstages.entity.LeadStageHistory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,8 +11,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,7 +25,35 @@ import java.util.Optional;
 @Slf4j
 public class LeadStageHistoryRepositoryWrapper {
 
+    private static final String SQL_STAGE_HISTORY_WITH_DISPLAY_LABELS = """
+            SELECT sc.stage_config->>'externalDisplayName' AS display_label,
+                   h.entered_at,
+                   h.exited_at
+            FROM n_lead_stage_history h
+            JOIN n_stage_config sc ON sc."key" = h.stage_key AND sc.is_active = true
+              AND sc.stage_config->>'externalDisplayName' IS NOT NULL
+              AND TRIM(sc.stage_config->>'externalDisplayName') <> ''
+            WHERE h.lead_id = ?
+            ORDER BY h.entered_at ASC
+            """;
+
+    private static final RowMapper<LeadStageHistoryDisplayResponse> DISPLAY_ROW_MAPPER = new RowMapper<>() {
+        @Override
+        public LeadStageHistoryDisplayResponse mapRow(ResultSet rs, int rowNum) throws SQLException {
+            java.time.LocalDateTime enteredAt = rs.getTimestamp("entered_at") != null
+                    ? rs.getTimestamp("entered_at").toLocalDateTime() : null;
+            java.time.LocalDateTime exitedAt = rs.getTimestamp("exited_at") != null
+                    ? rs.getTimestamp("exited_at").toLocalDateTime() : null;
+            return LeadStageHistoryDisplayResponse.builder()
+                    .displayLabel(rs.getString("display_label"))
+                    .enteredAt(enteredAt)
+                    .exitedAt(exitedAt)
+                    .build();
+        }
+    };
+
     private final LeadStageHistoryRepository repository;
+    private final JdbcTemplate jdbcTemplate;
 
     public LeadStageHistory save(LeadStageHistory leadStageHistory) {
         return repository.save(leadStageHistory);
@@ -75,6 +108,13 @@ public class LeadStageHistoryRepositoryWrapper {
 
     public List<LeadStageHistory> findAllByLeadId(Long leadId) {
         return repository.findByLeadIdOrderByEnteredAtDesc(leadId);
+    }
+
+    /**
+     * Returns stage history for the lead with external display labels from n_stage_config.
+     */
+    public List<LeadStageHistoryDisplayResponse> findStageHistoryWithDisplayLabelsByLeadId(Long leadId) {
+        return jdbcTemplate.query(SQL_STAGE_HISTORY_WITH_DISPLAY_LABELS, DISPLAY_ROW_MAPPER, leadId);
     }
 }
 

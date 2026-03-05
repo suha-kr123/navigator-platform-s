@@ -87,9 +87,25 @@ public final class AdvisorExceptionFactory {
         ));
     }
 
+    public static BadRequestException advisorReferralCodeNotAvailable(MessageSource messageSource) {
+        return new BadRequestException(ExceptionUtils.createLocalizedMessage(
+                "error.advisor.referral.code.not.available",
+                new Object[0],
+                messageSource
+        ));
+    }
+
     public static BadRequestException badRequest(MessageSource messageSource) {
         return new BadRequestException(ExceptionUtils.createLocalizedMessage(
                 "error.advisor.bad.request",
+                new Object[0],
+                messageSource
+        ));
+    }
+
+    public static BadRequestException selfLeadNotAccessible(MessageSource messageSource) {
+        return new BadRequestException(ExceptionUtils.createLocalizedMessage(
+                "error.advisor.self.lead.not.accessible",
                 new Object[0],
                 messageSource
         ));

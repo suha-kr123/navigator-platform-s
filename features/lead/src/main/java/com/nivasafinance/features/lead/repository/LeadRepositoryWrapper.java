@@ -616,6 +616,36 @@ public class LeadRepositoryWrapper {
         }
     }
 
+    /**
+     * Returns whether at least one lead exists for the given mobile number.
+     * Does not apply office hierarchy.( duplicate check).
+     */
+    public boolean existsLeadWithMobileNumber(String mobileNumber) {
+        if (!StringUtils.hasText(mobileNumber)) {
+            return false;
+        }
+        String trimmed = mobileNumber.trim();
+        String phoneJson = buildPhoneNumberJsonb(trimmed);
+        String sql = """
+            SELECT EXISTS (
+                SELECT 1
+                FROM n_person p
+                WHERE p.mobile_numbers @> ?::jsonb
+                AND EXISTS (
+                    SELECT 1 FROM n_contact c
+                    INNER JOIN n_lead l ON l.contacts @> jsonb_build_array(c.id)
+                    WHERE c.person_id = p.id
+                )
+            ) AS exists_flag
+            """;
+        try {
+            Boolean result = jdbcTemplate.queryForObject(sql, Boolean.class, phoneJson);
+            return Boolean.TRUE.equals(result);
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Failed to check existence of lead by mobile number", e);
+        }
+    }
+
     private static String buildPhoneNumberJsonb(String mobileNumber) {
         String escaped = mobileNumber.replace("\\", "\\\\").replace("\"", "\\\"");
         return "[{\"number\":\"" + escaped + "\"}]";

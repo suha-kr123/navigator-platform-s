@@ -7,6 +7,7 @@ import com.nivasafinance.common.enums.AddressType;
 import com.nivasafinance.features.advisor.dto.*;
 import com.nivasafinance.features.advisor.dto.self.*;
 import com.nivasafinance.features.advisor.exception.AdvisorExceptionFactory;
+import com.nivasafinance.features.advisor.repository.AdvisorDashboardWrapper;
 import com.nivasafinance.features.advisor.repository.AdvisorRepositoryWrapper;
 import com.nivasafinance.features.advisor.service.AdvisorAddressReadService;
 import com.nivasafinance.features.advisor.service.AdvisorAddressWriteService;
@@ -20,14 +21,35 @@ import com.nivasafinance.integrations.framework.config.ThirdPartyServiceList;
 import com.nivasafinance.services.authentication.AuthenticationHandler;
 import com.nivasafinance.services.authentication.dto.AuthSendOtpRequest;
 import com.nivasafinance.services.authentication.dto.AuthVerifyOtpRequest;
+import com.nivasafinance.features.lead.dto.CreateLeadRequest;
+import com.nivasafinance.features.lead.dto.CreateLeadResponse;
+import com.nivasafinance.features.lead.dto.LeadBasicResponse;
+import com.nivasafinance.features.lead.dto.LeadResponse;
+import com.nivasafinance.features.lead.dto.UpdateContactNameRequest;
+import com.nivasafinance.features.lead.dto.UpdatePropertyDetailsRequest;
+import com.nivasafinance.features.lead.exception.LeadNotFoundException;
+import com.nivasafinance.features.lead.service.LeadContactWriteService;
+import com.nivasafinance.features.lead.service.LeadReadService;
+import com.nivasafinance.features.lead.service.LeadWriteService;
+import com.nivasafinance.features.leadstages.service.LeadStageHistoryReadService;
+import com.nivasafinance.common.base.model.PaginatedResponse;
+import com.nivasafinance.common.base.model.PaginationRequest;
+import com.nivasafinance.features.leadstages.dto.LeadStageHistoryDisplayResponse;
+import com.nivasafinance.features.leadstages.dto.LeadStageHistoryResponse;
+
+import java.util.Optional;
+import com.nivasafinance.features.sourcechannel.dto.SourcingChannelRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.math.BigDecimal;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -43,9 +65,14 @@ public class AdvisorSelfServiceImpl implements AdvisorSelfService {
     private final AdvisorBankDetailsReadService advisorBankDetailsReadService;
     private final AdvisorBankDetailsWriteService advisorBankDetailsWriteService;
     private final AdvisorRepositoryWrapper advisorRepositoryWrapper;
+    private final AdvisorDashboardWrapper advisorDashboardWrapper;
     private final MessageSource messageSource;
     private final ServiceFactory<AuthenticationHandler> authenticationServiceFactory;
 
+    private final LeadReadService leadReadService;
+    private final LeadWriteService leadWriteService;
+    private final LeadContactWriteService leadContactWriteService;
+    private final LeadStageHistoryReadService leadStageHistoryReadService;
 
     @Override
     public void updateMyProfile(SelfAdvisorProfileRequest request) {
@@ -272,7 +299,215 @@ public class AdvisorSelfServiceImpl implements AdvisorSelfService {
                 .orElseThrow(() -> AdvisorExceptionFactory.retrieveEntityFailed(messageSource));
     }
 
+    @Override
+    public AdvisorSelfLeadCheckResponse checkAdvisorSelfLead(AdvisorSelfLeadCheckRequest request) {
+        boolean exists = leadReadService.hasLeadWithMobileNumber(request.getMobileNumber());
+        return AdvisorSelfLeadCheckResponse.builder().exists(exists).build();
+    }
 
+    @Override
+    public AdvisorSelfLeadCreateResponse createAdvisorSelfLead(AdvisorSelfLeadCreateRequest request) {
+        UUID meId = resolveMeIdentifier();
+        com.nivasafinance.features.advisor.entity.Advisor advisor =
+                advisorRepositoryWrapper.findByIdentifierWithException(meId);
+        String referralCode = advisor.getReferralCode();
+        if (referralCode == null || referralCode.isBlank()) {
+            throw AdvisorExceptionFactory.advisorReferralCodeNotAvailable(messageSource);
+        }
+
+        CreateLeadRequest createRequest = new CreateLeadRequest();
+        createRequest.setRequestedLoanAmount(request.getRequestedAmount());
+        createRequest.setProduct(request.getProduct());
+        createRequest.setPhoneNumber(new CreateLeadRequest.MobileNumberDetails(
+                request.getMobileNumber(),
+                false));
+
+        SourcingChannelRequest.MarketingDetails marketingDetails = SourcingChannelRequest.MarketingDetails.builder()
+                .referredByCode(referralCode)
+                .build();
+        createRequest.setSourcingChannelRequest(new SourcingChannelRequest(null, null, marketingDetails));
+
+        CreateLeadResponse response = leadWriteService.createLead(createRequest);
+        updateAdvisorSelfLead(response.getLeadIdentifier(), response.getContactIdentifier(), request);
+
+        return AdvisorSelfLeadCreateResponse.builder()
+                .leadIdentifier(response.getLeadIdentifier())
+                .contactIdentifier(response.getContactIdentifier())
+                .build();
+    }
+
+    @Override
+    public void updateAdvisorSelfLead(UUID leadIdentifier, UUID contactIdentifier, AdvisorSelfLeadCreateRequest request) {
+        if (hasNameRequest(request)) {
+            UpdateContactNameRequest nameRequest = UpdateContactNameRequest.builder()
+                    .firstName(request.getFirstName())
+                    .middleName(request.getMiddleName())
+                    .lastName(request.getLastName())
+                    .build();
+            leadContactWriteService.updateContactName(leadIdentifier, contactIdentifier, nameRequest);
+        }
+        if (hasLocationRequest(request)) {
+            AddressRequest addressRequest = new AddressRequest();
+            addressRequest.setAddressType(AddressType.CURRENT);
+            AddressRequest.AddressLocationRequest location = new AddressRequest.AddressLocationRequest();
+            if (request.getDistrictCode() != null && !request.getDistrictCode().isBlank()) {
+                location.setDistrictCode(request.getDistrictCode());
+            }
+            if (request.getStateCode() != null && !request.getStateCode().isBlank()) {
+                location.setStateCode(request.getStateCode());
+            }
+            if (request.getCountryCode() != null && !request.getCountryCode().isBlank()) {
+                location.setCountryCode(request.getCountryCode());
+            }
+            addressRequest.setLocation(location);
+            UpdatePropertyDetailsRequest propRequest = UpdatePropertyDetailsRequest.builder()
+                    .address(addressRequest)
+                    .build();
+            leadWriteService.updatePropertyDetails(leadIdentifier, propRequest);
+        }
+    }
+
+    @Override
+    public PaginatedResponse<AdvisorSelfLeadResponse> getSelfAdvisorLeads(PaginationRequest paginationRequest) {
+        UUID meId = resolveMeIdentifier();
+        com.nivasafinance.features.advisor.entity.Advisor advisor =
+                advisorRepositoryWrapper.findByIdentifierWithException(meId);
+        String referralCode = advisor.getReferralCode();
+        if (referralCode == null || referralCode.isBlank()) {
+            throw AdvisorExceptionFactory.advisorReferralCodeNotAvailable(messageSource);
+        }
+        PaginatedResponse<LeadBasicResponse> paginated = leadReadService.getLeadsByReferralCode(referralCode, paginationRequest);
+        List<AdvisorSelfLeadResponse> content = new ArrayList<>();
+        for (LeadBasicResponse basic : paginated.getContent()) {
+            content.add(AdvisorSelfLeadResponse.builder()
+                    .leadIdentifier(basic.getLeadIdentifier())
+                    .leadName(basic.getPrimaryContactName())
+                    .leadNumber(basic.getPrimaryContactPhone())
+                    .loanType(basic.getProductCode())
+                    .leadStatus(basic.getStatus())
+                    .requestedAmount(basic.getRequestedAmount())
+                    .createdAt(basic.getCreatedAt())
+                    .build());
+        }
+        return new PaginatedResponse<>(content, paginated.getPagination());
+    }
+
+    @Override
+    public AdvisorSelfLeadResponse getSelfAdvisorLeadByLeadId(UUID leadIdentifier) {
+        UUID meId = resolveMeIdentifier();
+        com.nivasafinance.features.advisor.entity.Advisor advisor =
+                advisorRepositoryWrapper.findByIdentifierWithException(meId);
+        String referralCode = advisor.getReferralCode();
+        if (referralCode == null || referralCode.isBlank()) {
+            throw AdvisorExceptionFactory.advisorReferralCodeNotAvailable(messageSource);
+        }
+        LeadResponse lead;
+        try {
+            lead = leadReadService.getLeadByIdentifier(leadIdentifier);
+        } catch (LeadNotFoundException e) {
+            throw AdvisorExceptionFactory.selfLeadNotAccessible(messageSource);
+        }
+        if (lead.getReferredByCode() == null || !lead.getReferredByCode().equals(referralCode)) {
+            throw AdvisorExceptionFactory.selfLeadNotAccessible(messageSource);
+        }
+        return AdvisorSelfLeadResponse.builder()
+                .leadIdentifier(lead.getLeadIdentifier())
+                .leadName(lead.getPrimaryPersonName())
+                .leadNumber(lead.getPrimaryPersonNumber())
+                .loanType(lead.getProductCode())
+                .leadStatus(lead.getStatus())
+                .requestedAmount(lead.getRequestedAmount())
+                .createdAt(lead.getLeadCreatedAt())
+                .build();
+    }
+
+    @Override
+    public SelfAdvisorDashboardResponse getMyDashboard() {
+        UUID meId = resolveMeIdentifier();
+        SelfAdvisorDashboard dashboard = advisorDashboardWrapper.getSelfDashboard(meId)
+                .orElseThrow(() -> AdvisorExceptionFactory.notFoundForCurrentUser(messageSource));
+        Map<String, Long> leadsCountByStage = advisorDashboardWrapper.getLeadCountsByDisplayLabelForAdvisor(meId);
+        long totalLeads = leadsCountByStage.values().stream().mapToLong(Long::longValue).sum();
+
+        String segmentation = dashboard.getSegmentationValue();
+
+        return SelfAdvisorDashboardResponse.builder()
+                .advisorName(dashboard.getName())
+                .segmentation(segmentation)
+                .salesOwner(dashboard.getSalesOwner())
+                .salesOwnerMobile(dashboard.getSalesOwnerMobile())
+                .totalLeads(totalLeads)
+                .leadsCountByStage(leadsCountByStage)
+                .build();
+    }
+
+    @Override
+    public List<AdvisorSelfLeadStageHistoryResponse> getSelfAdvisorLeadStageHistory(UUID leadIdentifier) {
+        UUID meId = resolveMeIdentifier();
+        com.nivasafinance.features.advisor.entity.Advisor advisor =
+                advisorRepositoryWrapper.findByIdentifierWithException(meId);
+        String referralCode = advisor.getReferralCode();
+        if (referralCode == null || referralCode.isBlank()) {
+            throw AdvisorExceptionFactory.advisorReferralCodeNotAvailable(messageSource);
+        }
+        LeadResponse lead;
+        try {
+            lead = leadReadService.getLeadByIdentifier(leadIdentifier);
+        } catch (LeadNotFoundException e) {
+            throw AdvisorExceptionFactory.selfLeadNotAccessible(messageSource);
+        }
+        if (lead.getReferredByCode() == null || !lead.getReferredByCode().equals(referralCode)) {
+            throw AdvisorExceptionFactory.selfLeadNotAccessible(messageSource);
+        }
+        List<LeadStageHistoryDisplayResponse> rows =
+                leadStageHistoryReadService.getStageHistoryWithDisplayLabelsByLeadId(leadIdentifier);
+        if (rows == null || rows.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<AdvisorSelfLeadStageHistoryResponse> segments = new ArrayList<>();
+        String prevExternalStage = null;
+        LocalDateTime segmentEnteredAt = null;
+        LocalDateTime segmentExitedAt = null;
+
+        for (LeadStageHistoryDisplayResponse row : rows) {
+            String externalStage = row.getDisplayLabel();
+            if (externalStage != null && externalStage.equals(prevExternalStage)) {
+                segmentExitedAt = row.getExitedAt();
+            } else {
+                if (prevExternalStage != null) {
+                    segments.add(AdvisorSelfLeadStageHistoryResponse.builder()
+                            .externalStage(prevExternalStage)
+                            .enteredAt(segmentEnteredAt)
+                            .exitedAt(segmentExitedAt)
+                            .build());
+                }
+                prevExternalStage = externalStage;
+                segmentEnteredAt = row.getEnteredAt();
+                segmentExitedAt = row.getExitedAt();
+            }
+        }
+        if (prevExternalStage != null) {
+            segments.add(AdvisorSelfLeadStageHistoryResponse.builder()
+                    .externalStage(prevExternalStage)
+                    .enteredAt(segmentEnteredAt)
+                    .exitedAt(segmentExitedAt)
+                    .build());
+        }
+        return segments;
+    }
+
+    private static boolean hasNameRequest(AdvisorSelfLeadCreateRequest request) {
+        return (request.getFirstName() != null && !request.getFirstName().isBlank())
+                || (request.getMiddleName() != null && !request.getMiddleName().isBlank())
+                || (request.getLastName() != null && !request.getLastName().isBlank());
+    }
+
+    private static boolean hasLocationRequest(AdvisorSelfLeadCreateRequest request) {
+        return (request.getDistrictCode() != null && !request.getDistrictCode().isBlank())
+                || (request.getStateCode() != null && !request.getStateCode().isBlank())
+                || (request.getCountryCode() != null && !request.getCountryCode().isBlank());
+    }
 
     private UUID resolveMeIdentifier() {
         String username = UserContext.getUsername();

@@ -4,6 +4,7 @@ import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.entity.Lead;
+import com.nivasafinance.features.leadstages.dto.LeadStageHistoryDisplayResponse;
 import com.nivasafinance.features.leadstages.dto.LeadStageHistoryResponse;
 import com.nivasafinance.features.leadstages.entity.LeadStageHistory;
 import com.nivasafinance.features.leadstages.repository.LeadStageHistoryRepositoryWrapper;
@@ -38,5 +39,11 @@ public class LeadStageHistoryReadServiceImpl implements LeadStageHistoryReadServ
                 .collect(Collectors.toList());
 
         return new PaginatedResponse<>(responses, paginatedResponse.getPagination());
+    }
+
+    @Override
+    public List<LeadStageHistoryDisplayResponse> getStageHistoryWithDisplayLabelsByLeadId(UUID leadId) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadId);
+        return leadStageHistoryRepositoryWrapper.findStageHistoryWithDisplayLabelsByLeadId(lead.getId());
     }
 }
