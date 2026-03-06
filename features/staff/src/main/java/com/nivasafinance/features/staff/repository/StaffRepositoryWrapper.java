@@ -87,14 +87,6 @@ public class StaffRepositoryWrapper {
         }
     }
 
-    public Optional<Staff> findByUserId(Long userId) {
-        try {
-            return staffRepository.findByUserId(userId);
-        } catch (DataAccessException ex) {
-            throw StaffExceptionFactory.retrieveEntityFailed(messageSource);
-        }
-    }
-
     public Optional<Staff> findByIdentifier(UUID identifier) {
         try {
             return staffRepository.findByIdentifier(identifier);
