@@ -68,6 +68,10 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
         // Check if person already exists with this mobile number, reuse if found
         PersonCreateResponse personResponse = getOrCreatePerson(request.getContactPersonDetails());
 
+        if (leadHasContactWithPersonId(lead, personResponse.getId())) {
+            throw LeadContactValidationException.duplicateContactPerson();
+        }
+
         // Create Contact
         Contact contact = new Contact();
         contact.setPersonId(personResponse.getId());
@@ -341,6 +345,19 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
         }
     }
 
+    private boolean leadHasContactWithPersonId(Lead lead, Long personId) {
+        if (lead.getContacts() == null || lead.getContacts().isEmpty()) {
+            return false;
+        }
+        for (Long contactId : lead.getContacts()) {
+            Contact contact = contactRepositoryWrapper.findByIdWithException(contactId);
+            if (contact.getPersonId().equals(personId)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private Contact findContactByIdentifier(Lead lead, UUID contactIdentifier) {
         Contact contact = contactRepositoryWrapper.findByIdentifierWithException(contactIdentifier);
         if(lead.getContacts() == null || !lead.getContacts().contains(contact.getId())) {
@@ -557,6 +574,10 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
                 
                 // Get or create Person (reuse existing if mobile number already exists)
                 PersonCreateResponse personResponse = getOrCreatePerson(createRequest.getContactPersonDetails());
+
+                if (leadHasContactWithPersonId(lead, personResponse.getId())) {
+                    throw LeadContactValidationException.duplicateContactPerson();
+                }
                 
                 // Create Contact
                 Contact contact = new Contact();
