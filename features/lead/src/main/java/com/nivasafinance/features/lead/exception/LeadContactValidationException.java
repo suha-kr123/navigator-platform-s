@@ -52,5 +52,10 @@ public class LeadContactValidationException extends ValidationException {
         return new LeadContactValidationException(
                 "Invalid operation: " + operation + ". Valid operations are: " + validOperations);
     }
+
+    public static LeadContactValidationException duplicateContactPerson() {
+        return new LeadContactValidationException(
+                "This lead already has a contact linked to this person.");
+    }
 }
 
