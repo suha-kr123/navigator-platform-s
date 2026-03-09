@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1772600000000_01" author="system" context="default">
+        <comment>Seed lead income source master codes (children of LEAD_INCOME_SOURCE_MASTER)</comment>
+
+        <insert tableName="n_master_code">
+            <column name="parent_id" valueComputed="(SELECT id FROM n_master_code WHERE key = 'LEAD_INCOME_SOURCE_MASTER')"/>
+            <column name="key" value="LEAD_INCOME_SOURCE_SALARY"/>
+            <column name="name" value='{"default": "Salaried"}'/>
+            <column name="description" value='{"default": "Income from salary"}'/>
+            <column name="is_system_defined" valueBoolean="true"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="n_master_code">
+            <column name="parent_id" valueComputed="(SELECT id FROM n_master_code WHERE key = 'LEAD_INCOME_SOURCE_MASTER')"/>
+            <column name="key" value="LEAD_INCOME_SOURCE_SELF_EMPLOYED_BUSINESS"/>
+            <column name="name" value='{"default": "Self Employed Business"}'/>
+            <column name="description" value='{"default": "Income from self employed business"}'/>
+            <column name="is_system_defined" valueBoolean="true"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="n_master_code">
+            <column name="parent_id" valueComputed="(SELECT id FROM n_master_code WHERE key = 'LEAD_INCOME_SOURCE_MASTER')"/>
+            <column name="key" value="LEAD_INCOME_SOURCE_OTHER"/>
+            <column name="name" value='{"default": "Other Income"}'/>
+            <column name="description" value='{"default": "Other sources of income"}'/>
+            <column name="is_system_defined" valueBoolean="true"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>
