@@ -130,6 +130,11 @@ public class AdvisorReadServiceImpl implements AdvisorReadService {
     }
 
     @Override
+    public Optional<AdvisorBasicResponse> findAdvisorByMobileNo(String mobileNumber) {
+        return advisorRepositoryWrapper.findAdvisorByMobileNo(mobileNumber);
+    }
+
+    @Override
     public PaginatedResponse<AdvisorDashboardResponse> getAdvisorDashboard(
             PaginationRequest paginationRequest,
             AdvisorDashboardFilters filters) {
