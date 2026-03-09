@@ -22,6 +22,12 @@ public interface AdvisorReadService {
 
     PaginatedResponse<AdvisorBasicResponse> searchAdvisors(PaginationRequest paginationRequest, AdvisorSearchRequest request);
 
+    /**
+     * Find an advisor by mobile number without office filtering.
+     * For use in flows where staff context is not available (e.g. Exotel webhooks).
+     */
+    Optional<AdvisorBasicResponse> findAdvisorByMobileNo(String mobileNumber);
+
     PaginatedResponse<AdvisorDashboardResponse> getAdvisorDashboard(
         PaginationRequest paginationRequest,
         AdvisorDashboardFilters filters);

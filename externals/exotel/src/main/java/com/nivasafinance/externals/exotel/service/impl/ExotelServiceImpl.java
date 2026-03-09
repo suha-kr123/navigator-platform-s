@@ -28,7 +28,6 @@ import com.nivasafinance.features.lead.dto.UpdateSourcingDetailsRequest;
 import com.nivasafinance.features.lead.enums.LeadStatus;
 import com.nivasafinance.features.lead.enums.LeadSubStatus;
 import com.nivasafinance.features.advisor.dto.AdvisorBasicResponse;
-import com.nivasafinance.features.advisor.dto.AdvisorSearchRequest;
 import com.nivasafinance.features.advisor.dto.AdvisorUpdateCallLog;
 import com.nivasafinance.features.advisor.dto.CreateAdvisorRequest;
 import com.nivasafinance.features.advisor.dto.MobileNumberDetails;
@@ -1165,28 +1164,11 @@ public class ExotelServiceImpl implements ExotelService {
     }
 
     /**
-     * Find an existing advisor by mobile number. Does NOT create a new advisor if not found.
-     * Returns null if no advisor exists.
+     * Find an existing advisor by mobile number (no office filter).
+     * Does NOT create a new advisor if not found. Returns null if no advisor exists.
      */
     private AdvisorBasicResponse findExistingAdvisor(String mobileNumber) {
-        // Search for existing advisor
-        PaginationRequest paginationRequest = new PaginationRequest(0, 10, "createdAt", "DESC");
-        AdvisorSearchRequest searchRequest = new AdvisorSearchRequest(mobileNumber);
-
-        PaginatedResponse<AdvisorBasicResponse> searchResult = advisorReadService.searchAdvisors(
-                paginationRequest,
-                searchRequest
-        );
-
-        if (searchResult != null && searchResult.getContent() != null && !searchResult.getContent().isEmpty()) {
-            List<AdvisorBasicResponse> advisors = searchResult.getContent();
-            // Return the most recent advisor
-            return advisors.stream()
-                    .max(Comparator.comparing(AdvisorBasicResponse::getCreatedAt))
-                    .orElse(null);
-        }
-
-        return null;
+        return advisorReadService.findAdvisorByMobileNo(mobileNumber).orElse(null);
     }
 
     /**
@@ -1207,23 +1189,11 @@ public class ExotelServiceImpl implements ExotelService {
 
         log.info("Created new advisor: {} with sourcing channel: {}", advisorIdentifier, DIRECT_CALL_SOURCE);
 
-        // Fetch the created advisor to return full details
-        PaginationRequest paginationRequest = new PaginationRequest(0, 1, "createdAt", "DESC");
-        AdvisorSearchRequest searchRequest = new AdvisorSearchRequest(mobileNumber);
-        PaginatedResponse<AdvisorBasicResponse> searchResult = advisorReadService.searchAdvisors(
-                paginationRequest,
-                searchRequest
-        );
-
-        if (searchResult != null && searchResult.getContent() != null && !searchResult.getContent().isEmpty()) {
-            return searchResult.getContent().get(0);
-        }
-
-        // Fallback: return minimal info
-        return AdvisorBasicResponse.builder()
-                .advisorIdentifier(advisorIdentifier)
-                .mobileNumber(mobileNumber)
-                .build();
+        return advisorReadService.findAdvisorByMobileNo(mobileNumber)
+                .orElse(AdvisorBasicResponse.builder()
+                        .advisorIdentifier(advisorIdentifier)
+                        .mobileNumber(mobileNumber)
+                        .build());
     }
 
     /**
@@ -1497,17 +1467,13 @@ public class ExotelServiceImpl implements ExotelService {
     } 
     
     private void createAdvisorMissedCallTask(String mobileNumber, String callSid) {
-        PaginatedResponse<AdvisorBasicResponse> advisorResponses = advisorReadService.searchAdvisors(
-                new PaginationRequest(0, 1, null, null), new AdvisorSearchRequest(mobileNumber));
-        if (advisorResponses == null || advisorResponses.getContent() == null
-                || advisorResponses.getContent().isEmpty()) {
-            log.info("No advisor found for mobile: {}", mobileNumber);
-            return;
-        }
-        for (AdvisorBasicResponse advisorResponse : advisorResponses.getContent()) {
-            CreateAdhocTaskRequest createTaskRequest = buildAdvisorMissedCallTaskRequest(advisorResponse, callSid);
-            taskWriteService.createAdhocTask(createTaskRequest);
-        }
+        advisorReadService.findAdvisorByMobileNo(mobileNumber)
+                .ifPresentOrElse(
+                        advisorResponse -> {
+                            CreateAdhocTaskRequest createTaskRequest = buildAdvisorMissedCallTaskRequest(advisorResponse, callSid);
+                            taskWriteService.createAdhocTask(createTaskRequest);
+                        },
+                        () -> log.info("No advisor found for mobile: {}", mobileNumber));
     }
 
     private CreateAdhocTaskRequest buildAdvisorMissedCallTaskRequest(AdvisorBasicResponse advisorResponse,
