@@ -814,6 +814,12 @@ public class LeadWriteServiceImpl implements LeadWriteService {
             }
             propertyDetails.setPropertyConstructionStage(value);
         }
+        if (request.getOwner() != null) {
+            propertyDetails.setOwner(request.getOwner().orElse(null));
+        }
+        if (request.getOwnerRelation() != null) {
+            propertyDetails.setOwnerRelation(request.getOwnerRelation().orElse(null));
+        }
         if (request.getPropertyMeasurementDetails() != null) {
             var m = request.getPropertyMeasurementDetails().orElse(null);
             if (m != null) {

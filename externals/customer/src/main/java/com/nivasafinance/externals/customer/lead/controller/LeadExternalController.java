@@ -4,6 +4,7 @@ import com.nivasafinance.common.constants.ApiConstants;
 import com.nivasafinance.externals.customer.lead.service.LeadExternalService;
 import com.nivasafinance.features.lead.dto.CurrentCustomerFormStepResponse;
 import com.nivasafinance.features.lead.dto.LeadContactResponse;
+import com.nivasafinance.features.lead.dto.LeadResponse;
 import com.nivasafinance.features.lead.dto.PatchLeadRequest;
 import com.nivasafinance.features.lead.dto.DocumentChecklistResponse;
 import com.nivasafinance.features.lead.dto.IncomeObligationDetailsResponse;
@@ -32,6 +33,12 @@ public class LeadExternalController {
             @RequestBody PatchLeadRequest request) {
         leadExternalService.patchLead(leadIdentifier, request);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{leadIdentifier}")
+    public ResponseEntity<LeadResponse> getLead(@PathVariable UUID leadIdentifier) {
+        LeadResponse response = leadExternalService.getLeadByIdentifier(leadIdentifier);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{leadIdentifier}/current-form-step")

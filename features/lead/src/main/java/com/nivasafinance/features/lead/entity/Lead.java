@@ -291,6 +291,8 @@ public class Lead extends AuditableEntity {
         private GeoData geoData;
         private String propertyType;
         private String propertyConstructionStage;
+        private String owner;
+        private String ownerRelation;
         private PropertyMeasurementDetails propertyMeasurementDetails;
         private DocumentChecklist documentChecklist;
 

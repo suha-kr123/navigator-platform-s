@@ -6,6 +6,7 @@ import com.nivasafinance.features.lead.dto.PatchLeadRequest;
 import com.nivasafinance.features.lead.service.LeadContactReadService;
 import com.nivasafinance.features.lead.service.LeadReadService;
 import com.nivasafinance.features.lead.dto.LeadContactResponse;
+import com.nivasafinance.features.lead.dto.LeadResponse;
 import com.nivasafinance.features.lead.dto.DocumentChecklistResponse;
 import com.nivasafinance.features.lead.dto.IncomeObligationDetailsResponse;
 import com.nivasafinance.features.lead.dto.PreliminaryDetailsResponse;
@@ -33,6 +34,12 @@ public class LeadExternalServiceImpl implements LeadExternalService {
     @Override
     public void patchLead(UUID leadIdentifier, PatchLeadRequest request) {
         leadWriteService.patchLead(leadIdentifier, request);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public LeadResponse getLeadByIdentifier(UUID leadIdentifier) {
+        return leadReadService.getLeadByIdentifier(leadIdentifier);
     }
 
     @Override

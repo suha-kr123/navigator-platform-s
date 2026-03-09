@@ -2,6 +2,7 @@ package com.nivasafinance.externals.customer.lead.service;
 
 import com.nivasafinance.features.lead.dto.CurrentCustomerFormStepResponse;
 import com.nivasafinance.features.lead.dto.LeadContactResponse;
+import com.nivasafinance.features.lead.dto.LeadResponse;
 import com.nivasafinance.features.lead.dto.PatchLeadRequest;
 import com.nivasafinance.features.lead.dto.DocumentChecklistResponse;
 import com.nivasafinance.features.lead.dto.IncomeObligationDetailsResponse;
@@ -14,6 +15,8 @@ import java.util.UUID;
 public interface LeadExternalService {
 
     void patchLead(UUID leadIdentifier, PatchLeadRequest request);
+
+    LeadResponse getLeadByIdentifier(UUID leadIdentifier);
 
     CurrentCustomerFormStepResponse getCurrentCustomerFormStep(UUID leadIdentifier);
 

@@ -20,6 +20,8 @@ public class PatchPropertyDetailsRequest {
     private Optional<GeoData> geoData;
     private Optional<String> propertyType;
     private Optional<String> propertyConstructionStage;
+    private Optional<String> owner;
+    private Optional<String> ownerRelation;
     private Optional<PropertyMeasurementDetailsData> propertyMeasurementDetails;
     private Optional<PatchDocumentChecklistRequest> documentChecklist;
 

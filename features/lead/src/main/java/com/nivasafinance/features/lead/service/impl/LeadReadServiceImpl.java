@@ -180,6 +180,8 @@ public class LeadReadServiceImpl implements LeadReadService {
                 .geoData(propertyDetails.getGeoData())
                 .propertyType(propertyDetails.getPropertyType())
                 .propertyConstructionStage(propertyDetails.getPropertyConstructionStage())
+                .owner(propertyDetails.getOwner())
+                .ownerRelation(propertyDetails.getOwnerRelation())
                 .propertyMeasurementDetails(measurementData)
                 .build();
     }
