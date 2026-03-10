@@ -10,5 +10,7 @@ public interface LocationMasterService {
     List<DistrictResponse> getDistrictsByStateId(Long stateId);
     List<TalukaResponse> getTalukasByDistrictId(Long districtId);
     List<VillageResponse> getVillagesByTalukaId(Long talukaId);
+    List<DistrictResponse> getServiceableDistrictsByStateId(Long stateId);
+    List<TalukaResponse> getServiceableTalukasByDistrictId(Long districtId);
 }
 

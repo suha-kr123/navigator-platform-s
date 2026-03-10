@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1772900000000_00" author="system" context="default">
+        <insert tableName="n_master_code">
+            <column name="parent_id" value="NULL"/>
+            <column name="key" value="LEAD_PROPERTY_CONSTRUCTION_STATUS_MASTER"/>
+            <column name="name" value='{"default": "Lead Property Construction Status Master"}'/>
+            <column name="description" value='{"default": "Construction status for lead property"}'/>
+            <column name="is_system_defined" valueBoolean="true"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,5 +1,6 @@
 package com.nivasafinance.features.address.service.impl;
 
+import com.nivasafinance.common.base.model.MasterLanguageResolver;
 import com.nivasafinance.common.dto.AddressData;
 import com.nivasafinance.common.dto.AddressRequest;
 import com.nivasafinance.features.address.service.AddressDataService;
@@ -103,7 +104,7 @@ public class AddressDataServiceImpl implements AddressDataService {
                     Village village = villageOpt.get();
                     addressData.setVillageCode(village.getCode());
                     addressData.setVillageId(village.getId());
-                    addressData.setVillageName(village.getName());
+                    addressData.setVillageName(MasterLanguageResolver.getDisplayValue(village.getNameValues()));
                 }
             } catch (Exception e) {
                 log.warn("Failed to fetch village by code: {} for taluka: {}. Continuing with null values.",
@@ -167,7 +168,7 @@ public class AddressDataServiceImpl implements AddressDataService {
                     District district = districtOpt.get();
                     addressData.setDistrictCode(district.getCode());
                     addressData.setDistrictId(district.getId());
-                    addressData.setDistrict(district.getName());
+                    addressData.setDistrict(MasterLanguageResolver.getDisplayValue(district.getNameValues()));
                     districtId = district.getId();
                 }
             } catch (Exception e) {
@@ -185,7 +186,7 @@ public class AddressDataServiceImpl implements AddressDataService {
                     Taluka taluka = talukaOpt.get();
                     addressData.setTalukaCode(taluka.getCode());
                     addressData.setTalukaId(taluka.getId());
-                    addressData.setTaluka(taluka.getName());
+                    addressData.setTaluka(MasterLanguageResolver.getDisplayValue(taluka.getNameValues()));
                     talukaId = taluka.getId();
                 }
             } catch (Exception e) {
@@ -204,7 +205,7 @@ public class AddressDataServiceImpl implements AddressDataService {
                     Village village = villageOpt.get();
                     addressData.setVillageCode(village.getCode());
                     addressData.setVillageId(village.getId());
-                    addressData.setVillageName(village.getName());
+                    addressData.setVillageName(MasterLanguageResolver.getDisplayValue(village.getNameValues()));
                 }
             } catch (Exception e) {
                 log.warn("Failed to fetch village by code: {} for taluka: {}. Continuing with null values.",

@@ -1,6 +1,7 @@
 package com.nivasafinance.features.master.pincode.service.impl;
 
 import com.nivasafinance.common.base.BaseNavigatorService;
+import com.nivasafinance.common.base.model.MasterLanguageResolver;
 import com.nivasafinance.features.master.location.entity.Country;
 import com.nivasafinance.features.master.location.entity.District;
 import com.nivasafinance.features.master.location.entity.State;
@@ -93,7 +94,7 @@ public class PincodeServiceImpl extends BaseNavigatorService implements PincodeS
             Optional<District> districtOpt = districtRepository.findById(firstPincode.getDistrictId());
             if (districtOpt.isPresent()) {
                 District district = districtOpt.get();
-                districtName = district.getName();
+                districtName = MasterLanguageResolver.getDisplayValue(district.getNameValues());
                 districtCode = district.getCode();
             }
         }
@@ -103,7 +104,7 @@ public class PincodeServiceImpl extends BaseNavigatorService implements PincodeS
             Optional<Taluka> talukaOpt = talukaRepository.findById(firstPincode.getTalukaId());
             if (talukaOpt.isPresent()) {
                 Taluka taluka = talukaOpt.get();
-                talukaName = taluka.getName();
+                talukaName = MasterLanguageResolver.getDisplayValue(taluka.getNameValues());
                 talukaCode = taluka.getCode();
             }
         }

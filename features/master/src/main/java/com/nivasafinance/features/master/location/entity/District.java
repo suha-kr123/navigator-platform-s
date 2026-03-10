@@ -1,11 +1,14 @@
 package com.nivasafinance.features.master.location.entity;
 
 import com.nivasafinance.common.audit.AuditableEntity;
+import com.nivasafinance.common.base.model.MasterLanguageData;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "n_master_district")
@@ -31,6 +34,10 @@ public class District extends AuditableEntity {
 
     @Column(name = "code", length = 50)
     private String code;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "value", columnDefinition = "jsonb")
+    private MasterLanguageData nameValues;
 
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;

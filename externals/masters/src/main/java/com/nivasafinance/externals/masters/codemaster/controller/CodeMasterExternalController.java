@@ -1,4 +1,4 @@
-package com.nivasafinance.externals.customer.codemaster.controller;
+package com.nivasafinance.externals.masters.codemaster.controller;
 
 import com.nivasafinance.common.constants.ApiConstants;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
@@ -16,7 +16,7 @@ import java.util.List;
 @RestController
 @RequestMapping(ApiConstants.OPEN_API_V1 + "/codes")
 @RequiredArgsConstructor
-public class CodeMasterOpenController {
+public class CodeMasterExternalController {
 
     private final CodeMasterService codeMasterService;
 

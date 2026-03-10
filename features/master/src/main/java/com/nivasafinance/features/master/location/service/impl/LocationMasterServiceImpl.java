@@ -1,5 +1,6 @@
 package com.nivasafinance.features.master.location.service.impl;
 
+import com.nivasafinance.common.base.model.MasterLanguageResolver;
 import com.nivasafinance.features.master.location.dto.*;
 import com.nivasafinance.features.master.location.entity.*;
 import com.nivasafinance.features.master.location.exception.LocationNotFoundException;
@@ -81,6 +82,26 @@ public class LocationMasterServiceImpl implements LocationMasterService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public List<DistrictResponse> getServiceableDistrictsByStateId(Long stateId) {
+        stateRepository.findById(stateId)
+                .orElseThrow(() -> new LocationNotFoundException("State", stateId, messageSource));
+        List<District> districts = districtRepository.findServiceableDistrictsByStateId(stateId);
+        return districts.stream()
+                .map(this::mapToDistrictResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<TalukaResponse> getServiceableTalukasByDistrictId(Long districtId) {
+        districtRepository.findById(districtId)
+                .orElseThrow(() -> new LocationNotFoundException("District", districtId, messageSource));
+        List<Taluka> talukas = talukaRepository.findServiceableTalukasByDistrictId(districtId);
+        return talukas.stream()
+                .map(this::mapToTalukaResponse)
+                .collect(Collectors.toList());
+    }
+
     private CountryResponse mapToCountryResponse(Country country) {
         return CountryResponse.builder()
                 .id(country.getId())
@@ -102,7 +123,7 @@ public class LocationMasterServiceImpl implements LocationMasterService {
     private DistrictResponse mapToDistrictResponse(District district) {
         return DistrictResponse.builder()
                 .id(district.getId())
-                .name(district.getName())
+                .name(MasterLanguageResolver.getDisplayValue(district.getNameValues()))
                 .code(district.getCode())
                 .isActive(district.getIsActive())
                 .build();
@@ -111,7 +132,7 @@ public class LocationMasterServiceImpl implements LocationMasterService {
     private TalukaResponse mapToTalukaResponse(Taluka taluka) {
         return TalukaResponse.builder()
                 .id(taluka.getId())
-                .name(taluka.getName())
+                .name(MasterLanguageResolver.getDisplayValue(taluka.getNameValues()))
                 .code(taluka.getCode())
                 .isActive(taluka.getIsActive())
                 .build();
@@ -120,7 +141,7 @@ public class LocationMasterServiceImpl implements LocationMasterService {
     private VillageResponse mapToVillageResponse(Village village) {
         return VillageResponse.builder()
                 .id(village.getId())
-                .name(village.getName())
+                .name(MasterLanguageResolver.getDisplayValue(village.getNameValues()))
                 .code(village.getCode())
                 .isActive(village.getIsActive())
                 .build();
