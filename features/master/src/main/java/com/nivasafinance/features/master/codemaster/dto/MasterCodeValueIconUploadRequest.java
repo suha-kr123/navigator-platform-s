@@ -24,6 +24,6 @@ public class MasterCodeValueIconUploadRequest {
     private String context;
 
     @NotBlank(message = "size is required")
-    @Pattern(regexp = "^(small|medium|large|xl|xxl)$", message = "size must be one of: small, medium, large, xl, xxl")
+    @Pattern(regexp = "^(small|medium|large|xl|xxl|svg)$", message = "size must be one of: small, medium, large, xl, xxl, svg")
     private String size;
 }

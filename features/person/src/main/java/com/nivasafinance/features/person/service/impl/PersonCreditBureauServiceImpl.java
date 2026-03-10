@@ -178,11 +178,10 @@ public class PersonCreditBureauServiceImpl implements PersonCreditBureauService 
                     consentId, enquiry.getId());
         }
 
-        // Update person.consent_details: add or replace { id: consentId, type: "CB" }
+        // Update person.consent_details: add CB consent (do not remove existing)
         Person person = personRepositoryWrapper.findByIdWithException(personId);
         List<Person.ConsentInfo> list = person.getConsentDetails() != null
                 ? new ArrayList<>(person.getConsentDetails()) : new ArrayList<>();
-        list.removeIf(c -> "CB".equals(c.getType()));
         list.add(new Person.ConsentInfo(consentId, "CB"));
         person.setConsentDetails(list);
         personRepositoryWrapper.saveWithException(person);
@@ -202,7 +201,6 @@ public class PersonCreditBureauServiceImpl implements PersonCreditBureauService 
         Person person = personRepositoryWrapper.findByIdWithException(personId);
         List<Person.ConsentInfo> list = person.getConsentDetails() != null
                 ? new ArrayList<>(person.getConsentDetails()) : new ArrayList<>();
-        list.removeIf(c -> "CB".equals(c.getType()));
         list.add(new Person.ConsentInfo(saved.getId(), "CB"));
         person.setConsentDetails(list);
         personRepositoryWrapper.saveWithException(person);
