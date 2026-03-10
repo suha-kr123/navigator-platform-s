@@ -974,8 +974,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
                 for (PatchIncomeAndObligationRequest.IncomeDetailsData d : fromRequest) {
                     String incomeSource = d.getIncomeSource();
                     if (incomeSource != null && !incomeSource.isBlank()) {
-                        codeValueMasterService.getCodeValueByKeyAndCodeKey(
-                                incomeSource, SystemControlledMasterCodes.LEAD_INCOME_SOURCE_MASTER);
+                        codeValueMasterService.getByKey(incomeSource);
                     }
                 }
                 incomeDetails = fromRequest.stream()
