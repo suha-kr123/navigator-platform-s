@@ -10,7 +10,8 @@ public enum IconSizeType {
     MEDIUM("medium"),
     LARGE("large"),
     XL("xl"),
-    XXL("xxl");
+    XXL("xxl"),
+    SVG("svg");
 
     private final String value;
 
@@ -28,7 +29,7 @@ public enum IconSizeType {
                 return v;
             }
         }
-        throw new IllegalArgumentException("Invalid icon size: " + s + ". Valid: small, medium, large, xl, xxl");
+        throw new IllegalArgumentException("Invalid icon size: " + s + ". Valid: small, medium, large, xl, xxl, svg");
     }
 
     public String getUrlFrom(IconSize iconSize) {
@@ -41,6 +42,7 @@ public enum IconSizeType {
             case LARGE -> iconSize.getLarge();
             case XL -> iconSize.getXl();
             case XXL -> iconSize.getXxl();
+            case SVG -> iconSize.getSvg();
         };
     }
 
@@ -54,6 +56,7 @@ public enum IconSizeType {
             case LARGE -> iconSize.setLarge(url);
             case XL -> iconSize.setXl(url);
             case XXL -> iconSize.setXxl(url);
+            case SVG -> iconSize.setSvg(url);
         }
     }
 
@@ -80,6 +83,7 @@ public enum IconSizeType {
             case LARGE -> data.getLarge();
             case XL -> data.getXl();
             case XXL -> data.getXxl();
+            case SVG -> data.getSvg();
         };
     }
 
@@ -94,6 +98,7 @@ public enum IconSizeType {
             case LARGE -> data.setLarge(asset);
             case XL -> data.setXl(asset);
             case XXL -> data.setXxl(asset);
+            case SVG -> data.setSvg(asset);
         }
     }
 }
