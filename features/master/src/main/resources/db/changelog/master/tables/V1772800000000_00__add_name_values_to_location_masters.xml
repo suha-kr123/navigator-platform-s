@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1772800000000_00" author="system" context="default">
+        <addColumn tableName="n_master_district">
+            <column name="value" type="jsonb"/>
+        </addColumn>
+        <addColumn tableName="n_master_taluka">
+            <column name="value" type="jsonb"/>
+        </addColumn>
+        <addColumn tableName="n_master_village">
+            <column name="value" type="jsonb"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="V1772800000000_01" author="system" context="default">
+        <sql>UPDATE n_master_district SET value = jsonb_build_object('default', name) WHERE value IS NULL</sql>
+        <sql>UPDATE n_master_taluka SET value = jsonb_build_object('default', name) WHERE value IS NULL</sql>
+        <sql>UPDATE n_master_village SET value = jsonb_build_object('default', name) WHERE value IS NULL</sql>
+    </changeSet>
+</databaseChangeLog>
