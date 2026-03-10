@@ -7,7 +7,7 @@ import com.nivasafinance.features.document.dto.DocumentCreateResponse;
 import java.util.UUID;
 
 public interface DocumentWriteService {
-    
+
     DocumentCreateResponse createDocument(DocumentCreateRequest createRequest);
 
     DocumentCreateResponse createDocument(DocumentCreateRequestInputStream createRequest);
@@ -16,5 +16,3 @@ public interface DocumentWriteService {
 
     void deleteDocumentById(Long id);
 }
-
-

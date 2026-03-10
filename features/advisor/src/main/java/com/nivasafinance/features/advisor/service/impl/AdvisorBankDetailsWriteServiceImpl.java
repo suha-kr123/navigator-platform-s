@@ -9,14 +9,17 @@ import com.nivasafinance.features.advisor.dto.BankDetails;
 import com.nivasafinance.features.advisor.dto.UpdateBankDetailsRequest;
 import com.nivasafinance.features.advisor.entity.Advisor;
 import com.nivasafinance.features.advisor.enums.BankDetailsStatus;
+import com.nivasafinance.features.advisor.exception.AdvisorExceptionFactory;
 import com.nivasafinance.features.advisor.repository.AdvisorRepositoryWrapper;
 import com.nivasafinance.features.advisor.service.AdvisorBankDetailsWriteService;
 import com.nivasafinance.features.master.codemaster.SystemControlledMasterCodes;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import com.nivasafinance.features.master.codemaster.service.CodeMasterService;
-import com.nivasafinance.features.person.repository.PersonRepositoryWrapper;
+import com.nivasafinance.features.person.dto.PersonResponse;
+import com.nivasafinance.features.usermanagement.service.UserReadService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,7 +35,8 @@ public class AdvisorBankDetailsWriteServiceImpl implements AdvisorBankDetailsWri
     private final AdvisorRepositoryWrapper advisorRepositoryWrapper;
     private final CodeMasterService codeMasterService;
     private final ApplicationEventPublisher applicationEventPublisher;
-    private final PersonRepositoryWrapper personRepositoryWrapper;
+    private final UserReadService userReadService;
+    private final MessageSource messageSource;
 
     @Override
     public UUID addBankDetails(UUID advisorIdentifier, AddBankDetailsRequest request) {
@@ -76,6 +80,13 @@ public class AdvisorBankDetailsWriteServiceImpl implements AdvisorBankDetailsWri
         Advisor advisor = getAdvisor(advisorIdentifier);
         BankDetails bankDetail = getBankDetail(advisor, bankIdentifier);
 
+        if (request.getNameAsPerPassbook() == null || request.getNameAsPerPassbook().isBlank()
+                || request.getAccountNo() == null || request.getAccountNo().isBlank()
+                || request.getIfscCode() == null || request.getIfscCode().isBlank()
+                || request.getBankName() == null || request.getBankName().isBlank()) {
+            throw AdvisorExceptionFactory.bankDetailsRequiredFieldsMissing(messageSource);
+        }
+
         if (request.getBankName() != null) {
             validateBankName(request.getBankName());
         }
@@ -104,7 +115,7 @@ public class AdvisorBankDetailsWriteServiceImpl implements AdvisorBankDetailsWri
 
     private void validateBankName(String bankNameKey) {
         List<CodeValueResponse> banks =
-                codeMasterService.getAllCodeValuesByCodeKey(SystemControlledMasterCodes.BANK_NAME_MASTER, true);
+                codeMasterService.getAllCodeValuesByCodeKey(SystemControlledMasterCodes.BANK_NAME_MASTER, true, "default");
         boolean isValid = banks.stream().anyMatch(cv -> bankNameKey.equals(cv.getKey()));
         if (!isValid) {
             throw new IllegalArgumentException("Invalid bankName. Provide a valid master key from BANK_NAME_MASTER.");
@@ -124,8 +135,8 @@ public class AdvisorBankDetailsWriteServiceImpl implements AdvisorBankDetailsWri
     }
 
     private void updateStatus(UUID advisorIdentifier,
-                                             UUID bankIdentifier,
-                                             BankDetailsStatus statusToSet) {
+                              UUID bankIdentifier,
+                              BankDetailsStatus statusToSet) {
         Advisor advisor = getAdvisor(advisorIdentifier);
         BankDetails bankDetail = getBankDetail(advisor, bankIdentifier);
 
@@ -152,9 +163,7 @@ public class AdvisorBankDetailsWriteServiceImpl implements AdvisorBankDetailsWri
     }
 
     private void publishAdvisorUpdatedEvent(Advisor advisor) {
-        // Get primary mobile number from person entity
-        com.nivasafinance.features.person.entity.Person person = 
-                personRepositoryWrapper.findByIdWithException(advisor.getPersonId());
+        PersonResponse person = userReadService.getPersonForUser(advisor.getUsername());
         String mobileNumber = null;
         if (person.getMobileNumbers() != null && !person.getMobileNumbers().isEmpty()) {
             mobileNumber = person.getMobileNumbers().stream()

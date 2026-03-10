@@ -2,6 +2,7 @@ package com.nivasafinance.features.person.service;
 
 import com.nivasafinance.features.creditbureau.dto.CreditBureauEnquiryRequest;
 import com.nivasafinance.features.creditbureau.dto.CreditBureauEnquiryResponse;
+import com.nivasafinance.features.person.dto.RecordCbConsentResult;
 
 import java.util.UUID;
 
@@ -29,4 +30,13 @@ public interface PersonCreditBureauService {
      * @param enquiryIdentifier the enquiry identifier (UUID)
      */
     void onConsentGranted(Long consentId, UUID enquiryIdentifier);
+
+    /**
+     * Records CB consent at person level (creates consent as RECEIVED and updates person.consent_details).
+     * No enquiry is created. Used for customer web journey where consent is taken before fetch report.
+     *
+     * @param personId the person ID
+     * @return result containing the consent identifier
+     */
+    RecordCbConsentResult recordCbConsentReceived(Long personId);
 }

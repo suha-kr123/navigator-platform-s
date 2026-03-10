@@ -3,10 +3,14 @@ package com.nivasafinance.features.advisor.service;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.features.advisor.dto.*;
+import com.nivasafinance.features.advisor.entity.Advisor;
 
+import java.util.Optional;
 import java.util.UUID;
 
 public interface AdvisorReadService {
+
+    Optional<Advisor> findAdvisorByUsername(String username);
 
     AdvisorResponse getAdvisorByIdentifier(UUID identifier);
 
@@ -17,6 +21,12 @@ public interface AdvisorReadService {
     PaginatedResponse<AdvisorBasicResponse> getAllAdvisors(PaginationRequest paginationRequest, String name, String mobileNumber);
 
     PaginatedResponse<AdvisorBasicResponse> searchAdvisors(PaginationRequest paginationRequest, AdvisorSearchRequest request);
+
+    /**
+     * Find an advisor by mobile number without office filtering.
+     * For use in flows where staff context is not available (e.g. Exotel webhooks).
+     */
+    Optional<AdvisorBasicResponse> findAdvisorByMobileNo(String mobileNumber);
 
     PaginatedResponse<AdvisorDashboardResponse> getAdvisorDashboard(
         PaginationRequest paginationRequest,

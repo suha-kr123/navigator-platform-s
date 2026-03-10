@@ -1,5 +1,6 @@
 package com.nivasafinance.features.master.codemaster.dto;
 
+import com.nivasafinance.common.base.model.MasterLanguageResolver;
 import com.nivasafinance.features.master.codemaster.entity.MasterCode;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,8 +19,8 @@ public class MasterCodeResponse {
     public static MasterCodeResponse from(MasterCode masterCode) {
         return MasterCodeResponse.builder()
                 .key(masterCode.getKey())
-                .name(masterCode.getName().getDefaultValue())
-                .description(masterCode.getDescription().getDefaultValue())
+                .name(masterCode.getName() != null ? MasterLanguageResolver.getDisplayValue(masterCode.getName()) : null)
+                .description(masterCode.getDescription() != null ? MasterLanguageResolver.getDisplayValue(masterCode.getDescription()) : null)
                 .build();
     }
 }

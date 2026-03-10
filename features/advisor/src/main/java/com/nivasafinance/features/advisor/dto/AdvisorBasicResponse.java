@@ -24,6 +24,7 @@ public class AdvisorBasicResponse {
     private LocalDateTime updatedAt;
     private String officeKey;
     private String owner;
+    private String username;
 
     //referral details
     private String referredByCode;

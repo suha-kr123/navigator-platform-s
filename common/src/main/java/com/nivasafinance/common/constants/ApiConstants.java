@@ -9,4 +9,6 @@ public class ApiConstants {
     public static final String EXTERNAL_V1 = EXTERNAL_ROOT + API_VERSION_V1;
     public static final String OPEN_ROOT = "/open";
     public static final String OPEN_API_V1 = OPEN_ROOT + API_ROOT + API_VERSION_V1;;
+    public static final String SELF_ROOT = "/self";
+    public static final String SELF_V1 = SELF_ROOT + API_VERSION_V1;
 }

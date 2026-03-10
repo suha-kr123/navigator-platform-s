@@ -53,12 +53,12 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
             
             if (ValidationUtils.isNonNull(taskConfigDetails.getAllowedOutcomesCodeValueKey())) {
                 allowedOutcomes = codeMasterService.getAllCodeValuesByCodeKey(
-                        taskConfigDetails.getAllowedOutcomesCodeValueKey(), true);
+                        taskConfigDetails.getAllowedOutcomesCodeValueKey(), true, "default");
             }
             
             if (ValidationUtils.isNonNull(taskConfigDetails.getRescheduleReasonsCodeValueKey())) {
                 rescheduleReasons = codeMasterService.getAllCodeValuesByCodeKey(
-                        taskConfigDetails.getRescheduleReasonsCodeValueKey(), true);
+                        taskConfigDetails.getRescheduleReasonsCodeValueKey(), true, "default");
             }
         }
         

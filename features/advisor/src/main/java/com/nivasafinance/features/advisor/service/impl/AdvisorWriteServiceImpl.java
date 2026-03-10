@@ -12,14 +12,15 @@ import com.nivasafinance.features.advisor.enums.AdvisorStatus;
 import com.nivasafinance.features.advisor.repository.AdvisorRepositoryWrapper;
 import com.nivasafinance.features.advisor.service.AdvisorWriteService;
 import com.nivasafinance.features.offices.service.OfficeReadService;
+import com.nivasafinance.features.usermanagement.service.UserReadService;
+import com.nivasafinance.features.usermanagement.service.UserWriteService;
 import com.nivasafinance.features.referral.dto.ReferralCodeRegistryResponse;
 import com.nivasafinance.features.referral.enums.EntityType;
 import com.nivasafinance.features.referral.service.ReferralCodeRegistryService;
+import com.nivasafinance.features.rolemanagement.admin.service.AdminUserRoleService;
+import com.nivasafinance.features.rolemanagement.role.dto.AddUserRolesRequest;
 import com.nivasafinance.features.person.dto.PersonCreateRequest;
-import com.nivasafinance.features.person.dto.PersonCreateResponse;
 import com.nivasafinance.features.person.dto.PersonUpdateRequest;
-import com.nivasafinance.features.person.repository.PersonRepositoryWrapper;
-import com.nivasafinance.features.person.service.PersonWriteService;
 import com.nivasafinance.features.sourcechannel.dto.SourcingChannelRequest;
 import com.nivasafinance.features.sourcechannel.dto.SourcingChannelResponse;
 import com.nivasafinance.features.sourcechannel.service.SourcingChannelWriteService;
@@ -29,7 +30,8 @@ import com.nivasafinance.features.master.codemaster.service.CodeMasterService;
 import com.nivasafinance.common.exception.BadRequestException;
 import com.nivasafinance.common.utils.ValidationUtils;
 import com.nivasafinance.features.advisor.exception.AdvisorExceptionFactory;
-import com.nivasafinance.features.person.entity.Person;
+import com.nivasafinance.features.usermanagement.dto.UserResponse;
+import com.nivasafinance.features.usermanagement.exception.UserAlreadyExistsException;
 import lombok.AllArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.MessageSource;
@@ -39,11 +41,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
-import java.util.UUID;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @Transactional
@@ -51,45 +52,40 @@ import java.util.List;
 public class AdvisorWriteServiceImpl implements AdvisorWriteService {
 
     private final AdvisorRepositoryWrapper advisorRepositoryWrapper;
-    private final PersonWriteService personWriteService;
-    private final PersonRepositoryWrapper personRepositoryWrapper;
     private final SourcingChannelWriteService sourcingChannelWriteService;
     private final CodeMasterService codeMasterService;
     private final OfficeReadService officeReadService;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final MessageSource messageSource;
     private final ReferralCodeRegistryService referralCodeRegistryService;
+    private final UserReadService userReadService;
+    private final UserWriteService userWriteService;
+    private final AdminUserRoleService adminUserRoleService;
+
+    private static final String ROLE_ADVISOR_SELF = "ADVISOR_SELF";
 
     @Override
     public UUID createAdvisor(CreateAdvisorRequest request) {
-        // Extract primary mobile number
-        String primaryMobile = request.getMobileNumberDetails() != null 
-                ? request.getMobileNumberDetails().getMobileNumber() 
-                : null;
-        
-        Long personId;
-        
-        // Check if person already exists with this mobile number
-        Optional<Person> existingPerson = personRepositoryWrapper.findByPrimaryMobileNumber(primaryMobile);
-        if (existingPerson.isPresent()) {
-            personId = existingPerson.get().getId();
-            
-            // Check if advisor already exists for this person
-            Optional<Advisor> existingAdvisor = advisorRepositoryWrapper.findByPersonId(personId);
-            if (existingAdvisor.isPresent()) {
-                throw AdvisorExceptionFactory.personAlreadyExists(personId, messageSource);
-            }
-        } else {
-            // Create new person
-            PersonCreateRequest personRequest = buildPersonCreateRequest(request);
-            PersonCreateResponse personResponse = personWriteService.createPerson(personRequest);
-            personId = personResponse.getId();
+        String mobile = getPrimaryMobile(request);
+        if (mobile == null || mobile.isBlank()) {
+            throw new BadRequestException("Primary mobile number is required");
         }
 
-        // Create advisor
+        String advisorUsername;
+        try {
+            advisorUsername = userReadService.findUserByPersonMobile(mobile)
+                    .map(UserResponse::getUsername)
+                    .orElseGet(() -> userWriteService.createUserForMobile(mobile, buildPersonCreateRequest(request)).getUsername());
+        } catch (UserAlreadyExistsException e) {
+            throw AdvisorExceptionFactory.advisorAlreadyExistsForMobileNumber(mobile, messageSource);
+        }
+        if (advisorRepositoryWrapper.findByUsername(advisorUsername).isPresent()) {
+            throw AdvisorExceptionFactory.advisorAlreadyExistsForMobileNumber(mobile, messageSource);
+        }
+
         Advisor advisor = new Advisor();
         advisor.setIdentifier(UUID.randomUUID());
-        advisor.setPersonId(personId);
+        advisor.setUsername(advisorUsername);
         advisor.setStatus(AdvisorStatus.CREATED);
         if (request.getOfficeKey() != null) {
             officeReadService.getOfficeByKey(request.getOfficeKey()); //validate
@@ -121,15 +117,17 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
 
         handleSourcingChannel(savedAdvisor, request.getSourcingChannelRequest());
 
-        // Publish ADVISOR_CREATED event
-        String mobileNumber = request.getMobileNumberDetails() != null
-                ? request.getMobileNumberDetails().getMobileNumber()
-                : null;
+        // addUserRoles with primaryRole invokes setPrimaryRole internally, which sets any existing primary to isPrimary=false before setting the new one.
+        AddUserRolesRequest roleRequest = new AddUserRolesRequest();
+        roleRequest.setRoles(Collections.singletonList(ROLE_ADVISOR_SELF));
+        roleRequest.setPrimaryRole(ROLE_ADVISOR_SELF);
+        adminUserRoleService.addUserRoles(savedAdvisor.getUsername(), roleRequest);
 
+        // Publish ADVISOR_CREATED event
         AdvisorCreationEventPayload payload = AdvisorCreationEventPayload.builder()
                 .id(savedAdvisor.getId())
                 .advisorIdentifier(savedAdvisor.getIdentifier())
-                .mobileNumber(mobileNumber)
+                .mobileNumber(mobile)
                 .build();
 
         String username = UserContext.getUsername();
@@ -144,9 +142,7 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
     public void updateAdvisor(UUID identifier, UpdateAdvisorRequest request) {
         Advisor advisor = advisorRepositoryWrapper.findByIdentifierWithException(identifier);
 
-        // Update person details
-        PersonUpdateRequest personUpdateRequest = buildPersonUpdateRequest(request);
-        personWriteService.updatePerson(advisor.getPersonId(), personUpdateRequest);
+        userWriteService.updatePersonForUser(advisor.getUsername(), buildPersonUpdateRequest(request));
 
         // Update office key if provided
         if (request.getOfficeKey() != null) {
@@ -183,9 +179,7 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
     }
 
     private void publishAdvisorUpdatedEvent(Advisor advisor) {
-        // Get primary mobile number from person entity
-        com.nivasafinance.features.person.entity.Person person = 
-                personRepositoryWrapper.findByIdWithException(advisor.getPersonId());
+        com.nivasafinance.features.person.dto.PersonResponse person = userReadService.getPersonForUser(advisor.getUsername());
         String mobileNumber = null;
         if (person.getMobileNumbers() != null && !person.getMobileNumbers().isEmpty()) {
             mobileNumber = person.getMobileNumbers().stream()
@@ -253,7 +247,7 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
         // Validate highestQualification against global QUALIFICATION_MASTER
         if (request.getHighestQualification() != null) {
             List<CodeValueResponse> qualifications =
-                    codeMasterService.getAllCodeValuesByCodeKey(SystemControlledMasterCodes.QUALIFICATION_MASTER, true);
+                    codeMasterService.getAllCodeValuesByCodeKey(SystemControlledMasterCodes.QUALIFICATION_MASTER, true, "default");
             String provided = request.getHighestQualification();
             boolean isValid = qualifications.stream()
                     .anyMatch(cv ->
@@ -271,9 +265,7 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
             qualificationDetails = new QualificationDetails();
         }
 
-        if (request.getHighestQualification() != null) {
         qualificationDetails.setHighestQualification(request.getHighestQualification());
-        }
         advisor.setQualificationDetails(qualificationDetails);
 
         advisorRepositoryWrapper.saveWithException(advisor);
@@ -289,7 +281,7 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
         // Validate occupationType against OCCUPATION_TYPE_MASTER
         if (request.getOccupationType() != null) {
             List<CodeValueResponse> occupationTypes =
-                    codeMasterService.getAllCodeValuesByCodeKey(SystemControlledMasterCodes.OCCUPATION_TYPE_MASTER, true);
+                    codeMasterService.getAllCodeValuesByCodeKey(SystemControlledMasterCodes.OCCUPATION_TYPE_MASTER, true, "default");
             String providedType = request.getOccupationType();
             boolean isValidType = occupationTypes.stream()
                     .anyMatch(cv ->
@@ -304,12 +296,12 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
         // Validate occupation against OCCUPATION_MASTER
         if (request.getOccupation() != null) {
             List<CodeValueResponse> occupations =
-                    codeMasterService.getAllCodeValuesByCodeKey(SystemControlledMasterCodes.OCCUPATION_MASTER, true);
+                    codeMasterService.getAllCodeValuesByCodeKey(SystemControlledMasterCodes.OCCUPATION_MASTER, true, "default");
             String providedOcc = request.getOccupation();
             boolean isValidOcc = occupations.stream()
                     .anyMatch(cv ->
                             providedOcc.equalsIgnoreCase(cv.getKey()) ||
-                            (cv.getValue() != null && providedOcc.equalsIgnoreCase(cv.getValue()))
+                                    (cv.getValue() != null && providedOcc.equalsIgnoreCase(cv.getValue()))
                     );
             if (!isValidOcc) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -322,12 +314,8 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
             otherDetails = new OtherDetails();
         }
 
-        if (request.getOccupationType() != null) {
         otherDetails.setOccupationType(request.getOccupationType());
-        }
-        if (request.getOccupation() != null) {
         otherDetails.setOccupation(request.getOccupation());
-        }
         advisor.setOtherDetails(otherDetails);
 
         advisorRepositoryWrapper.saveWithException(advisor);
@@ -343,7 +331,7 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
         // Validate segmentation against SEGMENTATION_MASTER
         if (request.getSegmentation() != null) {
             List<CodeValueResponse> segmentations =
-                    codeMasterService.getAllCodeValuesByCodeKey(SystemControlledMasterCodes.SEGMENTATION_MASTER, true);
+                    codeMasterService.getAllCodeValuesByCodeKey(SystemControlledMasterCodes.SEGMENTATION_MASTER, true, "default");
             String provided = request.getSegmentation();
             boolean isValid = segmentations.stream()
                     .anyMatch(cv ->
@@ -462,6 +450,12 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
         );
     }
 
+    private String getPrimaryMobile(CreateAdvisorRequest request) {
+        return request.getMobileNumberDetails() != null
+                ? request.getMobileNumberDetails().getMobileNumber()
+                : null;
+    }
+
     // Convert CreateAdvisorRequest to PersonCreateRequest
     private PersonCreateRequest buildPersonCreateRequest(CreateAdvisorRequest request) {
         PersonCreateRequest personRequest = new PersonCreateRequest();
@@ -513,11 +507,13 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
     private PersonUpdateRequest buildPersonUpdateRequest(UpdateAdvisorRequest request) {
         PersonUpdateRequest personRequest = new PersonUpdateRequest();
 
-        // Map mobile numbers
-        if (request.getMobileNumberDetails() != null) {
+        // Map mobile numbers (from mobileNumberDetails or from personalDetails.mobileNumbers e.g. Self API)
+        if (request.getMobileNumberDetails() != null && !request.getMobileNumberDetails().isEmpty()) {
             List<com.nivasafinance.features.person.entity.MobileNumberDetails> mobiles =
                     mapUpdateMobileNumbers(request.getMobileNumberDetails());
             personRequest.setMobileNumbers(mobiles);
+        } else if (request.getPersonalDetails() != null && request.getPersonalDetails().getMobileNumbers() != null) {
+            personRequest.setMobileNumbers(request.getPersonalDetails().getMobileNumbers());
         }
 
         // Map personal details

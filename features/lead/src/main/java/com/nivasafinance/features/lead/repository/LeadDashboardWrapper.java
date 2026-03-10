@@ -581,7 +581,8 @@ public class LeadDashboardWrapper {
                 LEFT JOIN n_sourcing_channel_details sourcing_channel ON sourcing_channel.id = l.sourcing_channel_id
                 LEFT JOIN n_referral_code_registry r ON r.referral_code = sourcing_channel.marketing_details->>'referredByCode'
                 LEFT JOIN n_advisor ref_adv ON ref_adv.identifier = r.entity_identifier AND r.entity_type::text = 'ADVISOR'
-                LEFT JOIN n_person ref_adv_p ON ref_adv_p.id = ref_adv.person_id
+                LEFT JOIN n_user ref_adv_u ON ref_adv_u.username = ref_adv.username
+                LEFT JOIN n_person ref_adv_p ON ref_adv_p.id = ref_adv_u.person_id
                 LEFT JOIN n_staff ref_st ON ref_st.identifier = r.entity_identifier AND r.entity_type::text = 'STAFF'
                 LEFT JOIN n_user ref_st_u ON ref_st_u.id = ref_st.user_id
                 LEFT JOIN n_person ref_st_p ON ref_st_p.id = ref_st_u.person_id

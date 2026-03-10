@@ -19,6 +19,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
     // Jackson Hibernate6 module for Redis cache serialization
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-hibernate6")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jdk8")
     // Micrometer Prometheus for metrics export
     implementation("io.micrometer:micrometer-registry-prometheus")
 }

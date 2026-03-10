@@ -2,6 +2,7 @@ package com.nivasafinance.features.lead.service.impl;
 
 import com.nivasafinance.common.context.UserContext;
 import com.nivasafinance.common.dto.AddressData;
+import com.nivasafinance.common.dto.PatchAddressData;
 import com.nivasafinance.common.events.BusinessEvent;
 import com.nivasafinance.common.events.SystemEvent;
 import com.nivasafinance.common.events.payload.LeadCreationEventPayload;
@@ -12,17 +13,15 @@ import com.nivasafinance.common.exception.BadRequestException;
 import com.nivasafinance.common.exception.ResourceNotFoundException;
 import com.nivasafinance.common.utils.ValidationUtils;
 import com.nivasafinance.features.address.service.AddressDataService;
+import com.nivasafinance.features.lead.annotation.TransactionalOptimisticRetry;
 import com.nivasafinance.features.lead.dto.*;
-import com.nivasafinance.features.lead.dto.UpdateCallDetailsRequest;
 import com.nivasafinance.features.lead.entity.Lead;
-import com.nivasafinance.features.lead.enums.LeadStatus;
-import com.nivasafinance.features.lead.enums.LeadSubStatus;
+import com.nivasafinance.features.lead.enums.*;
 import com.nivasafinance.features.lead.exception.ActiveLeadAlreadyExistsException;
+import com.nivasafinance.features.lead.exception.LeadExceptionFactory;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadContactWriteService;
 import com.nivasafinance.features.lead.service.LeadWriteService;
-import com.nivasafinance.features.workflow.constants.WorkflowConstants;
-import com.nivasafinance.features.workflow.repository.WorkflowConfigRepositoryWrapper;
 import com.nivasafinance.features.leadstages.service.LeadStageHistoryWriteService;
 import com.nivasafinance.features.master.codemaster.SystemControlledMasterCodes;
 import com.nivasafinance.features.master.codemaster.service.CodeValueMasterService;
@@ -33,15 +32,16 @@ import com.nivasafinance.features.person.repository.PersonRepositoryWrapper;
 import com.nivasafinance.features.sourcechannel.dto.SourcingChannelRequest;
 import com.nivasafinance.features.sourcechannel.dto.SourcingChannelResponse;
 import com.nivasafinance.features.sourcechannel.service.SourcingChannelWriteService;
-
+import com.nivasafinance.features.workflow.constants.WorkflowConstants;
+import com.nivasafinance.features.workflow.repository.WorkflowConfigRepositoryWrapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.MessageSource;
-import com.nivasafinance.features.lead.annotation.TransactionalOptimisticRetry;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -738,6 +738,292 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         // Publish event (task closing will be handled asynchronously by TaskCloseListener)
         String reason = lead.getReasons() != null ? lead.getReasons().getDropoff() : null;
         publishLeadStatusChangeEvent(lead, BusinessEvent.LEAD_DROPOFF, reason);
+    }
+
+    @Override
+    public void patchPropertyDetails(UUID leadIdentifier, PatchPropertyDetailsRequest request) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        Lead.OtherDetails otherDetails = lead.getOtherDetails();
+        if (otherDetails == null) {
+            otherDetails = new Lead.OtherDetails();
+        }
+        mergePropertyDetailsInto(otherDetails, request);
+        lead.setOtherDetails(otherDetails);
+        leadRepositoryWrapper.saveWithException(lead);
+        publishLeadUpdatedEvent(lead);
+    }
+
+    @Override
+    public void patchIncomeObligationDetails(UUID leadIdentifier, PatchIncomeAndObligationRequest request) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        mergeIncomeObligationDetailsInto(lead, request);
+        leadRepositoryWrapper.saveWithException(lead);
+        publishLeadUpdatedEvent(lead);
+    }
+
+    @Override
+    public void patchLead(UUID leadIdentifier, PatchLeadRequest request) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        Lead.OtherDetails otherDetails = lead.getOtherDetails();
+        if (otherDetails == null) {
+            otherDetails = new Lead.OtherDetails();
+        }
+        if (request.getPropertyDetails() != null) {
+            mergePropertyDetailsInto(otherDetails, request.getPropertyDetails().orElse(null));
+        }
+        if (request.getIncomeAndObligationDetails() != null) {
+            mergeIncomeObligationDetailsInto(lead, request.getIncomeAndObligationDetails().orElse(null));
+        }
+        if (request.getCurrentCustomerFormStep() != null) {
+            mergeCurrentCustomerFormStepInto(otherDetails, request.getCurrentCustomerFormStep().orElse(null));
+        }
+        lead.setOtherDetails(otherDetails);
+        leadRepositoryWrapper.saveWithException(lead);
+        publishLeadUpdatedEvent(lead);
+    }
+
+    private void mergePropertyDetailsInto(Lead.OtherDetails otherDetails, PatchPropertyDetailsRequest request) {
+        if (request == null) {
+            return;
+        }
+        Lead.PropertyDetails propertyDetails = otherDetails.getPropertyDetails();
+        if (propertyDetails == null) {
+            propertyDetails = new Lead.PropertyDetails();
+        }
+        if (request.getAddress() != null && request.getAddress().isPresent()) {
+            mergeAddressInto(propertyDetails, request.getAddress().get());
+        }
+        if (request.getGeoData() != null) {
+            propertyDetails.setGeoData(request.getGeoData().orElse(null));
+        }
+        if (request.getPropertyType() != null) {
+            String value = request.getPropertyType().orElse(null);
+            if (value != null && !value.isBlank()) {
+                codeValueMasterService.getCodeValueByKeyAndCodeKey(
+                        value, SystemControlledMasterCodes.LEAD_ROOF_PROFILE_MASTER
+                );
+            }
+            propertyDetails.setPropertyType(value);
+        }
+        if (request.getPropertyConstructionStage() != null) {
+            String value = request.getPropertyConstructionStage().orElse(null);
+            if (value != null && !value.isBlank()) {
+                codeValueMasterService.getCodeValueByKeyAndCodeKey(
+                        value, SystemControlledMasterCodes.LEAD_PROPERTY_CONSTRUCTION_STATUS_MASTER
+                );
+            }
+            propertyDetails.setPropertyConstructionStage(value);
+        }
+        if (request.getOwner() != null) {
+            propertyDetails.setOwner(request.getOwner().orElse(null));
+        }
+        if (request.getOwnerRelation() != null) {
+            propertyDetails.setOwnerRelation(request.getOwnerRelation().orElse(null));
+        }
+        if (request.getPropertyMeasurementDetails() != null) {
+            var m = request.getPropertyMeasurementDetails().orElse(null);
+            if (m != null) {
+                propertyDetails.setPropertyMeasurementDetails(
+                        Lead.PropertyDetails.PropertyMeasurementDetails.builder()
+                                .buildUpArea(m.getBuildUpArea())
+                                .siteArea(m.getSiteArea())
+                                .build());
+            } else {
+                propertyDetails.setPropertyMeasurementDetails(null);
+            }
+        }
+        if (request.getDocumentChecklist() != null) {
+            mergeDocumentChecklistInto(propertyDetails, request.getDocumentChecklist().orElse(null));
+        }
+        otherDetails.setPropertyDetails(propertyDetails);
+    }
+
+    private void mergeAddressInto(Lead.PropertyDetails propertyDetails, PatchAddressData patch) {
+        AddressData existing = propertyDetails.getAddress();
+        if (existing == null) {
+            existing = new AddressData();
+            propertyDetails.setAddress(existing);
+        }
+        if (patch.getId() != null && patch.getId().isPresent()) {
+            existing.setId(patch.getId().get());
+        }
+        if (patch.getAddressType() != null && patch.getAddressType().isPresent()) {
+            existing.setAddressType(patch.getAddressType().get());
+        }
+        if (patch.getAddress() != null && patch.getAddress().isPresent()) {
+            existing.setAddress(patch.getAddress().get());
+        }
+        if (patch.getPincode() != null && patch.getPincode().isPresent()) {
+            existing.setPincode(patch.getPincode().get());
+        }
+        if (patch.getDistrict() != null && patch.getDistrict().isPresent()) {
+            existing.setDistrict(patch.getDistrict().get());
+        }
+        if (patch.getCountry() != null && patch.getCountry().isPresent()) {
+            existing.setCountry(patch.getCountry().get());
+        }
+        if (patch.getState() != null && patch.getState().isPresent()) {
+            existing.setState(patch.getState().get());
+        }
+        if (patch.getTaluka() != null && patch.getTaluka().isPresent()) {
+            existing.setTaluka(patch.getTaluka().get());
+        }
+        if (patch.getDistrictCode() != null && patch.getDistrictCode().isPresent()) {
+            existing.setDistrictCode(patch.getDistrictCode().get());
+        }
+        if (patch.getStateCode() != null && patch.getStateCode().isPresent()) {
+            existing.setStateCode(patch.getStateCode().get());
+        }
+        if (patch.getCountryCode() != null && patch.getCountryCode().isPresent()) {
+            existing.setCountryCode(patch.getCountryCode().get());
+        }
+        if (patch.getTalukaCode() != null && patch.getTalukaCode().isPresent()) {
+            existing.setTalukaCode(patch.getTalukaCode().get());
+        }
+        if (patch.getDistrictId() != null && patch.getDistrictId().isPresent()) {
+            existing.setDistrictId(patch.getDistrictId().get());
+        }
+        if (patch.getStateId() != null && patch.getStateId().isPresent()) {
+            existing.setStateId(patch.getStateId().get());
+        }
+        if (patch.getCountryId() != null && patch.getCountryId().isPresent()) {
+            existing.setCountryId(patch.getCountryId().get());
+        }
+        if (patch.getTalukaId() != null && patch.getTalukaId().isPresent()) {
+            existing.setTalukaId(patch.getTalukaId().get());
+        }
+        if (patch.getVillageCode() != null && patch.getVillageCode().isPresent()) {
+            existing.setVillageCode(patch.getVillageCode().get());
+        }
+        if (patch.getVillageId() != null && patch.getVillageId().isPresent()) {
+            existing.setVillageId(patch.getVillageId().get());
+        }
+        if (patch.getVillageName() != null && patch.getVillageName().isPresent()) {
+            existing.setVillageName(patch.getVillageName().get());
+        }
+        if (patch.getIsServiceable() != null && patch.getIsServiceable().isPresent()) {
+            existing.setIsServiceable(patch.getIsServiceable().get());
+        }
+    }
+
+    private void mergeDocumentChecklistInto(Lead.PropertyDetails propertyDetails, PatchDocumentChecklistRequest request) {
+        if (request == null) {
+            return;
+        }
+        Lead.DocumentChecklist checklist = propertyDetails.getDocumentChecklist();
+        if (checklist == null) {
+            checklist = new Lead.DocumentChecklist();
+        }
+        if (request.getAKhata() != null) {
+            String value = request.getAKhata().orElse(null);
+            if (value != null && !value.isBlank()) {
+                if (RegistrationStatus.fromKey(value) == null) {
+                    throw LeadExceptionFactory.invalidDocumentChecklistStatus(messageSource);
+                }
+                checklist.setAKhata(RegistrationStatus.fromKey(value).getKey());
+            } else {
+                checklist.setAKhata(null);
+            }
+        }
+        if (request.getBKhata() != null) {
+            String value = request.getBKhata().orElse(null);
+            if (value != null && !value.isBlank()) {
+                if (RegistrationStatus.fromKey(value) == null) {
+                    throw LeadExceptionFactory.invalidDocumentChecklistStatus(messageSource);
+                }
+                checklist.setBKhata(RegistrationStatus.fromKey(value).getKey());
+            } else {
+                checklist.setBKhata(null);
+            }
+        }
+        if (request.getSaleDeed() != null) {
+            String value = request.getSaleDeed().orElse(null);
+            if (value != null && !value.isBlank()) {
+                if (AvailabilityStatus.fromKey(value) == null) {
+                    throw LeadExceptionFactory.invalidDocumentChecklistStatus(messageSource);
+                }
+                checklist.setSaleDeed(AvailabilityStatus.fromKey(value).getKey());
+            } else {
+                checklist.setSaleDeed(null);
+            }
+        }
+        if (request.getPropertyTax() != null) {
+            String value = request.getPropertyTax().orElse(null);
+            if (value != null && !value.isBlank()) {
+                if (AvailabilityStatus.fromKey(value) == null) {
+                    throw LeadExceptionFactory.invalidDocumentChecklistStatus(messageSource);
+                }
+                checklist.setPropertyTax(AvailabilityStatus.fromKey(value).getKey());
+            } else {
+                checklist.setPropertyTax(null);
+            }
+        }
+        propertyDetails.setDocumentChecklist(checklist);
+    }
+
+    private void mergeIncomeObligationDetailsInto(Lead lead, PatchIncomeAndObligationRequest request) {
+        if (request == null) {
+            return;
+        }
+        Lead.IncomeObligationDetails existing = lead.getIncomeObligationDetails();
+
+        List<Lead.IncomeDetails> incomeDetails = null;
+        if (request.getIncomeDetails() != null && request.getIncomeDetails().isPresent()) {
+            List<PatchIncomeAndObligationRequest.IncomeDetailsData> fromRequest = request.getIncomeDetails().get();
+            if (fromRequest != null) {
+                for (PatchIncomeAndObligationRequest.IncomeDetailsData d : fromRequest) {
+                    String incomeSource = d.getIncomeSource();
+                    if (incomeSource != null && !incomeSource.isBlank()) {
+                        codeValueMasterService.getCodeValueByKeyAndCodeKey(
+                                incomeSource, SystemControlledMasterCodes.LEAD_INCOME_SOURCE_MASTER);
+                    }
+                }
+                incomeDetails = fromRequest.stream()
+                        .map(d -> Lead.IncomeDetails.builder()
+                                .incomeSource(d.getIncomeSource())
+                                .amount(d.getAmount())
+                                .build())
+                        .toList();
+            }
+        } else if (existing != null && existing.getIncomeDetails() != null) {
+            incomeDetails = existing.getIncomeDetails();
+        }
+
+        Lead.ObligationDetails obligationDetails = null;
+        if (request.getObligationDetails() != null && request.getObligationDetails().isPresent()) {
+            PatchIncomeAndObligationRequest.ObligationData data = request.getObligationDetails().orElse(null);
+            obligationDetails = data == null ? null : Lead.ObligationDetails.builder()
+                    .existingEmi(data.getExistingEmi())
+                    .build();
+        } else if (existing != null && existing.getObligationDetails() != null) {
+            obligationDetails = existing.getObligationDetails();
+        }
+
+        BigDecimal monthlyFamilyIncome = null;
+        if (request.getMonthlyFamilyIncome() != null && request.getMonthlyFamilyIncome().isPresent()) {
+            monthlyFamilyIncome = request.getMonthlyFamilyIncome().orElse(null);
+        } else if (existing != null && existing.getMonthlyFamilyIncome() != null) {
+            monthlyFamilyIncome = existing.getMonthlyFamilyIncome();
+        }
+
+        Lead.IncomeObligationDetails newDetails = Lead.IncomeObligationDetails.builder()
+                .incomeDetails(incomeDetails)
+                .obligationDetails(obligationDetails)
+                .monthlyFamilyIncome(monthlyFamilyIncome)
+                .build();
+        lead.setIncomeObligationDetails(newDetails);
+    }
+
+    private void mergeCurrentCustomerFormStepInto(Lead.OtherDetails otherDetails, String value) {
+        if (value != null && !value.isBlank()) {
+            CustomerFormStep step = CustomerFormStep.fromKey(value.trim());
+            if (step == null) {
+                throw LeadExceptionFactory.invalidCustomerFormStep(messageSource);
+            }
+            otherDetails.setCurrentCustomerFormStep(step.getKey());
+        } else {
+            otherDetails.setCurrentCustomerFormStep(null);
+        }
     }
 
     private void publishLeadStatusChangeEvent(Lead lead, BusinessEvent event, String reason) {

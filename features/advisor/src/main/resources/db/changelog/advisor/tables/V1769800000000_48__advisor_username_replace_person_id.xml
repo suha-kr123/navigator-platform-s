@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- 1. Create username column in n_advisor -->
+    <changeSet id="V1769800000000_48__add_username_to_advisor" author="system">
+        <comment>Add nullable username to n_advisor; backfill will populate before dropping person_id.</comment>
+        <addColumn tableName="n_advisor">
+            <column name="username" type="VARCHAR(255)"/>
+        </addColumn>
+    </changeSet>
+
+    <!-- 2a. Set a.username from n_user where person_id has a user; 2b. Where no user, use person primary number as u.username and a.username -->
+    <changeSet id="V1769800000000_48__create_backfill_advisor_username_procedure" author="system">
+        <comment>Backfill n_advisor.username: from n_user if person has user; else create n_user with username = primary mobile and set advisor.username.</comment>
+        <sql dbms="postgresql" endDelimiter="/"><![CDATA[
+CREATE OR REPLACE PROCEDURE backfill_advisor_username_from_person()
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  r RECORD;
+  primary_mobile TEXT;
+  chosen_username TEXT;
+BEGIN
+  -- 2. person_id has username in n_user -> set a.username
+  UPDATE n_advisor a
+  SET username = (SELECT u.username FROM n_user u WHERE u.person_id = a.person_id LIMIT 1)
+  WHERE a.person_id IS NOT NULL AND a.username IS NULL
+    AND EXISTS (SELECT 1 FROM n_user u WHERE u.person_id = a.person_id);
+
+  -- 3. person has no user: use person's primary number as a.username and u.username (create user)
+  FOR r IN (
+    SELECT DISTINCT a.person_id AS pid FROM n_advisor a
+    WHERE a.person_id IS NOT NULL AND a.username IS NULL
+      AND NOT EXISTS (SELECT 1 FROM n_user u WHERE u.person_id = a.person_id)
+  )
+  LOOP
+    primary_mobile := (
+      SELECT (jsonb_path_query_first(COALESCE(p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number')
+      FROM n_person p WHERE p.id = r.pid
+    );
+    chosen_username := NULLIF(TRIM(COALESCE(primary_mobile, '')), '');
+    INSERT INTO n_user (person_id, username, status, created_by, created_at, updated_by, updated_at, version)
+    VALUES (r.pid, chosen_username, 'ACTIVE', 'migration', CURRENT_TIMESTAMP, 'migration', CURRENT_TIMESTAMP, 0);
+    UPDATE n_advisor SET username = chosen_username WHERE person_id = r.pid;
+  END LOOP;
+END;
+$$;
+/
+]]></sql>
+    </changeSet>
+
+    <changeSet id="V1769800000000_48__invoke_backfill_advisor_username" author="system">
+        <comment>Run backfill procedure to populate n_advisor.username from person_id.</comment>
+        <sql dbms="postgresql">CALL backfill_advisor_username_from_person();</sql>
+    </changeSet>
+
+    <changeSet id="V1769800000000_48__backfill_advisor_role_mapping" author="system">
+        <comment>Map each advisor username to ADVISOR_SELF role in n_user_role_mapping. is_primary = true only when username has no existing primary role.</comment>
+        <sql dbms="postgresql"><![CDATA[
+INSERT INTO n_user_role_mapping (username, role, is_primary, created_by, created_at, updated_by, updated_at, version)
+SELECT DISTINCT a.username,
+  'ADVISOR_SELF',
+  NOT EXISTS (SELECT 1 FROM n_user_role_mapping urm2 WHERE urm2.username = a.username AND urm2.is_primary = true),
+  'migration',
+  CURRENT_TIMESTAMP,
+  'migration',
+  CURRENT_TIMESTAMP,
+  0
+FROM n_advisor a
+WHERE a.username IS NOT NULL
+  AND NOT EXISTS (
+    SELECT 1 FROM n_user_role_mapping urm
+    WHERE urm.username = a.username AND urm.role = 'ADVISOR_SELF'
+  );
+]]></sql>
+    </changeSet>
+
+    <changeSet id="V1769800000000_48__advisor_username_index" author="system">
+        <comment>Create index on username for lookups.</comment>
+        <createIndex indexName="idx_n_advisor_username" tableName="n_advisor">
+            <column name="username"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="V1769800000000_48__drop_person_id_from_advisor" author="system">
+        <comment>Drop person_id from n_advisor; advisor identity is by username only.</comment>
+        <dropColumn tableName="n_advisor" columnName="person_id"/>
+    </changeSet>
+
+</databaseChangeLog>

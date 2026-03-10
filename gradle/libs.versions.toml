@@ -33,6 +33,7 @@ poi = "5.2.5"
 # GoRules ZEN Engine
 zen-engine = "0.4.7"
 
+json-patch = "1.13"
 # versions
 commons-csv = "1.14.1"
 
@@ -83,6 +84,8 @@ lombok = { module = "org.projectlombok:lombok", version.ref = "lombok-ver" }
 commons-csv = { module = "org.apache.commons:commons-csv", version.ref = "commons-csv" }
 # GoRules ZEN Engine
 zen-engine = { module = "io.gorules:zen-engine", version.ref = "zen-engine" }
+json-patch = { module = "com.github.java-json-tools:json-patch", version.ref = "json-patch" }
+jackson-datatype-jdk8 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jdk8", version.ref = "jackson" }
 
 
 [bundles]

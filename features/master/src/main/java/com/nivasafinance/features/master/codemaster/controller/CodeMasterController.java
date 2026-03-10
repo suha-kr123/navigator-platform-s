@@ -18,17 +18,15 @@ import com.nivasafinance.common.annotations.RequirePermission;
 import com.nivasafinance.common.annotations.RequireRole;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
-
+import com.nivasafinance.features.master.codemaster.dto.*;
+import com.nivasafinance.features.master.codemaster.service.CodeMasterService;
+import com.nivasafinance.features.master.codemaster.service.CodeValueMasterService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -63,18 +61,28 @@ public class CodeMasterController {
     @RequirePermission(permissionName = "READ_MASTER_CODE")
     public ResponseEntity<List<CodeValueResponse>> getAllCodeValuesByCodeKey(
             @PathVariable String codeKey,
-            @RequestParam(defaultValue = "true") Boolean onlyActive) {
-        List<CodeValueResponse> response = codeMasterService.getAllCodeValuesByCodeKey(codeKey, onlyActive);
-        return ResponseEntity.ok(response);
+            @RequestParam(defaultValue = "true") Boolean onlyActive,
+            @RequestParam(required = false) String context) {
+        try {
+            List<CodeValueResponse> response = codeMasterService.getAllCodeValuesByCodeKey(codeKey, onlyActive, context);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @GetMapping("/{codeKey}/childs")
     @RequirePermission(permissionName = "READ_MASTER_CODE")
     public ResponseEntity<List<MasterCodeWithValuesResponse>> getMasterCodeChildrenWithValues(
             @PathVariable String codeKey,
-            @RequestParam(defaultValue = "true") Boolean onlyActive) {
-        List<MasterCodeWithValuesResponse> response = codeMasterService.getMasterCodeChildrenWithValues(codeKey, onlyActive);
-        return ResponseEntity.ok(response);
+            @RequestParam(defaultValue = "true") Boolean onlyActive,
+            @RequestParam(required = false) String context) {
+        try {
+            List<MasterCodeWithValuesResponse> response = codeMasterService.getMasterCodeChildrenWithValues(codeKey, onlyActive, context);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @GetMapping("/{codeKey}/values/paginated")
@@ -82,8 +90,13 @@ public class CodeMasterController {
     public ResponseEntity<PaginatedResponse<CodeValueResponse>> getCodeValuesByCodeKeyPaginated(
             @PathVariable String codeKey,
             @RequestParam(defaultValue = "true") Boolean onlyActive,
+            @RequestParam(required = false) String context,
             @Valid PaginationRequest paginationRequest) {
-        return ResponseEntity.ok(codeMasterService.getCodeValuesByCodeKeyPaginated(codeKey, onlyActive, paginationRequest));
+        try {
+            return ResponseEntity.ok(codeMasterService.getCodeValuesByCodeKeyPaginated(codeKey, onlyActive, context, paginationRequest));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @GetMapping("/{codeKey}/childs/paginated")
@@ -91,8 +104,13 @@ public class CodeMasterController {
     public ResponseEntity<PaginatedResponse<MasterCodeWithValuesResponse>> getMasterCodeChildrenWithValuesPaginated(
             @PathVariable String codeKey,
             @RequestParam(defaultValue = "true") Boolean onlyActive,
+            @RequestParam(required = false) String context,
             @Valid PaginationRequest paginationRequest) {
-        return ResponseEntity.ok(codeMasterService.getMasterCodeChildrenWithValuesPaginated(codeKey, onlyActive, paginationRequest));
+        try {
+            return ResponseEntity.ok(codeMasterService.getMasterCodeChildrenWithValuesPaginated(codeKey, onlyActive, context, paginationRequest));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @PostMapping("/{masterCodeKey}/values")
@@ -139,6 +157,15 @@ public class CodeMasterController {
             @PathVariable String parentCodeKey,
             @RequestBody MasterCodeWithValuesRequest child) {
         List<MasterCodeTreeResponse> response = codeMasterService.addChildToTree(parentCodeKey, child);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping(value = "/values/icons", consumes = MediaType.MULTIPART_FORM_DATA_VALUE )
+    @RequireRole(value = { "ADMIN" })
+    public ResponseEntity<CodeValueResponse> uploadIcon(
+            @Valid @RequestPart("metadata") MasterCodeValueIconUploadRequest request,
+            @RequestPart("file") MultipartFile file) {
+        CodeValueResponse response = codeValueMasterService.uploadIcon(request, file);
         return ResponseEntity.ok(response);
     }
 }

@@ -45,6 +45,10 @@ public final class ConsentExceptionFactory {
         return new ConsentOperationException("error.consent.invalid.status.for.accept", new Object[]{status}, messageSource);
     }
 
+    public static ConsentOperationException invalidStatusForResend(ConsentStatus status, MessageSource messageSource) {
+        return new ConsentOperationException("error.consent.invalid.status.for.resend", new Object[]{status}, messageSource);
+    }
+
     public static ConsentOperationException invalidStatusForWithdrawn(ConsentStatus status, MessageSource messageSource) {
         return new ConsentOperationException("error.consent.invalid.status.for.withdrawn", new Object[]{status}, messageSource);
     }

@@ -16,15 +16,15 @@ import com.nivasafinance.features.advisor.entity.Advisor;
 import com.nivasafinance.features.advisor.exception.AdvisorExceptionFactory;
 import com.nivasafinance.features.advisor.repository.AdvisorDashboardWrapper;
 import com.nivasafinance.features.advisor.repository.AdvisorRepositoryWrapper;
+import com.nivasafinance.features.usermanagement.service.UserReadService;
 import com.nivasafinance.features.advisor.service.AdvisorReadService;
 import com.nivasafinance.features.master.codemaster.SystemControlledMasterCodes;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import com.nivasafinance.features.master.codemaster.service.CodeMasterService;
 import com.nivasafinance.features.offices.exception.OfficeNotFoundException;
 import com.nivasafinance.features.offices.service.OfficeReadService;
+import com.nivasafinance.features.person.dto.PersonResponse;
 import com.nivasafinance.features.person.entity.MobileNumberDetails;
-import com.nivasafinance.features.person.entity.Person;
-import com.nivasafinance.features.person.repository.PersonRepositoryWrapper;
 import com.nivasafinance.features.referral.enums.EntityType;
 import com.nivasafinance.features.referral.service.ReferralCodeRegistryService;
 import com.nivasafinance.features.staff.dto.StaffResponse;
@@ -38,6 +38,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -46,7 +47,6 @@ import java.util.UUID;
 public class AdvisorReadServiceImpl implements AdvisorReadService {
 
     private final AdvisorRepositoryWrapper advisorRepositoryWrapper;
-    private final PersonRepositoryWrapper personRepositoryWrapper;
     private final SourcingChannelRepositoryWrapper sourcingChannelRepositoryWrapper;
     private final ReferralCodeRegistryService referralCodeRegistryService;
     private final CodeMasterService codeMasterService;
@@ -54,7 +54,16 @@ public class AdvisorReadServiceImpl implements AdvisorReadService {
     private final AdvisorDashboardWrapper advisorDashboardWrapper;
     private final MessageSource messageSource;
     private final StaffReadService staffReadService;
-    
+    private final UserReadService userReadService;
+
+    @Override
+    public Optional<Advisor> findAdvisorByUsername(String username) {
+        if (username == null || username.isBlank()) {
+            return Optional.empty();
+        }
+        return advisorRepositoryWrapper.findByUsername(username);
+    }
+
     @Override
     public AdvisorResponse getAdvisorByIdentifier(UUID identifier) {
         Advisor advisor = advisorRepositoryWrapper.findByIdentifierWithException(identifier);
@@ -87,17 +96,17 @@ public class AdvisorReadServiceImpl implements AdvisorReadService {
     @Override
     public AdvisorTemplateResponse getAdvisorTemplate() {
         List<CodeValueResponse> rejectionReasons = codeMasterService.getAllCodeValuesByCodeKey(
-                SystemControlledMasterCodes.ADVISOR_REJECTION_REASON_MASTER, true);
+                SystemControlledMasterCodes.ADVISOR_REJECTION_REASON_MASTER, true, "default");
         List<CodeValueResponse> dormantReasons = codeMasterService.getAllCodeValuesByCodeKey(
-                SystemControlledMasterCodes.ADVISOR_DORMANT_REASON_MASTER, true);
+                SystemControlledMasterCodes.ADVISOR_DORMANT_REASON_MASTER, true, "default");
         List<CodeValueResponse> occupationTypes = codeMasterService.getAllCodeValuesByCodeKey(
-                SystemControlledMasterCodes.OCCUPATION_TYPE_MASTER, true);
+                SystemControlledMasterCodes.OCCUPATION_TYPE_MASTER, true, "default");
         List<CodeValueResponse> occupations = codeMasterService.getAllCodeValuesByCodeKey(
-                SystemControlledMasterCodes.OCCUPATION_MASTER, true);
+                SystemControlledMasterCodes.OCCUPATION_MASTER, true, "default");
         List<CodeValueResponse> qualifications = codeMasterService.getAllCodeValuesByCodeKey(
-                SystemControlledMasterCodes.QUALIFICATION_MASTER, true);
+                SystemControlledMasterCodes.QUALIFICATION_MASTER, true, "default");
         List<CodeValueResponse> segmentations = codeMasterService.getAllCodeValuesByCodeKey(
-                SystemControlledMasterCodes.SEGMENTATION_MASTER, true);
+                SystemControlledMasterCodes.SEGMENTATION_MASTER, true, "default");
         return AdvisorTemplateResponse.builder()
                 .advisorRejectionReasons(rejectionReasons)
                 .advisorDormantReasons(dormantReasons)
@@ -110,7 +119,7 @@ public class AdvisorReadServiceImpl implements AdvisorReadService {
 
     @Override
     public PaginatedResponse<AdvisorBasicResponse> getAllAdvisors(PaginationRequest paginationRequest, String name,
-            String mobileNumber) {
+                                                                  String mobileNumber) {
         return advisorRepositoryWrapper.findAllAdvisors(paginationRequest, name, mobileNumber);
     }
 
@@ -118,6 +127,11 @@ public class AdvisorReadServiceImpl implements AdvisorReadService {
     public PaginatedResponse<AdvisorBasicResponse> searchAdvisors(
             PaginationRequest paginationRequest, AdvisorSearchRequest request) {
         return advisorRepositoryWrapper.searchAdvisorsByPhoneNumber(paginationRequest, request);
+    }
+
+    @Override
+    public Optional<AdvisorBasicResponse> findAdvisorByMobileNo(String mobileNumber) {
+        return advisorRepositoryWrapper.findAdvisorByMobileNo(mobileNumber);
     }
 
     @Override
@@ -129,8 +143,7 @@ public class AdvisorReadServiceImpl implements AdvisorReadService {
 
     // Map Advisor entity to response DTO
     private AdvisorResponse mapEntityToResponse(Advisor advisor) {
-        // Fetch person details
-        Person person = personRepositoryWrapper.findByIdWithException(advisor.getPersonId());
+        PersonResponse person = userReadService.getPersonForUser(advisor.getUsername());
 
         AdvisorResponse response = new AdvisorResponse();
         response.setId(advisor.getId());
@@ -214,7 +227,7 @@ public class AdvisorReadServiceImpl implements AdvisorReadService {
                         });
                 case ADVISOR -> {
                     Advisor referrerAdvisor = advisorRepositoryWrapper.findByIdentifierWithException(entityIdentifier);
-                    Person referrerPerson = personRepositoryWrapper.findByIdWithException(referrerAdvisor.getPersonId());
+                    PersonResponse referrerPerson = userReadService.getPersonForUser(referrerAdvisor.getUsername());
                     response.setReferredByName(referrerPerson.getDisplayName());
                     response.setReferredByNumber(extractPrimaryMobile(referrerPerson.getMobileNumbers()));
                 }

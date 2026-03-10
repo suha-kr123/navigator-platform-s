@@ -20,6 +20,7 @@ public class MasterCodeValueRequest {
     private String key;
     Map<String, String> valueMap;
     Map<String, String> descriptionMap;
+    private Icons icons;
 
     @AssertTrue(message = "valueMap must contain default key 'default'")
     public boolean isValueMapValid() {
@@ -35,12 +36,9 @@ public class MasterCodeValueRequest {
         return MasterCodeValue.builder()
                 .key(key)
                 .codeKey(masterCodeKey)
-                .value(MasterLanguageData.builder()
-                        .defaultValue(valueMap.get("default"))
-                        .build())
-                .description(MasterLanguageData.builder()
-                        .defaultValue(descriptionMap.get("default"))
-                        .build())
+                .value(MasterLanguageData.fromMap(valueMap))
+                .description(MasterLanguageData.fromMap(descriptionMap))
+                .icons(icons != null ? icons.toIconsData() : null)
                 .build();
     }
 }

@@ -10,6 +10,7 @@ dependencies {
     implementation(project(":common"))
     implementation(project(":features:master"))
     implementation(project(":features:person"))
+    implementation(project(":features:usermanagement"))
     implementation(project(":features:workflow"))
     implementation(project(":features:advisor"))
     implementation(project(":features:lead"))

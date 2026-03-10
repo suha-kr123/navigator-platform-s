@@ -1,4 +1,4 @@
-package com.nivasafinance.features.advisor.controller;
+package com.nivasafinance.features.advisor.controller.crm;
 
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
@@ -18,7 +18,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping(ApiConstants.V1 + "/advisors/{advisorId}/call")
 @AllArgsConstructor
-public class AdvisorCallController {
+public class AdvisorCrmCallController {
 
     private final AdvisorCallWriteService advisorCallWriteService;
     private final AdvisorCallReadService advisorCallReadService;

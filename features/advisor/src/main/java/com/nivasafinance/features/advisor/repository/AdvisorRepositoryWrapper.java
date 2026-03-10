@@ -90,9 +90,9 @@ public class AdvisorRepositoryWrapper {
         }
     }
 
-    public Optional<Advisor> findByPersonId(Long personId) {
+    public Optional<Advisor> findByUsername(String username) {
         try {
-            return advisorRepository.findByPersonId(personId);
+            return advisorRepository.findByUsername(username);
         } catch (DataAccessException e) {
             AdvisorOperationException exception = AdvisorExceptionFactory.retrieveEntityFailed(messageSource);
             exception.initCause(e);
@@ -131,6 +131,49 @@ public class AdvisorRepositoryWrapper {
     }
 
     /**
+     * Find the latest advisor by mobile number (no office hierarchy filtering).
+     * For use in open API flows where staff context is not available.
+     *
+     * @param mobileNo 10-digit mobile number
+     * @return Optional with AdvisorBasicResponse if found, empty otherwise
+     */
+    public Optional<AdvisorBasicResponse> findAdvisorByMobileNo(String mobileNo) {
+        if (!StringUtils.hasText(mobileNo)) {
+            return Optional.empty();
+        }
+        String phoneJson = buildPhoneNumberJsonb(mobileNo.trim());
+        String sql = """
+            SELECT a.identifier as advisor_identifier,
+                p.display_name as person_name,
+                (jsonb_path_query_first(COALESCE(p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') AS mobile_number,
+                a.status,
+                a.created_at,
+                a.updated_at,
+                a.office_key as office_key,
+                a.username as advisor_username,
+                NULL::text AS referred_by_code,
+                NULL::text AS referred_by_type,
+                NULL::uuid AS referred_by_identifier,
+                NULL::text AS referred_by_name,
+                NULL::text AS referred_by_number
+            FROM n_person p
+            JOIN n_user u ON u.person_id = p.id
+            JOIN n_advisor a ON a.username = u.username
+            WHERE p.mobile_numbers @> ?::jsonb
+            ORDER BY a.updated_at DESC
+            LIMIT 1
+            """;
+        try {
+            List<AdvisorBasicResponse> results = jdbcTemplate.query(sql, new AdvisorSearchRowMapper(), phoneJson);
+            return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
+        } catch (DataAccessException e) {
+            AdvisorOperationException exception = AdvisorExceptionFactory.retrieveEntityFailed(messageSource);
+            exception.initCause(e);
+            throw exception;
+        }
+    }
+
+    /**
      * Search advisors by phone number.
      * Finds advisors with persons that have the given phone number.
      * Applies office hierarchy filter to restrict to current staff's office hierarchy.
@@ -154,12 +197,13 @@ public class AdvisorRepositoryWrapper {
         String currentUserOfficeKey = staffReadService.getCurrentStaff().getOfficeKey();
         String currentUserOfficeCode = officeReadService.getOfficeByKey(currentUserOfficeKey).getCode();
 
-        // Person-first: CTE uses GIN on n_person.mobile_numbers; join advisors by person_id
+        // Person-first: CTE uses GIN on n_person.mobile_numbers; join advisors via username
         String countSql = """
             WITH person_with_phone AS (SELECT id FROM n_person WHERE mobile_numbers @> ?::jsonb)
             SELECT COUNT(DISTINCT a.id)
             FROM person_with_phone pwp
-            JOIN n_advisor a ON a.person_id = pwp.id
+            JOIN n_user u_phone ON u_phone.person_id = pwp.id
+            JOIN n_advisor a ON a.username = u_phone.username
             LEFT JOIN n_office o ON o.key = a.office_key
             WHERE o.code LIKE ?
             """;
@@ -174,6 +218,7 @@ public class AdvisorRepositoryWrapper {
                 a.created_at,
                 a.updated_at,
                 a.office_key as office_key,
+                a.username as advisor_username,
                 sc.marketing_details->>'referredByCode' AS referred_by_code,
                 r.entity_type::text AS referred_by_type,
                 r.entity_identifier AS referred_by_identifier,
@@ -186,13 +231,15 @@ public class AdvisorRepositoryWrapper {
                     (jsonb_path_query_first(COALESCE(ref_app_by_uuid_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number')
                 ) AS referred_by_number
             FROM person_with_phone pwp
-            JOIN n_advisor a ON a.person_id = pwp.id
-            JOIN n_person p ON p.id = a.person_id
+            JOIN n_user u_phone ON u_phone.person_id = pwp.id
+            JOIN n_advisor a ON a.username = u_phone.username
+            JOIN n_person p ON p.id = pwp.id
             LEFT JOIN n_office o ON o.key = a.office_key
             LEFT JOIN n_sourcing_channel_details sc ON sc.id = a.source_channel_id
             LEFT JOIN n_referral_code_registry r ON r.referral_code = sc.marketing_details->>'referredByCode'
             LEFT JOIN n_advisor ref_adv ON ref_adv.identifier = r.entity_identifier AND r.entity_type::text = 'ADVISOR'
-            LEFT JOIN n_person ref_adv_p ON ref_adv_p.id = ref_adv.person_id
+            LEFT JOIN n_user ref_adv_u ON ref_adv_u.username = ref_adv.username
+            LEFT JOIN n_person ref_adv_p ON ref_adv_p.id = ref_adv_u.person_id
             LEFT JOIN n_staff ref_st ON ref_st.identifier = r.entity_identifier AND r.entity_type::text = 'STAFF'
             LEFT JOIN n_user ref_st_u ON ref_st_u.id = ref_st.user_id
             LEFT JOIN n_person ref_st_p ON ref_st_p.id = ref_st_u.person_id
@@ -247,12 +294,12 @@ public class AdvisorRepositoryWrapper {
      */
     public PaginatedResponse<AdvisorBasicResponse> findAllAdvisors(
             PaginationRequest paginationRequest, String name, String mobileNumber) {
-        
+
         // Get current staff office and code for hierarchy filtering
         String currentUserOfficeKey;
         String currentUserOfficeCode;
         String officePattern;
-        
+
         try {
             currentUserOfficeKey = staffReadService.getCurrentStaff().getOfficeKey();
             if (currentUserOfficeKey == null || currentUserOfficeKey.trim().isEmpty()) {
@@ -268,21 +315,21 @@ public class AdvisorRepositoryWrapper {
         } catch (Exception e) {
             throw new RuntimeException("Failed to retrieve current user office information", e);
         }
-        
+
         // Build WHERE clause dynamically
         List<Object> queryParams = new ArrayList<>();
         StringBuilder whereClause = new StringBuilder(" WHERE 1=1 ");
-        
+
         // Apply office hierarchy filter
         whereClause.append(" AND (o.code LIKE ? OR a.office_key IS NULL) ");
         queryParams.add(officePattern);
-        
+
         // Apply name filter if provided
         if (StringUtils.hasText(name)) {
             whereClause.append(" AND p.display_name ILIKE ? ");
             queryParams.add("%" + name.trim() + "%");
         }
-        
+
         // Apply mobile number filter if provided
         if (StringUtils.hasText(mobileNumber)) {
             whereClause.append(" AND EXISTS (")
@@ -291,12 +338,13 @@ public class AdvisorRepositoryWrapper {
                     .append(") ");
             queryParams.add(mobileNumber.trim());
         }
-        
+
         String countSql = """
             SELECT COUNT(DISTINCT a.id)
             FROM n_advisor a
             LEFT JOIN n_office o ON o.key = a.office_key
-            JOIN n_person p ON p.id = a.person_id
+            JOIN n_user u ON u.username = a.username
+            JOIN n_person p ON p.id = u.person_id
             """ + whereClause;
 
         String dataSql = """
@@ -308,6 +356,7 @@ public class AdvisorRepositoryWrapper {
                 a.created_at,
                 a.updated_at,
                 a.office_key as office_key,
+                a.username as advisor_username,
                 sc.marketing_details->>'referredByCode' AS referred_by_code,
                 r.entity_type::text AS referred_by_type,
                 r.entity_identifier AS referred_by_identifier,
@@ -321,11 +370,13 @@ public class AdvisorRepositoryWrapper {
                 ) AS referred_by_number
             FROM n_advisor a
             LEFT JOIN n_office o ON o.key = a.office_key
-            JOIN n_person p ON p.id = a.person_id
+            JOIN n_user u ON u.username = a.username
+            JOIN n_person p ON p.id = u.person_id
             LEFT JOIN n_sourcing_channel_details sc ON sc.id = a.source_channel_id
             LEFT JOIN n_referral_code_registry r ON r.referral_code = sc.marketing_details->>'referredByCode'
             LEFT JOIN n_advisor ref_adv ON ref_adv.identifier = r.entity_identifier AND r.entity_type::text = 'ADVISOR'
-            LEFT JOIN n_person ref_adv_p ON ref_adv_p.id = ref_adv.person_id
+            LEFT JOIN n_user ref_adv_u ON ref_adv_u.username = ref_adv.username
+            LEFT JOIN n_person ref_adv_p ON ref_adv_p.id = ref_adv_u.person_id
             LEFT JOIN n_staff ref_st ON ref_st.identifier = r.entity_identifier AND r.entity_type::text = 'STAFF'
             LEFT JOIN n_user ref_st_u ON ref_st_u.id = ref_st.user_id
             LEFT JOIN n_person ref_st_p ON ref_st_p.id = ref_st_u.person_id
@@ -374,7 +425,8 @@ public class AdvisorRepositoryWrapper {
             SELECT COUNT(DISTINCT a.id)
             FROM n_advisor a
             LEFT JOIN n_office o ON o.key = a.office_key
-            JOIN n_person p ON p.id = a.person_id
+            JOIN n_user u ON u.username = a.username
+            JOIN n_person p ON p.id = u.person_id
             WHERE a.owner = ?
             """;
         String dataSql = """
@@ -386,6 +438,7 @@ public class AdvisorRepositoryWrapper {
                 a.created_at,
                 a.updated_at,
                 a.office_key as office_key,
+                a.username as advisor_username,
                 sc.marketing_details->>'referredByCode' AS referred_by_code,
                 r.entity_type::text AS referred_by_type,
                 r.entity_identifier AS referred_by_identifier,
@@ -399,11 +452,13 @@ public class AdvisorRepositoryWrapper {
                 ) AS referred_by_number
             FROM n_advisor a
             LEFT JOIN n_office o ON o.key = a.office_key
-            JOIN n_person p ON p.id = a.person_id
+            JOIN n_user u ON u.username = a.username
+            JOIN n_person p ON p.id = u.person_id
             LEFT JOIN n_sourcing_channel_details sc ON sc.id = a.source_channel_id
             LEFT JOIN n_referral_code_registry r ON r.referral_code = sc.marketing_details->>'referredByCode'
             LEFT JOIN n_advisor ref_adv ON ref_adv.identifier = r.entity_identifier AND r.entity_type::text = 'ADVISOR'
-            LEFT JOIN n_person ref_adv_p ON ref_adv_p.id = ref_adv.person_id
+            LEFT JOIN n_user ref_adv_u ON ref_adv_u.username = ref_adv.username
+            LEFT JOIN n_person ref_adv_p ON ref_adv_p.id = ref_adv_u.person_id
             LEFT JOIN n_staff ref_st ON ref_st.identifier = r.entity_identifier AND r.entity_type::text = 'STAFF'
             LEFT JOIN n_user ref_st_u ON ref_st_u.id = ref_st.user_id
             LEFT JOIN n_person ref_st_p ON ref_st_p.id = ref_st_u.person_id
@@ -446,7 +501,8 @@ public class AdvisorRepositoryWrapper {
             SELECT COUNT(DISTINCT a.id)
             FROM n_advisor a
             JOIN n_sourcing_channel_details sc ON sc.id = a.source_channel_id
-            JOIN n_person p ON p.id = a.person_id
+            JOIN n_user u ON u.username = a.username
+            JOIN n_person p ON p.id = u.person_id
             WHERE sc.marketing_details->>'referredByCode' = ?
             """;
         String dataSql = """
@@ -458,6 +514,7 @@ public class AdvisorRepositoryWrapper {
                 a.created_at,
                 a.updated_at,
                 a.office_key as office_key,
+                a.username as advisor_username,
                 sc.marketing_details->>'referredByCode' AS referred_by_code,
                 r.entity_type::text AS referred_by_type,
                 r.entity_identifier AS referred_by_identifier,
@@ -471,10 +528,12 @@ public class AdvisorRepositoryWrapper {
                 ) AS referred_by_number
             FROM n_advisor a
             JOIN n_sourcing_channel_details sc ON sc.id = a.source_channel_id
-            JOIN n_person p ON p.id = a.person_id
+            JOIN n_user u ON u.username = a.username
+            JOIN n_person p ON p.id = u.person_id
             LEFT JOIN n_referral_code_registry r ON r.referral_code = sc.marketing_details->>'referredByCode'
             LEFT JOIN n_advisor ref_adv ON ref_adv.identifier = r.entity_identifier AND r.entity_type::text = 'ADVISOR'
-            LEFT JOIN n_person ref_adv_p ON ref_adv_p.id = ref_adv.person_id
+            LEFT JOIN n_user ref_adv_u ON ref_adv_u.username = ref_adv.username
+            LEFT JOIN n_person ref_adv_p ON ref_adv_p.id = ref_adv_u.person_id
             LEFT JOIN n_staff ref_st ON ref_st.identifier = r.entity_identifier AND r.entity_type::text = 'STAFF'
             LEFT JOIN n_user ref_st_u ON ref_st_u.id = ref_st.user_id
             LEFT JOIN n_person ref_st_p ON ref_st_p.id = ref_st_u.person_id
@@ -523,7 +582,7 @@ public class AdvisorRepositoryWrapper {
                         WHERE s.identifier = ?::uuid
                         """;
                     var list = jdbcTemplate.query(sql, (rs, rowNum) ->
-                            new ReferrerDisplayInfo(rs.getString("name"), rs.getString("phone")),
+                                    new ReferrerDisplayInfo(rs.getString("name"), rs.getString("phone")),
                             entityIdentifier.toString());
                     yield list.isEmpty() ? Optional.empty() : Optional.ofNullable(list.get(0));
                 }
@@ -546,7 +605,7 @@ public class AdvisorRepositoryWrapper {
                         WHERE l.lead_identifier IS NOT NULL OR a.id IS NOT NULL
                         """;
                     var list = jdbcTemplate.query(sql, (rs, rowNum) ->
-                            new ReferrerDisplayInfo(rs.getString("name"), rs.getString("phone")),
+                                    new ReferrerDisplayInfo(rs.getString("name"), rs.getString("phone")),
                             entityIdentifier.toString());
                     yield list.isEmpty() ? Optional.empty() : Optional.ofNullable(list.get(0));
                 }
@@ -616,6 +675,7 @@ public class AdvisorRepositoryWrapper {
             }
 
             builder.officeKey(rs.getString("office_key"));
+            builder.username(rs.getString("advisor_username"));
 
             builder.referredByCode(rs.getString("referred_by_code"));
             String referredByTypeStr = rs.getString("referred_by_type");

@@ -14,6 +14,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -34,6 +35,11 @@ public class PersonReadServiceImpl implements PersonReadService {
     public PersonResponse getPersonByPrimaryMobile(String mobileNumber) {
         Person person = personRepositoryWrapper.findByPrimaryMobileNumberWithException(mobileNumber);
         return mapToResponse(person);
+    }
+
+    @Override
+    public Optional<PersonResponse> findPersonByPrimaryMobile(String mobileNumber) {
+        return personRepositoryWrapper.findByPrimaryMobileNumber(mobileNumber).map(this::mapToResponse);
     }
 
     private PersonResponse mapToResponse(Person person) {

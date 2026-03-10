@@ -88,6 +88,17 @@ public class LeadCreditBureauController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @PostMapping("/enquiry/{enquiryIdentifier}/consent/{consentIdentifier}/resend")
+    @RequirePermission(permissionName = "CREATE_LEAD_CREDIT_DETAILS")
+    public ResponseEntity<Void> resendConsent(
+            @PathVariable UUID leadIdentifier,
+            @PathVariable UUID contactIdentifier,
+            @PathVariable UUID enquiryIdentifier,
+            @PathVariable UUID consentIdentifier) {
+        leadCreditBureauWriteService.resendConsent(leadIdentifier, contactIdentifier, enquiryIdentifier, consentIdentifier);
+        return ResponseEntity.ok().build();
+    }
+
     @GetMapping("/enquiry/{enquiryIdentifier}/score-trends")
     @RequirePermission(permissionName = "READ_LEAD_CREDIT_DETAILS")
     public ResponseEntity<List<TrendsResponse>> getScoreTrends(

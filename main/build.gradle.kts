@@ -34,6 +34,7 @@ dependencies {
     implementation(project(":externals:exotel"))
     implementation(project(":externals:whatsapp"))
     implementation(project(":externals:creditbureau"))
+    implementation(project(":externals:customer"))
     implementation(project(":features:referral"))
     implementation(project(":features:bre"))
 }

@@ -191,7 +191,8 @@ public class LeadRepositoryWrapper {
                 LEFT JOIN n_sourcing_channel_details sc ON sc.id = l.sourcing_channel_id
                 LEFT JOIN n_referral_code_registry r ON r.referral_code = sc.marketing_details->>'referredByCode'
                 LEFT JOIN n_advisor ref_adv ON ref_adv.identifier = r.entity_identifier AND r.entity_type::text = 'ADVISOR'
-                LEFT JOIN n_person ref_adv_p ON ref_adv_p.id = ref_adv.person_id
+                LEFT JOIN n_user ref_adv_u ON ref_adv_u.username = ref_adv.username
+                LEFT JOIN n_person ref_adv_p ON ref_adv_p.id = ref_adv_u.person_id
                 LEFT JOIN n_staff ref_st ON ref_st.identifier = r.entity_identifier AND r.entity_type::text = 'STAFF'
                 LEFT JOIN n_user ref_st_u ON ref_st_u.id = ref_st.user_id
                 LEFT JOIN n_person ref_st_p ON ref_st_p.id = ref_st_u.person_id
@@ -835,7 +836,8 @@ public class LeadRepositoryWrapper {
         sql.append("LEFT JOIN n_sourcing_channel_details sc ON sc.id = l.sourcing_channel_id ");
         sql.append("LEFT JOIN n_referral_code_registry r ON r.referral_code = sc.marketing_details->>'referredByCode' ");
         sql.append("LEFT JOIN n_advisor ref_adv ON ref_adv.identifier = r.entity_identifier AND r.entity_type::text = 'ADVISOR' ");
-        sql.append("LEFT JOIN n_person ref_adv_p ON ref_adv_p.id = ref_adv.person_id ");
+        sql.append("LEFT JOIN n_user ref_adv_u ON ref_adv_u.username = ref_adv.username ");
+        sql.append("LEFT JOIN n_person ref_adv_p ON ref_adv_p.id = ref_adv_u.person_id ");
         sql.append("LEFT JOIN n_staff ref_st ON ref_st.identifier = r.entity_identifier AND r.entity_type::text = 'STAFF' ");
         sql.append("LEFT JOIN n_user ref_st_u ON ref_st_u.id = ref_st.user_id ");
         sql.append("LEFT JOIN n_person ref_st_p ON ref_st_p.id = ref_st_u.person_id ");
@@ -934,7 +936,8 @@ public class LeadRepositoryWrapper {
             JOIN n_sourcing_channel_details sc ON sc.id = l.sourcing_channel_id
             LEFT JOIN n_referral_code_registry r ON r.referral_code = sc.marketing_details->>'referredByCode'
             LEFT JOIN n_advisor ref_adv ON ref_adv.identifier = r.entity_identifier AND r.entity_type::text = 'ADVISOR'
-            LEFT JOIN n_person ref_adv_p ON ref_adv_p.id = ref_adv.person_id
+            LEFT JOIN n_user ref_adv_u ON ref_adv_u.username = ref_adv.username
+            LEFT JOIN n_person ref_adv_p ON ref_adv_p.id = ref_adv_u.person_id
             LEFT JOIN n_staff ref_st ON ref_st.identifier = r.entity_identifier AND r.entity_type::text = 'STAFF'
             LEFT JOIN n_user ref_st_u ON ref_st_u.id = ref_st.user_id
             LEFT JOIN n_person ref_st_p ON ref_st_p.id = ref_st_u.person_id
@@ -998,7 +1001,8 @@ public class LeadRepositoryWrapper {
         sql.append("LEFT JOIN n_sourcing_channel_details sc ON sc.id = l.sourcing_channel_id ");
         sql.append("LEFT JOIN n_referral_code_registry r ON r.referral_code = sc.marketing_details->>'referredByCode' ");
         sql.append("LEFT JOIN n_advisor ref_adv ON ref_adv.identifier = r.entity_identifier AND r.entity_type::text = 'ADVISOR' ");
-        sql.append("LEFT JOIN n_person ref_adv_p ON ref_adv_p.id = ref_adv.person_id ");
+        sql.append("LEFT JOIN n_user ref_adv_u ON ref_adv_u.username = ref_adv.username ");
+        sql.append("LEFT JOIN n_person ref_adv_p ON ref_adv_p.id = ref_adv_u.person_id ");
         sql.append("LEFT JOIN n_staff ref_st ON ref_st.identifier = r.entity_identifier AND r.entity_type::text = 'STAFF' ");
         sql.append("LEFT JOIN n_user ref_st_u ON ref_st_u.id = ref_st.user_id ");
         sql.append("LEFT JOIN n_person ref_st_p ON ref_st_p.id = ref_st_u.person_id ");

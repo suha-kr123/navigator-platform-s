@@ -2,6 +2,7 @@ package com.nivasafinance.features.person.service.impl;
 
 import com.nivasafinance.common.dto.AddressData;
 import com.nivasafinance.common.dto.IdentifierData;
+import com.nivasafinance.features.consent.dto.ConsentReceivedRequest;
 import com.nivasafinance.features.consent.dto.CreateAndSendConsent;
 import com.nivasafinance.features.consent.entity.Consent;
 import com.nivasafinance.features.consent.service.ConsentWriteService;
@@ -13,6 +14,7 @@ import com.nivasafinance.features.creditbureau.exception.CreditBureauExceptionFa
 import com.nivasafinance.features.creditbureau.service.CreditBureauReadService;
 import com.nivasafinance.features.creditbureau.service.CreditBureauWriteService;
 import com.nivasafinance.features.person.dto.PersonResponse;
+import com.nivasafinance.features.person.dto.RecordCbConsentResult;
 import com.nivasafinance.features.person.entity.Person;
 import com.nivasafinance.features.person.repository.PersonRepositoryWrapper;
 import com.nivasafinance.features.person.service.PersonCreditBureauService;
@@ -188,7 +190,27 @@ public class PersonCreditBureauServiceImpl implements PersonCreditBureauService 
         // Build CreditBureauPersonData and trigger async pull
         triggerCreditBureauPull(enquiry, personId);
     }
-    
+
+    @Override
+    @Transactional
+    public RecordCbConsentResult recordCbConsentReceived(Long personId) {
+        Consent saved = consentWriteService.createConsentReceived(
+                ConsentReceivedRequest.builder()
+                        .personId(personId)
+                        .type("CB")
+                        .build());
+        Person person = personRepositoryWrapper.findByIdWithException(personId);
+        List<Person.ConsentInfo> list = person.getConsentDetails() != null
+                ? new ArrayList<>(person.getConsentDetails()) : new ArrayList<>();
+        list.removeIf(c -> "CB".equals(c.getType()));
+        list.add(new Person.ConsentInfo(saved.getId(), "CB"));
+        person.setConsentDetails(list);
+        personRepositoryWrapper.saveWithException(person);
+        return RecordCbConsentResult.builder()
+                .consentIdentifier(saved.getIdentifier())
+                .build();
+    }
+
     /**
      * Triggers the credit bureau pull asynchronously for the given enquiry.
      *

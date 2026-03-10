@@ -50,36 +50,36 @@ public class LeadReadServiceImpl implements LeadReadService {
     public LeadTemplateResponse getLeadTemplate() {
         return LeadTemplateResponse.builder()
                 .leadRejectionReasons(codeMasterService.getAllCodeValuesByCodeKey(
-                        SystemControlledMasterCodes.LEAD_REJECT_REASON_MASTER, true))
+                        SystemControlledMasterCodes.LEAD_REJECT_REASON_MASTER, true, "default"))
                 .leadWithdrawalReasons(codeMasterService.getAllCodeValuesByCodeKey(
-                        SystemControlledMasterCodes.LEAD_WITHDRAWAL_REASON_MASTER, true))
+                        SystemControlledMasterCodes.LEAD_WITHDRAWAL_REASON_MASTER, true, "default"))
                 .leadOnholdReasons(codeMasterService.getAllCodeValuesByCodeKey(
-                        SystemControlledMasterCodes.LEAD_ONHOLD_REASON_MASTER, true))
+                        SystemControlledMasterCodes.LEAD_ONHOLD_REASON_MASTER, true, "default"))
                 .leadDropoffReasons(codeMasterService.getAllCodeValuesByCodeKey(
-                        SystemControlledMasterCodes.LEAD_DROPOFF_REASON_MASTER, true))
+                        SystemControlledMasterCodes.LEAD_DROPOFF_REASON_MASTER, true, "default"))
                 .occupationProfiles(codeMasterService.getAllCodeValuesByCodeKey(
-                        SystemControlledMasterCodes.LEAD_OCCUPATION_PROFILE_MASTER, true))
+                        SystemControlledMasterCodes.LEAD_OCCUPATION_PROFILE_MASTER, true, "default"))
                 .roofProfiles(codeMasterService.getAllCodeValuesByCodeKey(
-                        SystemControlledMasterCodes.LEAD_ROOF_PROFILE_MASTER, true))
+                        SystemControlledMasterCodes.LEAD_ROOF_PROFILE_MASTER, true, "default"))
                 .ltvOptions(codeMasterService.getAllCodeValuesByCodeKey(
-                        SystemControlledMasterCodes.LEAD_LTV_MASTER, true))
+                        SystemControlledMasterCodes.LEAD_LTV_MASTER, true, "default"))
                 .foirOptions(codeMasterService.getAllCodeValuesByCodeKey(
-                        SystemControlledMasterCodes.LEAD_FOIR_MASTER, true))
+                        SystemControlledMasterCodes.LEAD_FOIR_MASTER, true, "default"))
                 .monthlyIncomes(codeMasterService.getAllCodeValuesByCodeKey(
-                        SystemControlledMasterCodes.LEAD_MONTHLY_INCOME_MASTER, true))
+                        SystemControlledMasterCodes.LEAD_MONTHLY_INCOME_MASTER, true, "default"))
                 .propertyDocumentTypes(codeMasterService.getAllCodeValuesByCodeKey(
-                        SystemControlledMasterCodes.LEAD_PROPERTY_DOCUMENT_TYPE_MASTER, true))
+                        SystemControlledMasterCodes.LEAD_PROPERTY_DOCUMENT_TYPE_MASTER, true, "default"))
                 .locations(codeMasterService.getAllCodeValuesByCodeKey(
-                        SystemControlledMasterCodes.LEAD_LOCATION_MASTER, true))
+                        SystemControlledMasterCodes.LEAD_LOCATION_MASTER, true, "default"))
                 .bureauRatings(codeMasterService.getAllCodeValuesByCodeKey(
-                        SystemControlledMasterCodes.LEAD_BUREAU_RATING_MASTER, true))
+                        SystemControlledMasterCodes.LEAD_BUREAU_RATING_MASTER, true, "default"))
                 .customerProfiles(codeMasterService.getAllCodeValuesByCodeKey(
-                        SystemControlledMasterCodes.LEAD_CUSTOMER_PROFILE_MASTER, true))
+                        SystemControlledMasterCodes.LEAD_CUSTOMER_PROFILE_MASTER, true, "default"))
                 .leadPurposes(codeMasterService.getAllCodeValuesByCodeKey(
-                        SystemControlledMasterCodes.LEAD_PURPOSE_MASTER, true
+                        SystemControlledMasterCodes.LEAD_PURPOSE_MASTER, true, "default"
                 ))
                 .priorities(codeMasterService.getAllCodeValuesByCodeKey(
-                        SystemControlledMasterCodes.LEAD_PRIORITY_MASTER, true))
+                        SystemControlledMasterCodes.LEAD_PRIORITY_MASTER, true, "default"))
                 .build();
     }
 
@@ -165,10 +165,78 @@ public class LeadReadServiceImpl implements LeadReadService {
         }
 
         Lead.PropertyDetails propertyDetails = otherDetails.getPropertyDetails();
+        Lead.PropertyDetails.PropertyMeasurementDetails measurement = propertyDetails.getPropertyMeasurementDetails();
+
+        PropertyDetailsResponse.PropertyMeasurementDetailsData measurementData = null;
+        if (measurement != null) {
+            measurementData = PropertyDetailsResponse.PropertyMeasurementDetailsData.builder()
+                    .buildUpArea(measurement.getBuildUpArea())
+                    .siteArea(measurement.getSiteArea())
+                    .build();
+        }
 
         return PropertyDetailsResponse.builder()
                 .address(propertyDetails.getAddress())
                 .geoData(propertyDetails.getGeoData())
+                .propertyType(propertyDetails.getPropertyType())
+                .propertyConstructionStage(propertyDetails.getPropertyConstructionStage())
+                .owner(propertyDetails.getOwner())
+                .ownerRelation(propertyDetails.getOwnerRelation())
+                .propertyMeasurementDetails(measurementData)
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DocumentChecklistResponse getDocumentChecklist(UUID leadIdentifier) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        Lead.OtherDetails otherDetails = lead.getOtherDetails();
+        if (otherDetails == null || otherDetails.getPropertyDetails() == null) {
+            return DocumentChecklistResponse.builder().build();
+        }
+        Lead.DocumentChecklist checklist = otherDetails.getPropertyDetails().getDocumentChecklist();
+        if (checklist == null) {
+            return DocumentChecklistResponse.builder().build();
+        }
+        return DocumentChecklistResponse.builder()
+                .aKhata(checklist.getAKhata())
+                .bKhata(checklist.getBKhata())
+                .saleDeed(checklist.getSaleDeed())
+                .propertyTax(checklist.getPropertyTax())
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public IncomeObligationDetailsResponse getIncomeObligationDetails(UUID leadIdentifier) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        Lead.IncomeObligationDetails details = lead.getIncomeObligationDetails();
+
+        if (details == null) {
+            return IncomeObligationDetailsResponse.builder().build();
+        }
+
+        List<IncomeObligationDetailsResponse.IncomeDetailData> incomeDetailsData = null;
+        if (details.getIncomeDetails() != null) {
+            incomeDetailsData = details.getIncomeDetails().stream()
+                    .map(d -> IncomeObligationDetailsResponse.IncomeDetailData.builder()
+                            .incomeSource(d.getIncomeSource())
+                            .amount(d.getAmount())
+                            .build())
+                    .collect(Collectors.toList());
+        }
+
+        IncomeObligationDetailsResponse.ObligationsData obligationsData = null;
+        if (details.getObligationDetails() != null) {
+            obligationsData = IncomeObligationDetailsResponse.ObligationsData.builder()
+                    .existingEmi(details.getObligationDetails().getExistingEmi())
+                    .build();
+        }
+
+        return IncomeObligationDetailsResponse.builder()
+                .incomeDetails(incomeDetailsData)
+                .obligations(obligationsData)
+                .monthlyFamilyIncome(details.getMonthlyFamilyIncome())
                 .build();
     }
 
@@ -338,5 +406,15 @@ public class LeadReadServiceImpl implements LeadReadService {
     public PaginatedResponse<LeadBasicResponse> getLeadsByReferralCode(String referralCode,
             PaginationRequest paginationRequest) {
         return leadRepositoryWrapper.findLeadsByReferralCode(referralCode, paginationRequest);
+    }
+
+    @Override
+    public CurrentCustomerFormStepResponse getCurrentCustomerFormStep(UUID leadIdentifier) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        Lead.OtherDetails other = lead.getOtherDetails();
+        String step = (other != null) ? other.getCurrentCustomerFormStep() : null;
+        return CurrentCustomerFormStepResponse.builder()
+                .currentCustomerFormStep(step)
+                .build();
     }
 }

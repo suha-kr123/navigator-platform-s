@@ -26,7 +26,6 @@ import com.nivasafinance.features.advisor.repository.AdvisorRepositoryWrapper;
 import com.nivasafinance.features.advisor.service.AdvisorCallWriteService;
 import com.nivasafinance.features.person.dto.PersonResponse;
 import com.nivasafinance.features.person.entity.MobileNumberDetails;
-import com.nivasafinance.features.person.service.PersonReadService;
 import com.nivasafinance.features.usermanagement.dto.UserResponse;
 import com.nivasafinance.features.usermanagement.service.UserReadService;
 import lombok.RequiredArgsConstructor;
@@ -45,7 +44,6 @@ import java.util.UUID;
 public class AdvisorCallWriteServiceImpl implements AdvisorCallWriteService {
 
     private final AdvisorRepositoryWrapper advisorRepositoryWrapper;
-    private final PersonReadService personReadService;
     private final CallWriteService callWriteService;
     private final CallReadService callReadService;
     private final UserReadService userReadService;
@@ -54,7 +52,7 @@ public class AdvisorCallWriteServiceImpl implements AdvisorCallWriteService {
     @Override
     public CreateAdvisorCallResponse callPerson(UUID advisorIdentifier, CreateAdvisorCallRequest request) {
         Advisor advisor = advisorRepositoryWrapper.findByIdentifierWithException(advisorIdentifier);
-        PersonResponse person = personReadService.getPersonById(advisor.getPersonId());
+        PersonResponse person = userReadService.getPersonForUser(advisor.getUsername());
 
         validatePhoneBelongsToPerson(person, request.getPhoneNumber());
 
@@ -74,15 +72,15 @@ public class AdvisorCallWriteServiceImpl implements AdvisorCallWriteService {
         }
         callLogs.add(new Advisor.CallLogDetails(response.getId()));
         advisor.setCallLogDetails(callLogs);
-        
+
         // Update lastCallId based on latest createdAt
         updateLastCallId(advisor, response.getId());
-        
+
         advisorRepositoryWrapper.saveWithException(advisor);
-        
+
         // Publish event
         publishAdvisorCallLogCreatedEvent(advisor, response.getId(), response.getIdentifier());
-        
+
         return new CreateAdvisorCallResponse(response.getIdentifier(), response.getStatus());
     }
 
@@ -122,9 +120,8 @@ public class AdvisorCallWriteServiceImpl implements AdvisorCallWriteService {
     @Override
     @Transactional
     public CreateExternalCallLogResponse createExternalCallLog(UUID advisorIdentifier, CreateExternalCallLogRequest request) {
-        // Validate advisor exists
         Advisor advisor = advisorRepositoryWrapper.findByIdentifierWithException(advisorIdentifier);
-        PersonResponse person = personReadService.getPersonById(advisor.getPersonId());
+        PersonResponse person = userReadService.getPersonForUser(advisor.getUsername());
 
         validatePhoneBelongsToPerson(person, request.getToNumber());
 
@@ -154,10 +151,10 @@ public class AdvisorCallWriteServiceImpl implements AdvisorCallWriteService {
         }
         callLogs.add(new Advisor.CallLogDetails(savedCallLog.getId()));
         advisor.setCallLogDetails(callLogs);
-        
+
         // Update lastCallId based on latest createdAt
         updateLastCallId(advisor, savedCallLog.getId());
-        
+
         advisorRepositoryWrapper.saveWithException(advisor);
 
         // Publish event
@@ -196,7 +193,7 @@ public class AdvisorCallWriteServiceImpl implements AdvisorCallWriteService {
 
         // If either is null or doesn't have createdAt, use new one
         if (currentCallLog == null || currentCallLog.getCreatedAt() == null ||
-            newCallLog == null || newCallLog.getCreatedAt() == null) {
+                newCallLog == null || newCallLog.getCreatedAt() == null) {
             otherDetails.setLastCallId(newCallLogId);
             advisor.setOtherDetails(otherDetails);
             return;
@@ -211,11 +208,11 @@ public class AdvisorCallWriteServiceImpl implements AdvisorCallWriteService {
 
     private void validatePhoneBelongsToPerson(PersonResponse person, String phoneNumber) {
         boolean matches = person != null &&
-                          person.getMobileNumbers() != null &&
-                          person.getMobileNumbers().stream()
-                                  .filter(Objects::nonNull)
-                                  .map(MobileNumberDetails::getNumber)
-                                  .anyMatch(number -> Objects.equals(number, phoneNumber));
+                person.getMobileNumbers() != null &&
+                person.getMobileNumbers().stream()
+                        .filter(Objects::nonNull)
+                        .map(MobileNumberDetails::getNumber)
+                        .anyMatch(number -> Objects.equals(number, phoneNumber));
         if (!matches) {
             throw new BadRequestException("Provided phone number does not belong to the advisor");
         }

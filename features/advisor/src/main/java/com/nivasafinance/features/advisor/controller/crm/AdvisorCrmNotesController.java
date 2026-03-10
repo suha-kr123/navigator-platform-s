@@ -1,4 +1,4 @@
-package com.nivasafinance.features.advisor.controller;
+package com.nivasafinance.features.advisor.controller.crm;
 
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
@@ -21,7 +21,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping(ApiConstants.V1 + "/advisors/{advisorId}/notes")
 @AllArgsConstructor
-public class AdvisorNotesController {
+public class AdvisorCrmNotesController {
 
     private final AdvisorNoteWriteService advisorNoteWriteService;
     private final AdvisorNoteReadService advisorNoteReadService;

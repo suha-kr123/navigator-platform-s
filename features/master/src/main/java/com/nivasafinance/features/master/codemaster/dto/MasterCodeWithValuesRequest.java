@@ -37,12 +37,8 @@ public class MasterCodeWithValuesRequest {
     public MasterCode toEntity(String key) {
         return MasterCode.builder()
                 .key(key)
-                .name(MasterLanguageData.builder()
-                        .defaultValue(nameMap.get("default"))
-                        .build())
-                .description(MasterLanguageData.builder()
-                        .defaultValue(descriptionMap.get("default"))
-                        .build())
+                .name(MasterLanguageData.fromMap(nameMap))
+                .description(MasterLanguageData.fromMap(descriptionMap))
                 .parentId(parentId)
                 .isSystemDefined(false)
                 .build();
