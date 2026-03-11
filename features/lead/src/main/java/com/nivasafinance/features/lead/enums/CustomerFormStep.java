@@ -9,6 +9,7 @@ public enum CustomerFormStep {
     INCOME_DETAILS("incomeDetails"),
     PROPERTY_DOCUMENTS("propertyDocuments"),
     CB_CONSENT("cbConsent"),
+    TERMINAL("terminal")
     ;
     private final String key;
 
