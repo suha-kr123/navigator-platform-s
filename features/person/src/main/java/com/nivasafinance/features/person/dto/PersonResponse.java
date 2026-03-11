@@ -23,6 +23,7 @@ public class PersonResponse {
     private String middleName;
     private String lastName;
     private String displayName;
+    private String email;
     private List<MobileNumberDetails> mobileNumbers;
     private LocalDate dateOfBirth;
     private Gender gender;

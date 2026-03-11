@@ -21,12 +21,18 @@ import com.nivasafinance.features.usermanagement.repository.UserRepository;
 import com.nivasafinance.features.staff.exception.StaffExceptionFactory;
 import com.nivasafinance.common.exception.ValidationException;
 import com.nivasafinance.common.exception.BadRequestException;
+import com.nivasafinance.integrations.framework.ServiceFactory;
+import com.nivasafinance.integrations.framework.config.BusinessContext;
+import com.nivasafinance.integrations.framework.config.ThirdPartyServiceList;
+import com.nivasafinance.services.authentication.AuthenticationHandler;
+import com.nivasafinance.services.authentication.dto.AuthCreateUserRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -44,6 +50,7 @@ public class StaffWriteServiceImpl implements StaffWriteService {
     private final PersonReadService personReadService;
     private final UserRepository userRepository;
     private final MessageSource messageSource;
+    private final ServiceFactory<AuthenticationHandler> authenticationServiceFactory;
 
     @Override
     public StaffResponse createStaff(StaffCreateRequest request) {
@@ -129,6 +136,25 @@ public class StaffWriteServiceImpl implements StaffWriteService {
         staff.setOfficeKey(request.getOfficeKey());
         staff.setReferralCode(referralCodeRegistryService.generateReferralCode(EntityType.STAFF, staff.getIdentifier()).getReferralCode());
         Staff saved = staffRepositoryWrapper.saveWithException(staff);
+
+        if (request.getPassword() != null && !request.getPassword().isBlank()) {
+            AuthenticationHandler handler = authenticationServiceFactory.getHandler(ThirdPartyServiceList.AUTHENTICATION);
+            String email = userRequest.getPerson() != null && userRequest.getPerson().getEmail() != null && !userRequest.getPerson().getEmail().isBlank()
+                    ? userRequest.getPerson().getEmail() : null;
+            Map<String, Object> metadata = new java.util.HashMap<>(Map.of("username", createdUser.getUsername()));
+            if (email != null) {
+                metadata.put("email", email);
+            }
+            handler.createUser(
+                    AuthCreateUserRequest.builder()
+                            .phone(primaryMobile)
+                            .password(request.getPassword())
+                            .email(email)
+                            .userMetadata(metadata)
+                            .build(),
+                    new BusinessContext("STAFF", null, "CREATE_USER"));
+        }
+
         return mapToResponse(saved, createdUser);
     }
 

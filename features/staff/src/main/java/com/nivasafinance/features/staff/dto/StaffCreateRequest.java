@@ -18,6 +18,8 @@ public class StaffCreateRequest {
     @Valid
     private UserCreateRequest user;
 
+    private String password;
+
     @Valid
     private List<Role> roles;
 

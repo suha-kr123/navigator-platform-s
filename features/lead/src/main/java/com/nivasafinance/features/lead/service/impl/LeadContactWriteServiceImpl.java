@@ -163,6 +163,7 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
                 firstName,
                 middleName,
                 lastName,
+                existingPerson.getEmail(),
                 existingPerson.getMobileNumbers(),
                 existingPerson.getDateOfBirth(),
                 existingPerson.getGender()
@@ -371,6 +372,7 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
                 details.getFirstName(),
                 details.getMiddleName(),
                 details.getLastName(),
+                details.getEmail(),
                 details.getMobileNumbers(),
                 details.getDateOfBirth(),
                 details.getGender()
@@ -382,6 +384,7 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
                 details.getFirstName(),
                 details.getMiddleName(),
                 details.getLastName(),
+                details.getEmail(),
                 details.getMobileNumbers(),
                 details.getDateOfBirth(),
                 details.getGender()

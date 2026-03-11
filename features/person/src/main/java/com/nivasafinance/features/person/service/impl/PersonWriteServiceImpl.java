@@ -55,6 +55,7 @@ public class PersonWriteServiceImpl implements PersonWriteService {
         person.setFirstName(request.getFirstName());
         person.setMiddleName(request.getMiddleName());
         person.setLastName(request.getLastName());
+        person.setEmail(request.getEmail());
         person.setMobileNumbers(request.getMobileNumbers());
         person.setDateOfBirth(request.getDateOfBirth());
         person.setGender(request.getGender());
@@ -94,6 +95,7 @@ public class PersonWriteServiceImpl implements PersonWriteService {
         person.setFirstName(request.getFirstName());
         person.setMiddleName(request.getMiddleName());
         person.setLastName(request.getLastName());
+        person.setEmail(request.getEmail());
         person.setMobileNumbers(request.getMobileNumbers());
         person.setDateOfBirth(request.getDateOfBirth());
         person.setGender(request.getGender());

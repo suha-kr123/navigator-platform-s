@@ -12,6 +12,7 @@ dependencies {
     implementation(project(":features:offices"))
     implementation(project(":features:rolemanagement"))
     implementation(project(":features:referral"))
+    implementation(project(":integrations"))
 }
 
 springBoot {

@@ -12,10 +12,12 @@ import com.nivasafinance.integrations.framework.core.data.IntegrationRestRequest
 import com.nivasafinance.integrations.framework.core.data.ThirdPartyConfig;
 import com.nivasafinance.integrations.framework.core.exception.NavigatorIntegrationClientException;
 import com.nivasafinance.integrations.framework.core.exception.NavigatorIntegrationServerException;
+import com.nivasafinance.services.authentication.dto.AuthCreateUserRequest;
 import com.nivasafinance.services.authentication.dto.AuthSendOtpRequest;
 import com.nivasafinance.services.authentication.dto.AuthVerifyOtpRequest;
 import com.nivasafinance.services.authentication.dto.AuthVerifyOtpResponse;
 import com.nivasafinance.services.authentication.provider.AuthenticationProvider;
+import com.nivasafinance.services.authentication.provider.supabase.data.SupabaseAdminCreateUserRequest;
 import com.nivasafinance.services.authentication.provider.supabase.data.SupabaseConfiguration;
 import com.nivasafinance.services.authentication.provider.supabase.data.SupabaseSendOtpRequest;
 import com.nivasafinance.services.authentication.provider.supabase.data.SupabaseVerifyOtpRequest;
@@ -35,6 +37,7 @@ public class SupabaseAuthProvider implements AuthenticationProvider {
 
     private static final String OTP_PATH = "/auth/v1/otp";
     private static final String VERIFY_PATH = "/auth/v1/verify";
+    private static final String ADMIN_USERS_PATH = "/auth/v1/admin/users";
 
     private final NavigatorRestService restService;
     private final ObjectMapper objectMapper;
@@ -110,6 +113,28 @@ public class SupabaseAuthProvider implements AuthenticationProvider {
         return mapVerifyResponse(response);
     }
 
+    @Override
+    public void createUser(
+            AuthCreateUserRequest request,
+            ThirdPartyConfig config,
+            BusinessContext businessContext) {
+        SupabaseConfiguration supabaseConfig = setupConfiguration(config.getConfigurations());
+        SupabaseAdminCreateUserRequest body = SupabaseAdminCreateUserRequest.builder()
+                .phone(request.getPhone())
+                .password(request.getPassword())
+                .email(request.getEmail() != null && !request.getEmail().isBlank() ? request.getEmail() : null)
+                .phoneConfirm(true)
+                .userMetadata(request.getUserMetadata())
+                .build();
+        IntegrationRestRequest<String> restRequest = buildAdminCreateUserRequest(body, supabaseConfig, config, businessContext);
+        IntegrationResponse response = restService.doRestRequest(restRequest);
+        if (!response.isSuccess()) {
+            throw new NavigatorIntegrationClientException(
+                    "Supabase admin create user failed: "
+                            + (response.getErrorMessage() != null ? response.getErrorMessage() : response.getResponseBody()));
+        }
+    }
+
     private void validateSendOtpRequest(AuthSendOtpRequest request) {
         if (request.getPhone() == null || request.getPhone().isBlank()) {
             throw new NavigatorIntegrationClientException("Phone cannot be empty");
@@ -153,6 +178,35 @@ public class SupabaseAuthProvider implements AuthenticationProvider {
             throw new NavigatorIntegrationClientException("Failed to serialize verify OTP request: " + e.getMessage());
         }
         return buildPostRequest(url, requestBody, config, thirdPartyConfig, businessContext);
+    }
+
+    private IntegrationRestRequest<String> buildAdminCreateUserRequest(
+            SupabaseAdminCreateUserRequest body,
+            SupabaseConfiguration config,
+            ThirdPartyConfig thirdPartyConfig,
+            BusinessContext businessContext) {
+        String url = "https://" + config.getProjectRef() + ".supabase.co" + ADMIN_USERS_PATH;
+        String requestBody;
+        try {
+            requestBody = objectMapper.writeValueAsString(body);
+        } catch (JsonProcessingException e) {
+            throw new NavigatorIntegrationClientException("Failed to serialize admin create user request: " + e.getMessage());
+        }
+        LinkedMultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+        headers.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
+        headers.add(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
+        headers.add("apikey", config.getApiKey());
+        headers.add(HttpHeaders.AUTHORIZATION, "Bearer " + config.getApiKey());
+        ApiContext apiContext = new ApiContext(getKey().getProvideName(), thirdPartyConfig.getId());
+        IntegrationRestRequest<String> restRequest = new IntegrationRestRequest<>();
+        restRequest.setUrl(url);
+        restRequest.setMethod(HttpMethod.POST);
+        restRequest.setBusinessContext(businessContext);
+        restRequest.setApiContext(apiContext);
+        restRequest.setQueryParams(new LinkedMultiValueMap<>());
+        restRequest.setRequestBody(requestBody);
+        restRequest.setHeaders(headers);
+        return restRequest;
     }
 
     private IntegrationRestRequest<String> buildPostRequest(
