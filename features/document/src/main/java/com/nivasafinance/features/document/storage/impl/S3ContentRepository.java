@@ -197,6 +197,8 @@ public class S3ContentRepository implements ContentRepository {
                 return "image/png";
             case "gif":
                 return "image/gif";
+            case "svg":
+                return "image/svg+xml";
             case "xlsx":
                 return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
             case "xls":
