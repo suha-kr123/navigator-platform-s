@@ -4,6 +4,7 @@ import com.nivasafinance.integrations.framework.ThirdPartyHandler;
 import com.nivasafinance.integrations.framework.config.BusinessContext;
 import com.nivasafinance.integrations.framework.config.ThirdPartyServiceList;
 import com.nivasafinance.integrations.framework.runner.ServiceRunner;
+import com.nivasafinance.services.authentication.dto.AuthCreateUserRequest;
 import com.nivasafinance.services.authentication.dto.AuthSendOtpRequest;
 import com.nivasafinance.services.authentication.dto.AuthVerifyOtpRequest;
 import com.nivasafinance.services.authentication.dto.AuthVerifyOtpResponse;
@@ -55,6 +56,19 @@ public class AuthenticationHandler extends ThirdPartyHandler {
                 primaryProvider, fallbackProvider, runConfig.getRetries());
 
         return (AuthVerifyOtpResponse) runner.invokeService("verifyOtp", request, runConfig, businessContext);
+    }
+
+    public void createUser(AuthCreateUserRequest request, BusinessContext businessContext) {
+        AuthenticationProvider primaryProvider = servicesMap.get(runConfig.getPrimaryConfig().getProvider());
+        if (primaryProvider == null) {
+            throw new AuthenticationHandlerException("Error fetching " + getKey().getServiceName());
+        }
+        AuthenticationProvider fallbackProvider = runConfig.getFallbackConfig() != null
+                ? servicesMap.get(runConfig.getFallbackConfig().getProvider())
+                : null;
+        ServiceRunner<AuthenticationProvider, AuthCreateUserRequest> runner = new ServiceRunner<>(
+                primaryProvider, fallbackProvider, runConfig.getRetries());
+        runner.invokeService("createUser", request, runConfig, businessContext);
     }
 
     @Override

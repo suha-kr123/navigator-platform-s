@@ -49,6 +49,7 @@ public class PersonReadServiceImpl implements PersonReadService {
                 .middleName(person.getMiddleName())
                 .lastName(person.getLastName())
                 .displayName(person.getDisplayName())
+                .email(person.getEmail())
                 .mobileNumbers(person.getMobileNumbers())
                 .dateOfBirth(person.getDateOfBirth())
                 .gender(person.getGender())

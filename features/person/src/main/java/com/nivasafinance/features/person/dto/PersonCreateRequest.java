@@ -18,6 +18,7 @@ public class PersonCreateRequest {
     private String firstName;
     private String middleName;
     private String lastName;
+    private String email;
     private List<MobileNumberDetails> mobileNumbers;
     private LocalDate dateOfBirth;
     private Gender gender;

@@ -28,5 +28,7 @@ public class LeadContactPersonDetails {
     private LocalDate dateOfBirth;
     
     private Gender gender;
+
+    public String email;
 }
 

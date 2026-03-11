@@ -45,6 +45,9 @@ public class Person extends AuditableEntity {
     @Column(name = "display_name", length = 300)
     private String displayName;
 
+    @Column(name = "email", length = 100)
+    private String email;
+
     @Type(JsonType.class)
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "mobile_numbers", columnDefinition = "jsonb")
