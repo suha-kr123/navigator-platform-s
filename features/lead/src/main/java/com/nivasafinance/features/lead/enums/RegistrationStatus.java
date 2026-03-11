@@ -7,7 +7,7 @@ public enum RegistrationStatus {
 
     AVAILABLE("AVAILABLE"),
     APPLIED("APPLIED"),
-    NOT_APPLIED("NOT_APPLIED");
+    NOT_AVAILABLE("NOT_AVAILABLE");
 
     private final String key;
 
