@@ -175,6 +175,17 @@ public class LeadReadServiceImpl implements LeadReadService {
                     .build();
         }
 
+        DocumentChecklistResponse documentChecklistData = null;
+        Lead.DocumentChecklist checklist = propertyDetails.getDocumentChecklist();
+        if (checklist != null) {
+            documentChecklistData = DocumentChecklistResponse.builder()
+                    .aKhata(checklist.getAKhata())
+                    .bKhata(checklist.getBKhata())
+                    .saleDeed(checklist.getSaleDeed())
+                    .propertyTax(checklist.getPropertyTax())
+                    .build();
+        }
+
         return PropertyDetailsResponse.builder()
                 .address(propertyDetails.getAddress())
                 .geoData(propertyDetails.getGeoData())
@@ -183,6 +194,7 @@ public class LeadReadServiceImpl implements LeadReadService {
                 .owner(propertyDetails.getOwner())
                 .ownerRelation(propertyDetails.getOwnerRelation())
                 .propertyMeasurementDetails(measurementData)
+                .documentChecklistResponse(documentChecklistData)
                 .build();
     }
 

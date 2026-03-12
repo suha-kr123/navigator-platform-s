@@ -19,6 +19,7 @@ public class PropertyDetailsResponse {
     private String owner;
     private String ownerRelation;
     private PropertyMeasurementDetailsData propertyMeasurementDetails;
+    private DocumentChecklistResponse documentChecklistResponse;
 
     @Data
     @NoArgsConstructor
