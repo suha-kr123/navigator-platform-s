@@ -21,10 +21,17 @@ import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicBoolean;
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 
 /**
  * Listener that polls the NOTIFICATION_EXECUTOR queue and executes notification receipts.
@@ -48,10 +55,19 @@ public class NotificationExecutorListener {
     private final PlatformTransactionManager transactionManager;
 
     private final AtomicBoolean executorPolling = new AtomicBoolean(false);
-    private int pollCount = 0;
+    private final AtomicInteger pollCount = new AtomicInteger(0);
+    private ExecutorService executor;
 
     @PostConstruct
     public void init() {
+        int poolSize = Math.max(1, messagingProperties.getSqs().getMaxMessages());
+        AtomicInteger threadNumber = new AtomicInteger(0);
+        executor = Executors.newFixedThreadPool(poolSize, r -> {
+            Thread t = new Thread(r, "notification-executor-" + threadNumber.incrementAndGet());
+            t.setDaemon(false);
+            return t;
+        });
+        log.info("NotificationExecutorListener executor pool size: {}", poolSize);
         log.info("NotificationExecutorListener initialized. Provider: {}, SqsClient available: {}", 
                 messagingProperties.getProvider(), 
                 sqsClientProvider.getIfAvailable() != null);
@@ -71,25 +87,31 @@ public class NotificationExecutorListener {
         }
     }
 
+    @PreDestroy
+    public void shutdown() {
+        if (executor != null) {
+            executor.shutdown();
+        }
+    }
+
     /**
      * Polls the NOTIFICATION_EXECUTOR queue and processes receipts.
      * This listener picks up receipts that are ready to be sent and executes them.
      */
     @Scheduled(fixedDelayString = "${messaging.sqs.poll-delay-ms:1000}")
     public void pollExecutorQueue() {
-        pollCount++;
-        
-        // Log every 30 polls to confirm scheduled method is running
-        if (pollCount % 30 == 0) {
-            log.info("NotificationExecutorListener polling (attempt #{}). Provider: {}, SqsClient available: {}", 
-                    pollCount, 
+        int count = pollCount.incrementAndGet();
+
+        if (count % 30 == 0) {
+            log.info("NotificationExecutorListener polling (attempt #{}). Provider: {}, SqsClient available: {}",
+                    count, 
                     messagingProperties.getProvider(),
                     sqsClientProvider.getIfAvailable() != null);
         }
         
         // Only poll SQS if provider is SQS and SqsClient is available
         if (messagingProperties.getProvider() != MessageProvider.SQS) {
-            if (pollCount % 30 == 0) {
+            if (count % 30 == 0) {
                 log.warn("Skipping poll - provider is not SQS: {}", messagingProperties.getProvider());
             }
             return;
@@ -97,14 +119,14 @@ public class NotificationExecutorListener {
 
         SqsClient sqsClient = sqsClientProvider.getIfAvailable();
         if (sqsClient == null) {
-            if (pollCount % 30 == 0) {
+            if (count % 30 == 0) {
                 log.warn("Skipping poll - SqsClient is not available");
             }
             return;
         }
 
         if (!executorPolling.compareAndSet(false, true)) {
-            if (pollCount % 30 == 0) {
+            if (count % 30 == 0) {
                 log.warn("Skipping poll - previous poll still in progress");
             }
             return;
@@ -115,8 +137,8 @@ public class NotificationExecutorListener {
             int waitTime = messagingProperties.getSqs().getWaitTimeSeconds();
             int maxMessages = messagingProperties.getSqs().getMaxMessages();
             
-            if (pollCount % 30 == 0) {
-                log.info("Polling NOTIFICATION_EXECUTOR queue: {} (waitTime: {}s, maxMessages: {})", 
+            if (count % 30 == 0) {
+                log.info("Polling NOTIFICATION_EXECUTOR queue: {} (waitTime: {}s, maxMessages: {})",
                         queueUrl, waitTime, maxMessages);
             }
             
@@ -126,14 +148,14 @@ public class NotificationExecutorListener {
                     .maxNumberOfMessages(maxMessages)
                     .build();
 
-            log.debug("Calling receiveMessage on NOTIFICATION_EXECUTOR queue (poll attempt #{}, waitTime: {}s)", 
-                    pollCount, waitTime);
+            log.debug("Calling receiveMessage on NOTIFICATION_EXECUTOR queue (poll attempt #{}, waitTime: {}s)",
+                    count, waitTime);
             ReceiveMessageResponse response;
             try {
                 response = sqsClient.receiveMessage(request);
             } catch (Exception receiveEx) {
-                log.error("Exception during receiveMessage call on NOTIFICATION_EXECUTOR queue (poll attempt #{})", 
-                        pollCount, receiveEx);
+                log.error("Exception during receiveMessage call on NOTIFICATION_EXECUTOR queue (poll attempt #{})",
+                        count, receiveEx);
                 throw receiveEx;
             }
             
@@ -142,15 +164,29 @@ public class NotificationExecutorListener {
             if (messageCount > 0) {
                 log.info("Received {} message(s) from NOTIFICATION_EXECUTOR queue: {}", messageCount, queueUrl);
             } else {
-                if (pollCount % 30 == 0) {
-                    log.debug("No messages in NOTIFICATION_EXECUTOR queue (poll attempt #{})", pollCount);
+                if (count % 30 == 0) {
+                    log.debug("No messages in NOTIFICATION_EXECUTOR queue (poll attempt #{})", count);
                 }
             }
-            
-            for (Message message : response.messages()) {
-                log.info("Processing message from NOTIFICATION_EXECUTOR queue. Message body: {}", message.body());
-                boolean processed = processExecutorMessage(message.body());
-                if (processed) {
+
+            List<Message> messages = response.messages();
+            List<CompletableFuture<Boolean>> futures = new ArrayList<>(messages.size());
+            for (Message message : messages) {
+                String body = message.body();
+                CompletableFuture<Boolean> future = CompletableFuture.supplyAsync(() -> {
+                    try {
+                        return processExecutorMessage(body);
+                    } catch (Throwable t) {
+                        log.error("Error processing executor message, will retry: {}", body, t);
+                        return false;
+                    }
+                }, executor);
+                futures.add(future);
+            }
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[0])).join();
+            for (int i = 0; i < messages.size(); i++) {
+                Message message = messages.get(i);
+                if (Boolean.TRUE.equals(futures.get(i).getNow(false))) {
                     deleteMessage(queueUrl, message, sqsClient);
                     log.debug("Deleted processed message from NOTIFICATION_EXECUTOR queue");
                 } else {
@@ -158,7 +194,7 @@ public class NotificationExecutorListener {
                 }
             }
         } catch (Exception ex) {
-            log.error("Failed to poll NOTIFICATION_EXECUTOR queue (poll attempt #{})", pollCount, ex);
+            log.error("Failed to poll NOTIFICATION_EXECUTOR queue (poll attempt #{})", count, ex);
         } finally {
             executorPolling.set(false);
         }
