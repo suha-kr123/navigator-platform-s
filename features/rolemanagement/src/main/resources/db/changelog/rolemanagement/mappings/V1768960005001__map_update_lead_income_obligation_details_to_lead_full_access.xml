@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1768960005001" author="system" context="default">
+        <comment>Map UPDATE_LEAD_INCOME_OBLIGATION_DETAILS to LEAD_FULL_ACCESS</comment>
+        <insert tableName="n_permission_group_mapping">
+            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'UPDATE_LEAD_INCOME_OBLIGATION_DETAILS')"/>
+            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>
