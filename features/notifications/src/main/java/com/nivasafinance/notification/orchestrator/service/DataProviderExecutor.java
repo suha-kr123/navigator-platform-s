@@ -44,12 +44,19 @@ public class DataProviderExecutor {
                 .collect(Collectors.joining(","));
     }
 
+    /**
+     * Returns a string map preserving null values for missing DB columns.
+     * Contrast with {@link #executeDataProvider(String, Map)} which converts nulls to "" for notification template use.
+     * Uses a loop instead of Collectors.toMap because toMap does not accept null values (NPE).
+     */
     public Map<String, String> executeQueryAsStringMap(String query, Map<String, Object> params) {
         Map<String, Object> result = executeQuery(query, params);
-        return result.entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue() != null
-                        ? entry.getValue().toString()
-                        : null));
+        Map<String, String> stringMap = new HashMap<>();
+        for (Map.Entry<String, Object> entry : result.entrySet()) {
+            String value = entry.getValue() != null ? entry.getValue().toString() : null;
+            stringMap.put(entry.getKey(), value);
+        }
+        return stringMap;
     }
 
     public List<Map<String, Object>> executeQueryForList(String query, Map<String, Object> params) {
@@ -64,9 +71,11 @@ public class DataProviderExecutor {
         log.debug("Data provider query: {}", provider.getQuery());
         Map<String, Object> result = executeQuerySafely(provider.getQuery(), params);
         log.info("Data provider '{}' returned {} result(s). Keys: {}", providerName, result.size(), result.keySet());
-        
-        // Convert to Map<String, String> handling null values
-        // Collectors.toMap doesn't allow null values, so convert nulls to empty strings
+
+        // Convert to Map<String, String> with null → "". Downstream receipt constructor uses this for template
+        // substitution (e.g. Gallabox/WATI); empty string lets callers treat "no value" via isBlank() and avoids
+        // NPE when building template parameters. Intentional: use executeDataProvider for notification flow.
+        // Note: executeQueryAsStringMap keeps nulls; use that when you need to distinguish null from "".
         Map<String, String> stringMap = new HashMap<>();
         for (Map.Entry<String, Object> entry : result.entrySet()) {
             String value = entry.getValue() != null ? entry.getValue().toString() : "";

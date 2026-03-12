@@ -38,7 +38,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
+import jakarta.annotation.PreDestroy;
 
 /**
  * Listener that polls the NOTIFICATION queue and creates NotificationReceipts.
@@ -68,6 +72,26 @@ public class NotificationReceiptConstructorListener {
     private final PlatformTransactionManager transactionManager;
 
     private final AtomicBoolean polling = new AtomicBoolean(false);
+    private ExecutorService executor;
+
+    @jakarta.annotation.PostConstruct
+    public void initExecutor() {
+        int poolSize = Math.max(1, messagingProperties.getSqs().getMaxMessages());
+        java.util.concurrent.atomic.AtomicInteger threadNumber = new java.util.concurrent.atomic.AtomicInteger(0);
+        executor = Executors.newFixedThreadPool(poolSize, r -> {
+            Thread t = new Thread(r, "notification-receipt-constructor-" + threadNumber.incrementAndGet());
+            t.setDaemon(false);
+            return t;
+        });
+        log.info("NotificationReceiptConstructorListener executor pool size: {}", poolSize);
+    }
+
+    @PreDestroy
+    public void shutdownExecutor() {
+        if (executor != null) {
+            executor.shutdown();
+        }
+    }
 
     /**
      * Polls the NOTIFICATION queue for notification records and creates receipts.
@@ -97,10 +121,24 @@ public class NotificationReceiptConstructorListener {
                     .build();
 
             ReceiveMessageResponse response = sqsClient.receiveMessage(request);
-            for (Message message : response.messages()) {
-                boolean processed = processMessage(message.body());
-                if (processed) {
-                    deleteMessage(queueUrl, message, sqsClient);
+            List<Message> messages = response.messages();
+            List<CompletableFuture<Boolean>> futures = new ArrayList<>(messages.size());
+            for (Message message : messages) {
+                String body = message.body();
+                CompletableFuture<Boolean> future = CompletableFuture.supplyAsync(() -> {
+                    try {
+                        return processMessage(body);
+                    } catch (Throwable t) {
+                        log.error("Error processing notification record, will retry: {}", body, t);
+                        return false;
+                    }
+                }, executor);
+                futures.add(future);
+            }
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[0])).join();
+            for (int i = 0; i < messages.size(); i++) {
+                if (Boolean.TRUE.equals(futures.get(i).getNow(false))) {
+                    deleteMessage(queueUrl, messages.get(i), sqsClient);
                 }
             }
         } catch (Exception ex) {
@@ -155,14 +193,16 @@ public class NotificationReceiptConstructorListener {
             }
 
             NotificationRecord record = recordOpt.get();
-            
-            // Check if record is already COMPLETED - if so, skip processing to avoid duplicate receipts
+
             if (record.getStatus() == NotificationStatus.COMPLETED) {
-                log.info("Notification record {} is already COMPLETED, skipping processing to avoid duplicate receipts. Deleting message from queue.", recordId);
-                return true; // Delete message from queue, already processed
+                log.info("Notification record {} is already COMPLETED, skipping processing. Deleting message from queue.", recordId);
+                return true;
             }
-            
-            // Use updateStatusIfExists to handle race conditions where record might be deleted
+            if (record.getStatus() == NotificationStatus.FAILED || record.getStatus() == NotificationStatus.SKIPPED) {
+                log.info("Notification record {} is already in terminal state {}, deleting message from queue.", recordId, record.getStatus());
+                return true;
+            }
+
             if (!notificationRecordService.updateStatusIfExists(recordId, NotificationStatus.PROCESSING)) {
                 log.warn("Failed to update status for record {} - record may have been deleted. Deleting message from queue.", recordId);
                 return true;
@@ -241,14 +281,17 @@ public class NotificationReceiptConstructorListener {
         } catch (Exception ex) {
             log.error("Failed to process notification record {}", recordId, ex);
             Map<String, Object> errorJson = buildErrorJson(ex);
-            TransactionTemplate requiresNew = new TransactionTemplate(transactionManager);
-            requiresNew.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-            requiresNew.execute(s -> {
-                notificationRecordService.updateStatusAndErrorIfExists(recordId, NotificationStatus.FAILED, errorJson);
-                return null;
-            });
             status.setRollbackOnly();
-            // Return true to delete message from queue if it's a missing record error
+            try {
+                TransactionTemplate requiresNew = new TransactionTemplate(transactionManager);
+                requiresNew.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+                requiresNew.execute(s -> {
+                    notificationRecordService.updateStatusAndErrorIfExists(recordId, NotificationStatus.FAILED, errorJson);
+                    return null;
+                });
+            } catch (Exception updateEx) {
+                log.error("Failed to mark notification record {} as FAILED; record may stay INITIATED. Will retry when message is redelivered.", recordId, updateEx);
+            }
             if (ex instanceof IllegalStateException && ex.getMessage() != null && ex.getMessage().contains("not found")) {
                 log.warn("Record not found error - deleting message from queue to prevent infinite retries");
                 return true;

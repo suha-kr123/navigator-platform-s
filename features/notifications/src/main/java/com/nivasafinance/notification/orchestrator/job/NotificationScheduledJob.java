@@ -29,7 +29,10 @@ public class NotificationScheduledJob {
         }
     }
 
-    @Scheduled(fixedRate = 3_600_000)
+    /**
+     * Placeholder for retrying failed notification receipts. Not scheduled until implemented.
+     * When ready: add @Scheduled and implement logic (e.g. re-publish FAILED receipts to executor queue).
+     */
     public void retryFailedNotifications() {
         log.debug("Retry job placeholder - implement retry logic");
     }
