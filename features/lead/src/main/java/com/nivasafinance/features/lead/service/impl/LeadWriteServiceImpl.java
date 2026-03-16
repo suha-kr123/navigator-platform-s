@@ -914,26 +914,26 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         if (checklist == null) {
             checklist = new Lead.DocumentChecklist();
         }
-        if (request.getAKhata() != null) {
-            String value = request.getAKhata().orElse(null);
+        if (request.getEkhataType() != null) {
+            String value = request.getEkhataType().orElse(null);
             if (value != null && !value.isBlank()) {
-                if (RegistrationStatus.fromKey(value) == null) {
+                if (EkhataType.fromKey(value) == null) {
                     throw LeadExceptionFactory.invalidDocumentChecklistStatus(messageSource);
                 }
-                checklist.setAKhata(RegistrationStatus.fromKey(value).getKey());
+                checklist.setEkhataType(EkhataType.fromKey(value).getKey());
             } else {
-                checklist.setAKhata(null);
+                checklist.setEkhataType(null);
             }
         }
-        if (request.getBKhata() != null) {
-            String value = request.getBKhata().orElse(null);
+        if (request.getEkhataStatus() != null) {
+            String value = request.getEkhataStatus().orElse(null);
             if (value != null && !value.isBlank()) {
                 if (RegistrationStatus.fromKey(value) == null) {
                     throw LeadExceptionFactory.invalidDocumentChecklistStatus(messageSource);
                 }
-                checklist.setBKhata(RegistrationStatus.fromKey(value).getKey());
+                checklist.setEkhataStatus(RegistrationStatus.fromKey(value).getKey());
             } else {
-                checklist.setBKhata(null);
+                checklist.setEkhataStatus(null);
             }
         }
         if (request.getSaleDeed() != null) {
@@ -956,6 +956,28 @@ public class LeadWriteServiceImpl implements LeadWriteService {
                 checklist.setPropertyTax(AvailabilityStatus.fromKey(value).getKey());
             } else {
                 checklist.setPropertyTax(null);
+            }
+        }
+        if (request.getStatementOfAccounts() != null) {
+            String value = request.getStatementOfAccounts().orElse(null);
+            if (value != null && !value.isBlank()) {
+                if (AvailabilityStatus.fromKey(value) == null) {
+                    throw LeadExceptionFactory.invalidDocumentChecklistStatus(messageSource);
+                }
+                checklist.setStatementOfAccounts(AvailabilityStatus.fromKey(value).getKey());
+            } else {
+                checklist.setStatementOfAccounts(null);
+            }
+        }
+        if (request.getOtherDocs() != null) {
+            String value = request.getOtherDocs().orElse(null);
+            if (value != null && !value.isBlank()) {
+                if (AvailabilityStatus.fromKey(value) == null) {
+                    throw LeadExceptionFactory.invalidDocumentChecklistStatus(messageSource);
+                }
+                checklist.setOtherDocs(AvailabilityStatus.fromKey(value).getKey());
+            } else {
+                checklist.setOtherDocs(null);
             }
         }
         propertyDetails.setDocumentChecklist(checklist);

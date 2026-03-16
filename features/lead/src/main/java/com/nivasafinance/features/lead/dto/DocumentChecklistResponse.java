@@ -11,8 +11,10 @@ import lombok.NoArgsConstructor;
 @Builder
 public class DocumentChecklistResponse {
 
-    private String aKhata;
-    private String bKhata;
+    private String ekhataType;
+    private String ekhataStatus;
     private String saleDeed;
     private String propertyTax;
+    private String statementOfAccounts;
+    private String otherDocs;
 }

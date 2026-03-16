@@ -179,10 +179,12 @@ public class LeadReadServiceImpl implements LeadReadService {
         Lead.DocumentChecklist checklist = propertyDetails.getDocumentChecklist();
         if (checklist != null) {
             documentChecklistData = DocumentChecklistResponse.builder()
-                    .aKhata(checklist.getAKhata())
-                    .bKhata(checklist.getBKhata())
+                    .ekhataType(checklist.getEkhataType())
+                    .ekhataStatus(checklist.getEkhataStatus())
                     .saleDeed(checklist.getSaleDeed())
                     .propertyTax(checklist.getPropertyTax())
+                    .statementOfAccounts(checklist.getStatementOfAccounts())
+                    .otherDocs(checklist.getOtherDocs())
                     .build();
         }
 
@@ -211,10 +213,12 @@ public class LeadReadServiceImpl implements LeadReadService {
             return DocumentChecklistResponse.builder().build();
         }
         return DocumentChecklistResponse.builder()
-                .aKhata(checklist.getAKhata())
-                .bKhata(checklist.getBKhata())
+                .ekhataType(checklist.getEkhataType())
+                .ekhataStatus(checklist.getEkhataStatus())
                 .saleDeed(checklist.getSaleDeed())
                 .propertyTax(checklist.getPropertyTax())
+                .statementOfAccounts(checklist.getStatementOfAccounts())
+                .otherDocs(checklist.getOtherDocs())
                 .build();
     }
 

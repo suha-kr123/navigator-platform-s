@@ -1,6 +1,5 @@
 package com.nivasafinance.features.lead.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,10 +13,10 @@ import java.util.Optional;
 @Builder
 public class PatchDocumentChecklistRequest {
 
-    @JsonProperty("aKhata")
-    private Optional<String> aKhata;
-    @JsonProperty("bKhata")
-    private Optional<String> bKhata;
+    private Optional<String> ekhataType;
+    private Optional<String> ekhataStatus;
     private Optional<String> saleDeed;
     private Optional<String> propertyTax;
+    private Optional<String> statementOfAccounts;
+    private Optional<String> otherDocs;
 }
