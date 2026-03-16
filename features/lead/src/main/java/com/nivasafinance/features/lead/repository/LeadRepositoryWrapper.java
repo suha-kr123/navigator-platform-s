@@ -934,55 +934,92 @@ public class LeadRepositoryWrapper {
                 ? paginationRequest.getSortDirection() : "DESC";
         String countSql = """
             SELECT COUNT(*)
-            FROM n_lead l
-            JOIN n_sourcing_channel_details sc ON sc.id = l.sourcing_channel_id
+            FROM n_sourcing_channel_details sc
+            JOIN n_lead l ON l.sourcing_channel_id = sc.id
             WHERE sc.marketing_details->>'referredByCode' = ?
             """;
         String dataSql = """
-            SELECT l.id AS id,
-                   l.lead_identifier AS lead_identifier,
-                   p.display_name AS primary_contact_name,
-                   (SELECT m->>'number' FROM jsonb_array_elements(COALESCE(p.mobile_numbers, '[]'::jsonb)) m
-                    WHERE (m->>'isPrimary')::boolean = true LIMIT 1) AS primary_contact_phone,
-                   l.requested_amount AS requested_amount,
-                   l.workflow_details->'currentStageDetails'->>'stageKey' AS current_stage,
-                   l.status::text AS status,
-                   l.substatus::text AS substatus,
-                   l.created_at AS created_at,
+            WITH leads AS MATERIALIZED (
+              SELECT l.id, l.lead_identifier, l.other_details, l.created_at, l.requested_amount,
+                     l.workflow_details, l.status, l.substatus, l.product_code, l.office_key,
+                     (sc.marketing_details->>'referredByCode') AS ref_code
+              FROM n_sourcing_channel_details sc
+              JOIN n_lead l ON l.sourcing_channel_id = sc.id
+              WHERE sc.marketing_details->>'referredByCode' = ?
+            )
+            SELECT leads.id AS id,
+                   leads.lead_identifier AS lead_identifier,
+                   primary_lat.name AS primary_contact_name,
+                   primary_lat.num AS primary_contact_phone,
+                   leads.requested_amount AS requested_amount,
+                   leads.workflow_details->'currentStageDetails'->>'stageKey' AS current_stage,
+                   leads.status::text AS status,
+                   leads.substatus::text AS substatus,
+                   leads.created_at AS created_at,
                    o.name AS office,
-                   l.product_code AS product_code,
-                   sc.marketing_details->>'referredByCode' AS referred_by_code,
+                   leads.product_code AS product_code,
+                   leads.ref_code AS referred_by_code,
                    r.entity_type::text AS referred_by_type,
                    r.entity_identifier AS referred_by_identifier,
-                   COALESCE(ref_adv_p.display_name, ref_st_p.display_name, ref_lead_p.display_name, ref_lead_app_p.display_name, ref_app_by_uuid_p.display_name) AS referred_by_name,
-                   COALESCE(
-                       (jsonb_path_query_first(COALESCE(ref_adv_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
-                       (jsonb_path_query_first(COALESCE(ref_st_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
-                       (jsonb_path_query_first(COALESCE(ref_lead_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
-                       (jsonb_path_query_first(COALESCE(ref_lead_app_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
-                       (jsonb_path_query_first(COALESCE(ref_app_by_uuid_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number')
-                   ) AS referred_by_number
-            FROM n_lead l
-            JOIN n_sourcing_channel_details sc ON sc.id = l.sourcing_channel_id
-            LEFT JOIN n_referral_code_registry r ON r.referral_code = sc.marketing_details->>'referredByCode'
-            LEFT JOIN n_advisor ref_adv ON ref_adv.identifier = r.entity_identifier AND r.entity_type::text = 'ADVISOR'
-            LEFT JOIN n_user ref_adv_u ON ref_adv_u.username = ref_adv.username
-            LEFT JOIN n_person ref_adv_p ON ref_adv_p.id = ref_adv_u.person_id
-            LEFT JOIN n_staff ref_st ON ref_st.identifier = r.entity_identifier AND r.entity_type::text = 'STAFF'
-            LEFT JOIN n_user ref_st_u ON ref_st_u.id = ref_st.user_id
-            LEFT JOIN n_person ref_st_p ON ref_st_p.id = ref_st_u.person_id
-            LEFT JOIN n_lead ref_lead ON ref_lead.lead_identifier = r.entity_identifier AND r.entity_type::text = 'APPLICANT'
-            LEFT JOIN n_contact ref_lead_c ON ref_lead_c.id = (ref_lead.other_details->>'primaryContactId')::bigint
-            LEFT JOIN n_person ref_lead_p ON ref_lead_p.id = ref_lead_c.person_id
-            LEFT JOIN n_applicant ref_lead_app ON ref_lead_app.id = ref_lead.applicant
-            LEFT JOIN n_person ref_lead_app_p ON ref_lead_app_p.id = ref_lead_app.person_id
-            LEFT JOIN n_applicant ref_app_by_uuid ON ref_app_by_uuid.identifier = r.entity_identifier AND r.entity_type::text = 'APPLICANT'
-            LEFT JOIN n_person ref_app_by_uuid_p ON ref_app_by_uuid_p.id = ref_app_by_uuid.person_id
-            LEFT JOIN n_contact primary_contact_person ON primary_contact_person.id = (l.other_details->>'primaryContactId')::bigint
-            LEFT JOIN n_person p ON p.id = primary_contact_person.person_id
-            LEFT JOIN n_office o ON o.key = l.office_key
-            WHERE sc.marketing_details->>'referredByCode' = ?
-            ORDER BY l.""" + sortBy + " " + sortDirection + """
+                   COALESCE(ref_adv_lat.name, ref_st_lat.name, ref_lead_lat.name, ref_lead_app_lat.name, ref_app_uuid_lat.name) AS referred_by_name,
+                   COALESCE(ref_adv_lat.num, ref_st_lat.num, ref_lead_lat.num, ref_lead_app_lat.num, ref_app_uuid_lat.num) AS referred_by_number
+            FROM leads
+            LEFT JOIN n_referral_code_registry r ON r.referral_code = leads.ref_code
+            LEFT JOIN LATERAL (
+              SELECT ref_adv_p.display_name AS name,
+                     (jsonb_path_query_first(COALESCE(ref_adv_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') AS num
+              FROM n_advisor ref_adv
+              JOIN n_user ref_adv_u ON ref_adv_u.username = ref_adv.username
+              JOIN n_person ref_adv_p ON ref_adv_p.id = ref_adv_u.person_id
+              WHERE ref_adv.identifier = r.entity_identifier AND (r.entity_type)::text = 'ADVISOR'
+              LIMIT 1
+            ) ref_adv_lat ON true
+            LEFT JOIN LATERAL (
+              SELECT ref_st_p.display_name AS name,
+                     (jsonb_path_query_first(COALESCE(ref_st_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') AS num
+              FROM n_staff ref_st
+              JOIN n_user ref_st_u ON ref_st_u.id = ref_st.user_id
+              JOIN n_person ref_st_p ON ref_st_p.id = ref_st_u.person_id
+              WHERE ref_st.identifier = r.entity_identifier AND (r.entity_type)::text = 'STAFF'
+              LIMIT 1
+            ) ref_st_lat ON true
+            LEFT JOIN LATERAL (
+              SELECT ref_lead_p.display_name AS name,
+                     (jsonb_path_query_first(COALESCE(ref_lead_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') AS num
+              FROM n_lead ref_lead
+              LEFT JOIN n_contact ref_lead_c ON ref_lead_c.id = (ref_lead.other_details->>'primaryContactId')::bigint
+              LEFT JOIN n_person ref_lead_p ON ref_lead_p.id = ref_lead_c.person_id
+              WHERE ref_lead.lead_identifier = r.entity_identifier AND (r.entity_type)::text = 'APPLICANT'
+              LIMIT 1
+            ) ref_lead_lat ON true
+            LEFT JOIN LATERAL (
+              SELECT ref_lead_app_p.display_name AS name,
+                     (jsonb_path_query_first(COALESCE(ref_lead_app_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') AS num
+              FROM n_lead ref_lead2
+              JOIN n_applicant ref_lead_app ON ref_lead_app.id = ref_lead2.applicant
+              JOIN n_person ref_lead_app_p ON ref_lead_app_p.id = ref_lead_app.person_id
+              WHERE ref_lead2.lead_identifier = r.entity_identifier AND (r.entity_type)::text = 'APPLICANT'
+              LIMIT 1
+            ) ref_lead_app_lat ON true
+            LEFT JOIN LATERAL (
+              SELECT ref_app_p.display_name AS name,
+                     (jsonb_path_query_first(COALESCE(ref_app_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') AS num
+              FROM n_applicant ref_app
+              JOIN n_person ref_app_p ON ref_app_p.id = ref_app.person_id
+              WHERE ref_app.identifier = r.entity_identifier AND (r.entity_type)::text = 'APPLICANT'
+              LIMIT 1
+            ) ref_app_uuid_lat ON true
+            LEFT JOIN LATERAL (
+              SELECT prim_p.display_name AS name,
+                     (SELECT m->>'number' FROM jsonb_array_elements(COALESCE(prim_p.mobile_numbers, '[]'::jsonb)) m
+                      WHERE (m->>'isPrimary')::boolean = true LIMIT 1) AS num
+              FROM n_contact prim_c
+              JOIN n_person prim_p ON prim_p.id = prim_c.person_id
+              WHERE prim_c.id = (leads.other_details->>'primaryContactId')::bigint
+              LIMIT 1
+            ) primary_lat ON true
+            LEFT JOIN n_office o ON o.key = leads.office_key
+            ORDER BY leads.""" + sortBy + " " + sortDirection + """
              LIMIT ? OFFSET ?
             """;
         try {

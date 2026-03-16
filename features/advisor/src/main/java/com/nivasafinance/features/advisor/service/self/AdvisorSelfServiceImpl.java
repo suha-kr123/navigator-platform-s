@@ -37,6 +37,8 @@ import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.features.leadstages.dto.LeadStageHistoryDisplayResponse;
 import com.nivasafinance.features.leadstages.dto.LeadStageHistoryResponse;
 
+import org.springframework.util.StringUtils;
+
 import java.util.Optional;
 import com.nivasafinance.features.sourcechannel.dto.SourcingChannelRequest;
 import lombok.RequiredArgsConstructor;
@@ -387,9 +389,34 @@ public class AdvisorSelfServiceImpl implements AdvisorSelfService {
                     .leadStatus(basic.getStatus())
                     .requestedAmount(basic.getRequestedAmount())
                     .createdAt(basic.getCreatedAt())
+                    .leadStageDisplayName(resolveCurrentStageDisplayName(basic.getLeadIdentifier()))
                     .build());
         }
         return new PaginatedResponse<>(content, paginated.getPagination());
+    }
+
+    @Override
+    public PaginatedResponse<AdvisorSelfLeadResponse> getSelfAdvisorLeadsWithSearch(
+            PaginationRequest paginationRequest, String mobileNumber, String name, String leadStageDisplayName) {
+        boolean hasSearch = org.springframework.util.StringUtils.hasText(mobileNumber)
+                || org.springframework.util.StringUtils.hasText(name)
+                || org.springframework.util.StringUtils.hasText(leadStageDisplayName);
+        if (!hasSearch) {
+            return getSelfAdvisorLeads(paginationRequest);
+        }
+        UUID meId = resolveMeIdentifier();
+        com.nivasafinance.features.advisor.entity.Advisor advisor =
+                advisorRepositoryWrapper.findByIdentifierWithException(meId);
+        String referralCode = advisor.getReferralCode();
+        if (referralCode == null || referralCode.isBlank()) {
+            throw AdvisorExceptionFactory.advisorReferralCodeNotAvailable(messageSource);
+        }
+        PaginatedResponse<AdvisorSelfLeadResponse> response = advisorRepositoryWrapper.findLeadsByReferralCodeWithSearch(
+                referralCode, paginationRequest, mobileNumber, name, leadStageDisplayName);
+        for (AdvisorSelfLeadResponse item : response.getContent()) {
+            item.setLeadStageDisplayName(resolveCurrentStageDisplayName(item.getLeadIdentifier()));
+        }
+        return response;
     }
 
     @Override
@@ -418,6 +445,7 @@ public class AdvisorSelfServiceImpl implements AdvisorSelfService {
                 .leadStatus(lead.getStatus())
                 .requestedAmount(lead.getRequestedAmount())
                 .createdAt(lead.getLeadCreatedAt())
+                .leadStageDisplayName(resolveCurrentStageDisplayName(leadIdentifier))
                 .build();
     }
 
@@ -495,6 +523,21 @@ public class AdvisorSelfServiceImpl implements AdvisorSelfService {
                     .build());
         }
         return segments;
+    }
+
+
+    private String resolveCurrentStageDisplayName(UUID leadIdentifier) {
+        List<LeadStageHistoryDisplayResponse> history =
+                leadStageHistoryReadService.getStageHistoryWithDisplayLabelsByLeadId(leadIdentifier);
+        if (history == null || history.isEmpty()) {
+            return null;
+        }
+        LeadStageHistoryDisplayResponse latest = history.stream()
+                .filter(r -> r.getExitedAt() == null)
+                .findFirst()
+                .orElse(history.get(history.size() - 1));
+        String label = latest.getDisplayLabel();
+        return StringUtils.hasText(label) ? label : null;
     }
 
     private static boolean hasNameRequest(AdvisorSelfLeadCreateRequest request) {

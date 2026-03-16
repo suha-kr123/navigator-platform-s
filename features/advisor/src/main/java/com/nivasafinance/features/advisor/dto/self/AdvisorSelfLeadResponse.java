@@ -22,4 +22,5 @@ public class AdvisorSelfLeadResponse {
     private LeadStatus leadStatus;
     private BigDecimal requestedAmount;
     private LocalDateTime createdAt;
+    private String leadStageDisplayName;
 }

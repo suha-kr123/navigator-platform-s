@@ -121,8 +121,12 @@ public class AdvisorSelfController {
     @GetMapping("/leads")
     @RequireRole({ROLE_ADVISOR_SELF})
     public ResponseEntity<PaginatedResponse<AdvisorSelfLeadResponse>> getMyLeads(
-            @Valid PaginationRequest paginationRequest) {
-        return ResponseEntity.ok(advisorSelfService.getSelfAdvisorLeads(paginationRequest));
+            @Valid PaginationRequest paginationRequest,
+            @RequestParam(required = false) String mobileNumber,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String leadStageDisplayName) {
+        return ResponseEntity.ok(
+                advisorSelfService.getSelfAdvisorLeadsWithSearch(paginationRequest, mobileNumber, name, leadStageDisplayName));
     }
 
     @GetMapping("/lead/{leadIdentifier}")
