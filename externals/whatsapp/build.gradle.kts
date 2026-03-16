@@ -14,6 +14,7 @@ dependencies {
     implementation(project(":features:workflow"))
     implementation(project(":features:advisor"))
     implementation(project(":features:lead"))
+    implementation(project(":features:task"))
 }
 
 springBoot {
