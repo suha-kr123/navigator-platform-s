@@ -311,10 +311,12 @@ public class Lead extends AuditableEntity {
     @AllArgsConstructor
     @Builder
     public static class DocumentChecklist {
-        private String aKhata;
-        private String bKhata;
+        private String ekhataType;
+        private String ekhataStatus;
         private String saleDeed;
         private String propertyTax;
+        private String statementOfAccounts;
+        private String otherDocs;
     }
 
     @Data
