@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1769800000100_23a__enable_pg_trgm" author="system" context="default">
+        <comment>Enable pg_trgm extension for ILIKE/like index support on text (e.g. display_name search). Requires DB superuser or extension already present.</comment>
+        <sql>CREATE EXTENSION IF NOT EXISTS pg_trgm</sql>
+    </changeSet>
+
+    <changeSet id="V1769800000100_23b__person_display_name_trigram_index" author="system" context="default">
+        <comment>GIN trigram index on display_name to speed up ILIKE '%value%' searches (e.g. self-advisor lead search by name)</comment>
+        <sql>CREATE INDEX IF NOT EXISTS idx_n_person_display_name_gin_trgm ON n_person USING gin (display_name gin_trgm_ops)</sql>
+    </changeSet>
+
+</databaseChangeLog>

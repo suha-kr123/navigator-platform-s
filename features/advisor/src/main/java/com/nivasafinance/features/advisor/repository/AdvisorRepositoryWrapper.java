@@ -5,6 +5,8 @@ import com.nivasafinance.common.base.model.PaginationInfo;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.features.advisor.dto.AdvisorSearchRequest;
 import com.nivasafinance.features.advisor.dto.AdvisorBasicResponse;
+import com.nivasafinance.features.advisor.dto.self.AdvisorSelfLeadResponse;
+import com.nivasafinance.features.lead.enums.LeadStatus;
 import com.nivasafinance.features.referral.enums.EntityType;
 import com.nivasafinance.features.advisor.entity.Advisor;
 import com.nivasafinance.features.advisor.enums.AdvisorStatus;
@@ -616,6 +618,151 @@ public class AdvisorRepositoryWrapper {
         }
     }
 
+    private static final String STAGE_JOIN = " JOIN n_stage_config stg ON stg.\"key\" = COALESCE(l.workflow_details->'currentStageDetails'->>'stageKey', '') AND stg.is_active = true AND TRIM(COALESCE(stg.stage_config->>'externalDisplayName','')) = TRIM(?) ";
+
+    /**
+     * Finds leads by referral code (self-advisor) with optional filter by any contact's mobile, name, or lead stage display name.
+     */
+    public PaginatedResponse<AdvisorSelfLeadResponse> findLeadsByReferralCodeWithSearch(
+            String referralCode,
+            PaginationRequest paginationRequest,
+            String mobileNumber,
+            String name,
+            String leadStageDisplayName) {
+        if (!StringUtils.hasText(referralCode)) {
+            return new PaginatedResponse<>(Collections.emptyList(),
+                    buildPaginationInfo(paginationRequest, 0));
+        }
+        boolean hasMobile = StringUtils.hasText(mobileNumber);
+        boolean hasName = StringUtils.hasText(name);
+        boolean hasStageFilter = StringUtils.hasText(leadStageDisplayName);
+        String namePattern = hasName ? "%" + name.trim().replace("%", "\\%").replace("_", "\\_") + "%" : null;
+
+        List<Object> params = new ArrayList<>();
+        if (hasName) params.add(namePattern);
+        if (hasMobile) params.add(buildPhoneNumberJsonb(mobileNumber.trim()));
+        if (hasStageFilter) params.add(leadStageDisplayName.trim());
+        params.add(referralCode.trim());
+
+        String countSql;
+        if (hasMobile || hasName) {
+            StringBuilder sql = new StringBuilder();
+            sql.append(" WITH matching_contacts AS ( SELECT c.id FROM n_contact c ");
+            sql.append(" INNER JOIN n_person p ON p.id = c.person_id WHERE ");
+            if (hasName) sql.append(" p.display_name ILIKE ? ");
+            if (hasName && hasMobile) sql.append(" AND ");
+            if (hasMobile) sql.append(" p.mobile_numbers @> ?::jsonb ");
+            sql.append(" ) SELECT COUNT(*) FROM n_lead l ");
+            sql.append(" JOIN n_sourcing_channel_details sc ON sc.id = l.sourcing_channel_id ");
+            if (hasStageFilter) sql.append(STAGE_JOIN);
+            sql.append(" WHERE sc.marketing_details->>'referredByCode' = ? ");
+            sql.append(" AND (EXISTS (SELECT 1 FROM jsonb_array_elements_text(COALESCE(l.contacts, '[]'::jsonb)) AS e WHERE (e)::bigint IN (SELECT id FROM matching_contacts)) ");
+            sql.append(" OR EXISTS (SELECT 1 FROM jsonb_array_elements_text(COALESCE(l.co_applicants, '[]'::jsonb)) AS e WHERE (e)::bigint IN (SELECT id FROM matching_contacts))) ");
+            countSql = sql.toString();
+        } else if (hasStageFilter) {
+            countSql = " SELECT COUNT(*) FROM n_lead l " +
+                    " JOIN n_sourcing_channel_details sc ON sc.id = l.sourcing_channel_id " +
+                    STAGE_JOIN +
+                    " WHERE sc.marketing_details->>'referredByCode' = ? ";
+        } else {
+            countSql = " SELECT COUNT(*) FROM n_lead l " +
+                    " JOIN n_sourcing_channel_details sc ON sc.id = l.sourcing_channel_id " +
+                    " WHERE sc.marketing_details->>'referredByCode' = ? ";
+        }
+
+        String dataSql = (hasMobile || hasName)
+                ? buildSelfLeadSearchDataSql(hasName, hasMobile, hasStageFilter)
+                : hasStageFilter
+                ? buildSelfLeadSearchDataSqlStageOnly()
+                : """
+                SELECT l.lead_identifier AS lead_identifier,
+                       primary_person.display_name AS primary_contact_name,
+                       (SELECT m->>'number' FROM jsonb_array_elements(COALESCE(primary_person.mobile_numbers, '[]'::jsonb)) m
+                        WHERE (m->>'isPrimary')::boolean = true LIMIT 1) AS primary_contact_phone,
+                       l.product_code AS product_code,
+                       l.status::text AS status,
+                       l.requested_amount AS requested_amount,
+                       l.created_at AS created_at
+                FROM n_lead l
+                JOIN n_sourcing_channel_details sc ON sc.id = l.sourcing_channel_id
+                LEFT JOIN n_contact primary_contact ON primary_contact.id = (l.other_details->>'primaryContactId')::bigint
+                LEFT JOIN n_person primary_person ON primary_person.id = primary_contact.person_id
+                WHERE sc.marketing_details->>'referredByCode' = ?
+                ORDER BY l.created_at DESC
+                LIMIT ? OFFSET ?
+                """;
+
+        try {
+            List<Object> countParams;
+            List<Object> dataParams;
+            if (!hasMobile && !hasName && hasStageFilter) {
+                countParams = List.of(leadStageDisplayName.trim(), referralCode.trim());
+                dataParams = new ArrayList<>(countParams);
+                dataParams.add(paginationRequest.getLimit());
+                dataParams.add(paginationRequest.getOffset());
+            } else {
+                countParams = new ArrayList<>(params);
+                dataParams = new ArrayList<>(params);
+                dataParams.add(paginationRequest.getLimit());
+                dataParams.add(paginationRequest.getOffset());
+            }
+            Long totalCount = jdbcTemplate.queryForObject(countSql, Long.class, countParams.toArray());
+            long total = totalCount != null ? totalCount : 0L;
+            List<AdvisorSelfLeadResponse> results = jdbcTemplate.query(
+                    dataSql,
+                    new AdvisorSelfLeadRowMapper(),
+                    dataParams.toArray());
+            return new PaginatedResponse<>(results, buildPaginationInfo(paginationRequest, total));
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Failed to search self-advisor leads by referral code", e);
+        }
+    }
+
+    private String buildSelfLeadSearchDataSql(boolean hasName, boolean hasMobile, boolean hasStageFilter) {
+        StringBuilder sql = new StringBuilder();
+        sql.append(" WITH matching_contacts AS ( SELECT c.id FROM n_contact c ");
+        sql.append(" INNER JOIN n_person p ON p.id = c.person_id WHERE ");
+        if (hasName) sql.append(" p.display_name ILIKE ? ");
+        if (hasName && hasMobile) sql.append(" AND ");
+        if (hasMobile) sql.append(" p.mobile_numbers @> ?::jsonb ");
+        sql.append(" ) SELECT l.lead_identifier AS lead_identifier, ");
+        sql.append(" primary_person.display_name AS primary_contact_name, ");
+        sql.append(" (SELECT m->>'number' FROM jsonb_array_elements(COALESCE(primary_person.mobile_numbers, '[]'::jsonb)) m ");
+        sql.append(" WHERE (m->>'isPrimary')::boolean = true LIMIT 1) AS primary_contact_phone, ");
+        sql.append(" l.product_code AS product_code, l.status::text AS status, l.requested_amount AS requested_amount, l.created_at AS created_at ");
+        sql.append(" FROM n_lead l ");
+        sql.append(" JOIN n_sourcing_channel_details sc ON sc.id = l.sourcing_channel_id ");
+        if (hasStageFilter) sql.append(STAGE_JOIN);
+        sql.append(" LEFT JOIN n_contact primary_contact ON primary_contact.id = (l.other_details->>'primaryContactId')::bigint ");
+        sql.append(" LEFT JOIN n_person primary_person ON primary_person.id = primary_contact.person_id ");
+        sql.append(" WHERE sc.marketing_details->>'referredByCode' = ? ");
+        sql.append(" AND (EXISTS (SELECT 1 FROM jsonb_array_elements_text(COALESCE(l.contacts, '[]'::jsonb)) AS e WHERE (e)::bigint IN (SELECT id FROM matching_contacts)) ");
+        sql.append(" OR EXISTS (SELECT 1 FROM jsonb_array_elements_text(COALESCE(l.co_applicants, '[]'::jsonb)) AS e WHERE (e)::bigint IN (SELECT id FROM matching_contacts))) ");
+        sql.append(" ORDER BY l.created_at DESC LIMIT ? OFFSET ? ");
+        return sql.toString();
+    }
+
+    private String buildSelfLeadSearchDataSqlStageOnly() {
+        return """
+                SELECT l.lead_identifier AS lead_identifier,
+                       primary_person.display_name AS primary_contact_name,
+                       (SELECT m->>'number' FROM jsonb_array_elements(COALESCE(primary_person.mobile_numbers, '[]'::jsonb)) m
+                        WHERE (m->>'isPrimary')::boolean = true LIMIT 1) AS primary_contact_phone,
+                       l.product_code AS product_code,
+                       l.status::text AS status,
+                       l.requested_amount AS requested_amount,
+                       l.created_at AS created_at
+                FROM n_lead l
+                JOIN n_sourcing_channel_details sc ON sc.id = l.sourcing_channel_id
+                """ + STAGE_JOIN + """
+                LEFT JOIN n_contact primary_contact ON primary_contact.id = (l.other_details->>'primaryContactId')::bigint
+                LEFT JOIN n_person primary_person ON primary_person.id = primary_contact.person_id
+                WHERE sc.marketing_details->>'referredByCode' = ?
+                ORDER BY l.created_at DESC
+                LIMIT ? OFFSET ?
+                """;
+    }
+
     public record ReferrerDisplayInfo(String name, String phone) {}
 
     private static String buildPhoneNumberJsonb(String mobileNumber) {
@@ -640,6 +787,24 @@ public class AdvisorRepositoryWrapper {
                 .hasNext(hasNext)
                 .hasPrevious(hasPrevious)
                 .build();
+    }
+
+    private static class AdvisorSelfLeadRowMapper implements RowMapper<AdvisorSelfLeadResponse> {
+        @Override
+        public AdvisorSelfLeadResponse mapRow(ResultSet rs, int rowNum) throws SQLException {
+            String leadIdStr = rs.getString("lead_identifier");
+            String statusStr = rs.getString("status");
+            java.sql.Timestamp createdAtTs = rs.getTimestamp("created_at");
+            return AdvisorSelfLeadResponse.builder()
+                    .leadIdentifier(leadIdStr != null ? UUID.fromString(leadIdStr) : null)
+                    .leadName(rs.getString("primary_contact_name"))
+                    .leadNumber(rs.getString("primary_contact_phone"))
+                    .loanType(rs.getString("product_code"))
+                    .leadStatus(statusStr != null ? LeadStatus.valueOf(statusStr) : null)
+                    .requestedAmount(rs.getBigDecimal("requested_amount"))
+                    .createdAt(createdAtTs != null ? createdAtTs.toLocalDateTime() : null)
+                    .build();
+        }
     }
 
     private static class AdvisorSearchRowMapper implements RowMapper<AdvisorBasicResponse> {

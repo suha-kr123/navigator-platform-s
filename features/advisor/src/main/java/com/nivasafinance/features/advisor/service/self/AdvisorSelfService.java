@@ -59,6 +59,9 @@ public interface AdvisorSelfService {
 
     PaginatedResponse<AdvisorSelfLeadResponse> getSelfAdvisorLeads(PaginationRequest paginationRequest);
 
+    PaginatedResponse<AdvisorSelfLeadResponse> getSelfAdvisorLeadsWithSearch(
+            PaginationRequest paginationRequest, String mobileNumber, String name, String leadStageDisplayName);
+
     AdvisorSelfLeadResponse getSelfAdvisorLeadByLeadId(UUID leadIdentifier);
 
     List<AdvisorSelfLeadStageHistoryResponse> getSelfAdvisorLeadStageHistory(UUID leadIdentifier);

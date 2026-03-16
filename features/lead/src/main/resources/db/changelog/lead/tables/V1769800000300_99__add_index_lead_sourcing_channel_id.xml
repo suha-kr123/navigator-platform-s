@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1769800000300_99" author="system" context="default">
+        <comment>Index on n_lead.sourcing_channel_id for join from sourcing_channel in leads-by-referral queries</comment>
+        <sql>CREATE INDEX IF NOT EXISTS idx_n_lead_sourcing_channel_id ON n_lead (sourcing_channel_id)</sql>
+    </changeSet>
+
+</databaseChangeLog>
