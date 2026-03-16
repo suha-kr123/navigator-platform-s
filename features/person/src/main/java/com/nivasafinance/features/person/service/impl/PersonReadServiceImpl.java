@@ -42,6 +42,11 @@ public class PersonReadServiceImpl implements PersonReadService {
         return personRepositoryWrapper.findByPrimaryMobileNumber(mobileNumber).map(this::mapToResponse);
     }
 
+    @Override
+    public Optional<PersonResponse> findPersonByEmail(String email) {
+        return personRepositoryWrapper.findPersonByEmail(email).map(this::mapToResponse);
+    }
+
     private PersonResponse mapToResponse(Person person) {
         return PersonResponse.builder()
                 .id(person.getId())
