@@ -12,6 +12,7 @@ public interface PersonReadService {
     PersonResponse getPersonById(Long personId);
     PersonResponse getPersonByPrimaryMobile(String mobileNumber);
     Optional<PersonResponse> findPersonByPrimaryMobile(String mobileNumber);
+    Optional<PersonResponse> findPersonByEmail(String email);
     List<PersonResponse> getPersonByMobile(String mobileNumber);
     List<AddressData> getAddresses(Long personId);
     AddressData getAddress(Long personId, String addressId);

@@ -47,6 +47,17 @@ public class PersonRepositoryWrapper {
         }
     }
 
+    public Optional<Person> findPersonByEmail(String email) {
+        if (email == null || email.isBlank()) {
+            return Optional.empty();
+        }
+        try {
+            return personRepository.findByEmailIgnoreCase(email.trim()).stream().findFirst();
+        } catch (DataAccessException e) {
+            throw PersonExceptionFactory.retrieveEntityFailed(messageSource);
+        }
+    }
+
     public Person findByPrimaryMobileNumberWithException(String mobileNumber) {
         try {
             return personRepository.findByPrimaryMobileNumber(mobileNumber).orElseThrow(() ->

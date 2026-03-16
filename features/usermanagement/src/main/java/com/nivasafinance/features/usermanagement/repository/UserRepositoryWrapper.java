@@ -34,6 +34,10 @@ public class UserRepositoryWrapper {
         return userRepository.findByUsername(username);
     }
 
+    public Optional<User> findByPersonId(Long personId) {
+        return userRepository.findByPerson_Id(personId);
+    }
+
     public boolean existsByUsername(String username) {
         return userRepository.existsByUsername(username);
     }

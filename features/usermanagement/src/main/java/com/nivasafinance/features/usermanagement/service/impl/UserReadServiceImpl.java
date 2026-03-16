@@ -41,6 +41,20 @@ public class UserReadServiceImpl implements UserReadService {
     }
 
     @Override
+    public Optional<String> resolveUsernameByEmailOrPhone(String email, String phone) {
+        if (email != null && !email.isBlank()) {
+            return personReadService.findPersonByEmail(email)
+                    .map(PersonResponse::getId)
+                    .flatMap(userRepositoryWrapper::findByPersonId)
+                    .map(User::getUsername);
+        }
+        if (phone != null && !phone.isBlank()) {
+            return findUserByPersonMobile(phone).map(UserResponse::getUsername);
+        }
+        return Optional.empty();
+    }
+
+    @Override
     public UserResponse getUserById(Long userId) {
         User user = userRepositoryWrapper.findByIdWithException(userId);
         return mapToResponse(user);
