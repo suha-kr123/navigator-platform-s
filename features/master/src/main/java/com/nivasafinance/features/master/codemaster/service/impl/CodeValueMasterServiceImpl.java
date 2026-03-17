@@ -33,7 +33,6 @@ public class CodeValueMasterServiceImpl implements CodeValueMasterService {
     private final MasterCodeRepositoryWrapper masterCodeRepositoryWrapper;
     
     @Override
-    @org.springframework.cache.annotation.Cacheable(cacheNames = "codeValues", key = "#key")
     public CodeValueResponse getByKey(String key) {
         return CodeValueResponse.from(masterCodeValueRepositoryWrapper.findByKeyWithException(key));
     }
