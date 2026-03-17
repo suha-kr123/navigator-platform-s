@@ -138,9 +138,9 @@ public class WhatsAppTaskServiceImpl implements WhatsAppTaskService {
 
         if (request.getPreferredStartTime() != null && !request.getPreferredStartTime().isBlank() &&
             request.getPreferredEndTime() != null && !request.getPreferredEndTime().isBlank()) {
-            LocalDate dateForTime = getDateForTimeWindow(task);
             LocalTime startTime = parseTime(request.getPreferredStartTime());
             LocalTime endTime = parseTime(request.getPreferredEndTime());
+            LocalDate dateForTime = getDateForPreferredTimeWindow(endTime);
 
             LocalDateTime preferredStartDateTime = LocalDateTime.of(dateForTime, startTime);
             LocalDateTime preferredEndDateTime = LocalDateTime.of(dateForTime, endTime);
@@ -178,12 +178,12 @@ public class WhatsAppTaskServiceImpl implements WhatsAppTaskService {
 
         if (request.getPreferredStartTime() != null && !request.getPreferredStartTime().isBlank() &&
             request.getPreferredEndTime() != null && !request.getPreferredEndTime().isBlank()) {
-            LocalDate today = LocalDate.now();
             LocalTime startTime = parseTime(request.getPreferredStartTime());
             LocalTime endTime = parseTime(request.getPreferredEndTime());
+            LocalDate dateForTime = getDateForPreferredTimeWindow(endTime);
 
-            LocalDateTime preferredStartDateTime = LocalDateTime.of(today, startTime);
-            LocalDateTime preferredEndDateTime = LocalDateTime.of(today, endTime);
+            LocalDateTime preferredStartDateTime = LocalDateTime.of(dateForTime, startTime);
+            LocalDateTime preferredEndDateTime = LocalDateTime.of(dateForTime, endTime);
 
             WhatsAppTaskRequest.TaskDetails.PreferredCallWindow preferredCallWindow = 
                     new WhatsAppTaskRequest.TaskDetails.PreferredCallWindow();
@@ -199,11 +199,17 @@ public class WhatsAppTaskServiceImpl implements WhatsAppTaskService {
         return createTask(createRequest);
     }
 
-    private LocalDate getDateForTimeWindow(Task task) {
-        if (task.getDueAt() != null) {
-            return task.getDueAt().toLocalDate();
+    private LocalDate getDateForPreferredTimeWindow(LocalTime preferredEndTime) {
+        LocalTime currentTime = LocalTime.now();
+        LocalDate today = LocalDate.now();
+        
+        // If current time is before the preferred end time, use today's date
+        // If current time is at or after the preferred end time, use tomorrow's date
+        if (currentTime.isBefore(preferredEndTime)) {
+            return today;
+        } else {
+            return today.plusDays(1);
         }
-        return LocalDate.now();
     }
 
     private LocalTime parseTime(String timeString) {
