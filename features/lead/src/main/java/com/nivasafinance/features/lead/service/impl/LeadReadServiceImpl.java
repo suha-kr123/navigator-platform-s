@@ -2,6 +2,7 @@ package com.nivasafinance.features.lead.service.impl;
 
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
+import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import com.nivasafinance.features.lead.dto.*;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.enums.LeadStatus;
@@ -188,11 +189,20 @@ public class LeadReadServiceImpl implements LeadReadService {
                     .build();
         }
 
+        CodeValueResponse propertyTypeCodeValue = propertyDetails.getPropertyType() != null && !propertyDetails.getPropertyType().isBlank()
+                ? codeValueMasterService.getCodeValueByKeyAndCodeKey(propertyDetails.getPropertyType(),
+                        SystemControlledMasterCodes.LEAD_ROOF_PROFILE_MASTER)
+                : null;
+        CodeValueResponse propertyConstructionStageCodeValue = propertyDetails.getPropertyConstructionStage() != null && !propertyDetails.getPropertyConstructionStage().isBlank()
+                ? codeValueMasterService.getCodeValueByKeyAndCodeKey(propertyDetails.getPropertyConstructionStage(),
+                        SystemControlledMasterCodes.LEAD_PROPERTY_CONSTRUCTION_STATUS_MASTER)
+                : null;
+
         return PropertyDetailsResponse.builder()
                 .address(propertyDetails.getAddress())
                 .geoData(propertyDetails.getGeoData())
-                .propertyType(propertyDetails.getPropertyType())
-                .propertyConstructionStage(propertyDetails.getPropertyConstructionStage())
+                .propertyType(propertyTypeCodeValue)
+                .propertyConstructionStage(propertyConstructionStageCodeValue)
                 .owner(propertyDetails.getOwner())
                 .ownerRelation(propertyDetails.getOwnerRelation())
                 .propertyMeasurementDetails(measurementData)
@@ -236,7 +246,9 @@ public class LeadReadServiceImpl implements LeadReadService {
         if (details.getIncomeDetails() != null) {
             incomeDetailsData = details.getIncomeDetails().stream()
                     .map(d -> IncomeObligationDetailsResponse.IncomeDetailData.builder()
-                            .incomeSource(d.getIncomeSource())
+                            .incomeSource(d.getIncomeSource() != null && !d.getIncomeSource().isBlank()
+                                    ? codeValueMasterService.getByKey(d.getIncomeSource())
+                                    : null)
                             .amount(d.getAmount())
                             .build())
                     .collect(Collectors.toList());
