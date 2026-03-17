@@ -14,7 +14,12 @@ public class UsernameResolverImpl implements UsernameResolver {
     private final UserReadService userReadService;
 
     @Override
-    public Optional<String> resolveByEmailOrPhone(String email, String phone) {
-        return userReadService.resolveUsernameByEmailOrPhone(email, phone);
+    public Optional<String> resolveByEmail(String email) {
+        return userReadService.resolveUsernameByEmail(email);
+    }
+
+    @Override
+    public Optional<String> resolveByPhone(String phone) {
+        return userReadService.resolveUsernameByPhone(phone);
     }
 }

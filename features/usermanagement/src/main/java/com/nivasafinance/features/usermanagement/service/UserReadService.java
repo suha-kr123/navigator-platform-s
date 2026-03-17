@@ -26,7 +26,9 @@ public interface UserReadService {
 
     Optional<UserResponse> findUserByPersonMobile(String mobile);
 
-    Optional<String> resolveUsernameByEmailOrPhone(String email, String phone);
+    Optional<String> resolveUsernameByEmail(String email);
+
+    Optional<String> resolveUsernameByPhone(String phone);
 
     Long getPersonIdByUsername(String username);
 

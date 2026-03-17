@@ -13,14 +13,13 @@ import org.springframework.web.servlet.HandlerInterceptor;
 /**
  * Interceptor to extract username from request header and set it in UserContext.
  * The API Gateway forwards the username in the X-Username header after JWT validation.
- * When X-Username is absent, falls back to resolved username from JWT (email/phone) via request attribute.
+ * When X-Username is absent, falls back to resolved username from request attribute (set by filter from X-Email/X-Phone).
  */
 @Component
 @RequiredArgsConstructor
 public class UserContextInterceptor implements HandlerInterceptor {
 
     private static final Logger logger = LoggerFactory.getLogger(UserContextInterceptor.class);
-    private static final String USERNAME_HEADER = "X-Username";
     private static final String SYSTEM_USERNAME = "system";
 
     @Override
@@ -29,16 +28,16 @@ public class UserContextInterceptor implements HandlerInterceptor {
             HttpServletResponse response,
             Object handler) {
 
-        String username = request.getHeader(USERNAME_HEADER);
+        String username = request.getHeader(AuthConstants.X_USERNAME_HEADER);
         if (username == null || username.isBlank()) {
-            Object resolved = request.getAttribute(AuthConstants.RESOLVED_USERNAME_ATTRIBUTE);
+            Object resolved = request.getAttribute(AuthConstants.X_USERNAME_HEADER);
             if (resolved instanceof String s && !s.isBlank()) {
                 username = s;
             }
         }
         if (username == null || username.isBlank()) {
             logger.error("Missing mandatory {} header in request: {} {}",
-                    USERNAME_HEADER, request.getMethod(), request.getRequestURI());
+                    AuthConstants.X_USERNAME_HEADER, request.getMethod(), request.getRequestURI());
              username = SYSTEM_USERNAME;
         }
 
