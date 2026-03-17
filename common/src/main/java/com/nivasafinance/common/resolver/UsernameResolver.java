@@ -4,5 +4,7 @@ import java.util.Optional;
 
 public interface UsernameResolver {
 
-    Optional<String> resolveByEmailOrPhone(String email, String phone);
+    Optional<String> resolveByEmail(String email);
+
+    Optional<String> resolveByPhone(String phone);
 }
