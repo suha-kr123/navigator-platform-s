@@ -1,5 +1,6 @@
 package com.nivasafinance.features.lead.dto;
 
+import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -23,7 +24,7 @@ public class IncomeObligationDetailsResponse {
     @AllArgsConstructor
     @Builder
     public static class IncomeDetailData {
-        private String incomeSource;
+        private CodeValueResponse incomeSource;
         private BigDecimal amount;
     }
 

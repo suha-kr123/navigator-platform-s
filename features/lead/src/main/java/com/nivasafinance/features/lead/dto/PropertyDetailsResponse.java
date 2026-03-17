@@ -2,6 +2,7 @@ package com.nivasafinance.features.lead.dto;
 
 import com.nivasafinance.common.dto.AddressData;
 import com.nivasafinance.common.dto.GeoData;
+import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,8 +15,8 @@ import lombok.NoArgsConstructor;
 public class PropertyDetailsResponse {
     private AddressData address;
     private GeoData geoData;
-    private String propertyType;
-    private String propertyConstructionStage;
+    private CodeValueResponse propertyType;
+    private CodeValueResponse propertyConstructionStage;
     private String owner;
     private String ownerRelation;
     private PropertyMeasurementDetailsData propertyMeasurementDetails;
