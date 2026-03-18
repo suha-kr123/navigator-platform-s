@@ -3,6 +3,7 @@ rootProject.name = "navigator"
 include("main")
 include("common")
 include("redash")
+include("analytics")
 
 include(":features:creditbureau")
 include(":features:consent")
