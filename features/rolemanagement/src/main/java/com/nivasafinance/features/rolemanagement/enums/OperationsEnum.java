@@ -2,6 +2,7 @@ package com.nivasafinance.features.rolemanagement.enums;
 
 public enum OperationsEnum {
     READ_ADVISOR,
+    READ_ADVISOR_TEMPLATE,
     CREATE_ADVISOR,
     UPDATE_ADVISOR,
     DELETE_ADVISOR,

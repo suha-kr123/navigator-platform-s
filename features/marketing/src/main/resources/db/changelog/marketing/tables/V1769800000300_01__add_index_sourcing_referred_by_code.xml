@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1769800000300_01" author="system" context="default">
+        <comment>Index on n_sourcing_channel_details.referredByCode for self-advisor leads and lead-by-referral lookups</comment>
+        <sql>CREATE INDEX IF NOT EXISTS idx_n_sourcing_channel_details_referred_by_code
+            ON n_sourcing_channel_details ((marketing_details->>'referredByCode'))</sql>
+    </changeSet>
+
+</databaseChangeLog>

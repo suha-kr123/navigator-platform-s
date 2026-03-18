@@ -56,6 +56,8 @@ public class StageConfig extends IdentifiableEntity {
     @Builder
     public static class StageConfigDetails {
         private List<String> possibleNextStages;
+        private String externalDisplayName;
+        private Integer externalOrder;
     }
 
     @Data
