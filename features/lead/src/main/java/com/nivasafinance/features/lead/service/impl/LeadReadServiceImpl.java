@@ -9,6 +9,7 @@ import com.nivasafinance.features.lead.enums.LeadStatus;
 import com.nivasafinance.features.lead.enums.LeadSubStatus;
 import com.nivasafinance.features.lead.repository.LeadDashboardWrapper;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
+import com.nivasafinance.features.address.service.AddressDataService;
 import com.nivasafinance.features.lead.service.LeadReadService;
 import com.nivasafinance.features.master.codemaster.SystemControlledMasterCodes;
 import com.nivasafinance.features.master.codemaster.service.CodeMasterService;
@@ -39,6 +40,7 @@ import java.util.stream.Collectors;
 public class LeadReadServiceImpl implements LeadReadService {
 
     private final LeadRepositoryWrapper leadRepositoryWrapper;
+    private final AddressDataService addressDataService;
     private final CodeValueMasterService codeValueMasterService;
     private final CodeMasterService codeMasterService;
     private final SourcingChannelReadService sourcingChannelReadService;
@@ -198,8 +200,12 @@ public class LeadReadServiceImpl implements LeadReadService {
                         SystemControlledMasterCodes.LEAD_PROPERTY_CONSTRUCTION_STATUS_MASTER)
                 : null;
 
+        var address = propertyDetails.getAddress();
+        if (address != null) {
+            address = addressDataService.enrichAddressWithDisplayNames(address);
+        }
         return PropertyDetailsResponse.builder()
-                .address(propertyDetails.getAddress())
+                .address(address)
                 .geoData(propertyDetails.getGeoData())
                 .propertyType(propertyTypeCodeValue)
                 .propertyConstructionStage(propertyConstructionStageCodeValue)
