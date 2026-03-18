@@ -20,5 +20,11 @@ public interface AddressDataService {
      * @return AddressData object enriched with pincode details
      */
     AddressData createAddressData(AddressRequest addressRequest);
+
+    /**
+     * Enriches address with display names from location masters using stored codes/IDs.
+     * Uses request locale via MasterLanguageResolver where applicable. Returns a copy; does not mutate.
+     */
+    AddressData enrichAddressWithDisplayNames(AddressData address);
 }
 
