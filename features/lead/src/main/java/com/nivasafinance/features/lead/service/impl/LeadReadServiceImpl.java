@@ -1,5 +1,7 @@
 package com.nivasafinance.features.lead.service.impl;
 
+import com.nivasafinance.analytics.AnalyticsEvent;
+import com.nivasafinance.analytics.AnalyticsHelper;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
@@ -47,6 +49,7 @@ public class LeadReadServiceImpl implements LeadReadService {
     private final LeadDashboardWrapper leadDashboardWrapper;
     private final OfficeReadService officeReadService;
     private final StaffReadService staffReadService;
+    private final AnalyticsHelper analyticsHelper;
 
     @Override
     @Transactional(readOnly = true)
@@ -452,6 +455,12 @@ public class LeadReadServiceImpl implements LeadReadService {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
         Lead.OtherDetails other = lead.getOtherDetails();
         String step = (other != null) ? other.getCurrentCustomerFormStep() : null;
+        analyticsHelper.captureLead(new AnalyticsEvent(
+                leadIdentifier.toString(),
+                "form_step_viewed",
+                List.of(
+                        new AnalyticsEvent.Param("step_name", step != null ? step : "")
+                )));
         return CurrentCustomerFormStepResponse.builder()
                 .currentCustomerFormStep(step)
                 .build();

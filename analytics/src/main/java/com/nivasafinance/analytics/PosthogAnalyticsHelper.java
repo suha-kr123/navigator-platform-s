@@ -1,5 +1,6 @@
 package com.nivasafinance.analytics;
 
+import com.nivasafinance.common.context.UserContext;
 import com.posthog.server.PostHogCaptureOptions;
 import com.posthog.server.PostHogInterface;
 import org.springframework.context.annotation.Profile;
@@ -34,6 +35,7 @@ public class PosthogAnalyticsHelper implements AnalyticsHelper {
         event.extras().stream()
                 .filter(p -> !AnalyticsEvent.ParamKeys.DISTINCT_ID.equals(p.key()))
                 .forEach(p -> optionsBuilder.property(p.key(), p.value()));
+        optionsBuilder.property("username", UserContext.getUsername());
         posthog.capture(distinctId, event.type(), optionsBuilder.build());
     }
 }
