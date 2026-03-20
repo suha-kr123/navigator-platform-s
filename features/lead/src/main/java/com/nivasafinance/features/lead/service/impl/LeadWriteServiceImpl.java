@@ -1,5 +1,7 @@
 package com.nivasafinance.features.lead.service.impl;
 
+import com.nivasafinance.analytics.AnalyticsEvent;
+import com.nivasafinance.analytics.AnalyticsHelper;
 import com.nivasafinance.common.context.UserContext;
 import com.nivasafinance.common.dto.AddressData;
 import com.nivasafinance.common.dto.PatchAddressData;
@@ -43,10 +45,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 import static com.nivasafinance.features.master.codemaster.SystemControlledMasterCodes.LEAD_PRIORITY_MASTER;
 
@@ -67,6 +66,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     private final LeadContactWriteService contactWriteService;
     private final WorkflowConfigRepositoryWrapper workflowConfigRepositoryWrapper;
     private final LeadStageHistoryWriteService leadStageHistoryWriteService;
+    private final AnalyticsHelper analyticsHelper;
 
 
     @Override
@@ -747,7 +747,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         if (otherDetails == null) {
             otherDetails = new Lead.OtherDetails();
         }
-        mergePropertyDetailsInto(otherDetails, request);
+        mergePropertyDetailsInto(leadIdentifier, otherDetails, request);
         lead.setOtherDetails(otherDetails);
         leadRepositoryWrapper.saveWithException(lead);
         publishLeadUpdatedEvent(lead);
@@ -758,6 +758,13 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
         mergeIncomeObligationDetailsInto(lead, request);
         leadRepositoryWrapper.saveWithException(lead);
+        if(request.getIncomeDetails().isPresent()) {
+            List<String> incomes = new ArrayList<>();
+            for (PatchIncomeAndObligationRequest.IncomeDetailsData incomeDetailsData : request.getIncomeDetails().get()) {
+                incomes.add(incomeDetailsData.getIncomeSource());
+            }
+            analyticsHelper.captureLead(new AnalyticsEvent(leadIdentifier.toString(), "income_type_selected", List.of(new AnalyticsEvent.Param("income_type", String.join(",",incomes)))));
+        }
         publishLeadUpdatedEvent(lead);
     }
 
@@ -769,20 +776,25 @@ public class LeadWriteServiceImpl implements LeadWriteService {
             otherDetails = new Lead.OtherDetails();
         }
         if (request.getPropertyDetails() != null) {
-            mergePropertyDetailsInto(otherDetails, request.getPropertyDetails().orElse(null));
+            mergePropertyDetailsInto(leadIdentifier, otherDetails, request.getPropertyDetails().orElse(null));
         }
         if (request.getIncomeAndObligationDetails() != null) {
             mergeIncomeObligationDetailsInto(lead, request.getIncomeAndObligationDetails().orElse(null));
         }
         if (request.getCurrentCustomerFormStep() != null) {
-            mergeCurrentCustomerFormStepInto(otherDetails, request.getCurrentCustomerFormStep().orElse(null));
+            String step = request.getCurrentCustomerFormStep().orElse(null);
+            mergeCurrentCustomerFormStepInto(otherDetails, step);
+            analyticsHelper.captureLead(new AnalyticsEvent(leadIdentifier.toString(),"form_step_completed", List.of(new AnalyticsEvent.Param("step_name", step))));
+            if(Objects.equals(step, CustomerFormStep.TERMINAL.getKey())){
+                analyticsHelper.captureLead(new AnalyticsEvent(leadIdentifier.toString(),"form_completed"));
+            }
         }
         lead.setOtherDetails(otherDetails);
         leadRepositoryWrapper.saveWithException(lead);
         publishLeadUpdatedEvent(lead);
     }
 
-    private void mergePropertyDetailsInto(Lead.OtherDetails otherDetails, PatchPropertyDetailsRequest request) {
+    private void mergePropertyDetailsInto(UUID leadIdentifier,Lead.OtherDetails otherDetails, PatchPropertyDetailsRequest request) {
         if (request == null) {
             return;
         }
@@ -791,7 +803,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
             propertyDetails = new Lead.PropertyDetails();
         }
         if (request.getAddress() != null && request.getAddress().isPresent()) {
-            mergeAddressInto(propertyDetails, request.getAddress().get());
+            mergeAddressInto( leadIdentifier, propertyDetails, request.getAddress().get());
         }
         if (request.getGeoData() != null) {
             propertyDetails.setGeoData(request.getGeoData().orElse(null));
@@ -838,7 +850,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         otherDetails.setPropertyDetails(propertyDetails);
     }
 
-    private void mergeAddressInto(Lead.PropertyDetails propertyDetails, PatchAddressData patch) {
+    private void mergeAddressInto(UUID leadIdentifier, Lead.PropertyDetails propertyDetails, PatchAddressData patch) {
         AddressData existing = propertyDetails.getAddress();
         if (existing == null) {
             existing = new AddressData();
@@ -858,6 +870,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         }
         if (patch.getDistrict() != null && patch.getDistrict().isPresent()) {
             existing.setDistrict(patch.getDistrict().get());
+            analyticsHelper.captureLead(new AnalyticsEvent(leadIdentifier.toString(),"district_selected", List.of(new AnalyticsEvent.Param("district", existing.getDistrict()))));
         }
         if (patch.getCountry() != null && patch.getCountry().isPresent()) {
             existing.setCountry(patch.getCountry().get());

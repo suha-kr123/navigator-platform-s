@@ -1,5 +1,7 @@
 package com.nivasafinance.features.lead.service.impl;
 
+import com.nivasafinance.analytics.AnalyticsEvent;
+import com.nivasafinance.analytics.AnalyticsHelper;
 import com.nivasafinance.common.enums.SystemEntities;
 import com.nivasafinance.common.events.BusinessEvent;
 import com.nivasafinance.common.events.SystemEvent;
@@ -59,6 +61,7 @@ public class LeadCreditBureauWriteServiceImpl implements LeadCreditBureauWriteSe
     private final LeadCreditBureauReadService leadCreditBureauReadService;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final MessageSource messageSource;
+    private final AnalyticsHelper analyticsHelper;
 
     @Override
     public InitiateCbEnquiryResponse initiateEnquiry(UUID leadIdentifier, UUID contactIdentifier) {
@@ -106,6 +109,7 @@ public class LeadCreditBureauWriteServiceImpl implements LeadCreditBureauWriteSe
         Contact contact = contactRepositoryWrapper.findByIdentifierWithException(contactIdentifier);
         validateContactBelongsToLead(lead, contact.getId());
         RecordCbConsentResult result = personCreditBureauService.recordCbConsentReceived(contact.getPersonId());
+        analyticsHelper.captureLead(new AnalyticsEvent(leadIdentifier.toString(),"consent_granted"));
         return RecordCbConsentResponse.builder()
                 .consentIdentifier(result.getConsentIdentifier())
                 .build();

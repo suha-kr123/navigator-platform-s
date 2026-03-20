@@ -36,6 +36,7 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     implementation(project(":features:campaign"))
     testImplementation(libs.mockk)
+    implementation(project(":analytics"))
 }
 
 springBoot {
