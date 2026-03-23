@@ -27,6 +27,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 public class CallWriteServiceImpl implements CallWriteService {
@@ -75,6 +77,30 @@ public class CallWriteServiceImpl implements CallWriteService {
         callLog.setRecordingDetails(updateCallLog.getRecordingDetails());
         callLog.setCompletionDetails(updateCallLog.getCompletionDetails());
         callLogRepositoryWrapper.saveWithException(callLog);
+    }
+
+    @Override
+    public void mergeAiAnalysisByIdentifier(UUID callLogIdentifier, CallLog.AiAnalysisDetails patch) {
+        if (patch == null) {
+            return;
+        }
+        CallLog callLog = callLogRepositoryWrapper.findByIdentifierWithException(callLogIdentifier);
+        callLog.setAiAnalysis(mergeAiAnalysis(callLog.getAiAnalysis(), patch));
+        callLogRepositoryWrapper.saveWithException(callLog);
+    }
+
+    private static CallLog.AiAnalysisDetails mergeAiAnalysis(
+            CallLog.AiAnalysisDetails existing,
+            CallLog.AiAnalysisDetails patch) {
+        CallLog.AiAnalysisDetails base = existing != null ? existing : CallLog.AiAnalysisDetails.builder().build();
+        return CallLog.AiAnalysisDetails.builder()
+                .jobId(patch.getJobId() != null ? patch.getJobId() : base.getJobId())
+                .status(patch.getStatus() != null ? patch.getStatus() : base.getStatus())
+                .summaryUrl(patch.getSummaryUrl() != null ? patch.getSummaryUrl() : base.getSummaryUrl())
+                .analysisUrl(patch.getAnalysisUrl() != null ? patch.getAnalysisUrl() : base.getAnalysisUrl())
+                .transcriptUrl(patch.getTranscriptUrl() != null ? patch.getTranscriptUrl() : base.getTranscriptUrl())
+                .error(patch.getError() != null ? patch.getError() : base.getError())
+                .build();
     }
 
     @Override
