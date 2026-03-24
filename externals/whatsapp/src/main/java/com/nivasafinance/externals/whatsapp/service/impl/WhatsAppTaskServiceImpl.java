@@ -79,6 +79,8 @@ public class WhatsAppTaskServiceImpl implements WhatsAppTaskService {
             log.debug("Due date not provided, setting default to 24 hours from now: {}", dueAt);
         }
 
+        String assignedTo = resolveAssignedTo(taskDetails.getAssignedTo(), openTasks);
+
         TaskDetailsRequest.PreferredCallWindow preferredCallWindow = null;
         if (taskDetails.getPreferredCallWindow() != null) {
             preferredCallWindow = TaskDetailsRequest.PreferredCallWindow.builder()
@@ -97,7 +99,7 @@ public class WhatsAppTaskServiceImpl implements WhatsAppTaskService {
 
         CreateAdhocTaskRequest createAdhocTaskRequest = CreateAdhocTaskRequest.builder()
                 .taskConfigKey(taskConfigKey)
-                .assignedTo(taskDetails.getAssignedTo())
+                .assignedTo(assignedTo)
                 .dueAt(dueAt)
                 .taskDetails(taskDetailsRequest)
                 .build();
@@ -197,6 +199,18 @@ public class WhatsAppTaskServiceImpl implements WhatsAppTaskService {
         createRequest.setTaskDetails(taskDetails);
 
         return createTask(createRequest);
+    }
+
+    private String resolveAssignedTo(String requestAssignedTo, List<Task> openTasks) {
+        if (!ValidationUtils.isNullOrEmpty(requestAssignedTo)) {
+            return requestAssignedTo;
+        }
+
+        return openTasks.stream()
+                .map(Task::getAssignedTo)
+                .filter(assignedTo -> !ValidationUtils.isNullOrEmpty(assignedTo))
+                .findFirst()
+                .orElse(null);
     }
 
     private LocalDate getDateForPreferredTimeWindow(LocalTime preferredEndTime) {
