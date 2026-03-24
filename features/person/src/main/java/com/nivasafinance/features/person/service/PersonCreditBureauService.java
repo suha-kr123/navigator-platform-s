@@ -3,10 +3,12 @@ package com.nivasafinance.features.person.service;
 import com.nivasafinance.common.dto.AddressData;
 import com.nivasafinance.features.creditbureau.dto.CreditBureauEnquiryRequest;
 import com.nivasafinance.features.creditbureau.dto.CreditBureauEnquiryResponse;
+import com.nivasafinance.features.person.dto.CreditBureauEnquiryInitiationResult;
 import com.nivasafinance.features.person.dto.RecordCbConsentResult;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Service for managing credit bureau operations at person level.
@@ -22,7 +24,7 @@ public interface PersonCreditBureauService {
      *                must include leadIdentifier and contactIdentifier when called from Lead (for the consent link).
      * @return CreditBureauEnquiryResponse containing enquiry id, identifier, and status
      */
-    CreditBureauEnquiryResponse initiateCreditBureauEnquiry(CreditBureauEnquiryRequest request);
+    CreditBureauEnquiryInitiationResult initiateCreditBureauEnquiry(CreditBureauEnquiryRequest request);
 
     /**
      * Called after consent is accepted. Links consent to enquiry, updates person.consent_details, and
@@ -32,7 +34,7 @@ public interface PersonCreditBureauService {
      * @param enquiryIdentifier the enquiry identifier (UUID)
      * @param addressesForCreditBureauPull resolved addresses for CB pull only (person list or lead property fallback); may be null to use person addresses only
      */
-    void onConsentGranted(Long consentId, UUID enquiryIdentifier, List<AddressData> addressesForCreditBureauPull);
+    CompletableFuture<CreditBureauEnquiryResponse> onConsentGranted(Long consentId, UUID enquiryIdentifier, List<AddressData> addressesForCreditBureauPull);
 
     /**
      * Records CB consent at person level (creates consent as RECEIVED and updates person.consent_details).

@@ -13,6 +13,7 @@ import com.nivasafinance.features.creditbureau.enums.CreditBureauEnquiryStatus;
 import com.nivasafinance.features.creditbureau.exception.CreditBureauExceptionFactory;
 import com.nivasafinance.features.creditbureau.service.CreditBureauReadService;
 import com.nivasafinance.features.creditbureau.service.CreditBureauWriteService;
+import com.nivasafinance.features.person.dto.CreditBureauEnquiryInitiationResult;
 import com.nivasafinance.features.person.dto.PersonResponse;
 import com.nivasafinance.features.person.dto.RecordCbConsentResult;
 import com.nivasafinance.features.person.entity.Person;
@@ -33,6 +34,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Service
@@ -54,7 +56,7 @@ public class PersonCreditBureauServiceImpl implements PersonCreditBureauService 
 
     @Override
     @Transactional
-    public CreditBureauEnquiryResponse initiateCreditBureauEnquiry(CreditBureauEnquiryRequest request) {
+    public CreditBureauEnquiryInitiationResult initiateCreditBureauEnquiry(CreditBureauEnquiryRequest request) {
         Long personId = request.getPersonId();
         String entityType = request.getEntityType();
         Long entityId = request.getEntityId();
@@ -70,7 +72,9 @@ public class PersonCreditBureauServiceImpl implements PersonCreditBureauService 
             Long validEnquiryId = (Long) validSuccessEnquiryOpt.get().get("enquiry_id");
             log.info("Found valid non-expired SUCCESS enquiry ID: {} for personId: {}", validEnquiryId, personId);
             CreditBureauEnquiry enquiry = creditBureauReadService.getCbEnquiryEntityById(validEnquiryId);
-            return CreditBureauEnquiryResponse.toCbEnquiryResponse(enquiry);
+            return CreditBureauEnquiryInitiationResult.builder()
+                    .response(CreditBureauEnquiryResponse.toCbEnquiryResponse(enquiry))
+                    .build();
         }
         
         // STEP 2: Check for in-progress enquiry (INITIATED or PROCESSING)
@@ -82,7 +86,9 @@ public class PersonCreditBureauServiceImpl implements PersonCreditBureauService 
                 if (status == CreditBureauEnquiryStatus.INITIATED || status == CreditBureauEnquiryStatus.PROCESSING) {
                     log.info("Found in-progress enquiry ID: {} with status: {} for personId: {}, returning existing enquiry",
                             latestEnquiryId, status, personId);
-                    return latestEnquiryOpt.get();
+                    return CreditBureauEnquiryInitiationResult.builder()
+                            .response(latestEnquiryOpt.get())
+                            .build();
                 }
             }
         }
@@ -121,7 +127,11 @@ public class PersonCreditBureauServiceImpl implements PersonCreditBureauService 
             
             // Trigger credit bureau pull since consent is already available
             CreditBureauEnquiry enquiry = creditBureauReadService.getCbEnquiryEntityById(enquiryId);
-            triggerCreditBureauPull(enquiry, personId, request.getAddressesForCreditBureauPull());
+            CompletableFuture<CreditBureauEnquiryResponse> asyncPullFuture = triggerCreditBureauPull(enquiry, personId, request.getAddressesForCreditBureauPull());
+            return CreditBureauEnquiryInitiationResult.builder()
+                    .response(initiateResponse)
+                    .asyncPullFuture(asyncPullFuture)
+                    .build();
         } else {
             // Create new consent and send link
             // Get recipient phone for consent link (first mobile)
@@ -152,12 +162,14 @@ public class PersonCreditBureauServiceImpl implements PersonCreditBureauService 
             initiateResponse.setConsentIdentifier(saved.getIdentifier());
         }
 
-        return initiateResponse;
+        return CreditBureauEnquiryInitiationResult.builder()
+                .response(initiateResponse)
+                .build();
     }
 
     @Override
     @Transactional
-    public void onConsentGranted(Long consentId, UUID enquiryIdentifier, List<AddressData> addressesForCreditBureauPull) {
+    public CompletableFuture<CreditBureauEnquiryResponse> onConsentGranted(Long consentId, UUID enquiryIdentifier, List<AddressData> addressesForCreditBureauPull) {
         CreditBureauEnquiry enquiry = creditBureauReadService.getCbEnquiryEntityByIdentifier(enquiryIdentifier);
 
         Long personId = personRepositoryWrapper.findPersonIdByCbEnquiryId(enquiry.getId())
@@ -187,7 +199,7 @@ public class PersonCreditBureauServiceImpl implements PersonCreditBureauService 
         personRepositoryWrapper.saveWithException(person);
 
         // Build CreditBureauPersonData and trigger async pull
-        triggerCreditBureauPull(enquiry, personId, addressesForCreditBureauPull);
+        return triggerCreditBureauPull(enquiry, personId, addressesForCreditBureauPull);
     }
 
     @Override
@@ -216,7 +228,7 @@ public class PersonCreditBureauServiceImpl implements PersonCreditBureauService 
      * @param personId The person ID
      * @param addressesForCreditBureauPull when non-null and non-empty, used as CB addresses only; otherwise person addresses
      */
-    private void triggerCreditBureauPull(
+    private CompletableFuture<CreditBureauEnquiryResponse> triggerCreditBureauPull(
             CreditBureauEnquiry enquiry,
             Long personId,
             List<AddressData> addressesForCreditBureauPull) {
@@ -240,13 +252,14 @@ public class PersonCreditBureauServiceImpl implements PersonCreditBureauService 
                 .identifiers(identifiers)
                 .build();
 
-        creditBureauWriteService.executeCreditBureauFlowAsync(enquiry, personId, personData)
-                .thenAccept(flowResponse -> {
+      return creditBureauWriteService.executeCreditBureauFlowAsync(enquiry, personId, personData)
+                .thenApply(flowResponse -> {
                     try {
                         updatePersonAfterEnquiryCompletion(personId, enquiry.getId(), flowResponse.getStatus());
                     } catch (Exception e) {
                         log.error("Failed to update person after enquiry completion for enquiryId: {}", enquiry.getId(), e);
                     }
+                    return flowResponse;
                 })
                 .exceptionally(throwable -> {
                     log.error("Credit bureau flow failed for enquiryId: {}", enquiry.getId(), throwable);
