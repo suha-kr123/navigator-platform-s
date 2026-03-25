@@ -12,3 +12,7 @@ dependencies {
     implementation(project(":features:rolemanagement"))
     implementation(project(":features:usermanagement"))
 }
+
+tasks.jar {
+    archiveBaseName.set("atlas-client")
+}
