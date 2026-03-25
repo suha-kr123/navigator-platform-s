@@ -789,6 +789,23 @@ public class LeadWriteServiceImpl implements LeadWriteService {
                 analyticsHelper.captureLead(new AnalyticsEvent(leadIdentifier.toString(),"form_completed"));
             }
         }
+        if (request.getProductCode() != null) {
+            String code = request.getProductCode().orElse(null);
+            if (code != null && !code.isBlank()) {
+                productReadService.getProductByCode(code);
+                lead.setProductCode(code);
+            }else{
+                lead.setProductCode(null);
+            }
+        }
+        if (request.getRequestedLoanAmount() != null) {
+            BigDecimal amount = request.getRequestedLoanAmount().orElse(null);
+            if (amount != null) {
+                lead.setRequestedAmount(amount);
+            }else{
+                lead.setRequestedAmount(null);
+            }
+        }
         lead.setOtherDetails(otherDetails);
         leadRepositoryWrapper.saveWithException(lead);
         publishLeadUpdatedEvent(lead);
