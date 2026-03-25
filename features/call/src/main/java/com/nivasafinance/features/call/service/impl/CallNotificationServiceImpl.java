@@ -259,21 +259,17 @@ public class CallNotificationServiceImpl implements CallNotificationService {
                     "cl.direction as call_direction, " +
                     "l.lead_identifier, " +
                     "l.status as lead_status, " +
-                    "(log_entry->>'contactId')::bigint as contact_id, " +
+                    "clm.contact_id as contact_id, " +
                     "matching_contact.id as matching_contact_id " +
                     "FROM n_call_log cl " +
-                    "JOIN n_lead l ON EXISTS ( " +
-                    "    SELECT 1 FROM jsonb_array_elements(COALESCE(l.call_logs, '[]'::jsonb)) AS log_entry " +
-                    "    WHERE (log_entry->>'callLogId')::bigint = cl.id " +
-                    ") " +
+                    "JOIN n_call_log_lead clm ON clm.call_log_id = cl.id " +
+                    "JOIN n_lead l ON l.id = clm.lead_id " +
                     "LEFT JOIN LATERAL ( " +
                     "    SELECT (contact_id)::bigint as id " +
                     "    FROM jsonb_array_elements_text(COALESCE(l.contacts, '[]'::jsonb)) AS contact_id " +
                     ") contact_ids ON true " +
                     "LEFT JOIN n_contact matching_contact ON matching_contact.id = contact_ids.id " +
                     "LEFT JOIN n_person matching_person ON matching_person.id = matching_contact.person_id " +
-                    "LEFT JOIN LATERAL jsonb_array_elements(COALESCE(l.call_logs, '[]'::jsonb)) AS log_entry ON " +
-                    "    (log_entry->>'callLogId')::bigint = cl.id " +
                     "WHERE cl.id IN (" + placeholders + ") " +
                     "AND EXISTS ( " +
                     "    SELECT 1 FROM jsonb_array_elements(COALESCE(matching_person.mobile_numbers, '[]'::jsonb)) AS m " +

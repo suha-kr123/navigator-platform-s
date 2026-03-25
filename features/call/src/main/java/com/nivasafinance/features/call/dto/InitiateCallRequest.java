@@ -16,5 +16,6 @@ public class InitiateCallRequest {
     private SystemEntities entity;
     private Long entityId;
     private String identifier; // Lead Identifier
+    private Long contactId;
     private String businessPurpose;
 }

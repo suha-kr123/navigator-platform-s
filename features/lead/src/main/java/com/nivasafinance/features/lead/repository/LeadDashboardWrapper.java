@@ -128,7 +128,7 @@ public class LeadDashboardWrapper {
                     (l.other_details->>'noOfCampaignCalls')::bigint    AS no_of_campaign_calls,
                     partners.partner_names                             AS partners,
                     l.substatus                                        AS substatus,
-                    COALESCE(jsonb_array_length(COALESCE(l.call_logs, '[]'::jsonb)), 0) AS number_of_calls,
+                    COALESCE((SELECT COUNT(*) FROM n_call_log_lead clm WHERE clm.lead_id = l.id), 0) AS number_of_calls,
                     latest_call.direction                              AS last_call_direction,
                     latest_call.status                                 AS last_call_status,
                     latest_call.created_at                             AS last_call_date,

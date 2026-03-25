@@ -74,21 +74,16 @@ public class LeadCallWriteServiceImpl implements LeadCallWriteService {
                 .toPhoneNumber(request.getPhoneNumber())
                 .entity(SystemEntities.LEAD)
                 .entityId(lead.getId())
+                .contactId(contact.getId())
                 .identifier(leadIdentifier.toString())
                 .businessPurpose("Call for person : " + person.getDisplayName())
                 .build();
 
         InitiateCallResponse response = callWriteService.call(initiateCallRequest);
-        List<Lead.CallLogDetails> callLogs = lead.getCallLogDetails();
-        if (callLogs == null) {
-            callLogs = new java.util.ArrayList<>();
-        }
-        callLogs.add(new Lead.CallLogDetails(response.getId(), contact.getId()));
-        lead.setCallLogDetails(callLogs);
-        
+
         // Update lastCallId based on latest createdAt
         updateLastCallId(lead, response.getId());
-        
+
         leadRepositoryWrapper.saveWithException(lead);
         
         // Publish event
@@ -131,7 +126,6 @@ public class LeadCallWriteServiceImpl implements LeadCallWriteService {
     }
 
     @Override
-    @Transactional
     public CreateExternalCallLogResponse createExternalCallLog(UUID leadIdentifier, CreateExternalCallLogRequest request) {
         // Validate lead exists
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
@@ -168,18 +162,11 @@ public class LeadCallWriteServiceImpl implements LeadCallWriteService {
 
         // Save call log (duplicate check is done in CallWriteService.createCallLog)
         CreateCallLogResponse savedCallLog = callWriteService.createCallLog(callLog);
+        callWriteService.mapCallLogToLead(savedCallLog.getId(), lead.getId(), contact.getId());
 
-        // Link call log to lead
-        List<Lead.CallLogDetails> callLogs = lead.getCallLogDetails();
-        if (callLogs == null) {
-            callLogs = new ArrayList<>();
-        }
-        callLogs.add(new Lead.CallLogDetails(savedCallLog.getId(), contact.getId()));
-        lead.setCallLogDetails(callLogs);
-        
         // Update lastCallId based on latest createdAt
         updateLastCallId(lead, savedCallLog.getId());
-        
+
         leadRepositoryWrapper.saveWithException(lead);
 
         // Publish event

@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1773200000000_56_n_call_log_lead_table" author="navigator" context="default">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="n_call_log_lead"/>
+            </not>
+        </preConditions>
+        <comment>Mapping table: one lead per call log (PK call_log_id); AuditableEntity columns. No FK constraints.</comment>
+        <createTable tableName="n_call_log_lead">
+            <column name="call_log_id" type="bigint">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_n_call_log_lead"/>
+            </column>
+            <column name="lead_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="contact_id" type="bigint"/>
+            <column name="created_by" type="varchar(255)"/>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_by" type="varchar(255)"/>
+            <column name="updated_at" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="bigint" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createIndex indexName="idx_n_call_log_lead_lead_id" tableName="n_call_log_lead">
+            <column name="lead_id"/>
+        </createIndex>
+        <rollback>
+            <dropTable tableName="n_call_log_lead"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="V1773200000000_56_backfill_n_call_log_lead_from_lead_jsonb" author="navigator" context="default"
+               dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="n_call_log_lead"/>
+            <columnExists tableName="n_lead" columnName="call_logs"/>
+        </preConditions>
+        <comment>Backfill n_call_log_lead from n_lead.call_logs JSONB (callLogId). Aborts if same callLogId maps to multiple leads. Idempotent via ON CONFLICT.</comment>
+        <sql splitStatements="false" stripComments="false">
+            <![CDATA[
+DO $backfill$
+DECLARE
+  v_duplicate_refs bigint;
+BEGIN
+  SELECT COUNT(*) INTO v_duplicate_refs
+  FROM (
+    SELECT (entry->>'callLogId')::bigint AS call_log_id
+    FROM n_lead l,
+         jsonb_array_elements(COALESCE(l.call_logs, '[]'::jsonb)) AS entry
+    WHERE entry->>'callLogId' IS NOT NULL
+      AND trim(entry->>'callLogId') <> ''
+      AND (entry->>'callLogId') ~ '^[0-9]+$'
+    GROUP BY (entry->>'callLogId')::bigint
+    HAVING COUNT(DISTINCT l.id) > 1
+  ) duplicate_refs;
+
+  IF v_duplicate_refs > 0 THEN
+    RAISE EXCEPTION 'backfill_n_call_log_lead_from_lead_jsonb failed: % callLogId values are mapped to multiple leads', v_duplicate_refs;
+  END IF;
+
+  INSERT INTO n_call_log_lead (call_log_id, lead_id, contact_id)
+  SELECT DISTINCT
+    (entry->>'callLogId')::bigint AS call_log_id,
+    l.id AS lead_id,
+    CASE
+      WHEN entry->>'contactId' IS NOT NULL
+           AND trim(entry->>'contactId') <> ''
+           AND (entry->>'contactId') ~ '^[0-9]+$'
+      THEN (entry->>'contactId')::bigint
+      ELSE NULL
+    END AS contact_id
+  FROM n_lead l,
+       jsonb_array_elements(COALESCE(l.call_logs, '[]'::jsonb)) AS entry
+  WHERE entry->>'callLogId' IS NOT NULL
+    AND trim(entry->>'callLogId') <> ''
+    AND (entry->>'callLogId') ~ '^[0-9]+$'
+    AND EXISTS (SELECT 1 FROM n_call_log c WHERE c.id = (entry->>'callLogId')::bigint)
+  ON CONFLICT (call_log_id) DO NOTHING;
+END;
+$backfill$;
+            ]]>
+        </sql>
+        <rollback/>
+    </changeSet>
+
+    <changeSet id="V1773200000000_56_drop_call_logs_column_from_n_lead" author="navigator" context="default">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="n_lead" columnName="call_logs"/>
+        </preConditions>
+        <comment>Drop call_logs JSONB column from n_lead. Data has been migrated to n_call_log_lead mapping table.</comment>
+        <dropColumn tableName="n_lead" columnName="call_logs"/>
+        <rollback>
+            <addColumn tableName="n_lead">
+                <column name="call_logs" type="jsonb"/>
+            </addColumn>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
