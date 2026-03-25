@@ -10,7 +10,7 @@ public enum QueueType {
     NOTIFICATION_EXECUTOR("notification-executor"),
     BULK_OPERATION_VALIDATION("bulk-operation-validation"),
     BULK_OPERATION_PROCESSING("bulk-operation-processing"),
-    NAVIGATOR_ATLAS("navigator-atlas");
+    NAVIGATOR_ATLAS("navigator-atlas-jobs");
 
     private final String propertyKey;
 }
