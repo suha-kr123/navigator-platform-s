@@ -5,7 +5,6 @@ import com.nivasafinance.analytics.AnalyticsHelper;
 import com.nivasafinance.common.enums.SystemEntities;
 import com.nivasafinance.common.events.BusinessEvent;
 import com.nivasafinance.common.events.SystemEvent;
-import com.nivasafinance.common.events.payload.CbReportStoredEventPayload;
 import com.nivasafinance.common.events.payload.LeadCbSuccessEventPayload;
 import com.nivasafinance.features.consent.dto.AcceptConsentRequest;
 import com.nivasafinance.features.consent.dto.ResendConsentRequest;
@@ -240,10 +239,11 @@ public class LeadCreditBureauWriteServiceImpl implements LeadCreditBureauWriteSe
 
     @Override
     public void regenerateCbReport(UUID leadIdentifier, UUID contactIdentifier, UUID enquiryIdentifier) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
         Long enquiryId = leadCreditBureauReadService.getEnquiryIdForCbReportRegenerate(leadIdentifier, contactIdentifier, enquiryIdentifier);
         applicationEventPublisher.publishEvent(new SystemEvent<>(
-                BusinessEvent.CB_REPORT_STORED.toString(),
-                CbReportStoredEventPayload.builder().enquiryId(enquiryId).build()));
+                BusinessEvent.LEAD_CB_PULL_SUCCESS.toString(),
+                LeadCbSuccessEventPayload.builder().enquiryId(enquiryId).leadId(lead.getId()).build()));
     }
 
     /**

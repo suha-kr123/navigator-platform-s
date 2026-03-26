@@ -3,9 +3,6 @@ package com.nivasafinance.features.creditbureau.service.impl;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nivasafinance.common.enums.SystemEntities;
-import com.nivasafinance.common.events.BusinessEvent;
-import com.nivasafinance.common.events.SystemEvent;
-import com.nivasafinance.common.events.payload.CbReportStoredEventPayload;
 import com.nivasafinance.features.creditbureau.dto.CreditBureauEnquiryResponse;
 import com.nivasafinance.features.creditbureau.entity.CreditBureauEnquiry;
 import com.nivasafinance.features.creditbureau.enums.CreditBureauEnquiryStatus;
@@ -25,7 +22,6 @@ import com.nivasafinance.services.creditbureau.dto.CreditBureauPersonData;
 import com.nivasafinance.services.creditbureau.dto.PullEnquiryRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,7 +40,6 @@ public class CreditBureauWriteServiceImpl implements CreditBureauWriteService {
     private final ThirdPartyServiceConfigReadService thirdPartyServiceConfigReadService;
     private final MessageSource messageSource;
     private final CreditBureauReportParserFactory creditBureauReportParserFactory;
-    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     public CreditBureauEnquiryResponse initiateEnquiry(Long personId) {
@@ -172,11 +167,6 @@ public class CreditBureauWriteServiceImpl implements CreditBureauWriteService {
                 if (!dataFound) {
                     enquiry.setStatus(CreditBureauEnquiryStatus.NO_HIT);
                     log.info("No meaningful data found in credit bureau report for enquiry ID: {}, status updated to NO_HIT", enquiry.getId());
-                } else {
-                    // Publish event so Lead module can fetch Redash Excel and upload to lead
-                    applicationEventPublisher.publishEvent(
-                            new SystemEvent<>(BusinessEvent.CB_REPORT_STORED.toString(),
-                                    CbReportStoredEventPayload.builder().enquiryId(enquiry.getId()).build()));
                 }
             } catch (Exception e) {
                 log.error("Failed to parse and store credit bureau report for enquiry ID: {}",

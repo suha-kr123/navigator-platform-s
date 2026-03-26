@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -303,33 +304,9 @@ public class RedashService {
      */
     public Map<String, Object> getQueryResult(Long queryId, Map<String, Object> parameters) {
         try {
-            RedashQueryResultRequest queryRequest = RedashQueryResultRequest.builder()
-                    .queryId(queryId)
-                    .parameters(parameters != null ? parameters : Map.of())
-                    .maxAge(0L)
-                    .build();
-
-            log.info("Executing Redash query with ID: {}", queryId);
-            RedashQueryResponse queryResponse = redashClient.executeQuery(queryId, queryRequest);
-            if (queryResponse == null || queryResponse.getJob() == null || queryResponse.getJob().getId() == null) {
-                throw new RuntimeException("Failed to start query execution: Invalid response from Redash");
-            }
-
-            String jobId = queryResponse.getJob().getId();
-            String queryResultId = pollForQueryResultId(jobId);
-
-            String json = redashClient.downloadQueryResultAsJson(queryResultId);
-            if (json == null || json.isBlank()) {
-                return null;
-            }
-
-            JsonNode root = objectMapper.readTree(json);
-            JsonNode rows = root.path("query_result").path("data").path("rows");
-            if (!rows.isArray() || rows.isEmpty()) {
-                return null;
-            }
-            JsonNode firstRow = rows.get(0);
-            return objectMapper.convertValue(firstRow, new TypeReference<Map<String, Object>>() { });
+            String json = executeQueryAndDownloadResultJson(queryId, parameters);
+            List<Map<String, Object>> rows = parseRowsFromResultJson(json);
+            return rows.isEmpty() ? null : rows.get(0);
         } catch (FeignException e) {
             String errorMessage = extractErrorFromFeignException(e);
             log.error("Feign error in getQueryResult: {}", errorMessage, e);
@@ -338,6 +315,57 @@ public class RedashService {
             log.error("Error in getQueryResult for queryId {}", queryId, e);
             throw new RuntimeException("Failed to get query result: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Same as {@link #getQueryResult} but returns all rows from query_result.data.rows.
+     */
+    public List<Map<String, Object>> getQueryResultRows(Long queryId, Map<String, Object> parameters) {
+        try {
+            String json = executeQueryAndDownloadResultJson(queryId, parameters);
+            return parseRowsFromResultJson(json);
+        } catch (FeignException e) {
+            String errorMessage = extractErrorFromFeignException(e);
+            log.error("Feign error in getQueryResultRows: {}", errorMessage, e);
+            throw new RuntimeException(errorMessage);
+        } catch (Exception e) {
+            log.error("Error in getQueryResultRows for queryId {}", queryId, e);
+            throw new RuntimeException("Failed to get query result rows: " + e.getMessage(), e);
+        }
+    }
+
+    private String executeQueryAndDownloadResultJson(Long queryId, Map<String, Object> parameters) throws Exception {
+        RedashQueryResultRequest queryRequest = RedashQueryResultRequest.builder()
+                .queryId(queryId)
+                .parameters(parameters != null ? parameters : Map.of())
+                .maxAge(0L)
+                .build();
+
+        log.info("Executing Redash query with ID: {}", queryId);
+        RedashQueryResponse queryResponse = redashClient.executeQuery(queryId, queryRequest);
+        if (queryResponse == null || queryResponse.getJob() == null || queryResponse.getJob().getId() == null) {
+            throw new RuntimeException("Failed to start query execution: Invalid response from Redash");
+        }
+
+        String jobId = queryResponse.getJob().getId();
+        String queryResultId = pollForQueryResultId(jobId);
+        return redashClient.downloadQueryResultAsJson(queryResultId);
+    }
+
+    private List<Map<String, Object>> parseRowsFromResultJson(String json) throws Exception {
+        if (json == null || json.isBlank()) {
+            return List.of();
+        }
+        JsonNode root = objectMapper.readTree(json);
+        JsonNode rowsNode = root.path("query_result").path("data").path("rows");
+        if (!rowsNode.isArray() || rowsNode.isEmpty()) {
+            return List.of();
+        }
+        List<Map<String, Object>> rows = new ArrayList<>();
+        for (JsonNode row : rowsNode) {
+            rows.add(objectMapper.convertValue(row, new TypeReference<Map<String, Object>>() { }));
+        }
+        return rows;
     }
 
     private String pollForQueryResultId(String jobId) throws InterruptedException, TimeoutException {
