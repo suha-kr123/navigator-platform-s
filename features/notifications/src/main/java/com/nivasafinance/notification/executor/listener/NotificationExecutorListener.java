@@ -53,6 +53,7 @@ public class NotificationExecutorListener {
     private final MessagingProperties messagingProperties;
     private final ObjectProvider<SqsClient> sqsClientProvider;
     private final PlatformTransactionManager transactionManager;
+    private final com.nivasafinance.notification.orchestrator.repository.NotificationReceiptRepository notificationReceiptRepository;
 
     private final AtomicBoolean executorPolling = new AtomicBoolean(false);
     private final AtomicInteger pollCount = new AtomicInteger(0);
@@ -68,8 +69,8 @@ public class NotificationExecutorListener {
             return t;
         });
         log.info("NotificationExecutorListener executor pool size: {}", poolSize);
-        log.info("NotificationExecutorListener initialized. Provider: {}, SqsClient available: {}", 
-                messagingProperties.getProvider(), 
+        log.info("NotificationExecutorListener initialized. Provider: {}, SqsClient available: {}",
+                messagingProperties.getProvider(),
                 sqsClientProvider.getIfAvailable() != null);
         if (messagingProperties.getProvider() == MessageProvider.SQS) {
             try {
@@ -104,11 +105,11 @@ public class NotificationExecutorListener {
 
         if (count % 30 == 0) {
             log.info("NotificationExecutorListener polling (attempt #{}). Provider: {}, SqsClient available: {}",
-                    count, 
+                    count,
                     messagingProperties.getProvider(),
                     sqsClientProvider.getIfAvailable() != null);
         }
-        
+
         // Only poll SQS if provider is SQS and SqsClient is available
         if (messagingProperties.getProvider() != MessageProvider.SQS) {
             if (count % 30 == 0) {
@@ -136,12 +137,12 @@ public class NotificationExecutorListener {
             String queueUrl = messagingProperties.getSqs().resolveQueueUrl(QueueType.NOTIFICATION_EXECUTOR);
             int waitTime = messagingProperties.getSqs().getWaitTimeSeconds();
             int maxMessages = messagingProperties.getSqs().getMaxMessages();
-            
+
             if (count % 30 == 0) {
                 log.info("Polling NOTIFICATION_EXECUTOR queue: {} (waitTime: {}s, maxMessages: {})",
                         queueUrl, waitTime, maxMessages);
             }
-            
+
             ReceiveMessageRequest request = ReceiveMessageRequest.builder()
                     .queueUrl(queueUrl)
                     .waitTimeSeconds(waitTime)
@@ -158,9 +159,9 @@ public class NotificationExecutorListener {
                         count, receiveEx);
                 throw receiveEx;
             }
-            
+
             int messageCount = response.messages().size();
-            
+
             if (messageCount > 0) {
                 log.info("Received {} message(s) from NOTIFICATION_EXECUTOR queue: {}", messageCount, queueUrl);
             } else {
@@ -209,74 +210,126 @@ public class NotificationExecutorListener {
         template.setIsolationLevel(TransactionDefinition.ISOLATION_DEFAULT);
         template.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
 
+        // Parse receiptId outside the transaction so it's available in catch blocks
+        UUID receiptId = extractReceiptId(rawMessage);
+        if (receiptId == null) {
+            return false;
+        }
+
         return Boolean.TRUE.equals(template.execute(status -> {
             try {
                 log.info("Processing notification executor message: {}", rawMessage);
-                Map<String, Object> messageMap = parseMessage(rawMessage);
-                
-                // Support both "receiptId" and "messageId" for backward compatibility
-                String receiptIdStr = (String) messageMap.get("receiptId");
-                if (receiptIdStr == null) {
-                    receiptIdStr = (String) messageMap.get("messageId");
-                }
-                
-                if (receiptIdStr == null) {
-                    log.error("Executor message missing receiptId/messageId. Available keys: {}. Message: {}", 
-                            messageMap.keySet(), rawMessage);
-                    return false;
-                }
 
-                UUID receiptId;
-                try {
-                    receiptId = UUID.fromString(receiptIdStr);
-                } catch (IllegalArgumentException ex) {
-                    log.error("Invalid receiptId format in executor message: {}. Message: {}", receiptIdStr, rawMessage, ex);
-                    return false;
-                }
-                
                 // Check if receipt exists and its status
                 var receiptOpt = notificationReceiptService.findById(receiptId);
                 if (receiptOpt.isEmpty()) {
                     log.warn("Notification receipt not found: {}. This may be an old message or the receipt was deleted. Deleting message from queue.", receiptId);
-                    // Return true to delete the message from queue (don't retry forever)
                     return true;
                 }
-                
+
                 var receipt = receiptOpt.get();
-                // Check if receipt is already completed
                 if (receipt.getStatus() == NotificationStatus.COMPLETED) {
                     log.info("Receipt {} is already COMPLETED, skipping execution. Deleting message from queue.", receiptId);
-                    // Return true to delete the message from queue (already processed)
                     return true;
                 }
-                
-                // Check if receipt is already failed (don't retry failed receipts automatically)
+
                 if (receipt.getStatus() == NotificationStatus.FAILED) {
                     log.warn("Receipt {} is already FAILED, skipping execution. Deleting message from queue to prevent infinite retries.", receiptId);
-                    // Return true to delete the message from queue (don't retry failed receipts)
                     return true;
                 }
-                
+
                 log.info("Executing receipt {} (current status: {})", receiptId, receipt.getStatus());
                 notificationReceiptService.executeReceipt(receiptId);
                 log.info("Successfully executed receipt {}", receiptId);
                 return true;
             } catch (IllegalArgumentException ex) {
-                // Handle case where receipt doesn't exist (thrown by executeReceipt)
                 if (ex.getMessage() != null && ex.getMessage().contains("Notification receipt not found")) {
                     log.warn("Notification receipt not found in executeReceipt. This may be an old message. Deleting from queue. Error: {}", ex.getMessage());
-                    // Return true to delete the message from queue (don't retry forever)
                     return true;
                 }
                 log.error("Failed to process executor message: {}", rawMessage, ex);
                 status.setRollbackOnly();
-                return false;
+                markReceiptFailedInNewTransaction(receiptId, ex);
+                return true;
             } catch (Exception ex) {
                 log.error("Failed to process executor message: {}", rawMessage, ex);
                 status.setRollbackOnly();
-                return false;
+                markReceiptFailedInNewTransaction(receiptId, ex);
+                return true;
             }
         }));
+    }
+
+    /**
+     * Extracts the receiptId from the raw SQS message body.
+     * Returns null if the message is malformed or missing receiptId.
+     */
+    private UUID extractReceiptId(String rawMessage) {
+        try {
+            Map<String, Object> messageMap = parseMessage(rawMessage);
+            String receiptIdStr = (String) messageMap.get("receiptId");
+            if (receiptIdStr == null) {
+                receiptIdStr = (String) messageMap.get("messageId");
+            }
+            if (receiptIdStr == null) {
+                log.error("Executor message missing receiptId/messageId. Message: {}", rawMessage);
+                return null;
+            }
+            return UUID.fromString(receiptIdStr);
+        } catch (Exception ex) {
+            log.error("Failed to extract receiptId from executor message: {}", rawMessage, ex);
+            return null;
+        }
+    }
+
+    /**
+     * Marks a receipt as FAILED in a REQUIRES_NEW transaction so the error persists
+     * even when the outer transaction rolls back.
+     *
+     * This fixes the Spring proxy self-invocation issue where
+     * NotificationReceiptService.markReceiptFailed(REQUIRES_NEW) was called from
+     * executeReceipt() within the same bean, causing REQUIRES_NEW to be ignored.
+     */
+    private void markReceiptFailedInNewTransaction(UUID receiptId, Exception ex) {
+        if (receiptId == null) {
+            return;
+        }
+        try {
+            TransactionTemplate requiresNew = new TransactionTemplate(transactionManager);
+            requiresNew.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            requiresNew.execute(s -> {
+                var receiptOpt = notificationReceiptRepository.findById(receiptId);
+                if (receiptOpt.isEmpty()) {
+                    log.warn("Cannot mark receipt {} as FAILED - receipt not found", receiptId);
+                    return null;
+                }
+                var receipt = receiptOpt.get();
+                receipt.setStatus(NotificationStatus.FAILED);
+
+                Map<String, Object> errorJson = new java.util.HashMap<>();
+                String message = ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName();
+                errorJson.put("message", message);
+                errorJson.put("exceptionType", ex.getClass().getSimpleName());
+                // Include root cause if available
+                if (ex.getCause() != null) {
+                    errorJson.put("rootCause", ex.getCause().getMessage());
+                }
+                receipt.setErrorJson(errorJson);
+                receipt.setUpdatedBy("system");
+
+                Map<String, Object> remarks = new java.util.HashMap<>();
+                remarks.put("error", message);
+                remarks.put("timestamp", System.currentTimeMillis());
+                receipt.setRemarks(remarks);
+
+                notificationReceiptRepository.save(receipt);
+                notificationReceiptRepository.flush();
+                log.info("Receipt {} marked as FAILED in new transaction. Error: {}", receiptId, message);
+                return null;
+            });
+        } catch (Exception updateEx) {
+            log.error("Failed to mark receipt {} as FAILED in new transaction; receipt may stay INITIATED.", receiptId, updateEx);
+        }
     }
 
     private Map<String, Object> parseMessage(String rawMessage) {
@@ -294,4 +347,3 @@ public class NotificationExecutorListener {
                 .build());
     }
 }
-
