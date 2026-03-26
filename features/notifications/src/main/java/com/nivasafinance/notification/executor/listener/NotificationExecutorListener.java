@@ -249,12 +249,14 @@ public class NotificationExecutorListener {
                 }
                 log.error("Failed to process executor message: {}", rawMessage, ex);
                 status.setRollbackOnly();
-                markReceiptFailedInNewTransaction(receiptId, ex);
+                // executeReceipt already marked receipt as FAILED via markReceiptFailedInNewTransaction.
+                // Return true to delete SQS message — no point retrying.
                 return true;
             } catch (Exception ex) {
                 log.error("Failed to process executor message: {}", rawMessage, ex);
                 status.setRollbackOnly();
-                markReceiptFailedInNewTransaction(receiptId, ex);
+                // executeReceipt already marked receipt as FAILED via markReceiptFailedInNewTransaction.
+                // Return true to delete SQS message — no point retrying.
                 return true;
             }
         }));
