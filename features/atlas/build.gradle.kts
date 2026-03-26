@@ -13,6 +13,10 @@ dependencies {
     implementation(project(":features:usermanagement"))
 }
 
+tasks.bootJar {
+  enabled = false
+}
 tasks.jar {
-    archiveBaseName.set("atlas-client")
+  enabled = true
+  archiveBaseName.set("atlas-client")
 }
