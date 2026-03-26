@@ -264,13 +264,15 @@ public class LeadCallWriteServiceImpl implements LeadCallWriteService {
     }
 
     private void publishLeadCallLogCreatedEvent(Lead lead, Long callLogId, UUID callLogIdentifier, Contact contact) {
+        String username = UserContext.getUsername();
         LeadCallLogCreationEventPayload payload = LeadCallLogCreationEventPayload.builder()
                 .leadId(lead.getId())
                 .callLogId(callLogId)
                 .callLogIdentifier(callLogIdentifier)
+                .leadIdentifier(lead.getLeadIdentifier())
+                .primaryRole(username != null ? userRoleService.getPrimaryRoleForUsername(username) : null)
                 .build();
 
-        String username = UserContext.getUsername();
         applicationEventPublisher.publishEvent(
                 new SystemEvent<>(BusinessEvent.LEAD_CALL_LOG_CREATED.toString(), payload, username)
         );

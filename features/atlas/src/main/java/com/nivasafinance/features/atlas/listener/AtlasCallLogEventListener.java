@@ -1,6 +1,7 @@
 package com.nivasafinance.features.atlas.listener;
 
 import com.nivasafinance.common.events.SystemEvent;
+import com.nivasafinance.common.events.payload.LeadCallLogCreationEventPayload;
 import com.nivasafinance.common.events.payload.LeadCallLogUpdateEventPayload;
 import com.nivasafinance.features.atlas.service.AtlasService;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +13,8 @@ import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.util.StringUtils;
 
 /**
- * Triggers Atlas transcription only for {@code LEAD_CALL_LOG_UPDATED} when a recording URL is present
+ * Triggers Atlas transcription for {@code LEAD_CALL_LOG_CREATED} and {@code LEAD_CALL_LOG_UPDATED}
+ * when a recording URL is available and the job is not already initiated.
  */
 @Slf4j
 @Component
@@ -20,6 +22,23 @@ import org.springframework.util.StringUtils;
 public class AtlasCallLogEventListener {
 
     private final AtlasService atlasService;
+
+    @TransactionalEventListener(
+            phase = TransactionPhase.AFTER_COMMIT,
+            condition = "#event.eventType == 'LEAD_CALL_LOG_CREATED'"
+    )
+    @Async
+    public void handleLeadCallLogCreated(SystemEvent<?> event) {
+        if (!(event.getPayload() instanceof LeadCallLogCreationEventPayload payload)) {
+            log.warn("LEAD_CALL_LOG_CREATED with unexpected payload type: {}", event.getPayload());
+            return;
+        }
+        try {
+            atlasService.handleLeadCallLogCreated(payload);
+        } catch (Exception ex) {
+            log.error("Atlas transcription trigger failed for created callLog {}", payload.getCallLogIdentifier(), ex);
+        }
+    }
 
     @TransactionalEventListener(
             phase = TransactionPhase.AFTER_COMMIT,

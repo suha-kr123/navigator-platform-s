@@ -1,5 +1,6 @@
 package com.nivasafinance.features.atlas.service.impl;
 
+import com.nivasafinance.common.events.payload.LeadCallLogCreationEventPayload;
 import com.nivasafinance.common.events.payload.LeadCallLogUpdateEventPayload;
 import com.nivasafinance.common.messaging.config.MessagingProperties;
 import com.nivasafinance.common.messaging.enums.MessageProvider;
@@ -21,6 +22,7 @@ import org.springframework.util.StringUtils;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @Slf4j
@@ -54,48 +56,86 @@ public class AtlasServiceImpl implements AtlasService {
     }
 
     @Override
+    public void handleLeadCallLogCreated(LeadCallLogCreationEventPayload payload) {
+        enqueueAtlasTranscriptionJob(
+                payload.getLeadIdentifier(),
+                payload.getCallLogIdentifier(),
+                null,
+                payload.getPrimaryRole());
+    }
+
+    @Override
     public void handleLeadCallLogUpdated(LeadCallLogUpdateEventPayload payload) {
+        String recordingOverride = StringUtils.hasText(payload.getRecordingUrl()) ? payload.getRecordingUrl().trim() : null;
+        enqueueAtlasTranscriptionJob(
+                payload.getLeadIdentifier(),
+                payload.getCallLogIdentifier(),
+                recordingOverride,
+                payload.getPrimaryRole());
+    }
+
+    /**
+     * Enqueues an Atlas transcription job when a recording URL exists and the job is not already
+     * {@link AtlasJobStatus#INITIATED} or {@link AtlasJobStatus#PROCESSING}.
+     *
+     * @param recordingUrlOverride if non-blank, used as recording URL; otherwise read from persisted call log
+     */
+    private void enqueueAtlasTranscriptionJob(
+            UUID leadIdentifier,
+            UUID callLogIdentifier,
+            String recordingUrlOverride,
+            String primaryRoleFallback) {
         if (!isNavigatorAtlasQueueConfigured()) {
             log.warn("Navigator Atlas queue is not configured; skipping transcription job");
             return;
         }
-        if (payload.getLeadIdentifier() == null) {
-            log.warn("LeadCallLogUpdateEvent missing leadIdentifier; skipping Atlas job for callLog {}",
-                    payload.getCallLogIdentifier());
+        if (leadIdentifier == null) {
+            log.warn("Lead call log event missing leadIdentifier; skipping Atlas job for callLog {}", callLogIdentifier);
             return;
         }
-        String recordingUrl = StringUtils.hasText(payload.getRecordingUrl()) ? payload.getRecordingUrl().trim() : null;
+        CallLogResponse callLog = callReadService.getCallLogByIdentifier(callLogIdentifier);
+        String recordingUrl = StringUtils.hasText(recordingUrlOverride)
+                ? recordingUrlOverride.trim()
+                : recordingUrlFromCallLog(callLog);
         if (!StringUtils.hasText(recordingUrl)) {
             return;
         }
-        CallLogResponse callLog = callReadService.getCallLogByIdentifier(payload.getCallLogIdentifier());
         if (shouldSkipForExistingJob(callLog.getAiAnalysis())) {
+            log.debug("Skipping Atlas enqueue for callLog {} — job already initiated or in progress", callLogIdentifier);
             return;
         }
 
         callWriteService.mergeAiAnalysisByIdentifier(
-                payload.getCallLogIdentifier(),
+                callLogIdentifier,
                 CallLog.AiAnalysisDetails.builder()
                         .status(AtlasJobStatus.INITIATED)
                         .build());
 
         Map<String, Object> body = new LinkedHashMap<>();
-        String primaryRoleForEventType = resolvePrimaryRoleForAtlasEventType(callLog, payload.getPrimaryRole());
+        String primaryRoleForEventType = resolvePrimaryRoleForAtlasEventType(callLog, primaryRoleFallback);
         body.put(EVENT_TYPE, atlasEventTypeForPrimaryRole(primaryRoleForEventType));
-        body.put(LEAD_IDENTIFIER, payload.getLeadIdentifier().toString());
-        body.put(CALL_LOG_IDENTIFIER, payload.getCallLogIdentifier().toString());
+        body.put(LEAD_IDENTIFIER, leadIdentifier.toString());
+        body.put(CALL_LOG_IDENTIFIER, callLogIdentifier.toString());
         body.put(RECORDING_URL, recordingUrl);
-        String messageId = payload.getCallLogIdentifier().toString();
+        String messageId = callLogIdentifier.toString();
         try {
             messagePublisherFactory.getPublisher().publish(QueueType.NAVIGATOR_ATLAS, messageId, body);
         } catch (RuntimeException ex) {
-            log.error("Atlas transcription enqueue failed for callLog {}", payload.getCallLogIdentifier(), ex);
+            log.error("Atlas transcription enqueue failed for callLog {}", callLogIdentifier, ex);
             callWriteService.mergeAiAnalysisByIdentifier(
-                    payload.getCallLogIdentifier(),
+                    callLogIdentifier,
                     CallLog.AiAnalysisDetails.builder()
                             .status(AtlasJobStatus.PUBLISHING_FAILED)
                             .build());
         }
+    }
+
+    private static String recordingUrlFromCallLog(CallLogResponse callLog) {
+        if (callLog.getRecordingDetails() == null || callLog.getRecordingDetails().getUrl() == null) {
+            return null;
+        }
+        String url = callLog.getRecordingDetails().getUrl().trim();
+        return url.isEmpty() ? null : url;
     }
 
     private boolean isNavigatorAtlasQueueConfigured() {
