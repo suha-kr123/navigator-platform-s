@@ -8,8 +8,10 @@ import com.nivasafinance.notification.orchestrator.repository.NotificationReceip
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -23,6 +25,7 @@ public class NotificationReceiptService {
 
     private final NotificationReceiptRepository notificationReceiptRepository;
     private final NotificationExecutorFactory notificationExecutorFactory;
+    private final PlatformTransactionManager transactionManager;
 
     @Transactional
     public NotificationReceipt save(NotificationReceipt receipt) {
@@ -52,64 +55,72 @@ public class NotificationReceiptService {
             log.info("Executing receipt {}. Mode: {}, Channel: {}, Recipient: {}",
                     receiptId, receipt.getMode(), receipt.getChannelType(), receipt.getRecipientContact());
 
-            // Get the appropriate executor based on mode and channel type
             NotificationExecutor executor = notificationExecutorFactory.getExecutor(
                     receipt.getMode(),
                     receipt.getChannelType()
             );
 
-            // Execute (send the notification)
-            // For WhatsApp, the executor uses templates, so no pre-rendered message is needed
             log.info("About to send notification for receipt {}", receiptId);
             executor.send(receipt, null);
             log.info("Notification sent successfully for receipt {}. Now updating status to COMPLETED...", receiptId);
 
-            // Update receipt status to COMPLETED
             receipt.setStatus(NotificationStatus.COMPLETED);
             receipt.setUpdatedBy("system");
-            
-            // Update remarks to reflect successful execution
+
             Map<String, Object> remarksMap = new HashMap<>();
             remarksMap.put("status", "COMPLETED");
             remarksMap.put("message", "Notification sent successfully");
             remarksMap.put("timestamp", System.currentTimeMillis());
             receipt.setRemarks(remarksMap);
-            
+
             NotificationReceipt saved = notificationReceiptRepository.save(receipt);
-            
-            // Force immediate write to database
             notificationReceiptRepository.flush();
-            
-            log.info("Receipt {} status updated to COMPLETED and flushed to database. Saved receipt status: {}", 
+
+            log.info("Receipt {} status updated to COMPLETED and flushed to database. Saved receipt status: {}",
                     receiptId, saved.getStatus());
-            
+
             log.info("Receipt {} executed successfully", receiptId);
         } catch (Exception ex) {
             log.error("Failed to execute receipt {}", receiptId, ex);
             Map<String, Object> errorJson = buildErrorJson(receipt, ex);
-            markReceiptFailed(receiptId, errorJson);
+            markReceiptFailedInNewTransaction(receiptId, errorJson);
             throw new IllegalStateException("Failed to execute receipt: " + receiptId, ex);
         }
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void markReceiptFailed(UUID receiptId, Map<String, Object> errorJson) {
-        Optional<NotificationReceipt> receiptOpt = notificationReceiptRepository.findById(receiptId);
-        if (receiptOpt.isEmpty()) {
-            log.warn("Cannot mark receipt {} as FAILED - receipt not found", receiptId);
-            return;
+    /**
+     * Marks a receipt as FAILED using a programmatic REQUIRES_NEW transaction.
+     * This ensures the error is persisted even when the outer transaction rolls back.
+     *
+     * Public so callers like NotificationExecutorListener can reuse this
+     * instead of duplicating the same logic.
+     */
+    public void markReceiptFailedInNewTransaction(UUID receiptId, Map<String, Object> errorJson) {
+        try {
+            TransactionTemplate requiresNew = new TransactionTemplate(transactionManager);
+            requiresNew.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            requiresNew.execute(status -> {
+                Optional<NotificationReceipt> receiptOpt = notificationReceiptRepository.findById(receiptId);
+                if (receiptOpt.isEmpty()) {
+                    log.warn("Cannot mark receipt {} as FAILED - receipt not found", receiptId);
+                    return null;
+                }
+                NotificationReceipt r = receiptOpt.get();
+                r.setStatus(NotificationStatus.FAILED);
+                r.setErrorJson(errorJson);
+                r.setUpdatedBy("system");
+                Map<String, Object> remarks = new HashMap<>();
+                remarks.put("error", errorJson.get("message") != null ? errorJson.get("message") : "Unknown error");
+                remarks.put("timestamp", System.currentTimeMillis());
+                r.setRemarks(remarks);
+                notificationReceiptRepository.save(r);
+                notificationReceiptRepository.flush();
+                log.info("Receipt {} marked as FAILED in new transaction. Error: {}", receiptId, errorJson.get("message"));
+                return null;
+            });
+        } catch (Exception updateEx) {
+            log.error("Failed to mark receipt {} as FAILED; receipt may stay INITIATED.", receiptId, updateEx);
         }
-        NotificationReceipt receipt = receiptOpt.get();
-        receipt.setStatus(NotificationStatus.FAILED);
-        receipt.setErrorJson(errorJson);
-        receipt.setUpdatedBy("system");
-        Map<String, Object> remarks = new HashMap<>();
-        remarks.put("error", errorJson.get("message") != null ? errorJson.get("message") : "Unknown error");
-        remarks.put("timestamp", System.currentTimeMillis());
-        receipt.setRemarks(remarks);
-        notificationReceiptRepository.save(receipt);
-        notificationReceiptRepository.flush();
-        log.info("Receipt {} status updated to FAILED with error_json and flushed to database", receiptId);
     }
 
     private Map<String, Object> buildErrorJson(NotificationReceipt receipt, Exception ex) {
@@ -120,6 +131,9 @@ public class NotificationReceiptService {
         map.put("exceptionType", ex.getClass().getSimpleName());
         if (code != null) {
             map.put("code", code);
+        }
+        if (ex.getCause() != null) {
+            map.put("rootCause", ex.getCause().getMessage());
         }
         if (receipt.getTemplateIdentifier() != null) {
             map.put("templateIdentifier", receipt.getTemplateIdentifier());
@@ -139,4 +153,3 @@ public class NotificationReceiptService {
         return "EXECUTION_FAILED";
     }
 }
-
