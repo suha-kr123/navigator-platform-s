@@ -35,6 +35,8 @@ include("externals:exotel")
 include("externals:whatsapp")
 include("externals:creditbureau")
 include("externals:customer")
+include("externals:masters")
+include("externals:atlas")
 include("features:referral")
 include("features:bre")
 
