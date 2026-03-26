@@ -1,6 +1,5 @@
 package com.nivasafinance.features.bre.dto;
 
-import com.nivasafinance.common.enums.SystemEntities;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,7 +12,6 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 public class BREExecutionRequest {
-    private SystemEntities entity;
-    private Long entityId;
+    private String customData;
     private Map<String, Object> params;
 }
