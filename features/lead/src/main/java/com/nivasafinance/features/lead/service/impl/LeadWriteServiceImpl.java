@@ -782,12 +782,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
             mergeIncomeObligationDetailsInto(lead, request.getIncomeAndObligationDetails().orElse(null));
         }
         if (request.getCurrentCustomerFormStep() != null) {
-            String step = request.getCurrentCustomerFormStep().orElse(null);
-            mergeCurrentCustomerFormStepInto(otherDetails, step);
-            analyticsHelper.captureLead(new AnalyticsEvent(leadIdentifier.toString(),"form_step_completed", List.of(new AnalyticsEvent.Param("step_name", step))));
-            if(Objects.equals(step, CustomerFormStep.TERMINAL.getKey())){
-                analyticsHelper.captureLead(new AnalyticsEvent(leadIdentifier.toString(),"form_completed"));
-            }
+            mergeCurrentCustomerFormStepInto(otherDetails, request.getCurrentCustomerFormStep().orElse(null));
         }
         lead.setOtherDetails(otherDetails);
         leadRepositoryWrapper.saveWithException(lead);

@@ -1,11 +1,14 @@
 package com.nivasafinance.features.master.products.entity;
 
 import com.nivasafinance.common.audit.AuditableEntity;
+import com.nivasafinance.common.base.model.MasterLanguageData;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "n_product")
@@ -22,7 +25,7 @@ public class Product extends AuditableEntity {
     @Column(name = "code", nullable = false, unique = true, length = 50)
     private String code;
 
-    @Column(name = "name", nullable = false, length = 255)
-    private String name;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "name", columnDefinition = "jsonb", nullable = false)
+    private MasterLanguageData name;
 }
-

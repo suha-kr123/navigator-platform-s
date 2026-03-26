@@ -121,7 +121,7 @@ public class PersonCreditBureauServiceImpl implements PersonCreditBureauService 
             
             // Trigger credit bureau pull since consent is already available
             CreditBureauEnquiry enquiry = creditBureauReadService.getCbEnquiryEntityById(enquiryId);
-            triggerCreditBureauPull(enquiry, personId);
+            triggerCreditBureauPull(enquiry, personId, request.getAddressesForCreditBureauPull());
         } else {
             // Create new consent and send link
             // Get recipient phone for consent link (first mobile)
@@ -157,7 +157,7 @@ public class PersonCreditBureauServiceImpl implements PersonCreditBureauService 
 
     @Override
     @Transactional
-    public void onConsentGranted(Long consentId, UUID enquiryIdentifier) {
+    public void onConsentGranted(Long consentId, UUID enquiryIdentifier, List<AddressData> addressesForCreditBureauPull) {
         CreditBureauEnquiry enquiry = creditBureauReadService.getCbEnquiryEntityByIdentifier(enquiryIdentifier);
 
         Long personId = personRepositoryWrapper.findPersonIdByCbEnquiryId(enquiry.getId())
@@ -187,7 +187,7 @@ public class PersonCreditBureauServiceImpl implements PersonCreditBureauService 
         personRepositoryWrapper.saveWithException(person);
 
         // Build CreditBureauPersonData and trigger async pull
-        triggerCreditBureauPull(enquiry, personId);
+        triggerCreditBureauPull(enquiry, personId, addressesForCreditBureauPull);
     }
 
     @Override
@@ -214,10 +214,14 @@ public class PersonCreditBureauServiceImpl implements PersonCreditBureauService 
      *
      * @param enquiry The credit bureau enquiry
      * @param personId The person ID
+     * @param addressesForCreditBureauPull when non-null and non-empty, used as CB addresses only; otherwise person addresses
      */
-    private void triggerCreditBureauPull(CreditBureauEnquiry enquiry, Long personId) {
+    private void triggerCreditBureauPull(
+            CreditBureauEnquiry enquiry,
+            Long personId,
+            List<AddressData> addressesForCreditBureauPull) {
         PersonResponse personResponse = personReadService.getPersonById(personId);
-        List<AddressData> addresses = personReadService.getAddresses(personId);
+        List<AddressData> addresses = resolveAddressesForCreditBureauPull(personId, addressesForCreditBureauPull);
         List<IdentifierData> identifiers = personReadService.getIdentifiers(personId);
         CreditBureauPersonData personData = CreditBureauPersonData.builder()
                 .firstName(personResponse.getFirstName())
@@ -249,7 +253,16 @@ public class PersonCreditBureauServiceImpl implements PersonCreditBureauService 
                     return null;
                 });
     }
-    
+
+    private List<AddressData> resolveAddressesForCreditBureauPull(
+            Long personId,
+            List<AddressData> addressesForCreditBureauPull) {
+        if (addressesForCreditBureauPull != null && !addressesForCreditBureauPull.isEmpty()) {
+            return addressesForCreditBureauPull;
+        }
+        return personReadService.getAddresses(personId);
+    }
+
     private Long getLatestEnquiryId(PersonResponse personResponse) {
         // First check latestEnquiryId in cbDetails
         if (personResponse.getCbDetails() != null && 
