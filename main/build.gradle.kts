@@ -38,6 +38,9 @@ dependencies {
     implementation(project(":externals:masters"))
     implementation(project(":features:referral"))
     implementation(project(":features:bre"))
+    implementation(project(":features:atlas"))
+    implementation(project(":externals:atlas"))
+    implementation(project(":analytics"))
 }
 
 springBoot {

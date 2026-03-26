@@ -12,6 +12,7 @@ dependencies {
     implementation(project(":features:master"))
     implementation(project(":features:person"))
     implementation(project(":integrations"))
+    implementation(project(":analytics"))
 }
 
 springBoot {

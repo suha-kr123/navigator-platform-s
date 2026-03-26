@@ -38,6 +38,7 @@ public class MasterCodeValueResponse {
         private Map<String, String> valueMap;
         private Map<String, String> descriptionMap;
         private Boolean isActive;
+        private Integer displayOrder;
         private Icons icons;
 
         public static Child from(MasterCodeValue value) {
@@ -47,6 +48,7 @@ public class MasterCodeValueResponse {
                     .valueMap(MasterLanguageResolver.getDisplayMap(value.getValue()))
                     .descriptionMap(MasterLanguageResolver.getDisplayMap(value.getDescription()))
                     .isActive(value.getIsActive())
+                    .displayOrder(value.getDisplayOrder())
                     .icons(Icons.from(value.getIcons()))
                     .build();
         }

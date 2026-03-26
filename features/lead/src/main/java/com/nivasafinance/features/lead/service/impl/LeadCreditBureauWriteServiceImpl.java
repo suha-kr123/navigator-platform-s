@@ -1,5 +1,7 @@
 package com.nivasafinance.features.lead.service.impl;
 
+import com.nivasafinance.analytics.AnalyticsEvent;
+import com.nivasafinance.analytics.AnalyticsHelper;
 import com.nivasafinance.common.enums.SystemEntities;
 import com.nivasafinance.common.events.BusinessEvent;
 import com.nivasafinance.common.events.SystemEvent;
@@ -40,6 +42,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -59,6 +62,7 @@ public class LeadCreditBureauWriteServiceImpl implements LeadCreditBureauWriteSe
     private final LeadCreditBureauReadService leadCreditBureauReadService;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final MessageSource messageSource;
+    private final AnalyticsHelper analyticsHelper;
 
     @Override
     public InitiateCbEnquiryResponse initiateEnquiry(UUID leadIdentifier, UUID contactIdentifier) {
@@ -71,10 +75,11 @@ public class LeadCreditBureauWriteServiceImpl implements LeadCreditBureauWriteSe
         
         // Get person from contact
         PersonResponse personResponse = personReadService.getPersonById(contact.getPersonId());
-        List<AddressData> addresses = personReadService.getAddresses(contact.getPersonId());
+        List<AddressData> personAddresses = personReadService.getAddresses(contact.getPersonId());
+        List<AddressData> resolvedForCb = resolveAddressesForCreditBureauPull(lead, personAddresses);
         List<IdentifierData> identifiers = personReadService.getIdentifiers(contact.getPersonId());
 
-        validateCbDataRequired(personResponse, addresses, identifiers);
+        validateCbDataRequired(personResponse, resolvedForCb, identifiers);
 
         // Build request DTO
         CreditBureauEnquiryRequest request = CreditBureauEnquiryRequest.builder()
@@ -84,6 +89,7 @@ public class LeadCreditBureauWriteServiceImpl implements LeadCreditBureauWriteSe
                 .businessPurpose("Initiate credit bureau enquiry for contact: " + contactIdentifier)
                 .leadIdentifier(leadIdentifier)
                 .contactIdentifier(contactIdentifier)
+                .addressesForCreditBureauPull(resolvedForCb)
                 .build();
 
         // Call person service to initiate enquiry (handles all internal logic)
@@ -106,6 +112,7 @@ public class LeadCreditBureauWriteServiceImpl implements LeadCreditBureauWriteSe
         Contact contact = contactRepositoryWrapper.findByIdentifierWithException(contactIdentifier);
         validateContactBelongsToLead(lead, contact.getId());
         RecordCbConsentResult result = personCreditBureauService.recordCbConsentReceived(contact.getPersonId());
+        analyticsHelper.captureLead(new AnalyticsEvent(leadIdentifier.toString(),"consent_granted"));
         return RecordCbConsentResponse.builder()
                 .consentIdentifier(result.getConsentIdentifier())
                 .build();
@@ -143,7 +150,9 @@ public class LeadCreditBureauWriteServiceImpl implements LeadCreditBureauWriteSe
                 .personId(personResponse.getId())
                 .recipientPhone(recipientPhone)
                 .build());
-        personCreditBureauService.onConsentGranted(consentId, enquiryIdentifier);
+        List<AddressData> personAddresses = personReadService.getAddresses(contact.getPersonId());
+        List<AddressData> resolvedForCb = resolveAddressesForCreditBureauPull(lead, personAddresses);
+        personCreditBureauService.onConsentGranted(consentId, enquiryIdentifier, resolvedForCb);
     }
 
     @Override
@@ -206,7 +215,21 @@ public class LeadCreditBureauWriteServiceImpl implements LeadCreditBureauWriteSe
                 CbReportStoredEventPayload.builder().enquiryId(enquiryId).build()));
     }
 
-    private void validateCbDataRequired(PersonResponse personResponse, List<AddressData> addresses, List<IdentifierData> identifiers) {
+    /**
+     * Resolves addresses for CB pull only: person addresses if any; otherwise lead property address if present.
+     */
+    private List<AddressData> resolveAddressesForCreditBureauPull(Lead lead, List<AddressData> personAddresses) {
+        if (personAddresses != null && !personAddresses.isEmpty()) {
+            return personAddresses;
+        }
+        if (lead.getOtherDetails() == null || lead.getOtherDetails().getPropertyDetails() == null) {
+            return Collections.emptyList();
+        }
+        AddressData property = lead.getOtherDetails().getPropertyDetails().getAddress();
+        return property != null ? List.of(property) : Collections.emptyList();
+    }
+
+    private void validateCbDataRequired(PersonResponse personResponse, List<AddressData> resolvedForCb, List<IdentifierData> identifiers) {
         List<String> errors = new ArrayList<>();
 
         if (!StringUtils.hasText(personResponse.getFirstName())) {
@@ -223,7 +246,7 @@ public class LeadCreditBureauWriteServiceImpl implements LeadCreditBureauWriteSe
                 || identifiers.stream().map(IdentifierData::getIdentifier).filter(StringUtils::hasText).findFirst().isEmpty()) {
             errors.add("identifier");
         }
-        AddressData address1 = addresses != null && !addresses.isEmpty() ? addresses.get(0) : null;
+        AddressData address1 = resolvedForCb != null && !resolvedForCb.isEmpty() ? resolvedForCb.get(0) : null;
         if (address1 == null) {
             errors.add("address");
         }

@@ -30,6 +30,7 @@ import com.nivasafinance.features.lead.repository.ContactRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadCallWriteService;
 import com.nivasafinance.features.person.dto.PersonResponse;
+import com.nivasafinance.features.rolemanagement.role.service.UserRoleService;
 import com.nivasafinance.features.person.entity.MobileNumberDetails;
 import com.nivasafinance.features.person.service.PersonReadService;
 import com.nivasafinance.features.usermanagement.dto.UserResponse;
@@ -58,6 +59,7 @@ public class LeadCallWriteServiceImpl implements LeadCallWriteService {
     private final UserReadService userReadService;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final CampaignReadService campaignReadService;
+    private final UserRoleService userRoleService;
 
     @Override
     public CreateLeadCallResponse callContact(UUID leadIdentifier, CreateLeadCallRequest request) {
@@ -127,7 +129,7 @@ public class LeadCallWriteServiceImpl implements LeadCallWriteService {
         CallLogResponse updatedCallLog = callReadService.getCallLogByProviderId(externalId)
                 .orElseThrow(()-> new BadRequestException("Call log with provider id " + externalId + " not found"));
 
-        publishLeadCallLogUpdatedEvent(lead, updatedCallLog.getId(), updatedCallLog.getIdentifier());
+        publishLeadCallLogUpdatedEvent(lead, updatedCallLog);
     }
 
     @Override
@@ -262,29 +264,42 @@ public class LeadCallWriteServiceImpl implements LeadCallWriteService {
     }
 
     private void publishLeadCallLogCreatedEvent(Lead lead, Long callLogId, UUID callLogIdentifier, Contact contact) {
+        String username = UserContext.getUsername();
         LeadCallLogCreationEventPayload payload = LeadCallLogCreationEventPayload.builder()
                 .leadId(lead.getId())
                 .callLogId(callLogId)
                 .callLogIdentifier(callLogIdentifier)
+                .leadIdentifier(lead.getLeadIdentifier())
+                .primaryRole(username != null ? userRoleService.getPrimaryRoleForUsername(username) : null)
                 .build();
 
-        String username = UserContext.getUsername();
         applicationEventPublisher.publishEvent(
                 new SystemEvent<>(BusinessEvent.LEAD_CALL_LOG_CREATED.toString(), payload, username)
         );
     }
 
-    private void publishLeadCallLogUpdatedEvent(Lead lead, Long callLogId, UUID callLogIdentifier){
+    private void publishLeadCallLogUpdatedEvent(Lead lead, CallLogResponse updatedCallLog) {
+        String username = UserContext.getUsername();
         LeadCallLogUpdateEventPayload payload = LeadCallLogUpdateEventPayload.builder()
                 .leadId(lead.getId())
-                .callLogId(callLogId)
-                .callLogIdentifier(callLogIdentifier)
+                .callLogId(updatedCallLog.getId())
+                .callLogIdentifier(updatedCallLog.getIdentifier())
+                .leadIdentifier(lead.getLeadIdentifier())
+                .recordingUrl(recordingUrlFrom(updatedCallLog))
+                .primaryRole(username != null ? userRoleService.getPrimaryRoleForUsername(username) : null)
                 .build();
 
-        String username = UserContext.getUsername();
         applicationEventPublisher.publishEvent(
                 new SystemEvent<>(BusinessEvent.LEAD_CALL_LOG_UPDATED.toString(), payload, username)
         );
+    }
+
+    private static String recordingUrlFrom(CallLogResponse response) {
+        if (response.getRecordingDetails() == null || response.getRecordingDetails().getUrl() == null) {
+            return null;
+        }
+        String url = response.getRecordingDetails().getUrl().trim();
+        return url.isEmpty() ? null : url;
     }
 }
 

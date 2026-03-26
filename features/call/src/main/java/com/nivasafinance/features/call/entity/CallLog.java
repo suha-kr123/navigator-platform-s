@@ -1,6 +1,9 @@
 package com.nivasafinance.features.call.entity;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.nivasafinance.common.audit.AuditableEntity;
+import com.nivasafinance.features.call.enums.AtlasJobStatus;
+import com.nivasafinance.features.call.enums.AtlasJobStatusDeserializer;
 import com.nivasafinance.features.call.enums.CallDirection;
 import com.nivasafinance.features.call.enums.CallProvider;
 import com.nivasafinance.features.call.enums.CallSource;
@@ -83,6 +86,11 @@ public class CallLog extends AuditableEntity {
     @Column(name = "campaign_id")
     private Long campaignId;
 
+    @Type(JsonType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "ai_analysis", columnDefinition = "jsonb")
+    private AiAnalysisDetails aiAnalysis;
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
@@ -110,5 +118,19 @@ public class CallLog extends AuditableEntity {
         private String duration;
         private CallStatus status;
         private String direction; //to, from
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class AiAnalysisDetails {
+        private String jobId;
+        @JsonDeserialize(using = AtlasJobStatusDeserializer.class)
+        private AtlasJobStatus status;
+        private String summaryUrl;
+        private String analysisUrl;
+        private String transcriptUrl;
+        private String error;
     }
 }

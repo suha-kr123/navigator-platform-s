@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 public class AddressDataServiceImpl implements AddressDataService {
 
     private final PincodeService pincodeService;
+    private final LocationRepository locationRepository;
     private final CountryRepository countryRepository;
     private final StateRepository stateRepository;
     private final DistrictRepository districtRepository;
@@ -75,7 +76,62 @@ public class AddressDataServiceImpl implements AddressDataService {
 
         return addressData;
     }
-    
+
+    @Override
+    public AddressData enrichAddressWithDisplayNames(AddressData address) {
+        if (address == null) {
+            return null;
+        }
+        AddressData copy = AddressData.builder()
+                .id(address.getId())
+                .addressType(address.getAddressType())
+                .address(address.getAddress())
+                .pincode(address.getPincode())
+                .district(address.getDistrict())
+                .country(address.getCountry())
+                .state(address.getState())
+                .taluka(address.getTaluka())
+                .districtCode(address.getDistrictCode())
+                .stateCode(address.getStateCode())
+                .countryCode(address.getCountryCode())
+                .talukaCode(address.getTalukaCode())
+                .districtId(address.getDistrictId())
+                .stateId(address.getStateId())
+                .countryId(address.getCountryId())
+                .talukaId(address.getTalukaId())
+                .villageCode(address.getVillageCode())
+                .villageId(address.getVillageId())
+                .villageName(address.getVillageName())
+                .isServiceable(address.getIsServiceable())
+                .build();
+        enrichNamesFromLocationMasters(copy);
+        return copy;
+    }
+
+    private void enrichNamesFromLocationMasters(AddressData a) {
+        if (!hasAnyLocationCode(a)) {
+            return;
+        }
+        locationRepository.findDisplayNamesByCodes(
+                a.getCountryCode(), a.getStateCode(), a.getDistrictCode(), a.getTalukaCode(), a.getVillageCode()
+        ).ifPresent(names -> {
+            if (names.getCountryName() != null) a.setCountry(names.getCountryName());
+            if (names.getStateName() != null) a.setState(names.getStateName());
+            if (names.getDistrictValue() != null) a.setDistrict(MasterLanguageResolver.getDisplayValue(names.getDistrictValue()));
+            if (names.getTalukaValue() != null) a.setTaluka(MasterLanguageResolver.getDisplayValue(names.getTalukaValue()));
+            if (names.getVillageValue() != null) a.setVillageName(MasterLanguageResolver.getDisplayValue(names.getVillageValue()));
+        });
+    }
+
+    private static boolean hasAnyLocationCode(AddressData a) {
+        return isNotBlank(a.getCountryCode()) || isNotBlank(a.getStateCode()) || isNotBlank(a.getDistrictCode())
+                || isNotBlank(a.getTalukaCode()) || isNotBlank(a.getVillageCode());
+    }
+
+    private static boolean isNotBlank(String s) {
+        return s != null && !s.isBlank();
+    }
+
     private void populateAddressDataFromPincodeResponse(AddressData addressData, PincodeResponse pincodeResponse) {
         addressData.setDistrict(pincodeResponse.getDistrict());
         addressData.setState(pincodeResponse.getState());
