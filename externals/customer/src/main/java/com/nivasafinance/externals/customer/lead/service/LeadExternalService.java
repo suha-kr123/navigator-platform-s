@@ -1,6 +1,8 @@
 package com.nivasafinance.externals.customer.lead.service;
 
 import com.nivasafinance.features.lead.dto.CurrentCustomerFormStepResponse;
+import com.nivasafinance.features.lead.dto.LeadBREResultExecuteResponse;
+import com.nivasafinance.features.lead.dto.LeadBREResultResponse;
 import com.nivasafinance.features.lead.dto.LeadContactResponse;
 import com.nivasafinance.features.lead.dto.LeadResponse;
 import com.nivasafinance.features.lead.dto.PatchLeadRequest;
@@ -10,6 +12,7 @@ import com.nivasafinance.features.lead.dto.PreliminaryDetailsResponse;
 import com.nivasafinance.features.lead.dto.PropertyDetailsResponse;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface LeadExternalService {
@@ -29,4 +32,8 @@ public interface LeadExternalService {
     DocumentChecklistResponse getDocumentChecklist(UUID leadIdentifier);
 
     PreliminaryDetailsResponse getPreliminaryDetails(UUID leadIdentifier);
+
+    LeadBREResultExecuteResponse executeEligibility(UUID leadIdentifier);
+
+    Optional<LeadBREResultResponse> getLatestEligibility(UUID leadIdentifier);
 }

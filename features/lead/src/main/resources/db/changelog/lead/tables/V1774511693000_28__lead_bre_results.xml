@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1774511693000_81" author="system" context="default">
+        
+        <!-- Add your database changes here -->
+        <createTable tableName="n_lead_bre_results">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="identifier" type="UUID" defaultValueComputed="gen_random_uuid()">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="lead_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="config_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="input" type="TEXT"/>
+            <column name="output" type="TEXT"/>
+            <column name="created_by" type="VARCHAR(255)" defaultValue="system"/>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="NOW()"/>
+            <column name="updated_by" type="VARCHAR(255)" defaultValue="system"/>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="NOW()"/>
+            <column name="version" type="BIGINT" defaultValueNumeric="0"/>
+        </createTable>
+
+    </changeSet>
+
+    <changeSet id="V1774511693000_82" author="system" context="default">
+        <createIndex indexName="idx_n_lead_bre_results_lead_id" tableName="n_lead_bre_results">
+            <column name="lead_id"/>
+        </createIndex>
+
+        <createIndex indexName="idx_n_lead_bre_results_identifier" tableName="n_lead_bre_results">
+            <column name="identifier"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="V1774511693000_83" author="system" context="default">
+        <addColumn tableName="n_lead_bre_results">
+            <column name="status" type="VARCHAR(32)" defaultValue="IN_PROGRESS">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

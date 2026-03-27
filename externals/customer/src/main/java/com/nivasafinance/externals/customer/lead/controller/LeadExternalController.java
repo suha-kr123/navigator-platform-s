@@ -3,6 +3,8 @@ package com.nivasafinance.externals.customer.lead.controller;
 import com.nivasafinance.common.constants.ApiConstants;
 import com.nivasafinance.externals.customer.lead.service.LeadExternalService;
 import com.nivasafinance.features.lead.dto.CurrentCustomerFormStepResponse;
+import com.nivasafinance.features.lead.dto.LeadBREResultExecuteResponse;
+import com.nivasafinance.features.lead.dto.LeadBREResultResponse;
 import com.nivasafinance.features.lead.dto.LeadContactResponse;
 import com.nivasafinance.features.lead.dto.LeadResponse;
 import com.nivasafinance.features.lead.dto.PatchLeadRequest;
@@ -77,5 +79,18 @@ public class LeadExternalController {
     public ResponseEntity<PreliminaryDetailsResponse> getPreliminaryDetails(@PathVariable UUID leadIdentifier) {
         PreliminaryDetailsResponse response = leadExternalService.getPreliminaryDetails(leadIdentifier);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{leadIdentifier}/bre/execute/eligibility")
+    public ResponseEntity<LeadBREResultExecuteResponse> executeEligibility(@PathVariable UUID leadIdentifier) {
+        LeadBREResultExecuteResponse response = leadExternalService.executeEligibility(leadIdentifier);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{leadIdentifier}/bre/execute/eligibility/latest")
+    public ResponseEntity<LeadBREResultResponse> getLatestEligibility(@PathVariable UUID leadIdentifier) {
+        return leadExternalService.getLatestEligibility(leadIdentifier)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.noContent().build());
     }
 }
