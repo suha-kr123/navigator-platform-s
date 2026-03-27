@@ -18,6 +18,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor
@@ -42,24 +43,31 @@ public class CreditBureauDerivedAttributeWriteServiceImpl implements CreditBurea
 
         Map<String, Object> dataExt = leadId != null ? Map.of("leadId", leadId) : Collections.emptyMap();
 
-        List<CreditBureauDerivedAttribute> toSave = new ArrayList<>();
         Map<String, Object> parameters = Map.of("enquiryId", enquiryId);
 
+        List<CompletableFuture<List<Map<String, Object>>>> futures = new ArrayList<>();
         for (RedashDerivedQueryConfig cfg : queryConfigs) {
             if (cfg.getQueryId() == null) {
-                log.warn("Skipping derived query config with null queryId for enquiry {}", enquiryId);
                 continue;
             }
-            try {
-                List<Map<String, Object>> rows = redashService.getQueryResultRows(cfg.getQueryId(), parameters);
-                for (Map<String, Object> row : rows) {
-                    CreditBureauDerivedAttribute entity = mapRowToEntity(enquiryId, row, dataExt);
-                    if (entity != null) {
-                        toSave.add(entity);
-                    }
+            CompletableFuture<List<Map<String, Object>>> future = CompletableFuture
+                    .supplyAsync(() -> redashService.getQueryResultRows(cfg.getQueryId(), parameters))
+                    .exceptionally(ex -> {
+                        log.error("Redash derived query failed for enquiryId {}, queryId {}", enquiryId, cfg.getQueryId(), ex);
+                        return List.of();
+                    });
+            futures.add(future);
+        }
+
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[0])).join();
+
+        List<CreditBureauDerivedAttribute> toSave = new ArrayList<>();
+        for (CompletableFuture<List<Map<String, Object>>> future : futures) {
+            for (Map<String, Object> row : future.join()) {
+                CreditBureauDerivedAttribute entity = mapRowToEntity(enquiryId, row, dataExt);
+                if (entity != null) {
+                    toSave.add(entity);
                 }
-            } catch (Exception e) {
-                log.error("Redash derived query failed for enquiryId {}, queryId {}", enquiryId, cfg.getQueryId(), e);
             }
         }
 
