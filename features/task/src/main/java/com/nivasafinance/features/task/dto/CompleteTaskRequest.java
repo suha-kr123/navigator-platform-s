@@ -23,16 +23,7 @@ public class CompleteTaskRequest {
     @NotBlank(message = "Outcome is required")
     private String outcomeCodeValueKey;
 
-    private OutcomeDetailsRequest outcomeDetails;
+    private String remarks;
 
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    public static class OutcomeDetailsRequest {
-        private String remarks;
-        private Map<String, Object> locationDetails;
-    }
+    private Map<String, Object> locationDetails;
 }
-
-

@@ -194,12 +194,8 @@ public class TaskWriteServiceImpl implements TaskWriteService {
 
     private Task.OutcomeDetails buildOutcomeDetails(CompleteTaskRequest request) {
         return Task.OutcomeDetails.builder()
-                .remarks(ValidationUtils.isNonNull(request.getOutcomeDetails())
-                        ? request.getOutcomeDetails().getRemarks()
-                        : null)
-                .locationDetails(ValidationUtils.isNonNull(request.getOutcomeDetails())
-                        ? request.getOutcomeDetails().getLocationDetails()
-                        : null)
+                .remarks(request.getRemarks())
+                .locationDetails(request.getLocationDetails())
                 .completedAt(LocalDateTime.now())
                 .completedBy(UserContext.getUsername())
                 .build();
