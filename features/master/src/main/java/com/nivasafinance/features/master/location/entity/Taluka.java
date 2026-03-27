@@ -41,5 +41,8 @@ public class Taluka extends AuditableEntity {
 
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
+
+    @Column(name = "display_order", nullable = false)
+    private Integer displayOrder = 0;
 }
 

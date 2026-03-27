@@ -14,5 +14,6 @@ public class DistrictResponse {
     private String name;
     private String code;
     private Boolean isActive;
+    private Integer displayOrder;
 }
 
