@@ -1006,11 +1006,13 @@ public class LeadWriteServiceImpl implements LeadWriteService {
                     if (incomeSource != null && !incomeSource.isBlank()) {
                         codeValueMasterService.getByKey(incomeSource);
                     }
+                    validateIncomeDocumentChecklist(d.getDocumentChecklist());
                 }
                 incomeDetails = fromRequest.stream()
                         .map(d -> Lead.IncomeDetails.builder()
                                 .incomeSource(d.getIncomeSource())
                                 .amount(d.getAmount())
+                                .documentChecklist(mapIncomeDocumentChecklist(d.getDocumentChecklist()))
                                 .build())
                         .toList();
             }
@@ -1041,6 +1043,37 @@ public class LeadWriteServiceImpl implements LeadWriteService {
                 .monthlyFamilyIncome(monthlyFamilyIncome)
                 .build();
         lead.setIncomeObligationDetails(newDetails);
+    }
+
+    private void validateIncomeDocumentChecklist(List<PatchIncomeAndObligationRequest.IncomeDocumentChecklistData> checklist) {
+        if (checklist == null || checklist.isEmpty()) {
+            return;
+        }
+        for (PatchIncomeAndObligationRequest.IncomeDocumentChecklistData item : checklist) {
+            if (item.getDocumentType() == null || item.getDocumentType().isBlank()) {
+                throw LeadExceptionFactory.invalidDocumentChecklistStatus(messageSource);
+            }
+            codeValueMasterService.getByKey(item.getDocumentType());
+            if (item.getStatus() == null || item.getStatus().isBlank()) {
+                throw LeadExceptionFactory.invalidDocumentChecklistStatus(messageSource);
+            }
+            if (AvailabilityStatus.fromKey(item.getStatus()) == null) {
+                throw LeadExceptionFactory.invalidDocumentChecklistStatus(messageSource);
+            }
+        }
+    }
+
+    private List<Lead.IncomeDocumentChecklist> mapIncomeDocumentChecklist(
+            List<PatchIncomeAndObligationRequest.IncomeDocumentChecklistData> checklist) {
+        if (checklist == null || checklist.isEmpty()) {
+            return null;
+        }
+        return checklist.stream()
+                .map(item -> Lead.IncomeDocumentChecklist.builder()
+                        .documentType(item.getDocumentType())
+                        .status(item.getStatus())
+                        .build())
+                .toList();
     }
 
     private void mergeCurrentCustomerFormStepInto(Lead.OtherDetails otherDetails, String value) {

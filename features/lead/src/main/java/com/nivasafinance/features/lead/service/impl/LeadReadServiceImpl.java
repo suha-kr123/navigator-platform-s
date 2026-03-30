@@ -259,6 +259,7 @@ public class LeadReadServiceImpl implements LeadReadService {
                                     ? codeValueMasterService.getByKey(d.getIncomeSource())
                                     : null)
                             .amount(d.getAmount())
+                            .documentChecklist(mapIncomeDocumentChecklistResponse(d.getDocumentChecklist()))
                             .build())
                     .collect(Collectors.toList());
         }
@@ -275,6 +276,21 @@ public class LeadReadServiceImpl implements LeadReadService {
                 .obligations(obligationsData)
                 .monthlyFamilyIncome(details.getMonthlyFamilyIncome())
                 .build();
+    }
+
+    private List<IncomeObligationDetailsResponse.IncomeDocumentChecklistData> mapIncomeDocumentChecklistResponse(
+            List<Lead.IncomeDocumentChecklist> checklist) {
+        if (checklist == null || checklist.isEmpty()) {
+            return null;
+        }
+        return checklist.stream()
+                .map(item -> IncomeObligationDetailsResponse.IncomeDocumentChecklistData.builder()
+                        .documentType(item.getDocumentType() != null && !item.getDocumentType().isBlank()
+                                ? codeValueMasterService.getByKey(item.getDocumentType())
+                                : null)
+                        .status(item.getStatus())
+                        .build())
+                .toList();
     }
 
     @Override

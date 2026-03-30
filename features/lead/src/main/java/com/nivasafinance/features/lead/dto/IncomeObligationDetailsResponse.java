@@ -26,6 +26,16 @@ public class IncomeObligationDetailsResponse {
     public static class IncomeDetailData {
         private CodeValueResponse incomeSource;
         private BigDecimal amount;
+        private List<IncomeDocumentChecklistData> documentChecklist;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class IncomeDocumentChecklistData {
+        private CodeValueResponse documentType;
+        private String status;
     }
 
     @Data
