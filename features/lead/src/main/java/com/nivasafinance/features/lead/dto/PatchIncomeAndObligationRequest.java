@@ -27,6 +27,17 @@ public class PatchIncomeAndObligationRequest {
 
         private String incomeSource;
         private BigDecimal amount;
+        private List<IncomeDocumentChecklistData> documentChecklist;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class IncomeDocumentChecklistData {
+
+        private String documentType;
+        private String status;
     }
 
     @Data

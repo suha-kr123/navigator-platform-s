@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1773500000000_00" author="system" context="default">
+        <comment>Add income document checklist master codes under each income source type</comment>
+
+        <!-- Children of LEAD_INCOME_SOURCE_SALARY -->
+        <insert tableName="n_master_code">
+            <column name="parent_id" valueComputed="(SELECT id FROM n_master_code WHERE key = 'LEAD_INCOME_SOURCE_SALARY')"/>
+            <column name="key" value="LEAD_INCOME_DOC_BANK_SALARY"/>
+            <column name="name" value='{"default": "Bank Salary Documents"}'/>
+            <column name="description" value='{"default": "Document checklist for bank salary income"}'/>
+            <column name="is_system_defined" valueBoolean="true"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="n_master_code">
+            <column name="parent_id" valueComputed="(SELECT id FROM n_master_code WHERE key = 'LEAD_INCOME_SOURCE_SALARY')"/>
+            <column name="key" value="LEAD_INCOME_DOC_CASH_SALARY"/>
+            <column name="name" value='{"default": "Cash Salary Documents"}'/>
+            <column name="description" value='{"default": "Document checklist for cash salary income"}'/>
+            <column name="is_system_defined" valueBoolean="true"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+
+        <!-- Children of LEAD_INCOME_SOURCE_SELF_EMPLOYED_BUSINESS -->
+        <insert tableName="n_master_code">
+            <column name="parent_id" valueComputed="(SELECT id FROM n_master_code WHERE key = 'LEAD_INCOME_SOURCE_SELF_EMPLOYED_BUSINESS')"/>
+            <column name="key" value="LEAD_INCOME_DOC_SELF_EMPLOYED_INCOME"/>
+            <column name="name" value='{"default": "Self Employed Income Documents"}'/>
+            <column name="description" value='{"default": "Document checklist for self employed income"}'/>
+            <column name="is_system_defined" valueBoolean="true"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="n_master_code">
+            <column name="parent_id" valueComputed="(SELECT id FROM n_master_code WHERE key = 'LEAD_INCOME_SOURCE_SELF_EMPLOYED_BUSINESS')"/>
+            <column name="key" value="LEAD_INCOME_DOC_BUSINESS_PROFIT"/>
+            <column name="name" value='{"default": "Business Profit Documents"}'/>
+            <column name="description" value='{"default": "Document checklist for business profit income"}'/>
+            <column name="is_system_defined" valueBoolean="true"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="n_master_code">
+            <column name="parent_id" valueComputed="(SELECT id FROM n_master_code WHERE key = 'LEAD_INCOME_SOURCE_SELF_EMPLOYED_BUSINESS')"/>
+            <column name="key" value="LEAD_INCOME_DOC_TRANSPORT_INCOME"/>
+            <column name="name" value='{"default": "Transport Income Documents"}'/>
+            <column name="description" value='{"default": "Document checklist for transport income"}'/>
+            <column name="is_system_defined" valueBoolean="true"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+
+        <!-- Children of LEAD_INCOME_SOURCE_OTHER -->
+        <insert tableName="n_master_code">
+            <column name="parent_id" valueComputed="(SELECT id FROM n_master_code WHERE key = 'LEAD_INCOME_SOURCE_OTHER')"/>
+            <column name="key" value="LEAD_INCOME_DOC_DAILY_WAGE"/>
+            <column name="name" value='{"default": "Daily Wage Documents"}'/>
+            <column name="description" value='{"default": "Document checklist for daily wage income"}'/>
+            <column name="is_system_defined" valueBoolean="true"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="n_master_code">
+            <column name="parent_id" valueComputed="(SELECT id FROM n_master_code WHERE key = 'LEAD_INCOME_SOURCE_OTHER')"/>
+            <column name="key" value="LEAD_INCOME_DOC_MILK_INCOME"/>
+            <column name="name" value='{"default": "Milk Income Documents"}'/>
+            <column name="description" value='{"default": "Document checklist for milk income"}'/>
+            <column name="is_system_defined" valueBoolean="true"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="n_master_code">
+            <column name="parent_id" valueComputed="(SELECT id FROM n_master_code WHERE key = 'LEAD_INCOME_SOURCE_OTHER')"/>
+            <column name="key" value="LEAD_INCOME_DOC_PROPERTY_RENTAL"/>
+            <column name="name" value='{"default": "Property Rental Documents"}'/>
+            <column name="description" value='{"default": "Document checklist for property rental income"}'/>
+            <column name="is_system_defined" valueBoolean="true"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="n_master_code">
+            <column name="parent_id" valueComputed="(SELECT id FROM n_master_code WHERE key = 'LEAD_INCOME_SOURCE_OTHER')"/>
+            <column name="key" value="LEAD_INCOME_DOC_AGRICULTURE"/>
+            <column name="name" value='{"default": "Agriculture Documents"}'/>
+            <column name="description" value='{"default": "Document checklist for agriculture income"}'/>
+            <column name="is_system_defined" valueBoolean="true"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>

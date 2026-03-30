@@ -378,6 +378,16 @@ public class Lead extends AuditableEntity {
     public static class IncomeDetails {
         private String incomeSource;
         private BigDecimal amount;
+        private List<IncomeDocumentChecklist> documentChecklist;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class IncomeDocumentChecklist {
+        private String documentType;
+        private String status;
     }
 
     @Data
