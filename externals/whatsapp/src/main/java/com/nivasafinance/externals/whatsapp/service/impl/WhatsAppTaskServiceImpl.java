@@ -9,6 +9,7 @@ import com.nivasafinance.externals.whatsapp.service.WhatsAppTaskService;
 import com.nivasafinance.features.lead.entity.Contact;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.enums.LeadSubStatus;
+import com.nivasafinance.features.lead.dto.LeadResponse;
 import com.nivasafinance.features.lead.repository.ContactRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.person.entity.Person;
@@ -76,7 +77,7 @@ public class WhatsAppTaskServiceImpl implements WhatsAppTaskService {
 
         LocalDateTime dueAt = resolveDueAt(taskDetails.getDueAt(), leadIdentifier, openTasks);
 
-        String assignedTo = resolveAssignedTo(taskDetails.getAssignedTo(), openTasks);
+        String assignedTo = resolveAssignedTo(taskDetails.getAssignedTo(), leadIdentifier, openTasks);
 
         TaskDetailsRequest.PreferredCallWindow preferredCallWindow = null;
         if (taskDetails.getPreferredCallWindow() != null) {
@@ -219,16 +220,20 @@ public class WhatsAppTaskServiceImpl implements WhatsAppTaskService {
         return fallbackDueAt;
     }
 
-    private String resolveAssignedTo(String requestAssignedTo, List<Task> openTasks) {
+    private String resolveAssignedTo(String requestAssignedTo, UUID leadIdentifier, List<Task> openTasks) {
         if (!ValidationUtils.isNullOrEmpty(requestAssignedTo)) {
             return requestAssignedTo;
         }
-
-        return openTasks.stream()
-                .map(Task::getAssignedTo)
-                .filter(assignedTo -> !ValidationUtils.isNullOrEmpty(assignedTo))
-                .findFirst()
-                .orElse(null);
+        // Prefer current stage owner from lead workflow
+        try {
+            LeadResponse leadResponse = leadRepositoryWrapper.findLeadResponseByIdentifierWithException(leadIdentifier);
+            if (leadResponse != null && !ValidationUtils.isNullOrEmpty(leadResponse.getAssignedTo())) {
+                return leadResponse.getAssignedTo();
+            }
+        } catch (RuntimeException ex) {
+            log.warn("Failed to resolve stage owner for lead {}: {}", leadIdentifier, ex.getMessage());
+        }
+        return null;
     }
 
     private LocalDate getDateForPreferredTimeWindow(LocalTime preferredEndTime) {
