@@ -13,4 +13,6 @@ public interface CallWriteService {
     void updateCallLogByProviderId(String providerId, UpdateCallLog updateCallLog);
     CreateCallLogResponse createCallLog(CallLog callLog);
     void mapCallLogToLead(Long callLogId, Long leadId, Long contactId);
+
+    void mergeAiAnalysisByIdentifier(UUID callLogIdentifier, CallLog.AiAnalysisDetails patch);
 }
