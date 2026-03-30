@@ -8,6 +8,7 @@ import com.nivasafinance.externals.whatsapp.dto.WhatsAppUpdateTaskRequest;
 import com.nivasafinance.externals.whatsapp.service.WhatsAppTaskService;
 import com.nivasafinance.features.lead.entity.Contact;
 import com.nivasafinance.features.lead.entity.Lead;
+import com.nivasafinance.features.lead.enums.LeadSubStatus;
 import com.nivasafinance.features.lead.repository.ContactRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.person.entity.Person;
@@ -73,11 +74,9 @@ public class WhatsAppTaskServiceImpl implements WhatsAppTaskService {
                     .build();
         }
 
-        LocalDateTime dueAt = taskDetails.getDueAt();
-        if (dueAt == null) {
-            dueAt = LocalDateTime.now().plusHours(DEFAULT_DUE_DATE_HOURS);
-            log.debug("Due date not provided, setting default to 24 hours from now: {}", dueAt);
-        }
+        LocalDateTime dueAt = resolveDueAt(taskDetails.getDueAt(), leadIdentifier, openTasks);
+
+        String assignedTo = resolveAssignedTo(taskDetails.getAssignedTo(), openTasks);
 
         TaskDetailsRequest.PreferredCallWindow preferredCallWindow = null;
         if (taskDetails.getPreferredCallWindow() != null) {
@@ -97,7 +96,7 @@ public class WhatsAppTaskServiceImpl implements WhatsAppTaskService {
 
         CreateAdhocTaskRequest createAdhocTaskRequest = CreateAdhocTaskRequest.builder()
                 .taskConfigKey(taskConfigKey)
-                .assignedTo(taskDetails.getAssignedTo())
+                .assignedTo(assignedTo)
                 .dueAt(dueAt)
                 .taskDetails(taskDetailsRequest)
                 .build();
@@ -197,6 +196,39 @@ public class WhatsAppTaskServiceImpl implements WhatsAppTaskService {
         createRequest.setTaskDetails(taskDetails);
 
         return createTask(createRequest);
+    }
+
+    private LocalDateTime resolveDueAt(LocalDateTime requestDueAt, UUID leadIdentifier, List<Task> openTasks) {
+        if (requestDueAt != null) {
+            return requestDueAt;
+        }
+
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        if (LeadSubStatus.ONHOLD.equals(lead.getSubstatus())) {
+            Optional<LocalDateTime> existingOpenTaskDueAt = openTasks.stream()
+                    .map(Task::getDueAt)
+                    .filter(dueAt -> dueAt != null)
+                    .findFirst();
+            if (existingOpenTaskDueAt.isPresent()) {
+                return existingOpenTaskDueAt.get();
+            }
+        }
+
+        LocalDateTime fallbackDueAt = LocalDateTime.now().plusHours(DEFAULT_DUE_DATE_HOURS);
+        log.debug("Due date not provided, setting default to 24 hours from now: {}", fallbackDueAt);
+        return fallbackDueAt;
+    }
+
+    private String resolveAssignedTo(String requestAssignedTo, List<Task> openTasks) {
+        if (!ValidationUtils.isNullOrEmpty(requestAssignedTo)) {
+            return requestAssignedTo;
+        }
+
+        return openTasks.stream()
+                .map(Task::getAssignedTo)
+                .filter(assignedTo -> !ValidationUtils.isNullOrEmpty(assignedTo))
+                .findFirst()
+                .orElse(null);
     }
 
     private LocalDate getDateForPreferredTimeWindow(LocalTime preferredEndTime) {

@@ -1,6 +1,7 @@
 package com.nivasafinance.features.master.products.service.impl;
 
 import com.nivasafinance.common.base.BaseNavigatorService;
+import com.nivasafinance.common.base.model.MasterLanguageResolver;
 import com.nivasafinance.features.master.products.dto.ProductResponse;
 import com.nivasafinance.features.master.products.entity.Product;
 import com.nivasafinance.features.master.products.exception.ProductExceptionFactory;
@@ -46,7 +47,7 @@ public class ProductReadServiceImpl extends BaseNavigatorService implements Prod
         return new ProductResponse(
                 product.getId(),
                 product.getCode(),
-                product.getName()
+                MasterLanguageResolver.getDisplayValue(product.getName())
         );
     }
 }

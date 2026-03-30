@@ -18,5 +18,11 @@ public class LeadCallLogCreationEventPayload {
 
     UUID callLogIdentifier;
 
+    /** lead identifier; required for Atlas queue payload. */
+    UUID leadIdentifier;
+
+    /** Primary role of the publishing user at event time. */
+    String primaryRole;
+
 }
 

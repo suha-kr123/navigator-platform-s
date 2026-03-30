@@ -19,6 +19,7 @@ public class CodeValueResponse {
     private String value;
     private String description;
     private Boolean isActive;
+    private Integer displayOrder;
     private Object icons;
 
     public static CodeValueResponse from(MasterCodeValue masterCodeValue) {
@@ -29,6 +30,7 @@ public class CodeValueResponse {
                 .value(MasterLanguageResolver.getDisplayValue(masterCodeValue.getValue()))
                 .description(MasterLanguageResolver.getDisplayValue(masterCodeValue.getDescription()))
                 .isActive(masterCodeValue.getIsActive())
+                .displayOrder(masterCodeValue.getDisplayOrder())
                 .icons(Icons.from(masterCodeValue.getIcons()))
                 .build();
     }
@@ -42,6 +44,7 @@ public class CodeValueResponse {
                 .value(MasterLanguageResolver.getDisplayValue(masterCodeValue.getValue()))
                 .description(MasterLanguageResolver.getDisplayValue(masterCodeValue.getDescription()))
                 .isActive(masterCodeValue.getIsActive())
+                .displayOrder(masterCodeValue.getDisplayOrder())
                 .icons(iconUrls)
                 .build();
     }

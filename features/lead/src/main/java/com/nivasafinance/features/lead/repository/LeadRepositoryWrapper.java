@@ -562,7 +562,7 @@ public class LeadRepositoryWrapper {
                 lm.lead_identifier,
                 lm.requested_amount,
                 lm.other_details->>'noOfCampaignCalls' as no_of_campaign_calls,
-                p.name as product_name,
+                p.name->>'default' as product_name,
                 primary_contact.identifier as primary_person_identifier,
                 primary_person.display_name as primary_person_name,
                 (jsonb_path_query_first(COALESCE(primary_person.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') AS primary_person_number,

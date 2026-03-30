@@ -70,10 +70,10 @@ public class OfficeRepositoryWrapper {
             params.addValue("nameQuery", "%" + nameQuery.trim().toLowerCase() + "%");
         }
 
-        if (activeOnly != null) {
+        if (Boolean.TRUE.equals(activeOnly)) {
             selectQuery.append(" AND o.is_active = :activeOnly");
             countQuery.append(" AND o.is_active = :activeOnly");
-            params.addValue("activeOnly", activeOnly);
+            params.addValue("activeOnly", Boolean.TRUE);
         }
 
         String sortColumn = resolveSortColumn(paginationRequest.getSortBy());

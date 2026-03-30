@@ -111,7 +111,7 @@ public class LeadDashboardWrapper {
                     (l.credit_rating_details->>'eligibleLoanAmount')::numeric AS eligible_amount,
                     (l.proposed_details->>'proposedLoanAmount')::numeric AS proposed_amount,
                     (l.disbursement_details->>'disbursedAmount')::numeric AS disbursed_amount,
-                    prod.name                                   AS product_name,
+                    prod.name->>'default'                        AS product_name,
                     primary_contact_person.display_name         AS primary_person_name,
                     (jsonb_path_query_first(COALESCE(primary_contact_person.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') AS primary_person_number,
                     o.name                                      AS office_name,

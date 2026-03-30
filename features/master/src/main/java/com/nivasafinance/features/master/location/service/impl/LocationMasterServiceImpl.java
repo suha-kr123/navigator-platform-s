@@ -126,6 +126,7 @@ public class LocationMasterServiceImpl implements LocationMasterService {
                 .name(MasterLanguageResolver.getDisplayValue(district.getNameValues()))
                 .code(district.getCode())
                 .isActive(district.getIsActive())
+                .displayOrder(district.getDisplayOrder())
                 .build();
     }
 
@@ -135,6 +136,7 @@ public class LocationMasterServiceImpl implements LocationMasterService {
                 .name(MasterLanguageResolver.getDisplayValue(taluka.getNameValues()))
                 .code(taluka.getCode())
                 .isActive(taluka.getIsActive())
+                .displayOrder(taluka.getDisplayOrder())
                 .build();
     }
 

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1774511865000_68" author="system" context="default">
+        <dropIndex indexName="idx_n_bre_log_entity" tableName="n_bre_log"/>
+        <dropColumn tableName="n_bre_log" columnName="entity_type"/>
+        <dropColumn tableName="n_bre_log" columnName="entity_id"/>
+        <addColumn tableName="n_bre_log">
+            <column name="data_ext" type="TEXT"/>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

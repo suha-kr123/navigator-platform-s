@@ -53,6 +53,10 @@ public class MasterCodeValue extends AuditableEntity {
     @Builder.Default
     private Boolean isActive = true;
 
+    @Column(name = "display_order", nullable = false)
+    @Builder.Default
+    private Integer displayOrder = 0;
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "icons", columnDefinition = "jsonb")
     private IconsData icons;

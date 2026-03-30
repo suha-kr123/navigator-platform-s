@@ -8,8 +8,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -86,5 +89,9 @@ public class LeadWhatsAppNotification extends AuditableEntity {
 
     @Column(name = "is_valid_whatsapp_number")
     private Boolean isValidWhatsAppNumber;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "status_track", columnDefinition = "jsonb")
+    private Map<String, Object> statusTrack;
 }
 

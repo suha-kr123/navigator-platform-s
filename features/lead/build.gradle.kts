@@ -25,6 +25,7 @@ dependencies {
     implementation(project(":features:usermanagement"))
     implementation(project(":features:referral"))
     implementation(project(":integrations"))
+    implementation(project(":features:bre"))
     implementation(project(":features:creditbureau"))
     implementation(project(":features:consent"))
     implementation(project(":redash"))
@@ -35,7 +36,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-aop")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     implementation(project(":features:campaign"))
+    implementation(project(":features:bre"))
     testImplementation(libs.mockk)
+    implementation(project(":analytics"))
 }
 
 springBoot {

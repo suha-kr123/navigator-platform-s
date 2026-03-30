@@ -6,6 +6,8 @@ import com.nivasafinance.features.call.dto.InitiateCallResponse;
 import com.nivasafinance.features.call.dto.UpdateCallLog;
 import com.nivasafinance.features.call.entity.CallLog;
 
+import java.util.UUID;
+
 public interface CallWriteService {
     InitiateCallResponse call(InitiateCallRequest request);
     void updateCallLogByProviderId(String providerId, UpdateCallLog updateCallLog);

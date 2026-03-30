@@ -52,6 +52,7 @@ public enum BusinessEvent {
     CB_CONSENT_SENT("CB_CONSENT_SENT"),
     CB_CONSENT_RECEIVED("CB_CONSENT_RECEIVED"),
     CB_REPORT_STORED("CB_REPORT_STORED"),
+    LEAD_CB_PULL_SUCCESS("LEAD_CB_PULL_SUCCESS"),
     ;
 
     private final String code;

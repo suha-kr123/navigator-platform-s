@@ -37,6 +37,18 @@ public class LocationExternalController {
         return ResponseEntity.ok(states);
     }
 
+    @GetMapping("/states/{stateId}/districts")
+    public ResponseEntity<List<DistrictResponse>> getDistricts(@PathVariable Long stateId) {
+        List<DistrictResponse> districts = locationMasterService.getDistrictsByStateId(stateId);
+        return ResponseEntity.ok(districts);
+    }
+
+    @GetMapping("/districts/{districtId}/talukas")
+    public ResponseEntity<List<TalukaResponse>> getTalukas(@PathVariable Long districtId) {
+        List<TalukaResponse> talukas = locationMasterService.getTalukasByDistrictId(districtId);
+        return ResponseEntity.ok(talukas);
+    }
+
     @GetMapping("/serviceable/districts/{stateId}")
     public ResponseEntity<List<DistrictResponse>> getServiceableDistricts(@PathVariable Long stateId) {
         List<DistrictResponse> districts = locationMasterService.getServiceableDistrictsByStateId(stateId);

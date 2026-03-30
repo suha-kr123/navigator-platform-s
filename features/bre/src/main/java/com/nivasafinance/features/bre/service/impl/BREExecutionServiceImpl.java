@@ -41,8 +41,7 @@ public class BREExecutionServiceImpl implements BREExecutionService {
         BREConfigs config = breConfigRepositoryWrapper.findByUnameWithException(uname);
 
         BRELogs breLog = BRELogs.builder()
-                .entityType(request.getEntity())
-                .entityId(request.getEntityId() != null ? request.getEntityId() : null)
+                .dataExt(request.getCustomData())
                 .breConfigId(config.getId())
                 .request(null)
                 .response(null)

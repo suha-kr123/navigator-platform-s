@@ -2,7 +2,11 @@ package com.nivasafinance.externals.customer.lead.service.impl;
 
 import com.nivasafinance.externals.customer.lead.service.LeadExternalService;
 import com.nivasafinance.features.lead.dto.CurrentCustomerFormStepResponse;
+import com.nivasafinance.features.lead.dto.LeadBREResultExecuteResponse;
+import com.nivasafinance.features.lead.dto.LeadBREResultResponse;
 import com.nivasafinance.features.lead.dto.PatchLeadRequest;
+import com.nivasafinance.features.lead.service.LeadBREResultReadService;
+import com.nivasafinance.features.lead.service.LeadBREResultWriteService;
 import com.nivasafinance.features.lead.service.LeadContactReadService;
 import com.nivasafinance.features.lead.service.LeadReadService;
 import com.nivasafinance.features.lead.dto.LeadContactResponse;
@@ -15,6 +19,7 @@ import com.nivasafinance.features.lead.service.LeadWriteService;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,9 +32,13 @@ import java.util.UUID;
 @Transactional
 public class LeadExternalServiceImpl implements LeadExternalService {
 
+    private static final String ELIGIBILITY_CONFIG = "eligibility";
+
     private final LeadWriteService leadWriteService;
     private final LeadReadService leadReadService;
     private final LeadContactReadService leadContactReadService;
+    private final LeadBREResultWriteService leadBREResultWriteService;
+    private final LeadBREResultReadService leadBREResultReadService;
 
     @Override
     public void patchLead(UUID leadIdentifier, PatchLeadRequest request) {
@@ -76,5 +85,16 @@ public class LeadExternalServiceImpl implements LeadExternalService {
     @Transactional(readOnly = true)
     public PreliminaryDetailsResponse getPreliminaryDetails(UUID leadIdentifier) {
         return leadReadService.getPreliminaryDetails(leadIdentifier);
+    }
+
+    @Override
+    public LeadBREResultExecuteResponse executeEligibility(UUID leadIdentifier) {
+        return leadBREResultWriteService.executeBre(leadIdentifier, ELIGIBILITY_CONFIG);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<LeadBREResultResponse> getLatestEligibility(UUID leadIdentifier) {
+        return leadBREResultReadService.getResults(leadIdentifier, ELIGIBILITY_CONFIG).stream().findFirst();
     }
 }

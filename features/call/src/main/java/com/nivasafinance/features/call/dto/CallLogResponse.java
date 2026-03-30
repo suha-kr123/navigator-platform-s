@@ -32,6 +32,7 @@ public class CallLogResponse {
     private String createdBy;
     private CallLog.RecordingDetails recordingDetails;
     private CallLog.CompletionDetails completionDetails;
+    private CallLog.AiAnalysisDetails aiAnalysis;
 
     public static CallLogResponse toCallLogResponse(CallLog callLog) {
         return CallLogResponse.builder()
@@ -49,6 +50,7 @@ public class CallLogResponse {
                 .createdAt(callLog.getCreatedAt())
                 .recordingDetails(callLog.getRecordingDetails())
                 .completionDetails(callLog.getCompletionDetails())
+                .aiAnalysis(callLog.getAiAnalysis())
                 .build();
     }
 }

@@ -9,6 +9,7 @@ plugins {
 dependencies {
     implementation(project(":common"))
     implementation(project(":integrations"))
+    implementation(project(":redash"))
 }
 
 springBoot {
