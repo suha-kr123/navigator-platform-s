@@ -8,10 +8,13 @@ import com.nivasafinance.features.call.dto.InitiateCallResponse;
 import com.nivasafinance.features.call.dto.UpdateCallLog;
 import com.nivasafinance.features.call.entity.CallLog;
 import com.nivasafinance.features.call.entity.RoleCallConfigs;
+import com.nivasafinance.common.enums.SystemEntities;
 import com.nivasafinance.features.call.enums.CallDirection;
 import com.nivasafinance.features.call.enums.CallProvider;
 import com.nivasafinance.features.call.enums.CallSource;
 import com.nivasafinance.features.call.enums.CallStatus;
+import com.nivasafinance.features.call.entity.CallLogLead;
+import com.nivasafinance.features.call.repository.CallLogLeadRepositoryWrapper;
 import com.nivasafinance.features.call.repository.CallLogRepositoryWrapper;
 import com.nivasafinance.features.call.repository.RoleCallConfigsRepositoryWrapper;
 import com.nivasafinance.features.call.service.CallReadService;
@@ -25,6 +28,7 @@ import com.nivasafinance.services.voice.dto.VoiceCallRequest;
 import com.nivasafinance.services.voice.dto.VoiceCallResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.UUID;
@@ -34,6 +38,7 @@ import java.util.UUID;
 public class CallWriteServiceImpl implements CallWriteService {
 
     private final CallLogRepositoryWrapper callLogRepositoryWrapper;
+    private final CallLogLeadRepositoryWrapper callLogLeadRepositoryWrapper;
     private final CallReadService callReadService;
     private final RoleCallConfigsRepositoryWrapper roleCallConfigsRepositoryWrapper;
     private final UserRoleService userRoleService;
@@ -58,6 +63,9 @@ public class CallWriteServiceImpl implements CallWriteService {
 
         CallLog callLog = buildCallLog(request, roleCallConfigs, voiceCallResponse);
         CallLog savedCallLog = callLogRepositoryWrapper.saveWithException(callLog);
+        if (request.getEntity() == SystemEntities.LEAD && request.getEntityId() != null) {
+            mapCallLogToLead(savedCallLog.getId(), request.getEntityId(), request.getContactId());
+        }
 
         return InitiateCallResponse.builder()
                 .id(savedCallLog.getId())
@@ -68,7 +76,6 @@ public class CallWriteServiceImpl implements CallWriteService {
 
     @Override
     public void updateCallLogByProviderId(String providerId, UpdateCallLog updateCallLog) {
-        // Check if call log with same providerId already exists
         callReadService.getCallLogByProviderId(providerId)
                 .orElseThrow(() -> new BadRequestException("Call log with provider ID " + providerId + " does not exist"));
         
@@ -80,30 +87,7 @@ public class CallWriteServiceImpl implements CallWriteService {
     }
 
     @Override
-    public void mergeAiAnalysisByIdentifier(UUID callLogIdentifier, CallLog.AiAnalysisDetails patch) {
-        if (patch == null) {
-            return;
-        }
-        CallLog callLog = callLogRepositoryWrapper.findByIdentifierWithException(callLogIdentifier);
-        callLog.setAiAnalysis(mergeAiAnalysis(callLog.getAiAnalysis(), patch));
-        callLogRepositoryWrapper.saveWithException(callLog);
-    }
-
-    private static CallLog.AiAnalysisDetails mergeAiAnalysis(
-            CallLog.AiAnalysisDetails existing,
-            CallLog.AiAnalysisDetails patch) {
-        CallLog.AiAnalysisDetails base = existing != null ? existing : CallLog.AiAnalysisDetails.builder().build();
-        return CallLog.AiAnalysisDetails.builder()
-                .jobId(patch.getJobId() != null ? patch.getJobId() : base.getJobId())
-                .status(patch.getStatus() != null ? patch.getStatus() : base.getStatus())
-                .summaryUrl(patch.getSummaryUrl() != null ? patch.getSummaryUrl() : base.getSummaryUrl())
-                .analysisUrl(patch.getAnalysisUrl() != null ? patch.getAnalysisUrl() : base.getAnalysisUrl())
-                .transcriptUrl(patch.getTranscriptUrl() != null ? patch.getTranscriptUrl() : base.getTranscriptUrl())
-                .error(patch.getError() != null ? patch.getError() : base.getError())
-                .build();
-    }
-
-    @Override
+    @Transactional
     public CreateCallLogResponse createCallLog(CallLog callLog) {
         // Check if call log with same providerId already exists
         callReadService.getCallLogByProviderId(callLog.getProviderId())
@@ -117,6 +101,22 @@ public class CallWriteServiceImpl implements CallWriteService {
                 .identifier(savedCallLog.getIdentifier())
                 .status(savedCallLog.getStatus())
                 .build();
+    }
+
+    @Override
+    public void mapCallLogToLead(Long callLogId, Long leadId, Long contactId) {
+        if (callLogId == null || leadId == null) {
+            throw new BadRequestException("callLogId and leadId are required to map call log to lead");
+        }
+        callLogRepositoryWrapper.findByIdWithException(callLogId);
+        var existingMapping = callLogLeadRepositoryWrapper.findByCallLogId(callLogId);
+        if (existingMapping.isPresent()) {
+            if (!existingMapping.get().getLeadId().equals(leadId)) {
+                throw new BadRequestException("Call log " + callLogId + " is already mapped to a different lead");
+            }
+            return;
+        }
+        callLogLeadRepositoryWrapper.saveWithException(new CallLogLead(callLogId, leadId, contactId));
     }
 
     private CallLog buildCallLog(InitiateCallRequest request, RoleCallConfigs roleCallConfigs, VoiceCallResponse voiceCallResponse) {

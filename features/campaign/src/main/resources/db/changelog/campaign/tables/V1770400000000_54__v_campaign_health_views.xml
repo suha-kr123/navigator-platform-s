@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1770400000000_54_v_campaign_health_views" author="navigator" context="default">
+        <comment>v_campaign_health: per-campaign call metrics with retry stats. v_campaign_health_summary_delta: compare counts to summary JSONB.</comment>
+        <sql splitStatements="false" stripComments="false">
+            <![CDATA[
+CREATE OR REPLACE VIEW v_campaign_health AS
+SELECT
+    c.id AS campaign_id,
+    c.identifier AS campaign_identifier,
+    c.name AS campaign_name,
+    c.status AS campaign_status,
+    c.created_at AS campaign_date,
+    c.provider AS campaign_provider,
+    c.provider_id AS campaign_provider_id,
+    c.summary AS campaign_summary,
+    c.provider_details AS provider_details,
+    cfg.id AS config_id,
+    cfg.identifier AS config_identifier,
+    cfg.name AS config_name,
+    cfg.status AS config_status,
+    COALESCE(a.total_calls, 0) AS total_calls,
+    COALESCE(a.completed_calls, 0) AS completed_calls,
+    COALESCE(a.no_answer_calls, 0) AS no_answer_calls,
+    COALESCE(a.busy_calls, 0) AS busy_calls,
+    COALESCE(a.failed_calls, 0) AS failed_calls,
+    COALESCE(a.other_status_calls, 0) AS other_status_calls,
+    CASE WHEN COALESCE(a.total_calls, 0) = 0 THEN NULL
+         ELSE ROUND((100.0 * COALESCE(a.completed_calls, 0)) / a.total_calls, 2)
+    END AS completed_pct,
+    CASE WHEN COALESCE(a.total_calls, 0) = 0 THEN NULL
+         ELSE ROUND((100.0 * COALESCE(a.no_answer_calls, 0)) / a.total_calls, 2)
+    END AS no_answer_pct,
+    CASE WHEN COALESCE(a.total_calls, 0) = 0 THEN NULL
+         ELSE ROUND((100.0 * COALESCE(a.busy_calls, 0)) / a.total_calls, 2)
+    END AS busy_pct,
+    CASE WHEN COALESCE(a.total_calls, 0) = 0 THEN NULL
+         ELSE ROUND((100.0 * COALESCE(a.failed_calls, 0)) / a.total_calls, 2)
+    END AS failed_pct,
+    ROUND(a.avg_duration_seconds::numeric, 2) AS avg_duration_seconds,
+    COALESCE(r.unique_numbers, 0) AS unique_numbers,
+    COALESCE(r.retried_numbers, 0) AS retried_numbers,
+    COALESCE(r.retry_succeeded, 0) AS retry_succeeded,
+    CASE WHEN COALESCE(r.retried_numbers, 0) = 0 THEN NULL
+         ELSE ROUND((100.0 * r.retry_succeeded) / r.retried_numbers, 2)
+    END AS retry_success_pct
+FROM n_campaign c
+LEFT JOIN n_campaign_config cfg ON cfg.id = c.config_id
+LEFT JOIN (
+    SELECT
+        cl.campaign_id,
+        COUNT(*) AS total_calls,
+        COUNT(*) FILTER (WHERE cl.status = 'COMPLETED') AS completed_calls,
+        COUNT(*) FILTER (WHERE cl.status = 'NO_ANSWER') AS no_answer_calls,
+        COUNT(*) FILTER (WHERE cl.status = 'BUSY') AS busy_calls,
+        COUNT(*) FILTER (WHERE cl.status = 'FAILED') AS failed_calls,
+        COUNT(*) FILTER (
+            WHERE cl.status IS NULL
+               OR cl.status NOT IN ('COMPLETED', 'NO_ANSWER', 'BUSY', 'FAILED')
+        ) AS other_status_calls,
+        AVG(
+            CASE
+                WHEN cl.status = 'COMPLETED'
+                     AND cl.completion_details IS NOT NULL
+                     AND jsonb_typeof(cl.completion_details->'duration') IN ('number', 'string')
+                THEN
+                    CASE jsonb_typeof(cl.completion_details->'duration')
+                        WHEN 'number' THEN (cl.completion_details->'duration')::text::double precision
+                        ELSE NULLIF(TRIM(cl.completion_details->>'duration'), '')::double precision
+                    END
+                ELSE NULL
+            END
+        ) AS avg_duration_seconds
+    FROM n_call_log cl
+    WHERE cl.campaign_id IS NOT NULL
+    GROUP BY cl.campaign_id
+) a ON a.campaign_id = c.id
+LEFT JOIN (
+    SELECT
+        campaign_id,
+        COUNT(DISTINCT to_number) AS unique_numbers,
+        COUNT(DISTINCT to_number) FILTER (WHERE call_count > 1) AS retried_numbers,
+        COUNT(DISTINCT to_number) FILTER (WHERE call_count > 1 AND completed_count > 0) AS retry_succeeded
+    FROM (
+        SELECT
+            campaign_id,
+            to_number,
+            COUNT(*) AS call_count,
+            COUNT(*) FILTER (WHERE status = 'COMPLETED') AS completed_count
+        FROM n_call_log
+        WHERE campaign_id IS NOT NULL
+        GROUP BY campaign_id, to_number
+    ) per_number
+    GROUP BY campaign_id
+) r ON r.campaign_id = c.id;
+
+CREATE OR REPLACE VIEW v_campaign_health_summary_delta AS
+SELECT
+    h.campaign_id,
+    h.campaign_identifier,
+    h.campaign_name,
+    h.campaign_status,
+    h.campaign_date,
+    h.total_calls,
+    h.completed_calls,
+    h.failed_calls,
+    (h.campaign_summary->>'scheduled')::bigint AS summary_scheduled,
+    (h.campaign_summary->>'initialized')::bigint AS summary_initialized,
+    (h.campaign_summary->>'completed')::bigint AS summary_completed,
+    (h.campaign_summary->>'failed')::bigint AS summary_failed,
+    (h.campaign_summary->>'inProgress')::bigint AS summary_in_progress,
+    (h.completed_calls IS DISTINCT FROM (h.campaign_summary->>'completed')::bigint) AS discrepancy_completed,
+    (h.failed_calls IS DISTINCT FROM (h.campaign_summary->>'failed')::bigint) AS discrepancy_failed,
+    (h.total_calls IS DISTINCT FROM (h.campaign_summary->>'scheduled')::bigint) AS discrepancy_total_vs_summary_scheduled
+FROM v_campaign_health h;
+            ]]>
+        </sql>
+        <rollback>
+            <sql>DROP VIEW IF EXISTS v_campaign_health_summary_delta;</sql>
+            <sql>DROP VIEW IF EXISTS v_campaign_health;</sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1773300000000_57_v_lead_cdr_signals" author="navigator" context="default">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="n_call_log_lead"/>
+        </preConditions>
+        <comment>v_lead_cdr_signals: per-lead metrics (30d) via n_call_log + n_call_log_lead; pickup_rate and inbound_ratio as percentages 0-100.</comment>
+        <sql splitStatements="false" stripComments="false">
+            <![CDATA[
+CREATE OR REPLACE VIEW v_lead_cdr_signals AS
+SELECT
+    lk.lead_id,
+
+    COUNT(*) FILTER (WHERE cl.status IN ('COMPLETED'))::decimal(10,4) * 100
+      / NULLIF(COUNT(*)::decimal, 0)                  AS pickup_rate,
+
+    AVG(
+        CASE
+            WHEN cl.status IN ('COMPLETED')
+                 AND cl.completion_details IS NOT NULL
+                 AND jsonb_typeof(cl.completion_details->'duration') IN ('number', 'string')
+            THEN
+                CASE jsonb_typeof(cl.completion_details->'duration')
+                    WHEN 'number' THEN (cl.completion_details->'duration')::text::double precision
+                    ELSE NULLIF(TRIM(cl.completion_details->>'duration'), '')::double precision
+                END
+            ELSE NULL
+        END
+    )                                                  AS avg_duration_seconds,
+
+    COUNT(*) FILTER (WHERE cl.direction = 'INBOUND')::decimal(10,4) * 100
+      / NULLIF(COUNT(*)::decimal, 0)                  AS inbound_ratio,
+
+    COUNT(*)                                           AS total_calls,
+
+    MAX(cl.created_at)                                 AS last_call_at
+
+FROM n_call_log cl
+INNER JOIN n_call_log_lead lk ON lk.call_log_id = cl.id
+WHERE cl.created_at > NOW() - INTERVAL '30 days'
+GROUP BY lk.lead_id;
+
+COMMENT ON VIEW v_lead_cdr_signals IS
+    'Per-lead behavioral metrics from n_call_log + n_call_log_lead over last 30 days; pickup_rate and inbound_ratio are percentages (0-100).';
+            ]]>
+        </sql>
+        <rollback>
+            <sql>DROP VIEW IF EXISTS v_lead_cdr_signals;</sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

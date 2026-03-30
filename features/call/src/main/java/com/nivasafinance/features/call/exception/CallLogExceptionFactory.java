@@ -16,6 +16,10 @@ public final class CallLogExceptionFactory {
         return new CallLogOperationException("error.call.log.save.failed", null, messageSource);
     }
 
+    public static CallLogOperationException reconciliationLogSaveFailed(MessageSource messageSource) {
+        return new CallLogOperationException("error.call.reconciliation.log.save.failed", null, messageSource);
+    }
+
     public static CallLogOperationException retrieveByIdFailed(Long id, MessageSource messageSource) {
         return new CallLogOperationException("error.call.log.retrieve.by.id.failed", new Object[]{id}, messageSource);
     }

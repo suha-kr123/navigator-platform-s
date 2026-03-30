@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1773500000000_59_n_reconciliation_log" author="navigator" context="default">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="n_reconciliation_log"/>
+            </not>
+        </preConditions>
+        <comment>Append-only audit of call-log corrections from Exotel reconciliation (no FK to n_call_log). Aligns with AuditableEntity.</comment>
+        <createTable tableName="n_reconciliation_log">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false" primaryKeyName="pk_n_reconciliation_log"/>
+            </column>
+            <column name="call_log_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="exotel_call_sid" type="varchar(255)"/>
+            <column name="changes" type="jsonb"/>
+            <column name="correction_source" type="varchar(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="varchar(255)"/>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_by" type="varchar(255)"/>
+            <column name="updated_at" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="bigint" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createIndex indexName="idx_n_reconciliation_log_call_log_id" tableName="n_reconciliation_log">
+            <column name="call_log_id"/>
+            <column name="created_at" descending="true"/>
+        </createIndex>
+        <createIndex indexName="idx_n_reconciliation_log_created_at" tableName="n_reconciliation_log">
+            <column name="created_at" descending="true"/>
+        </createIndex>
+        <rollback>
+            <dropTable tableName="n_reconciliation_log"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

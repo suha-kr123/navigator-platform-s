@@ -141,11 +141,6 @@ public class Lead extends AuditableEntity {
 
     @Type(JsonType.class)
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "call_logs", columnDefinition = "jsonb")
-    private List<CallLogDetails> callLogDetails;
-
-    @Type(JsonType.class)
-    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "external_ids", columnDefinition = "jsonb")
     private Map<String, String> externalIds;
 
@@ -354,15 +349,6 @@ public class Lead extends AuditableEntity {
     public static class DropoffDetails {
         private LocalDateTime dropoffDate;
         private String dropoffBy;
-    }
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    public static class CallLogDetails {
-        private Long callLogId;
-        private Long contactId;
     }
 
     @Data
