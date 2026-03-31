@@ -206,12 +206,20 @@ public class WhatsAppTaskServiceImpl implements WhatsAppTaskService {
 
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
         if (LeadSubStatus.ONHOLD.equals(lead.getSubstatus())) {
-            Optional<LocalDateTime> existingOpenTaskDueAt = openTasks.stream()
-                    .map(Task::getDueAt)
-                    .filter(dueAt -> dueAt != null)
-                    .findFirst();
-            if (existingOpenTaskDueAt.isPresent()) {
-                return existingOpenTaskDueAt.get();
+            try {
+                LeadResponse leadResponse = leadRepositoryWrapper.findLeadResponseByIdentifierWithException(leadIdentifier);
+                if (leadResponse != null && leadResponse.getHoldFollowUpDate() != null) {
+                    LocalDate holdFollowUpDate = leadResponse.getHoldFollowUpDate();
+                    LocalDateTime dueAtEndOfDay = LocalDateTime.of(holdFollowUpDate, LocalTime.of(23, 59, 59));
+                    if (dueAtEndOfDay.isAfter(LocalDateTime.now())) {
+                        log.debug("ONHOLD lead: using holdFollowUpDate end-of-day as dueAt: {}", dueAtEndOfDay);
+                        return dueAtEndOfDay;
+                    } else {
+                        log.debug("ONHOLD lead: holdFollowUpDate EOD is in the past ({}). Falling back to now+24h.", dueAtEndOfDay);
+                    }
+                }
+            } catch (RuntimeException ex) {
+                log.warn("Failed to read holdFollowUpDate for ONHOLD lead {}: {}", leadIdentifier, ex.getMessage());
             }
         }
 
