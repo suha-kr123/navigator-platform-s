@@ -12,4 +12,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class LeadCallLogResponse {
     private CallLogResponse callLogDetails;
+    /** From {@code n_call_log_lead.contact_id} when the call is linked to a lead contact. */
+    private Long contactId;
 }

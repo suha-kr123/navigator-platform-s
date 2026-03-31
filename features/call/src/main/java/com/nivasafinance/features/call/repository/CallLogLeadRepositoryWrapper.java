@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -22,6 +23,10 @@ public class CallLogLeadRepositoryWrapper {
 
     public Page<CallLogLead> findByLeadId(Long leadId, Pageable pageable) {
         return callLogLeadRepository.findByLeadIdOrderByCallLogIdDesc(leadId, pageable);
+    }
+
+    public List<CallLogLead> findAllByLeadIdOrderByCallLogIdDesc(Long leadId) {
+        return callLogLeadRepository.findAllByLeadIdOrderByCallLogIdDesc(leadId);
     }
 
     public Optional<CallLogLead> findByCallLogId(Long callLogId) {

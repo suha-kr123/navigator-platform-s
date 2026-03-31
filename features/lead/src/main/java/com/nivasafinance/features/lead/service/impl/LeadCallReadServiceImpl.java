@@ -3,22 +3,33 @@ package com.nivasafinance.features.lead.service.impl;
 import com.nivasafinance.common.base.model.PaginationInfo;
 import com.nivasafinance.features.call.dto.CallLogResponse;
 import com.nivasafinance.features.call.entity.CallLogLead;
+import com.nivasafinance.features.call.enums.CallDirection;
+import com.nivasafinance.features.call.enums.CallStatus;
 import com.nivasafinance.features.call.repository.CallLogLeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadCallReadService;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.call.service.CallReadService;
 import com.nivasafinance.features.lead.dto.LeadCallLogResponse;
+import com.nivasafinance.features.lead.dto.LeadCallSummaryResponse;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
 
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.AllArgsConstructor;
 
 @Service
@@ -28,6 +39,30 @@ public class LeadCallReadServiceImpl implements LeadCallReadService {
     private final CallReadService callReadService;
     private final LeadRepositoryWrapper leadRepositoryWrapper;
     private final CallLogLeadRepositoryWrapper callLogLeadRepositoryWrapper;
+
+    @Override
+    public LeadCallSummaryResponse getCallSummary(UUID leadIdentifier) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        return LeadCallSummaryResponse.fromEntity(lead.getCallSummaryDetails());
+    }
+
+    @Override
+    @Transactional
+    public void recalculateLeadCallSummary(Long leadId) {
+        Lead lead = leadRepositoryWrapper.findByIdWithException(leadId);
+        List<CallLogLead> links = callLogLeadRepositoryWrapper.findAllByLeadIdOrderByCallLogIdDesc(leadId);
+
+        if (links.isEmpty()) {
+            lead.setCallSummaryDetails(emptyCallSummaryDetails());
+            leadRepositoryWrapper.saveWithException(lead);
+            return;
+        }
+
+        List<Long> ids = links.stream().map(CallLogLead::getCallLogId).collect(Collectors.toList());
+        List<CallLogResponse> logs = callReadService.getCallLogsByIDs(ids);
+        lead.setCallSummaryDetails(computeCallSummaryDetails(logs));
+        leadRepositoryWrapper.saveWithException(lead);
+    }
 
     @Override
     public PaginatedResponse<LeadCallLogResponse> getCallLogs(UUID leadIdentifier, PaginationRequest paginationRequest) {
@@ -50,13 +85,22 @@ public class LeadCallReadServiceImpl implements LeadCallReadService {
                             .build());
         }
 
-        List<Long> ids = mappingPage.getContent().stream()
+        List<Long> pageIds = mappingPage.getContent().stream()
                 .map(CallLogLead::getCallLogId)
                 .collect(Collectors.toList());
 
-        List<CallLogResponse> callLogResponses = callReadService.getCallLogsByIDs(ids);
-        List<LeadCallLogResponse> leadCallLogResponses = callLogResponses.stream()
-                .map(LeadCallLogResponse::new)
+        List<CallLogResponse> callLogResponses = callReadService.getCallLogsByIDs(pageIds);
+        Map<Long, CallLogResponse> byId = callLogResponses.stream()
+                .collect(Collectors.toMap(CallLogResponse::getId, Function.identity(), (a, b) -> a));
+
+        List<LeadCallLogResponse> leadCallLogResponses = mappingPage.getContent().stream()
+                .map(link -> {
+                    CallLogResponse detail = byId.get(link.getCallLogId());
+                    return LeadCallLogResponse.builder()
+                            .callLogDetails(detail)
+                            .contactId(link.getContactId())
+                            .build();
+                })
                 .collect(Collectors.toList());
 
         long total = mappingPage.getTotalElements();
@@ -73,5 +117,137 @@ public class LeadCallReadServiceImpl implements LeadCallReadService {
                         .hasPrevious(mappingPage.hasPrevious())
                         .build()
         );
+    }
+
+    private static Lead.CallSummaryDetails emptyCallSummaryDetails() {
+        return Lead.CallSummaryDetails.builder()
+                .totalOutboundCalls(0)
+                .outboundConnectedCalls(0)
+                .bestTimeToCall(null)
+                .lastConnectedCallAt(null)
+                .lastCallAttemptAt(null)
+                .averageOutboundTalkDurationSeconds(null)
+                .consecutiveNoAnswers(0)
+                .build();
+    }
+
+    private static Lead.CallSummaryDetails computeCallSummaryDetails(List<CallLogResponse> logs) {
+        int outTotal = 0;
+        int outConn = 0;
+        List<Integer> outboundConnectedDialHours = new ArrayList<>();
+        long outDurSum = 0L;
+        int outDurCount = 0;
+
+        for (CallLogResponse log : logs) {
+            if (log.getDirection() != CallDirection.OUTBOUND) {
+                continue;
+            }
+            outTotal++;
+            boolean connected = isCallConnected(log.getStatus());
+            if (connected) {
+                outConn++;
+                if (log.getCreatedAt() != null) {
+                    outboundConnectedDialHours.add(log.getCreatedAt().getHour());
+                }
+            }
+
+            Long durationSec = outboundTalkDurationSeconds(log);
+            if (durationSec != null && durationSec > 0) {
+                outDurSum += durationSec;
+                outDurCount++;
+            }
+        }
+
+        LocalDateTime lastAttempt = logs.stream()
+                .map(CallLogResponse::getCreatedAt)
+                .filter(Objects::nonNull)
+                .max(Comparator.naturalOrder())
+                .orElse(null);
+
+        LocalDateTime lastConnected = logs.stream()
+                .filter(l -> isCallConnected(l.getStatus()))
+                .map(CallLogResponse::getCreatedAt)
+                .filter(Objects::nonNull)
+                .max(Comparator.naturalOrder())
+                .orElse(null);
+
+        return Lead.CallSummaryDetails.builder()
+                .totalOutboundCalls(outTotal)
+                .outboundConnectedCalls(outConn)
+                .bestTimeToCall(hourRangeFromModalHour(modeHour(outboundConnectedDialHours)))
+                .lastConnectedCallAt(lastConnected)
+                .lastCallAttemptAt(lastAttempt)
+                .averageOutboundTalkDurationSeconds(avg(outDurSum, outDurCount))
+                .consecutiveNoAnswers(countConsecutiveOutboundNoAnswers(logs))
+                .build();
+    }
+
+    private static int countConsecutiveOutboundNoAnswers(List<CallLogResponse> logs) {
+        List<CallLogResponse> outboundDesc = logs.stream()
+                .filter(l -> l.getDirection() == CallDirection.OUTBOUND)
+                .filter(l -> l.getCreatedAt() != null)
+                .sorted(Comparator.comparing(CallLogResponse::getCreatedAt).reversed())
+                .collect(Collectors.toList());
+
+        int count = 0;
+        for (CallLogResponse log : outboundDesc) {
+            if (log.getStatus() == CallStatus.NO_ANSWER) {
+                count++;
+            } else {
+                break;
+            }
+        }
+        return count;
+    }
+
+    private static boolean isCallConnected(CallStatus status) {
+        return status == CallStatus.COMPLETED;
+    }
+
+    private static Long outboundTalkDurationSeconds(CallLogResponse log) {
+        if (log.getDirection() != CallDirection.OUTBOUND) {
+            return null;
+        }
+        if (log.getCompletionDetails() == null || log.getCompletionDetails().getDuration() == null) {
+            return null;
+        }
+        return log.getCompletionDetails().getDuration();
+    }
+
+    private static Double avg(long sum, int count) {
+        return count > 0 ? (double) sum / count : null;
+    }
+
+    private static Integer modeHour(List<Integer> hours) {
+        if (hours.isEmpty()) {
+            return null;
+        }
+        int[] counts = new int[24];
+        for (int h : hours) {
+            if (h >= 0 && h < 24) {
+                counts[h]++;
+            }
+        }
+        int bestCount = -1;
+        int bestHour = 0;
+        for (int h = 0; h < 24; h++) {
+            if (counts[h] > bestCount) {
+                bestCount = counts[h];
+                bestHour = h;
+            }
+        }
+        return bestHour;
+    }
+
+    private static Lead.CallTimeHourRange hourRangeFromModalHour(Integer hour) {
+        if (hour == null) {
+            return null;
+        }
+        LocalTime start = LocalTime.of(hour, 0, 0);
+        LocalTime end = hour < 23 ? LocalTime.of(hour + 1, 0, 0) : LocalTime.MAX;
+        return Lead.CallTimeHourRange.builder()
+                .start(start)
+                .end(end)
+                .build();
     }
 }

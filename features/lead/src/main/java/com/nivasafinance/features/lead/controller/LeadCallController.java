@@ -9,6 +9,7 @@ import com.nivasafinance.features.lead.dto.CreateExternalCallLogResponse;
 import com.nivasafinance.features.lead.dto.CreateLeadCallRequest;
 import com.nivasafinance.features.lead.dto.CreateLeadCallResponse;
 import com.nivasafinance.features.lead.dto.LeadCallLogResponse;
+import com.nivasafinance.features.lead.dto.LeadCallSummaryResponse;
 import com.nivasafinance.features.lead.dto.LeadUpdateCallLog;
 import com.nivasafinance.features.lead.service.LeadCallReadService;
 import com.nivasafinance.features.lead.service.LeadCallWriteService;
@@ -36,6 +37,12 @@ public class LeadCallController {
     ) {
         CreateLeadCallResponse response = leadCallWriteService.callContact(leadId, request);
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
+    }
+
+    @GetMapping("/summary")
+    @RequirePermission(permissionName = "READ_LEAD_CALL")
+    public ResponseEntity<LeadCallSummaryResponse> getCallSummary(@PathVariable UUID leadId) {
+        return ResponseEntity.ok(leadCallReadService.getCallSummary(leadId));
     }
 
     @GetMapping("/logs")

@@ -149,6 +149,34 @@ public class Lead extends AuditableEntity {
     @Column(name = "income_obligation_details", columnDefinition = "jsonb")
     private IncomeObligationDetails incomeObligationDetails;
 
+    @Type(JsonType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "call_summary_details", columnDefinition = "jsonb")
+    private CallSummaryDetails callSummaryDetails;
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class CallSummaryDetails {
+        private Integer totalOutboundCalls;
+        private Integer outboundConnectedCalls;
+        private CallTimeHourRange bestTimeToCall;
+        private LocalDateTime lastConnectedCallAt;
+        private LocalDateTime lastCallAttemptAt;
+        private Double averageOutboundTalkDurationSeconds;
+        private Integer consecutiveNoAnswers;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class CallTimeHourRange {
+        private LocalTime start;
+        private LocalTime end;
+    }
+
     // Nested data classes for JSONB fields
 
     @Data
