@@ -142,7 +142,6 @@ public class LeadCallReadServiceImpl implements LeadCallReadService {
     private static Lead.CallSummaryDetails computeCallSummaryDetails(List<CallLogResponse> logs) {
         int outTotal = 0;
         int outConn = 0;
-        List<Integer> outboundConnectedDialHours = new ArrayList<>();
         long outDurSum = 0L;
         int outDurCount = 0;
 
@@ -154,9 +153,6 @@ public class LeadCallReadServiceImpl implements LeadCallReadService {
             boolean connected = isCallConnected(log.getStatus());
             if (connected) {
                 outConn++;
-                if (log.getCreatedAt() != null) {
-                    outboundConnectedDialHours.add(log.getCreatedAt().getHour());
-                }
             }
 
             Long durationSec = outboundTalkDurationSeconds(log);
@@ -182,7 +178,7 @@ public class LeadCallReadServiceImpl implements LeadCallReadService {
         return Lead.CallSummaryDetails.builder()
                 .totalOutboundCalls(outTotal)
                 .outboundConnectedCalls(outConn)
-                .bestTimeToCall(hourRangeFromModalHour(modeHour(outboundConnectedDialHours)))
+                .bestTimeToCall(hourRangeFromModalHour(modeHour(completedInboundOutboundCallHours(logs))))
                 .lastConnectedCallAt(lastConnected)
                 .lastCallAttemptAt(lastAttempt)
                 .averageOutboundTalkDurationSeconds(avg(outDurSum, outDurCount))
@@ -210,6 +206,26 @@ public class LeadCallReadServiceImpl implements LeadCallReadService {
 
     private static boolean isCallConnected(CallStatus status) {
         return status == CallStatus.COMPLETED;
+    }
+
+    /**
+     * Best time to call: modal clock hour from inbound and outbound calls that are {@link CallStatus#COMPLETED}.
+     */
+    private static List<Integer> completedInboundOutboundCallHours(List<CallLogResponse> logs) {
+        List<Integer> hours = new ArrayList<>();
+        for (CallLogResponse log : logs) {
+            if (log.getStatus() != CallStatus.COMPLETED) {
+                continue;
+            }
+            CallDirection d = log.getDirection();
+            if (d != CallDirection.INBOUND && d != CallDirection.OUTBOUND) {
+                continue;
+            }
+            if (log.getCreatedAt() != null) {
+                hours.add(log.getCreatedAt().getHour());
+            }
+        }
+        return hours;
     }
 
     private static Long outboundTalkDurationSeconds(CallLogResponse log) {
