@@ -33,8 +33,11 @@ public class CrifRequestBuilder {
     private static final String DEFAULT_EMAIL = "abc@abc.com";
     private static final String DEFAULT_PINCODE = "570001";
     private static final String DEFAULT_ADDRESS_LINE = "Bengaluru";
+    private static final String DEFAULT_VILLAGE = "Avalahalli";
+    private static final String DEFAULT_TALUKA = "Bengaluru South";
     private static final String DEFAULT_DOB = "01-01-1990";
     private static final String DEFAULT_AGE = "40";
+    private static final String DEFAULT_PAN = "ABCPE1234F";
 
     private String sanitizeField(String value) {
         return value == null || value.trim().isEmpty() ? "" : value;
@@ -87,7 +90,7 @@ public class CrifRequestBuilder {
 
         // 13-20. identifiers
         IdentifierMap identifierMap = mapIdentifiers(identifiers);
-        fields.add(sanitizeField(identifierMap.pan));
+        fields.add(StringUtils.hasText(identifierMap.pan) ? identifierMap.pan : DEFAULT_PAN);
         fields.add(sanitizeField(identifierMap.dl));
         fields.add(sanitizeField(identifierMap.voterId));
         fields.add(sanitizeField(identifierMap.passport));
@@ -104,9 +107,9 @@ public class CrifRequestBuilder {
         // 24-29. first address (addressLine1, village1, city1, state1, pincode1, country1 NOT NULL)
         AddressData address1 = addresses != null && !addresses.isEmpty() ? addresses.get(0) : null;
         fields.add(sanitizeField(address1 != null && StringUtils.hasText(address1.getAddress()) ? address1.getAddress() : DEFAULT_ADDRESS_LINE));
-        fields.add(sanitizeField(address1 != null ? address1.getVillageName() : ""));
-        fields.add(sanitizeField(address1 != null && StringUtils.hasText(address1.getTaluka()) ? address1.getTaluka() : ""));
-        fields.add(sanitizeField(address1 != null && StringUtils.hasText(address1.getState()) ? address1.getState() : ""));
+        fields.add(sanitizeField(address1 != null && StringUtils.hasText(address1.getVillageName()) ? address1.getVillageName() : DEFAULT_VILLAGE));
+        fields.add(sanitizeField(address1 != null && StringUtils.hasText(address1.getTaluka()) ? address1.getTaluka() : DEFAULT_TALUKA));
+        fields.add(sanitizeField(address1 != null && StringUtils.hasText(address1.getState()) ? address1.getState() : "KARNATAKA"));
         fields.add(sanitizeField(address1 != null && StringUtils.hasText(address1.getPincode()) ? address1.getPincode() : DEFAULT_PINCODE));
         fields.add(sanitizeField(address1 != null && StringUtils.hasText(address1.getCountry()) ? address1.getCountry() : "INDIA"));
 

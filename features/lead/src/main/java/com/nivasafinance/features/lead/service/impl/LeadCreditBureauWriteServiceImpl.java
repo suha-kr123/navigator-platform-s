@@ -17,7 +17,6 @@ import com.nivasafinance.features.creditbureau.entity.CreditBureauEnquiry;
 import com.nivasafinance.features.creditbureau.enums.CreditBureauEnquiryStatus;
 import com.nivasafinance.features.creditbureau.service.CreditBureauReadService;
 import com.nivasafinance.common.dto.AddressData;
-import com.nivasafinance.common.dto.IdentifierData;
 import com.nivasafinance.features.lead.dto.InitiateCbEnquiryResponse;
 import com.nivasafinance.features.lead.dto.RecordCbConsentResponse;
 import com.nivasafinance.features.lead.entity.Contact;
@@ -79,9 +78,7 @@ public class LeadCreditBureauWriteServiceImpl implements LeadCreditBureauWriteSe
         PersonResponse personResponse = personReadService.getPersonById(contact.getPersonId());
         List<AddressData> personAddresses = personReadService.getAddresses(contact.getPersonId());
         List<AddressData> resolvedForCb = resolveAddressesForCreditBureauPull(lead, personAddresses);
-        List<IdentifierData> identifiers = personReadService.getIdentifiers(contact.getPersonId());
-
-        validateCbDataRequired(personResponse, resolvedForCb, identifiers);
+        validateCbDataRequired(personResponse);
 
         // Build request DTO
         CreditBureauEnquiryRequest request = CreditBureauEnquiryRequest.builder()
@@ -260,7 +257,7 @@ public class LeadCreditBureauWriteServiceImpl implements LeadCreditBureauWriteSe
         return property != null ? List.of(property) : Collections.emptyList();
     }
 
-    private void validateCbDataRequired(PersonResponse personResponse, List<AddressData> resolvedForCb, List<IdentifierData> identifiers) {
+    private void validateCbDataRequired(PersonResponse personResponse) {
         List<String> errors = new ArrayList<>();
 
         if (!StringUtils.hasText(personResponse.getFirstName())) {
@@ -273,15 +270,7 @@ public class LeadCreditBureauWriteServiceImpl implements LeadCreditBureauWriteSe
                 || personResponse.getMobileNumbers().stream().map(MobileNumberDetails::getNumber).filter(StringUtils::hasText).findFirst().isEmpty()) {
             errors.add("mobileNumber");
         }
-        if (identifiers == null || identifiers.isEmpty()
-                || identifiers.stream().map(IdentifierData::getIdentifier).filter(StringUtils::hasText).findFirst().isEmpty()) {
-            errors.add("identifier");
-        }
-        AddressData address1 = resolvedForCb != null && !resolvedForCb.isEmpty() ? resolvedForCb.get(0) : null;
-        if (address1 == null) {
-            errors.add("address");
-        }
-        // address line and pincode use default values for CRIF when not provided
+        // identifier and address are optional — CrifRequestBuilder uses defaults when not provided
 
         if (!errors.isEmpty()) {
             throw LeadExceptionFactory.cbDataIncomplete(String.join(", ", errors), messageSource);
