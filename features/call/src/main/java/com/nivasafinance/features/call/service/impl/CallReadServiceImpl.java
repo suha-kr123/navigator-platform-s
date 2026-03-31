@@ -2,12 +2,17 @@ package com.nivasafinance.features.call.service.impl;
 
 import com.nivasafinance.features.call.dto.CallLogResponse;
 import com.nivasafinance.features.call.entity.CallLog;
+import com.nivasafinance.features.call.enums.CallProvider;
+import com.nivasafinance.features.call.repository.CallLogLeadRepositoryWrapper;
 import com.nivasafinance.features.call.repository.CallLogRepository;
 import com.nivasafinance.features.call.repository.CallLogRepositoryWrapper;
 import com.nivasafinance.features.call.service.CallReadService;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -18,6 +23,7 @@ import java.util.stream.Collectors;
 public class CallReadServiceImpl implements CallReadService {
 
     private final CallLogRepositoryWrapper callLogRepositoryWrapper;
+    private final CallLogLeadRepositoryWrapper callLogLeadRepositoryWrapper;
     private final CallLogRepository callLogRepository;
 
     @Override
@@ -43,5 +49,16 @@ public class CallReadServiceImpl implements CallReadService {
     public Optional<CallLogResponse> getCallLogByProviderId(String providerId) {
         return callLogRepository.findByProviderId(providerId)
                 .map(CallLogResponse::toCallLogResponse);
+    }
+
+    @Override
+    public Optional<Long> findLeadIdByCallLogId(Long callLogId) {
+        return callLogLeadRepositoryWrapper.findByCallLogId(callLogId)
+                .map(mapping -> mapping.getLeadId());
+    }
+
+    @Override
+    public Page<CallLog> findByProviderAndCreatedAtRange(CallProvider provider, LocalDateTime start, LocalDateTime end, Pageable pageable) {
+        return callLogRepository.findByProviderAndCreatedAtRange(provider, start, end, pageable);
     }
 }
