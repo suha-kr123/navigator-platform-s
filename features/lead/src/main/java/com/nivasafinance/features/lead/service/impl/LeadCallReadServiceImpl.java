@@ -48,6 +48,14 @@ public class LeadCallReadServiceImpl implements LeadCallReadService {
 
     @Override
     @Transactional
+    public LeadCallSummaryResponse refreshCallSummary(UUID leadIdentifier) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        recalculateLeadCallSummary(lead.getId());
+        return getCallSummary(leadIdentifier);
+    }
+
+    @Override
+    @Transactional
     public void recalculateLeadCallSummary(Long leadId) {
         Lead lead = leadRepositoryWrapper.findByIdWithException(leadId);
         List<CallLogLead> links = callLogLeadRepositoryWrapper.findAllByLeadIdOrderByCallLogIdDesc(leadId);

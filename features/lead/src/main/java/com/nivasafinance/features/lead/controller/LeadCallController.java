@@ -45,6 +45,12 @@ public class LeadCallController {
         return ResponseEntity.ok(leadCallReadService.getCallSummary(leadId));
     }
 
+    @PostMapping("/summary/refresh")
+    @RequirePermission(permissionName = "UPDATE_LEAD_CALL")
+    public ResponseEntity<LeadCallSummaryResponse> refreshCallSummary(@PathVariable UUID leadId) {
+        return ResponseEntity.ok(leadCallReadService.refreshCallSummary(leadId));
+    }
+
     @GetMapping("/logs")
     @RequirePermission(permissionName = "READ_LEAD_CALL")
     public ResponseEntity<PaginatedResponse<LeadCallLogResponse>> getCallLogs(

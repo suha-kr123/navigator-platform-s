@@ -13,6 +13,11 @@ public interface LeadCallReadService {
     LeadCallSummaryResponse getCallSummary(UUID leadIdentifier);
 
     /**
+     * Recomputes {@code Lead.callSummaryDetails} from linked call logs and returns the fresh snapshot.
+     */
+    LeadCallSummaryResponse refreshCallSummary(UUID leadIdentifier);
+
+    /**
      * Recomputes denormalized {@code Lead.callSummaryDetails} from linked call logs ({@code n_call_log_lead}).
      */
     void recalculateLeadCallSummary(Long leadId);
