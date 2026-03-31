@@ -210,6 +210,8 @@ public class LeadCallReadServiceImpl implements LeadCallReadService {
 
     /**
      * Best time to call: modal clock hour from inbound and outbound calls that are {@link CallStatus#COMPLETED}.
+     * Hour is taken from {@link com.nivasafinance.features.call.entity.CallLog.CompletionDetails#getStartTime()}
+     * when present; otherwise {@link CallLogResponse#getCreatedAt()}.
      */
     private static List<Integer> completedInboundOutboundCallHours(List<CallLogResponse> logs) {
         List<Integer> hours = new ArrayList<>();
@@ -221,8 +223,14 @@ public class LeadCallReadServiceImpl implements LeadCallReadService {
             if (d != CallDirection.INBOUND && d != CallDirection.OUTBOUND) {
                 continue;
             }
-            if (log.getCreatedAt() != null) {
-                hours.add(log.getCreatedAt().getHour());
+            LocalDateTime moment = null;
+            if (log.getCompletionDetails() != null && log.getCompletionDetails().getStartTime() != null) {
+                moment = log.getCompletionDetails().getStartTime();
+            } else if (log.getCreatedAt() != null) {
+                moment = log.getCreatedAt();
+            }
+            if (moment != null) {
+                hours.add(moment.getHour());
             }
         }
         return hours;
