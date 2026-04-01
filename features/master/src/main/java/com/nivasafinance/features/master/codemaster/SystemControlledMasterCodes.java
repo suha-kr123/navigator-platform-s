@@ -13,7 +13,8 @@ public final class SystemControlledMasterCodes {
     public static final String LEAD_ONHOLD_REASON_MASTER = "LEAD_ONHOLD_REASON_MASTER";
     public static final String LEAD_DROPOFF_REASON_MASTER = "LEAD_DROPOFF_REASON_MASTER";
     public static final String LEAD_PURPOSE_MASTER = "LEAD_PURPOSE_MASTER";
-    
+    public static final String LEAD_CUSTOMER_CONVINCE_STATUS_MASTER = "LEAD_CUSTOMER_CONVINCE_STATUS_MASTER";
+
     public static final String LEAD_OCCUPATION_PROFILE_MASTER = "LEAD_OCCUPATION_PROFILE_MASTER";
     public static final String LEAD_ROOF_PROFILE_MASTER = "LEAD_ROOF_PROFILE_MASTER";
     public static final String LEAD_PROPERTY_CONSTRUCTION_STATUS_MASTER = "LEAD_PROPERTY_CONSTRUCTION_STATUS_MASTER";

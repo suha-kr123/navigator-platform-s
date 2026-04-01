@@ -24,6 +24,8 @@ public class UpdateLeadRequest {
 
     private String purpose;
 
+    private String customerConvinceStatus;
+
     private String productCode;
 
     private LocalTime preferredCallStartTime;

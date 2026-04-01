@@ -42,6 +42,8 @@ public class LeadTemplateResponse {
 
     private List<CodeValueResponse> leadPurposes;
 
+    private List<CodeValueResponse> customerConvinceStatuses;
+
     private List<CodeValueResponse> priorities;
 }
 
