@@ -18,5 +18,5 @@ public class PatchLeadRequest {
     private Optional<PatchIncomeAndObligationRequest> incomeAndObligationDetails;
     private Optional<String> currentCustomerFormStep;
     private Optional<String> productCode;
-    private Optional<BigDecimal> requestedLoanAmount;
+    private Optional<BigDecimal> requestedAmount;
 }
