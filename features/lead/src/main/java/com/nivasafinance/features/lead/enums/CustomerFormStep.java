@@ -5,6 +5,7 @@ import lombok.Getter;
 @Getter
 public enum CustomerFormStep {
 
+    BASIC_INFO("basicInfo"),
     PROPERTY_DETAILS("propertyDetails"),
     INCOME_DETAILS("incomeDetails"),
     PROPERTY_DOCUMENTS("propertyDocuments"),

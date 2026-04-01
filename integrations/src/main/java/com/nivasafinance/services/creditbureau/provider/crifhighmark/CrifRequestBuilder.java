@@ -37,6 +37,7 @@ public class CrifRequestBuilder {
     private static final String DEFAULT_TALUKA = "Bengaluru South";
     private static final String DEFAULT_DOB = "01-01-1990";
     private static final String DEFAULT_AGE = "40";
+    private static final String DEFAULT_LAST_NAME = ".";
     private static final String DEFAULT_PAN = "ABCPE1234F";
 
     private String sanitizeField(String value) {
@@ -59,8 +60,9 @@ public class CrifRequestBuilder {
         // 2. middleName (NULLABLE)
         fields.add(sanitizeField(personData.getMiddleName()));
 
-        // 3. lastName (NOT NULL)
-        fields.add(sanitizeField(personData.getLastName()));
+        // 3. lastName (uses DEFAULT_LAST_NAME when not provided)
+        String lastName = sanitizeField(personData.getLastName());
+        fields.add(StringUtils.hasText(lastName) ? lastName : DEFAULT_LAST_NAME);
 
         // 4. gender (NULLABLE)
         fields.add(sanitizeField(formatGender(personData.getGender())));
@@ -185,9 +187,7 @@ public class CrifRequestBuilder {
         if (!StringUtils.hasText(personData.getFirstName())) {
             errors.add("firstName is required");
         }
-        if (!StringUtils.hasText(personData.getLastName())) {
-            errors.add("lastName is required");
-        }
+        // lastName uses DEFAULT_LAST_NAME when not provided
         if (personData.getMobileNumbers() == null || personData.getMobileNumbers().isEmpty()) {
             errors.add("At least one mobile number is required");
         }
