@@ -784,6 +784,16 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         if (request.getCurrentCustomerFormStep() != null) {
             mergeCurrentCustomerFormStepInto(otherDetails, request.getCurrentCustomerFormStep().orElse(null));
         }
+        if (request.getProductCode() != null) {
+            String productCode = request.getProductCode().orElse(null);
+            if (productCode != null) {
+                productReadService.getProductByCode(productCode);
+            }
+            lead.setProductCode(productCode);
+        }
+        if (request.getRequestedAmount() != null) {
+            lead.setRequestedAmount(request.getRequestedAmount().orElse(null));
+        }
         lead.setOtherDetails(otherDetails);
         leadRepositoryWrapper.saveWithException(lead);
         publishLeadUpdatedEvent(lead);
