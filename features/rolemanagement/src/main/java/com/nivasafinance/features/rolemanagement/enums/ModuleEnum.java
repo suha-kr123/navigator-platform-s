@@ -17,5 +17,6 @@ public enum ModuleEnum {
     CAMPAIGN,
     BULK_OPERATION,
     ROLE_MANAGEMENT,
-    BRE
+    BRE,
+    DISPLAY_CONFIG
 }

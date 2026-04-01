@@ -39,4 +39,5 @@ include("externals:masters")
 include("externals:atlas")
 include("features:referral")
 include("features:bre")
+include("features:displayconfig")
 
