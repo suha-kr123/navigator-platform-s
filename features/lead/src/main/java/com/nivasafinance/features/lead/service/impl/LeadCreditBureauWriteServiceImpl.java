@@ -263,9 +263,7 @@ public class LeadCreditBureauWriteServiceImpl implements LeadCreditBureauWriteSe
         if (!StringUtils.hasText(personResponse.getFirstName())) {
             errors.add("firstName");
         }
-        if (!StringUtils.hasText(personResponse.getLastName())) {
-            errors.add("lastName");
-        }
+        // lastName is optional — CrifRequestBuilder uses default when not provided
         if (personResponse.getMobileNumbers() == null || personResponse.getMobileNumbers().isEmpty()
                 || personResponse.getMobileNumbers().stream().map(MobileNumberDetails::getNumber).filter(StringUtils::hasText).findFirst().isEmpty()) {
             errors.add("mobileNumber");
