@@ -30,6 +30,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 
 /**
  * Listener that polls the NOTIFICATION_EXECUTOR queue and executes notification receipts.
@@ -60,7 +62,7 @@ public class NotificationExecutorListener {
     private ExecutorService executor;
 
     @PostConstruct
-    public void start() {
+    public void initExecutor() {
         int poolSize = Math.max(1, messagingProperties.getSqs().getMaxMessages());
         AtomicInteger threadNumber = new AtomicInteger(0);
         executor = Executors.newFixedThreadPool(poolSize, r -> {
@@ -68,15 +70,13 @@ public class NotificationExecutorListener {
             t.setDaemon(false);
             return t;
         });
+        log.info("NotificationExecutorListener executor pool size: {}", poolSize);
+    }
 
+    @EventListener(ApplicationReadyEvent.class)
+    public void startPolling() {
         if (messagingProperties.getProvider() != MessageProvider.SQS) {
             log.info("NotificationExecutorListener: provider is not SQS, skipping continuous polling");
-            return;
-        }
-
-        SqsClient sqsClient = sqsClientProvider.getIfAvailable();
-        if (sqsClient == null) {
-            log.warn("NotificationExecutorListener: SqsClient not available, skipping continuous polling");
             return;
         }
 
@@ -84,7 +84,7 @@ public class NotificationExecutorListener {
         pollerThread = new Thread(this::pollLoop, "notification-executor-poller");
         pollerThread.setDaemon(true);
         pollerThread.start();
-        log.info("NotificationExecutorListener started. Pool size: {}", poolSize);
+        log.info("NotificationExecutorListener: SQS continuous poller started");
     }
 
     @PreDestroy
@@ -100,10 +100,16 @@ public class NotificationExecutorListener {
 
     private void pollLoop() {
         String queueUrl = messagingProperties.getSqs().resolveQueueUrl(QueueType.NOTIFICATION_EXECUTOR);
-        SqsClient sqsClient = sqsClientProvider.getIfAvailable();
 
-        while (running && sqsClient != null) {
+        while (running) {
             try {
+                SqsClient sqsClient = sqsClientProvider.getIfAvailable();
+                if (sqsClient == null) {
+                    log.warn("NotificationExecutorListener: SqsClient not available, retrying in {}ms", ERROR_BACKOFF_MS);
+                    Thread.sleep(ERROR_BACKOFF_MS);
+                    continue;
+                }
+
                 ReceiveMessageRequest request = ReceiveMessageRequest.builder()
                         .queueUrl(queueUrl)
                         .waitTimeSeconds(messagingProperties.getSqs().getWaitTimeSeconds())

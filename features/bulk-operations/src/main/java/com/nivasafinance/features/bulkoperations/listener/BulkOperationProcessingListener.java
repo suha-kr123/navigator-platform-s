@@ -31,6 +31,8 @@ import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
 
 import jakarta.annotation.PostConstruct;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -71,19 +73,18 @@ public class BulkOperationProcessingListener {
     public void init() {
         this.processingSemaphore = new Semaphore(processingProperties.getMaxConcurrentProcessing());
         log.info(LOG_INIT, messagingProperties.getProvider());
+    }
 
-        if (isSqsProvider()) {
-            SqsClient sqsClient = sqsClientProvider.getIfAvailable();
-            if (sqsClient != null) {
-                running = true;
-                pollerThread = new Thread(this::pollSqsLoop, "bulk-processing-poller");
-                pollerThread.setDaemon(true);
-                pollerThread.start();
-                log.info("BulkOperationProcessingListener: SQS continuous poller started");
-            } else {
-                log.warn("BulkOperationProcessingListener: SqsClient not available, skipping continuous polling");
-            }
+    @EventListener(ApplicationReadyEvent.class)
+    public void startPolling() {
+        if (!isSqsProvider()) {
+            return;
         }
+        running = true;
+        pollerThread = new Thread(this::pollSqsLoop, "bulk-processing-poller");
+        pollerThread.setDaemon(true);
+        pollerThread.start();
+        log.info("BulkOperationProcessingListener: SQS continuous poller started");
     }
 
     @jakarta.annotation.PreDestroy
@@ -108,10 +109,16 @@ public class BulkOperationProcessingListener {
 
     private void pollSqsLoop() {
         String queueUrl = messagingProperties.getSqs().resolveQueueUrl(QueueType.BULK_OPERATION_PROCESSING);
-        SqsClient sqsClient = sqsClientProvider.getIfAvailable();
 
-        while (running && sqsClient != null) {
+        while (running) {
             try {
+                SqsClient sqsClient = sqsClientProvider.getIfAvailable();
+                if (sqsClient == null) {
+                    log.warn("BulkOperationProcessingListener: SqsClient not available, retrying in {}ms", ERROR_BACKOFF_MS);
+                    Thread.sleep(ERROR_BACKOFF_MS);
+                    continue;
+                }
+
                 ReceiveMessageRequest request = ReceiveMessageRequest.builder()
                         .queueUrl(queueUrl)
                         .waitTimeSeconds(messagingProperties.getSqs().getWaitTimeSeconds())

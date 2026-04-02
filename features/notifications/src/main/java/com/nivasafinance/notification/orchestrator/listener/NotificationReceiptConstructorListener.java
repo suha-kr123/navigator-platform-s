@@ -39,6 +39,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import jakarta.annotation.PreDestroy;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 
 /**
  * Listener that polls the NOTIFICATION queue and creates NotificationReceipts.
@@ -74,7 +76,7 @@ public class NotificationReceiptConstructorListener {
     private ExecutorService executor;
 
     @jakarta.annotation.PostConstruct
-    public void start() {
+    public void initExecutor() {
         int poolSize = Math.max(1, messagingProperties.getSqs().getMaxMessages());
         java.util.concurrent.atomic.AtomicInteger threadNumber = new java.util.concurrent.atomic.AtomicInteger(0);
         executor = Executors.newFixedThreadPool(poolSize, r -> {
@@ -82,15 +84,13 @@ public class NotificationReceiptConstructorListener {
             t.setDaemon(false);
             return t;
         });
+        log.info("NotificationReceiptConstructorListener executor pool size: {}", poolSize);
+    }
 
+    @EventListener(ApplicationReadyEvent.class)
+    public void startPolling() {
         if (messagingProperties.getProvider() != MessageProvider.SQS) {
             log.info("NotificationReceiptConstructorListener: provider is not SQS, skipping continuous polling");
-            return;
-        }
-
-        SqsClient sqsClient = sqsClientProvider.getIfAvailable();
-        if (sqsClient == null) {
-            log.warn("NotificationReceiptConstructorListener: SqsClient not available, skipping continuous polling");
             return;
         }
 
@@ -98,7 +98,7 @@ public class NotificationReceiptConstructorListener {
         pollerThread = new Thread(this::pollLoop, "notification-receipt-constructor-poller");
         pollerThread.setDaemon(true);
         pollerThread.start();
-        log.info("NotificationReceiptConstructorListener started. Pool size: {}", poolSize);
+        log.info("NotificationReceiptConstructorListener: SQS continuous poller started");
     }
 
     @PreDestroy
@@ -114,10 +114,16 @@ public class NotificationReceiptConstructorListener {
 
     private void pollLoop() {
         String queueUrl = messagingProperties.getSqs().resolveQueueUrl(QueueType.NOTIFICATION);
-        SqsClient sqsClient = sqsClientProvider.getIfAvailable();
 
-        while (running && sqsClient != null) {
+        while (running) {
             try {
+                SqsClient sqsClient = sqsClientProvider.getIfAvailable();
+                if (sqsClient == null) {
+                    log.warn("NotificationReceiptConstructorListener: SqsClient not available, retrying in {}ms", ERROR_BACKOFF_MS);
+                    Thread.sleep(ERROR_BACKOFF_MS);
+                    continue;
+                }
+
                 ReceiveMessageRequest request = ReceiveMessageRequest.builder()
                         .queueUrl(queueUrl)
                         .waitTimeSeconds(messagingProperties.getSqs().getWaitTimeSeconds())
