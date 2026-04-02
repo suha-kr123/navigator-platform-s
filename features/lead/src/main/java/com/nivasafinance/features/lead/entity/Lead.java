@@ -65,6 +65,9 @@ public class Lead extends AuditableEntity {
     @Column(name = "product_code", length = 100)
     private String productCode;
 
+    @Column(name = "customer_convince_status", length = 100)
+    private String customerConvinceStatus;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 100)
     private LeadStatus status;

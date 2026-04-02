@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1774600000000_01_master_values" author="system" context="default">
+        <comment>Lead Customer Convince Status master values</comment>
+
+        <insert tableName="n_master_code_value">
+            <column name="key" value="CONVINCE_IN_SME_CALL"/>
+            <column name="code_key" value="LEAD_CUSTOMER_CONVINCE_STATUS_MASTER"/>
+            <column name="value" value='{"default": "Convince in SME Call"}'/>
+            <column name="description" value='{"default": "Convince in SME Call"}'/>
+            <column name="is_active" valueBoolean="true"/>
+            <column name="display_order" valueNumeric="1"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="n_master_code_value">
+            <column name="key" value="RETRY_REQUIRED"/>
+            <column name="code_key" value="LEAD_CUSTOMER_CONVINCE_STATUS_MASTER"/>
+            <column name="value" value='{"default": "Retry Required"}'/>
+            <column name="description" value='{"default": "Retry Required"}'/>
+            <column name="is_active" valueBoolean="true"/>
+            <column name="display_order" valueNumeric="2"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="n_master_code_value">
+            <column name="key" value="NOT_CONVINCED"/>
+            <column name="code_key" value="LEAD_CUSTOMER_CONVINCE_STATUS_MASTER"/>
+            <column name="value" value='{"default": "Not Convinced"}'/>
+            <column name="description" value='{"default": "Not Convinced"}'/>
+            <column name="is_active" valueBoolean="true"/>
+            <column name="display_order" valueNumeric="3"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>

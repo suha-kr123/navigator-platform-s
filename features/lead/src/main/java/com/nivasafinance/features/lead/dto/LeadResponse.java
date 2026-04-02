@@ -30,6 +30,7 @@ public class LeadResponse {
     private String productCode;
     private String productName;
     private String purpose;
+    private CodeValueResponse customerConvinceStatus;
     private String primaryPersonName;
     private String primaryPersonNumber;
     private String officeName;

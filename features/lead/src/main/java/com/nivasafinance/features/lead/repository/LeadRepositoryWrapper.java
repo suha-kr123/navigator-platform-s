@@ -119,6 +119,7 @@ public class LeadRepositoryWrapper {
                      l.requested_amount as requestedAmount,
                      l.product_code as productCode,
                      l.purpose,
+                     l.customer_convince_status as customer_convince_status_key,
                      l.office_key as officeKey,
                      l.owner as ownerUsername,
                      l.created_at as leadCreatedAt,
@@ -367,6 +368,11 @@ public class LeadRepositoryWrapper {
             leadResponse.setPriority(CodeValueResponse.builder().key(priorityKey).build());
         }
 
+        String customerConvinceStatusKey = rs.getString("customer_convince_status_key");
+        if (customerConvinceStatusKey != null) {
+            leadResponse.setCustomerConvinceStatus(CodeValueResponse.builder().key(customerConvinceStatusKey).build());
+        }
+
         String bureauRatingKey = rs.getString("bureau_rating_key");
         if (bureauRatingKey != null) {
             leadResponse.setBureauRating(CodeValueResponse.builder().key(bureauRatingKey).build());
@@ -436,6 +442,14 @@ public class LeadRepositoryWrapper {
                         SystemControlledMasterCodes.LEAD_PRIORITY_MASTER
                 );
                 leadResponse.setPriority(priority);
+            }
+
+            if (leadResponse.getCustomerConvinceStatus() != null && leadResponse.getCustomerConvinceStatus().getKey() != null) {
+                CodeValueResponse customerConvinceStatus = codeValueMasterService.getCodeValueByKeyAndCodeKey(
+                        leadResponse.getCustomerConvinceStatus().getKey(),
+                        SystemControlledMasterCodes.LEAD_CUSTOMER_CONVINCE_STATUS_MASTER
+                );
+                leadResponse.setCustomerConvinceStatus(customerConvinceStatus);
             }
 
             // Enrich bureau rating

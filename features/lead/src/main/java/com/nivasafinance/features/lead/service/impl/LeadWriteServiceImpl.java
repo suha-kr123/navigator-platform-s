@@ -141,6 +141,13 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         } else {
             lead.setPurpose(null);
         }
+        if (request.getCustomerConvinceStatus() != null) {
+            codeValueMasterService.getCodeValueByKeyAndCodeKey(request.getCustomerConvinceStatus(),
+                    SystemControlledMasterCodes.LEAD_CUSTOMER_CONVINCE_STATUS_MASTER);
+            lead.setCustomerConvinceStatus(request.getCustomerConvinceStatus());
+        } else {
+            lead.setCustomerConvinceStatus(null);
+        }
         //validates product exists
         if (request.getProductCode() != null) {
             productReadService.getProductByCode(request.getProductCode());
