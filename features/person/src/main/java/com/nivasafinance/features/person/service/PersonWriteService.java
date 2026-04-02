@@ -9,6 +9,7 @@ import com.nivasafinance.features.person.dto.PersonCreateResponse;
 import com.nivasafinance.features.person.dto.PersonUpdateRequest;
 import com.nivasafinance.features.person.entity.Person;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -25,5 +26,7 @@ public interface PersonWriteService {
     void deleteIdentifier(Long personId, UUID identifierId);
 
     void updateCreditBureauFields(Long personId, List<Long> cbEnquiryIds, Person.CreditBureauDetails cbDetails);
+
+    void updateDateOfBirthIfAbsent(Long personId, LocalDate dateOfBirth);
 }
 

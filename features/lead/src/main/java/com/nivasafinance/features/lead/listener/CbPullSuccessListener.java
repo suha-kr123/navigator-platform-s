@@ -27,6 +27,9 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.io.InputStream;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -49,7 +52,9 @@ public class CbPullSuccessListener {
     private static final String EXCEL_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     private static final String REDASH_CB_REPORT_SHEETS_KEY = "REDASH_CB_REPORT_SHEETS";
     private static final String ADDRESS_VARIATION_TYPE = "ADDRESS-VARIATIONS";
+    private static final String DOB_VARIATION_TYPE = "DOB-VARIATIONS";
     private static final Pattern PINCODE_PATTERN = Pattern.compile("\\b[0-9]{6}\\b");
+    private static final DateTimeFormatter DOB_FORMAT_DD_MM_YYYY = DateTimeFormatter.ofPattern("dd-MM-yyyy");
 
     private final RedashService redashService;
     private final LeadRepositoryWrapper leadRepositoryWrapper;
@@ -93,6 +98,12 @@ public class CbPullSuccessListener {
             addCbReportedAddressToContact(enquiryId);
         } catch (Exception e) {
             log.error("Failed to add CB reported address for enquiry ID: {}", enquiryId, e);
+        }
+
+        try {
+            updatePersonDobFromCbReport(enquiryId);
+        } catch (Exception e) {
+            log.error("Failed to update DOB from CB report for enquiry ID: {}", enquiryId, e);
         }
     }
 
@@ -142,6 +153,56 @@ public class CbPullSuccessListener {
             lastMatch = matcher.group();
         }
         return lastMatch;
+    }
+
+    private void updatePersonDobFromCbReport(Long enquiryId) {
+        List<DemographicVariationResponse> variations = creditBureauReadService.getDemographicVariationsByEnquiryId(enquiryId);
+
+        Optional<DemographicVariationResponse> latestDobVariation = variations.stream()
+                .filter(v -> DOB_VARIATION_TYPE.equalsIgnoreCase(v.getVariationType()))
+                .filter(v -> v.getVariationValue() != null && !v.getVariationValue().isBlank())
+                .sorted(Comparator.comparing(DemographicVariationResponse::getReportedDate,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
+                .findFirst();
+
+        if (latestDobVariation.isEmpty()) {
+            log.info("No DOB variation found for enquiry ID: {}, skipping", enquiryId);
+            return;
+        }
+
+        LocalDate dob = parseDob(latestDobVariation.get().getVariationValue());
+        if (dob == null) {
+            log.warn("Failed to parse DOB from variation value for enquiry ID: {}, skipping", enquiryId);
+            return;
+        }
+
+        Optional<Contact> contactOpt = contactRepositoryWrapper.findByCbEnquiryId(enquiryId);
+        if (contactOpt.isEmpty()) {
+            log.warn("No contact found for enquiry ID: {}, skipping DOB update", enquiryId);
+            return;
+        }
+
+        Long personId = contactOpt.get().getPersonId();
+        personWriteService.updateDateOfBirthIfAbsent(personId, dob);
+        log.info("Updated DOB (if absent) for person ID: {} from CB report for enquiry ID: {}", personId, enquiryId);
+    }
+
+    private LocalDate parseDob(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        String trimmed = value.trim();
+        try {
+            if (trimmed.length() == 10 && trimmed.contains("-")) {
+                return LocalDate.parse(trimmed, DOB_FORMAT_DD_MM_YYYY);
+            }
+            if (trimmed.length() > 10 && trimmed.contains("-")) {
+                return LocalDate.parse(trimmed.substring(0, 10), DateTimeFormatter.ISO_LOCAL_DATE);
+            }
+        } catch (DateTimeParseException e) {
+            log.warn("Unable to parse DOB value: {}", value);
+        }
+        return null;
     }
 
     private Long resolveLeadDbId(LeadCbSuccessEventPayload cbPayload, Long enquiryId) {

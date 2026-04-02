@@ -275,6 +275,19 @@ public class PersonWriteServiceImpl implements PersonWriteService {
     }
 
     @Override
+    public void updateDateOfBirthIfAbsent(Long personId, java.time.LocalDate dateOfBirth) {
+        if (dateOfBirth == null) {
+            return;
+        }
+        Person person = personRepositoryWrapper.findByIdWithException(personId);
+        if (person.getDateOfBirth() != null) {
+            return;
+        }
+        person.setDateOfBirth(dateOfBirth);
+        personRepositoryWrapper.saveWithException(person);
+    }
+
+    @Override
     public void updateCreditBureauFields(Long personId, List<Long> cbEnquiryIds, Person.CreditBureauDetails cbDetails) {
         Person person = personRepositoryWrapper.findByIdWithException(personId);
 
