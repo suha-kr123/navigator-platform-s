@@ -153,12 +153,22 @@ public class PersonWriteServiceImpl implements PersonWriteService {
         Person person = personRepositoryWrapper.findByIdWithException(personId);
         List<AddressData> addresses = getAddresses(person);
 
-        AddressData addressData = buildAddressData(request, null);
-        // Ensure ID is set before adding to list
-        if (addressData.getId() == null) {
-            addressData.setId(UUID.randomUUID().toString());
+        Optional<AddressData> existing = addresses.stream()
+                .filter(a -> request.getAddressType().equals(a.getAddressType()))
+                .findFirst();
+
+        AddressData addressData;
+        if (existing.isPresent()) {
+            addressData = buildAddressData(request, existing.get().getId());
+            int index = addresses.indexOf(existing.get());
+            addresses.set(index, addressData);
+        } else {
+            addressData = buildAddressData(request, null);
+            if (addressData.getId() == null) {
+                addressData.setId(UUID.randomUUID().toString());
+            }
+            addresses.add(addressData);
         }
-        addresses.add(addressData);
 
         saveAddresses(person, addresses);
 
