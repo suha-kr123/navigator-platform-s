@@ -10,7 +10,6 @@ import com.nivasafinance.notification.orchestrator.service.NotificationReceiptSe
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
@@ -19,9 +18,9 @@ import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
-import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -29,7 +28,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicBoolean;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 
@@ -55,12 +53,14 @@ public class NotificationExecutorListener {
     private final PlatformTransactionManager transactionManager;
     private final com.nivasafinance.notification.orchestrator.repository.NotificationReceiptRepository notificationReceiptRepository;
 
-    private final AtomicBoolean executorPolling = new AtomicBoolean(false);
-    private final AtomicInteger pollCount = new AtomicInteger(0);
+    private static final long ERROR_BACKOFF_MS = 5_000L;
+
+    private volatile boolean running;
+    private Thread pollerThread;
     private ExecutorService executor;
 
     @PostConstruct
-    public void init() {
+    public void start() {
         int poolSize = Math.max(1, messagingProperties.getSqs().getMaxMessages());
         AtomicInteger threadNumber = new AtomicInteger(0);
         executor = Executors.newFixedThreadPool(poolSize, r -> {
@@ -68,137 +68,85 @@ public class NotificationExecutorListener {
             t.setDaemon(false);
             return t;
         });
-        log.info("NotificationExecutorListener executor pool size: {}", poolSize);
-        log.info("NotificationExecutorListener initialized. Provider: {}, SqsClient available: {}",
-                messagingProperties.getProvider(),
-                sqsClientProvider.getIfAvailable() != null);
-        if (messagingProperties.getProvider() == MessageProvider.SQS) {
-            try {
-                String queueUrl = messagingProperties.getSqs().resolveQueueUrl(QueueType.NOTIFICATION_EXECUTOR);
-                log.info("NOTIFICATION_EXECUTOR queue URL: {}", queueUrl);
-                log.info("Poll delay: {}ms, Wait time: {}s, Max messages: {}",
-                        messagingProperties.getSqs().getPollDelayMs(),
-                        messagingProperties.getSqs().getWaitTimeSeconds(),
-                        messagingProperties.getSqs().getMaxMessages());
-            } catch (Exception ex) {
-                log.error("Failed to resolve NOTIFICATION_EXECUTOR queue URL", ex);
-            }
-        } else {
-            log.warn("NotificationExecutorListener will not poll - provider is not SQS: {}", messagingProperties.getProvider());
-        }
-    }
 
-    @PreDestroy
-    public void shutdown() {
-        if (executor != null) {
-            executor.shutdown();
-        }
-    }
-
-    /**
-     * Polls the NOTIFICATION_EXECUTOR queue and processes receipts.
-     * This listener picks up receipts that are ready to be sent and executes them.
-     */
-    @Scheduled(fixedDelayString = "${messaging.sqs.poll-delay-ms:1000}")
-    public void pollExecutorQueue() {
-        int count = pollCount.incrementAndGet();
-
-        if (count % 30 == 0) {
-            log.info("NotificationExecutorListener polling (attempt #{}). Provider: {}, SqsClient available: {}",
-                    count,
-                    messagingProperties.getProvider(),
-                    sqsClientProvider.getIfAvailable() != null);
-        }
-
-        // Only poll SQS if provider is SQS and SqsClient is available
         if (messagingProperties.getProvider() != MessageProvider.SQS) {
-            if (count % 30 == 0) {
-                log.warn("Skipping poll - provider is not SQS: {}", messagingProperties.getProvider());
-            }
+            log.info("NotificationExecutorListener: provider is not SQS, skipping continuous polling");
             return;
         }
 
         SqsClient sqsClient = sqsClientProvider.getIfAvailable();
         if (sqsClient == null) {
-            if (count % 30 == 0) {
-                log.warn("Skipping poll - SqsClient is not available");
-            }
+            log.warn("NotificationExecutorListener: SqsClient not available, skipping continuous polling");
             return;
         }
 
-        if (!executorPolling.compareAndSet(false, true)) {
-            if (count % 30 == 0) {
-                log.warn("Skipping poll - previous poll still in progress");
-            }
-            return;
+        running = true;
+        pollerThread = new Thread(this::pollLoop, "notification-executor-poller");
+        pollerThread.setDaemon(true);
+        pollerThread.start();
+        log.info("NotificationExecutorListener started. Pool size: {}", poolSize);
+    }
+
+    @PreDestroy
+    public void stop() {
+        running = false;
+        if (pollerThread != null) {
+            pollerThread.interrupt();
         }
+        if (executor != null) {
+            executor.shutdown();
+        }
+    }
 
-        try {
-            String queueUrl = messagingProperties.getSqs().resolveQueueUrl(QueueType.NOTIFICATION_EXECUTOR);
-            int waitTime = messagingProperties.getSqs().getWaitTimeSeconds();
-            int maxMessages = messagingProperties.getSqs().getMaxMessages();
+    private void pollLoop() {
+        String queueUrl = messagingProperties.getSqs().resolveQueueUrl(QueueType.NOTIFICATION_EXECUTOR);
+        SqsClient sqsClient = sqsClientProvider.getIfAvailable();
 
-            if (count % 30 == 0) {
-                log.info("Polling NOTIFICATION_EXECUTOR queue: {} (waitTime: {}s, maxMessages: {})",
-                        queueUrl, waitTime, maxMessages);
-            }
-
-            ReceiveMessageRequest request = ReceiveMessageRequest.builder()
-                    .queueUrl(queueUrl)
-                    .waitTimeSeconds(waitTime)
-                    .maxNumberOfMessages(maxMessages)
-                    .build();
-
-            log.debug("Calling receiveMessage on NOTIFICATION_EXECUTOR queue (poll attempt #{}, waitTime: {}s)",
-                    count, waitTime);
-            ReceiveMessageResponse response;
+        while (running && sqsClient != null) {
             try {
-                response = sqsClient.receiveMessage(request);
-            } catch (Exception receiveEx) {
-                log.error("Exception during receiveMessage call on NOTIFICATION_EXECUTOR queue (poll attempt #{})",
-                        count, receiveEx);
-                throw receiveEx;
-            }
+                ReceiveMessageRequest request = ReceiveMessageRequest.builder()
+                        .queueUrl(queueUrl)
+                        .waitTimeSeconds(messagingProperties.getSqs().getWaitTimeSeconds())
+                        .maxNumberOfMessages(messagingProperties.getSqs().getMaxMessages())
+                        .build();
 
-            int messageCount = response.messages().size();
+                List<Message> messages = sqsClient.receiveMessage(request).messages();
 
-            if (messageCount > 0) {
-                log.info("Received {} message(s) from NOTIFICATION_EXECUTOR queue: {}", messageCount, queueUrl);
-            } else {
-                if (count % 30 == 0) {
-                    log.debug("No messages in NOTIFICATION_EXECUTOR queue (poll attempt #{})", count);
+                if (!messages.isEmpty()) {
+                    log.info("Received {} message(s) from NOTIFICATION_EXECUTOR queue", messages.size());
                 }
-            }
 
-            List<Message> messages = response.messages();
-            List<CompletableFuture<Boolean>> futures = new ArrayList<>(messages.size());
-            for (Message message : messages) {
-                String body = message.body();
-                CompletableFuture<Boolean> future = CompletableFuture.supplyAsync(() -> {
-                    try {
-                        return processExecutorMessage(body);
-                    } catch (Throwable t) {
-                        log.error("Error processing executor message, will retry: {}", body, t);
-                        return false;
+                List<CompletableFuture<Boolean>> futures = new ArrayList<>(messages.size());
+                for (Message message : messages) {
+                    String body = message.body();
+                    CompletableFuture<Boolean> future = CompletableFuture.supplyAsync(() -> {
+                        try {
+                            return processExecutorMessage(body);
+                        } catch (Throwable t) {
+                            log.error("Error processing executor message: {}", body, t);
+                            return false;
+                        }
+                    }, executor);
+                    futures.add(future);
+                }
+
+                CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[0])).join();
+
+                for (int i = 0; i < messages.size(); i++) {
+                    if (Boolean.TRUE.equals(futures.get(i).getNow(false))) {
+                        deleteMessage(queueUrl, messages.get(i), sqsClient);
+                    } else {
+                        log.warn("Message not processed successfully, will remain in queue for retry: {}", messages.get(i).body());
                     }
-                }, executor);
-                futures.add(future);
-            }
-            CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[0])).join();
-            for (int i = 0; i < messages.size(); i++) {
-                Message message = messages.get(i);
-                if (Boolean.TRUE.equals(futures.get(i).getNow(false))) {
-                    deleteMessage(queueUrl, message, sqsClient);
-                    log.debug("Deleted processed message from NOTIFICATION_EXECUTOR queue");
-                } else {
-                    log.warn("Message not processed successfully, will remain in queue for retry: {}", message.body());
+                }
+            } catch (Exception ex) {
+                if (running) {
+                    log.error("Error in NOTIFICATION_EXECUTOR queue poll loop", ex);
+                    try { Thread.sleep(ERROR_BACKOFF_MS); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
                 }
             }
-        } catch (Exception ex) {
-            log.error("Failed to poll NOTIFICATION_EXECUTOR queue (poll attempt #{})", count, ex);
-        } finally {
-            executorPolling.set(false);
         }
+        log.info("NotificationExecutorListener poll loop stopped");
     }
 
     /**
@@ -213,14 +161,14 @@ public class NotificationExecutorListener {
         // Parse receiptId outside the transaction so it's available in catch blocks
         UUID receiptId = extractReceiptId(rawMessage);
         if (receiptId == null) {
-            return false;
+            log.error("Deleting malformed message from queue (no valid receiptId): {}", rawMessage);
+            return true;
         }
 
         return Boolean.TRUE.equals(template.execute(status -> {
             try {
                 log.info("Processing notification executor message: {}", rawMessage);
 
-                // Check if receipt exists and its status
                 var receiptOpt = notificationReceiptService.findById(receiptId);
                 if (receiptOpt.isEmpty()) {
                     log.warn("Notification receipt not found: {}. This may be an old message or the receipt was deleted. Deleting message from queue.", receiptId);
@@ -242,22 +190,20 @@ public class NotificationExecutorListener {
                 notificationReceiptService.executeReceipt(receiptId);
                 log.info("Successfully executed receipt {}", receiptId);
                 return true;
-            } catch (IllegalArgumentException ex) {
-                if (ex.getMessage() != null && ex.getMessage().contains("Notification receipt not found")) {
-                    log.warn("Notification receipt not found in executeReceipt. This may be an old message. Deleting from queue. Error: {}", ex.getMessage());
-                    return true;
-                }
-                log.error("Failed to process executor message: {}", rawMessage, ex);
-                status.setRollbackOnly();
-                // executeReceipt already marked receipt as FAILED via markReceiptFailedInNewTransaction.
-                // Return true to delete SQS message — no point retrying.
-                return true;
             } catch (Exception ex) {
-                log.error("Failed to process executor message: {}", rawMessage, ex);
+                log.error("Failed to execute receipt from message: {}", rawMessage, ex);
                 status.setRollbackOnly();
-                // executeReceipt already marked receipt as FAILED via markReceiptFailedInNewTransaction.
-                // Return true to delete SQS message — no point retrying.
-                return true;
+                try {
+                    Map<String, Object> errorJson = new HashMap<>();
+                    errorJson.put("message", ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName());
+                    errorJson.put("exceptionType", ex.getClass().getSimpleName());
+                    notificationReceiptService.markReceiptFailedInNewTransaction(receiptId, errorJson);
+                    log.warn("Marked receipt {} as FAILED. Deleting message from queue.", receiptId);
+                    return true;
+                } catch (Exception markEx) {
+                    log.error("Failed to mark receipt {} as FAILED. Message will be retried by SQS.", receiptId, markEx);
+                    return false;
+                }
             }
         }));
     }

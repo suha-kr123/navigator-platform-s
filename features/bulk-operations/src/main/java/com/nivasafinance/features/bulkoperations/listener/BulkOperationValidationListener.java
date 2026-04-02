@@ -34,15 +34,12 @@ import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
-import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
-
 import jakarta.annotation.PostConstruct;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 @Component
 @RequiredArgsConstructor
@@ -77,68 +74,79 @@ public class BulkOperationValidationListener {
     private final BulkOperationProcessingQueuePublisher processingQueuePublisher;
     private final BulkOperationExceptionFactory exceptionFactory;
     private final ObjectMapper objectMapper;
-    private final AtomicBoolean polling = new AtomicBoolean(false);
+
+    private static final long ERROR_BACKOFF_MS = 5_000L;
+    private volatile boolean running;
+    private Thread pollerThread;
 
     @PostConstruct
     public void init() {
         log.info(LOG_INIT, messagingProperties.getProvider(), messagingProperties.getSqs().getPollDelayMs());
+
+        if (isSqsProvider()) {
+            SqsClient sqsClient = sqsClientProvider.getIfAvailable();
+            if (sqsClient != null) {
+                running = true;
+                pollerThread = new Thread(this::pollSqsLoop, "bulk-validation-poller");
+                pollerThread.setDaemon(true);
+                pollerThread.start();
+                log.info("BulkOperationValidationListener: SQS continuous poller started");
+            } else {
+                log.warn("BulkOperationValidationListener: SqsClient not available, skipping continuous polling");
+            }
+        }
+    }
+
+    @jakarta.annotation.PreDestroy
+    public void shutdown() {
+        running = false;
+        if (pollerThread != null) {
+            pollerThread.interrupt();
+        }
     }
 
     @Scheduled(fixedDelayString = "${messaging.sqs.poll-delay-ms:1000}")
-    public void pollValidationQueue() {
-        if (!polling.compareAndSet(false, true))
+    public void pollLocalFallback() {
+        if (isSqsProvider()) {
             return;
-
+        }
         try {
-            if (isSqsProvider()) {
-                pollSqsQueue();
-            } else {
-                pollLocalDatabase();
-            }
+            pollLocalDatabase();
         } catch (Exception ex) {
             log.error(LOG_POLL_FAILED, ex);
-        } finally {
-            polling.set(false);
         }
     }
 
-    /**
-     * Polls SQS queue for validation messages.
-     */
-    private void pollSqsQueue() {
-        try {
-            List<Message> messages = receiveValidationMessages();
-            if (!messages.isEmpty()) {
-                log.info("BulkOperationValidationListener: SQS poll received {} message(s) from validation queue", messages.size());
-            }
-            for (Message message : messages) {
-                String queueUrl = messagingProperties.getSqs().resolveQueueUrl(QueueType.BULK_OPERATION_VALIDATION);
-                boolean processed = processValidationMessage(message.body());
-                if (processed) {
-                    SqsClient sqsClient = sqsClientProvider.getIfAvailable();
-                    if (sqsClient != null)
+    private void pollSqsLoop() {
+        String queueUrl = messagingProperties.getSqs().resolveQueueUrl(QueueType.BULK_OPERATION_VALIDATION);
+        SqsClient sqsClient = sqsClientProvider.getIfAvailable();
+
+        while (running && sqsClient != null) {
+            try {
+                List<Message> messages = sqsClient.receiveMessage(buildReceiveMessageRequest(queueUrl)).messages();
+
+                if (!messages.isEmpty()) {
+                    log.info("BulkOperationValidationListener: received {} message(s) from validation queue", messages.size());
+                }
+
+                for (Message message : messages) {
+                    boolean processed = processValidationMessage(message.body());
+                    if (processed) {
                         deleteMessage(queueUrl, message, sqsClient);
+                    }
+                }
+            } catch (Exception ex) {
+                if (running) {
+                    log.warn(LOG_FAILED_TO_POLL_SQS_VALIDATION_QUEUE, ex.getMessage());
+                    try { Thread.sleep(ERROR_BACKOFF_MS); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
                 }
             }
-        } catch (Exception ex) {
-            log.warn(LOG_FAILED_TO_POLL_SQS_VALIDATION_QUEUE, ex.getMessage());
         }
+        log.info("BulkOperationValidationListener SQS poll loop stopped");
     }
 
     private boolean isSqsProvider() {
         return ValidationUtils.equals(messagingProperties.getProvider(), MessageProvider.SQS);
-    }
-
-    /**
-     * Receives messages from the validation queue. Caller must hold polling lock only during this call.
-     */
-    private List<Message> receiveValidationMessages() {
-        SqsClient sqsClient = sqsClientProvider.getIfAvailable();
-        if (ValidationUtils.isEmpty(sqsClient))
-            return List.of();
-        String queueUrl = messagingProperties.getSqs().resolveQueueUrl(QueueType.BULK_OPERATION_VALIDATION);
-        ReceiveMessageResponse response = sqsClient.receiveMessage(buildReceiveMessageRequest(queueUrl));
-        return response.messages();
     }
 
     private ReceiveMessageRequest buildReceiveMessageRequest(String queueUrl) {

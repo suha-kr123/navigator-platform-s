@@ -11,7 +11,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -138,6 +140,42 @@ public class NotificationRecordService {
 
     public Optional<NotificationRecord> findByIdempotencyKey(String idempotencyKey) {
         return notificationRecordRepository.findByIdempotencyKey(idempotencyKey);
+    }
+
+    @Transactional
+    public int markStaleRecordsAsFailed(long staleThresholdMinutes) {
+        LocalDateTime cutoff = LocalDateTime.now().minusMinutes(staleThresholdMinutes);
+        List<NotificationRecord> staleRecords = notificationRecordRepository.findStaleByStatusesAndCreatedBefore(
+                List.of(NotificationStatus.INITIATED, NotificationStatus.PROCESSING),
+                cutoff
+        );
+
+        if (staleRecords.isEmpty()) {
+            return 0;
+        }
+
+        log.warn("Found {} stale notification records (older than {} minutes)", staleRecords.size(), staleThresholdMinutes);
+
+        int markedCount = 0;
+        for (NotificationRecord record : staleRecords) {
+            try {
+                NotificationStatus originalStatus = record.getStatus();
+                Map<String, Object> errorJson = new HashMap<>();
+                errorJson.put("message", "Marked FAILED by sweeper — stuck in " + originalStatus + " since " + record.getCreatedAt());
+                errorJson.put("code", "STALE_RECORD_SWEEP");
+                record.setStatus(NotificationStatus.FAILED);
+                record.setErrorJson(errorJson);
+                record.setUpdatedBy("system-sweeper");
+                notificationRecordRepository.save(record);
+                markedCount++;
+                log.info("Sweeper marked stale record {} as FAILED (was {} since {})", record.getId(), originalStatus, record.getCreatedAt());
+            } catch (Exception ex) {
+                log.error("Sweeper failed to mark record {} as FAILED", record.getId(), ex);
+            }
+        }
+
+        notificationRecordRepository.flush();
+        return markedCount;
     }
 
     /**

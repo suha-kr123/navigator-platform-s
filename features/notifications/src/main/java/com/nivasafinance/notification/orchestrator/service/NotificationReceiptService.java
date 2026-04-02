@@ -13,7 +13,9 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -139,6 +141,42 @@ public class NotificationReceiptService {
             map.put("templateIdentifier", receipt.getTemplateIdentifier());
         }
         return map;
+    }
+
+    @Transactional
+    public int markStaleReceiptsAsFailed(long staleThresholdMinutes) {
+        LocalDateTime cutoff = LocalDateTime.now().minusMinutes(staleThresholdMinutes);
+        List<NotificationReceipt> staleReceipts = notificationReceiptRepository.findStaleByStatusesAndCreatedBefore(
+                List.of(NotificationStatus.INITIATED, NotificationStatus.PROCESSING),
+                cutoff
+        );
+
+        if (staleReceipts.isEmpty()) {
+            return 0;
+        }
+
+        log.warn("Found {} stale notification receipts (older than {} minutes)", staleReceipts.size(), staleThresholdMinutes);
+
+        int markedCount = 0;
+        for (NotificationReceipt receipt : staleReceipts) {
+            try {
+                NotificationStatus originalStatus = receipt.getStatus();
+                Map<String, Object> errorJson = new HashMap<>();
+                errorJson.put("message", "Marked FAILED by sweeper — stuck in " + originalStatus + " since " + receipt.getCreatedAt());
+                errorJson.put("code", "STALE_RECEIPT_SWEEP");
+                receipt.setStatus(NotificationStatus.FAILED);
+                receipt.setErrorJson(errorJson);
+                receipt.setUpdatedBy("system-sweeper");
+                notificationReceiptRepository.save(receipt);
+                markedCount++;
+                log.info("Sweeper marked stale receipt {} as FAILED (was {} since {})", receipt.getId(), originalStatus, receipt.getCreatedAt());
+            } catch (Exception ex) {
+                log.error("Sweeper failed to mark receipt {} as FAILED", receipt.getId(), ex);
+            }
+        }
+
+        notificationReceiptRepository.flush();
+        return markedCount;
     }
 
     private static String inferErrorCode(String message) {

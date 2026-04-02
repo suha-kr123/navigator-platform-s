@@ -29,14 +29,12 @@ import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
-import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 
 import jakarta.annotation.PostConstruct;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 @Component
 @RequiredArgsConstructor
@@ -63,77 +61,87 @@ public class BulkOperationProcessingListener {
     private final ObjectMapper objectMapper;
     private final PlatformTransactionManager transactionManager;
 
-    private final AtomicBoolean polling = new AtomicBoolean(false);
+    private static final long ERROR_BACKOFF_MS = 5_000L;
+
+    private volatile boolean running;
+    private Thread pollerThread;
     private Semaphore processingSemaphore;
 
     @PostConstruct
     public void init() {
         this.processingSemaphore = new Semaphore(processingProperties.getMaxConcurrentProcessing());
         log.info(LOG_INIT, messagingProperties.getProvider());
+
+        if (isSqsProvider()) {
+            SqsClient sqsClient = sqsClientProvider.getIfAvailable();
+            if (sqsClient != null) {
+                running = true;
+                pollerThread = new Thread(this::pollSqsLoop, "bulk-processing-poller");
+                pollerThread.setDaemon(true);
+                pollerThread.start();
+                log.info("BulkOperationProcessingListener: SQS continuous poller started");
+            } else {
+                log.warn("BulkOperationProcessingListener: SqsClient not available, skipping continuous polling");
+            }
+        }
+    }
+
+    @jakarta.annotation.PreDestroy
+    public void shutdown() {
+        running = false;
+        if (pollerThread != null) {
+            pollerThread.interrupt();
+        }
     }
 
     @Scheduled(fixedDelayString = "${messaging.sqs.poll-delay-ms:1000}")
-    public void pollProcessingQueue() {
-        if (!polling.compareAndSet(false, true))
+    public void pollLocalFallback() {
+        if (isSqsProvider()) {
             return;
-
+        }
         try {
-            if (isSqsProvider()) {
-                pollSqsQueue();
-            } else {
-                pollLocalDatabase();
-            }
+            pollLocalDatabase();
         } catch (Exception ex) {
             log.error(LOG_POLL_FAILED, ex);
-        } finally {
-            polling.set(false);
         }
     }
 
-    /**
-     * Polls SQS queue for processing messages.
-     */
-    private void pollSqsQueue() {
-        try {
-            List<Message> messages = receiveProcessingMessages();
-            if (!messages.isEmpty()) {
-                log.info("BulkOperationProcessingListener: SQS poll received {} message(s) from processing queue", messages.size());
+    private void pollSqsLoop() {
+        String queueUrl = messagingProperties.getSqs().resolveQueueUrl(QueueType.BULK_OPERATION_PROCESSING);
+        SqsClient sqsClient = sqsClientProvider.getIfAvailable();
+
+        while (running && sqsClient != null) {
+            try {
+                ReceiveMessageRequest request = ReceiveMessageRequest.builder()
+                        .queueUrl(queueUrl)
+                        .waitTimeSeconds(messagingProperties.getSqs().getWaitTimeSeconds())
+                        .maxNumberOfMessages(messagingProperties.getSqs().getMaxMessages())
+                        .build();
+
+                List<Message> messages = sqsClient.receiveMessage(request).messages();
+
+                if (!messages.isEmpty()) {
+                    log.info("BulkOperationProcessingListener: received {} message(s) from processing queue", messages.size());
+                }
+
+                for (Message message : messages) {
+                    boolean processed = processProcessingMessage(message.body());
+                    if (processed) {
+                        deleteMessage(queueUrl, message, sqsClient);
+                    }
+                }
+            } catch (Exception ex) {
+                if (running) {
+                    log.warn(LOG_FAILED_TO_POLL_SQS_PROCESSING_QUEUE, ex.getMessage());
+                    try { Thread.sleep(ERROR_BACKOFF_MS); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+                }
             }
-            String queueUrl = messagingProperties.getSqs().resolveQueueUrl(QueueType.BULK_OPERATION_PROCESSING);
-            SqsClient sqsClient = sqsClientProvider.getIfAvailable();
-            for (Message message : messages) {
-                boolean processed = processProcessingMessage(message.body());
-                if (processed && sqsClient != null)
-                    deleteMessage(queueUrl, message, sqsClient);
-            }
-        } catch (Exception ex) {
-            log.warn(LOG_FAILED_TO_POLL_SQS_PROCESSING_QUEUE, ex.getMessage());
         }
+        log.info("BulkOperationProcessingListener SQS poll loop stopped");
     }
 
     private boolean isSqsProvider() {
         return ValidationUtils.equals(messagingProperties.getProvider(), MessageProvider.SQS);
-    }
-
-    /**
-     * Receives messages from the processing queue. Caller must hold polling lock only during this call.
-     */
-    private List<Message> receiveProcessingMessages() {
-        SqsClient sqsClient = sqsClientProvider.getIfAvailable();
-        if (ValidationUtils.isEmpty(sqsClient))
-            return List.of();
-        String queueUrl = messagingProperties.getSqs().resolveQueueUrl(QueueType.BULK_OPERATION_PROCESSING);
-        ReceiveMessageRequest request = buildReceiveMessageRequest(queueUrl);
-        ReceiveMessageResponse response = sqsClient.receiveMessage(request);
-        return response.messages();
-    }
-
-    private ReceiveMessageRequest buildReceiveMessageRequest(String queueUrl) {
-        return ReceiveMessageRequest.builder()
-                .queueUrl(queueUrl)
-                .waitTimeSeconds(messagingProperties.getSqs().getWaitTimeSeconds())
-                .maxNumberOfMessages(messagingProperties.getSqs().getMaxMessages())
-                .build();
     }
 
     private void pollLocalDatabase() {

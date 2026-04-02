@@ -1,6 +1,7 @@
 package com.nivasafinance.notification.orchestrator.job;
 
 import com.nivasafinance.notification.orchestrator.service.NotificationRecordService;
+import com.nivasafinance.notification.orchestrator.service.NotificationReceiptService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -13,7 +14,10 @@ import java.util.Map;
 @Slf4j
 public class NotificationScheduledJob {
 
+    private static final long STALE_THRESHOLD_MINUTES = 30;
+
     private final NotificationRecordService notificationRecordService;
+    private final NotificationReceiptService notificationReceiptService;
 
     @Scheduled(cron = "0 0 9 * * *")
     public void sendDailyReminders() {
@@ -26,6 +30,22 @@ public class NotificationScheduledJob {
             );
         } catch (Exception ex) {
             log.error("Failed to trigger daily reminder notification", ex);
+        }
+    }
+
+    @Scheduled(fixedDelay = 900_000)
+    public void sweepStaleNotifications() {
+        log.info("Running stale notification sweeper (threshold: {} minutes)", STALE_THRESHOLD_MINUTES);
+        try {
+            int records = notificationRecordService.markStaleRecordsAsFailed(STALE_THRESHOLD_MINUTES);
+            int receipts = notificationReceiptService.markStaleReceiptsAsFailed(STALE_THRESHOLD_MINUTES);
+            if (records > 0 || receipts > 0) {
+                log.warn("Sweeper marked {} stale records and {} stale receipts as FAILED", records, receipts);
+            } else {
+                log.info("Sweeper found no stale notifications");
+            }
+        } catch (Exception ex) {
+            log.error("Stale notification sweeper failed", ex);
         }
     }
 
