@@ -16,5 +16,6 @@ public interface CreditBureauReadService {
     Optional<EnquiryStatusResponse> getEnquiryStatusByEnquiryIdentifier(UUID identifier);
     List<TrendsResponse> getTrendsByEnquiryIdentifier(UUID enquiryIdentifier);
     List<DemographicVariationResponse> getDemographicVariationsByEnquiryIdentifier(UUID enquiryIdentifier);
+    List<DemographicVariationResponse> getDemographicVariationsByEnquiryId(Long enquiryId);
 }
 

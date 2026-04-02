@@ -6,6 +6,7 @@ import org.springframework.context.MessageSource;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -48,5 +49,9 @@ public class ContactRepositoryWrapper {
         } catch (DataAccessException e) {
             throw new RuntimeException("Failed to retrieve contact by identifier", e);
         }
+    }
+
+    public Optional<Contact> findByCbEnquiryId(Long enquiryId) {
+        return contactRepository.findByCbEnquiryId("[" + enquiryId + "]");
     }
 }

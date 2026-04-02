@@ -2,15 +2,22 @@ package com.nivasafinance.features.lead.listener;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nivasafinance.common.dto.AddressRequest;
+import com.nivasafinance.common.enums.AddressType;
 import com.nivasafinance.common.events.SystemEvent;
 import com.nivasafinance.common.events.payload.LeadCbSuccessEventPayload;
+import com.nivasafinance.features.creditbureau.dto.DemographicVariationResponse;
 import com.nivasafinance.features.creditbureau.repository.CbConfigRepositoryWrapper;
 import com.nivasafinance.features.creditbureau.service.CreditBureauDerivedAttributeWriteService;
+import com.nivasafinance.features.creditbureau.service.CreditBureauReadService;
 import com.nivasafinance.features.lead.dto.LeadDocumentCreateRequest;
 import com.nivasafinance.features.lead.dto.RedashQuerySheetConfig;
+import com.nivasafinance.features.lead.entity.Contact;
+import com.nivasafinance.features.lead.repository.ContactRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadDocumentWriteService;
 import com.nivasafinance.features.master.codemaster.SystemLeadDocumentsMaster;
+import com.nivasafinance.features.person.service.PersonWriteService;
 import com.nivasafinance.redash.dto.RedashExcelReportRequest;
 import com.nivasafinance.redash.service.RedashService;
 import lombok.RequiredArgsConstructor;
@@ -20,10 +27,13 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.io.InputStream;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -38,12 +48,17 @@ public class CbPullSuccessListener {
     private static final String CB_REPORT_FILENAME = "cb-report.xlsx";
     private static final String EXCEL_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     private static final String REDASH_CB_REPORT_SHEETS_KEY = "REDASH_CB_REPORT_SHEETS";
+    private static final String ADDRESS_VARIATION_TYPE = "ADDRESS-VARIATIONS";
+    private static final Pattern PINCODE_PATTERN = Pattern.compile("\\b[0-9]{6}\\b");
 
     private final RedashService redashService;
     private final LeadRepositoryWrapper leadRepositoryWrapper;
     private final LeadDocumentWriteService leadDocumentWriteService;
     private final CbConfigRepositoryWrapper cbConfigRepositoryWrapper;
     private final CreditBureauDerivedAttributeWriteService cbDerivedAttributeWriteService;
+    private final CreditBureauReadService creditBureauReadService;
+    private final ContactRepositoryWrapper contactRepositoryWrapper;
+    private final PersonWriteService personWriteService;
     private final ObjectMapper objectMapper;
 
     @EventListener(condition = "#event.eventType == 'LEAD_CB_PULL_SUCCESS'")
@@ -73,6 +88,60 @@ public class CbPullSuccessListener {
         } catch (Exception e) {
             log.error("Failed to persist CB derived attributes for enquiry ID: {}", enquiryId, e);
         }
+
+        try {
+            addCbReportedAddressToContact(enquiryId);
+        } catch (Exception e) {
+            log.error("Failed to add CB reported address for enquiry ID: {}", enquiryId, e);
+        }
+    }
+
+    private void addCbReportedAddressToContact(Long enquiryId) {
+        List<DemographicVariationResponse> variations = creditBureauReadService.getDemographicVariationsByEnquiryId(enquiryId);
+
+        Optional<DemographicVariationResponse> latestAddressVariation = variations.stream()
+                .filter(v -> ADDRESS_VARIATION_TYPE.equalsIgnoreCase(v.getVariationType()))
+                .filter(v -> v.getVariationValue() != null && !v.getVariationValue().isBlank())
+                .sorted(Comparator.comparing(DemographicVariationResponse::getReportedDate,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
+                .findFirst();
+
+        if (latestAddressVariation.isEmpty()) {
+            log.info("No ADDRESS variation found for enquiry ID: {}, skipping CB reported address", enquiryId);
+            return;
+        }
+
+        String variationValue = latestAddressVariation.get().getVariationValue();
+        String pincode = extractPincode(variationValue);
+        if (pincode == null) {
+            log.warn("No 6-digit pincode found in ADDRESS variation for enquiry ID: {}, skipping", enquiryId);
+            return;
+        }
+
+        Optional<Contact> contactOpt = contactRepositoryWrapper.findByCbEnquiryId(enquiryId);
+        if (contactOpt.isEmpty()) {
+            log.warn("No contact found for enquiry ID: {}, skipping CB reported address", enquiryId);
+            return;
+        }
+
+        Long personId = contactOpt.get().getPersonId();
+
+        AddressRequest addressRequest = new AddressRequest();
+        addressRequest.setAddressType(AddressType.CB_REPORTED);
+        addressRequest.setAddress(variationValue);
+        addressRequest.setPincode(new AddressRequest.PincodeRequest(pincode, null, null));
+
+        personWriteService.addAddress(personId, addressRequest);
+        log.info("Added CB reported address to person ID: {} for enquiry ID: {}", personId, enquiryId);
+    }
+
+    private String extractPincode(String value) {
+        Matcher matcher = PINCODE_PATTERN.matcher(value);
+        String lastMatch = null;
+        while (matcher.find()) {
+            lastMatch = matcher.group();
+        }
+        return lastMatch;
     }
 
     private Long resolveLeadDbId(LeadCbSuccessEventPayload cbPayload, Long enquiryId) {

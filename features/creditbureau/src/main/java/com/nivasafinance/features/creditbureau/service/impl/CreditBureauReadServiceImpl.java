@@ -82,5 +82,10 @@ public class CreditBureauReadServiceImpl implements CreditBureauReadService {
 
         return creditBureauDemographicVariationRepositoryWrapper.findByEnquiryIdAsResponse(enquiry.getId());
     }
+
+    @Override
+    public List<DemographicVariationResponse> getDemographicVariationsByEnquiryId(Long enquiryId) {
+        return creditBureauDemographicVariationRepositoryWrapper.findByEnquiryIdAsResponse(enquiryId);
+    }
 }
 
