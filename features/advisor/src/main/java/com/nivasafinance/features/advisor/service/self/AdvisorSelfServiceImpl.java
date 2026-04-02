@@ -32,6 +32,7 @@ import com.nivasafinance.features.lead.service.LeadContactWriteService;
 import com.nivasafinance.features.lead.service.LeadReadService;
 import com.nivasafinance.features.lead.service.LeadWriteService;
 import com.nivasafinance.features.leadstages.service.LeadStageHistoryReadService;
+import com.nivasafinance.features.master.products.service.ProductReadService;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.features.leadstages.dto.LeadStageHistoryDisplayResponse;
@@ -51,7 +52,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -75,6 +75,7 @@ public class AdvisorSelfServiceImpl implements AdvisorSelfService {
     private final LeadWriteService leadWriteService;
     private final LeadContactWriteService leadContactWriteService;
     private final LeadStageHistoryReadService leadStageHistoryReadService;
+    private final ProductReadService productReadService;
 
     @Override
     public void updateMyProfile(SelfAdvisorProfileRequest request) {
@@ -385,8 +386,9 @@ public class AdvisorSelfServiceImpl implements AdvisorSelfService {
                     .leadIdentifier(basic.getLeadIdentifier())
                     .leadName(basic.getPrimaryContactName())
                     .leadNumber(basic.getPrimaryContactPhone())
-                    .loanType(basic.getProductCode())
+                    .loanType(resolveProductName(basic.getProductCode()))
                     .leadStatus(basic.getStatus())
+                    .leadSubStatus(basic.getSubstatus())
                     .requestedAmount(basic.getRequestedAmount())
                     .createdAt(basic.getCreatedAt())
                     .leadStageDisplayName(resolveCurrentStageDisplayName(basic.getLeadIdentifier()))
@@ -397,13 +399,8 @@ public class AdvisorSelfServiceImpl implements AdvisorSelfService {
 
     @Override
     public PaginatedResponse<AdvisorSelfLeadResponse> getSelfAdvisorLeadsWithSearch(
-            PaginationRequest paginationRequest, String mobileNumber, String name, String leadStageDisplayName) {
-        boolean hasSearch = org.springframework.util.StringUtils.hasText(mobileNumber)
-                || org.springframework.util.StringUtils.hasText(name)
-                || org.springframework.util.StringUtils.hasText(leadStageDisplayName);
-        if (!hasSearch) {
-            return getSelfAdvisorLeads(paginationRequest);
-        }
+            PaginationRequest paginationRequest, String mobileNumber, String name,
+            String status, String subStatus) {
         UUID meId = resolveMeIdentifier();
         com.nivasafinance.features.advisor.entity.Advisor advisor =
                 advisorRepositoryWrapper.findByIdentifierWithException(meId);
@@ -412,9 +409,9 @@ public class AdvisorSelfServiceImpl implements AdvisorSelfService {
             throw AdvisorExceptionFactory.advisorReferralCodeNotAvailable(messageSource);
         }
         PaginatedResponse<AdvisorSelfLeadResponse> response = advisorRepositoryWrapper.findLeadsByReferralCodeWithSearch(
-                referralCode, paginationRequest, mobileNumber, name, leadStageDisplayName);
+                referralCode, paginationRequest, mobileNumber, name, status, subStatus);
         for (AdvisorSelfLeadResponse item : response.getContent()) {
-            item.setLeadStageDisplayName(resolveCurrentStageDisplayName(item.getLeadIdentifier()));
+            item.setLoanType(resolveProductName(item.getLoanType()));
         }
         return response;
     }
@@ -441,8 +438,9 @@ public class AdvisorSelfServiceImpl implements AdvisorSelfService {
                 .leadIdentifier(lead.getLeadIdentifier())
                 .leadName(lead.getPrimaryPersonName())
                 .leadNumber(lead.getPrimaryPersonNumber())
-                .loanType(lead.getProductCode())
+                .loanType(resolveProductName(lead.getProductCode()))
                 .leadStatus(lead.getStatus())
+                .leadSubStatus(lead.getSubStatus())
                 .requestedAmount(lead.getRequestedAmount())
                 .createdAt(lead.getLeadCreatedAt())
                 .leadStageDisplayName(resolveCurrentStageDisplayName(leadIdentifier))
@@ -454,18 +452,12 @@ public class AdvisorSelfServiceImpl implements AdvisorSelfService {
         UUID meId = resolveMeIdentifier();
         SelfAdvisorDashboard dashboard = advisorDashboardWrapper.getSelfDashboard(meId)
                 .orElseThrow(() -> AdvisorExceptionFactory.notFoundForCurrentUser(messageSource));
-        Map<String, Long> leadsCountByStage = advisorDashboardWrapper.getLeadCountsByDisplayLabelForAdvisor(meId);
-        long totalLeads = leadsCountByStage.values().stream().mapToLong(Long::longValue).sum();
-
-        String segmentation = dashboard.getSegmentationValue();
 
         return SelfAdvisorDashboardResponse.builder()
                 .advisorName(dashboard.getName())
-                .segmentation(segmentation)
                 .salesOwner(dashboard.getSalesOwner())
                 .salesOwnerMobile(dashboard.getSalesOwnerMobile())
-                .totalLeads(totalLeads)
-                .leadsCountByStage(leadsCountByStage)
+                .leadCounts(advisorDashboardWrapper.getLeadCountsByStatusForAdvisor(meId))
                 .build();
     }
 
@@ -525,6 +517,17 @@ public class AdvisorSelfServiceImpl implements AdvisorSelfService {
         return segments;
     }
 
+
+    private String resolveProductName(String productCode) {
+        if (productCode == null || productCode.isBlank()) {
+            return productCode;
+        }
+        try {
+            return productReadService.getProductByCode(productCode).getName();
+        } catch (Exception e) {
+            return productCode;
+        }
+    }
 
     private String resolveCurrentStageDisplayName(UUID leadIdentifier) {
         List<LeadStageHistoryDisplayResponse> history =

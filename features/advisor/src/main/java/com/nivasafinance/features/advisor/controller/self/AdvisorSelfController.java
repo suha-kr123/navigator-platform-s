@@ -124,9 +124,10 @@ public class AdvisorSelfController {
             @Valid PaginationRequest paginationRequest,
             @RequestParam(required = false) String mobileNumber,
             @RequestParam(required = false) String name,
-            @RequestParam(required = false) String leadStageDisplayName) {
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String subStatus) {
         return ResponseEntity.ok(
-                advisorSelfService.getSelfAdvisorLeadsWithSearch(paginationRequest, mobileNumber, name, leadStageDisplayName));
+                advisorSelfService.getSelfAdvisorLeadsWithSearch(paginationRequest, mobileNumber, name, status, subStatus));
     }
 
     @GetMapping("/lead/{leadIdentifier}")

@@ -5,6 +5,7 @@ import com.nivasafinance.common.base.model.PaginationInfo;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.features.advisor.dto.AdvisorDashboardFilters;
 import com.nivasafinance.features.advisor.dto.AdvisorDashboardResponse;
+import com.nivasafinance.features.advisor.dto.self.LeadStatusCount;
 import com.nivasafinance.features.advisor.dto.self.SelfAdvisorDashboard;
 import com.nivasafinance.features.referral.enums.EntityType;
 import com.nivasafinance.features.advisor.enums.AdvisorStatus;
@@ -25,7 +26,6 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -183,11 +183,9 @@ public class AdvisorDashboardWrapper {
         String sql = """
                 SELECT
                     p.display_name AS name,
-                    seg_mcv.value->>'default' AS segmentation_value,
                     owner_p.display_name AS sales_owner,
                     (jsonb_path_query_first(COALESCE(owner_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') AS sales_owner_mobile
                 FROM n_advisor a
-                LEFT JOIN n_master_code_value seg_mcv ON seg_mcv.key = (a.segmentation_details->>'segmentation')
                 LEFT JOIN n_user a_u ON a_u.username = a.username
                 LEFT JOIN n_person p ON p.id = a_u.person_id
                 LEFT JOIN n_user owner_u ON owner_u.username = a.owner
@@ -202,49 +200,38 @@ public class AdvisorDashboardWrapper {
         }
     }
 
+    private SelfAdvisorDashboard mapSelfDashboard(ResultSet rs, int rowNum) throws SQLException {
+        return SelfAdvisorDashboard.builder()
+                .name(rs.getString("name"))
+                .salesOwner(rs.getString("sales_owner"))
+                .salesOwnerMobile(rs.getString("sales_owner_mobile"))
+                .build();
+    }
+
     /**
-     * Returns lead counts per external stage (externalDisplayName from n_stage_config) for leads
-     * attributed to the given advisor via referral code. Only stages with externalDisplayName set are included.
+     * Returns lead counts grouped by status and substatus for the given advisor.
      */
-    public Map<String, Long> getLeadCountsByDisplayLabelForAdvisor(UUID advisorIdentifier) {
+    public List<LeadStatusCount> getLeadCountsByStatusForAdvisor(UUID advisorIdentifier) {
         String sql = """
-                SELECT sc.stage_config->>'externalDisplayName' AS external_stage,
+                SELECT l.status::text AS status,
+                       l.substatus::text AS sub_status,
                        COUNT(*) AS lead_count
                 FROM n_lead l
                 JOIN n_sourcing_channel_details sc_d ON sc_d.id = l.sourcing_channel_id
                 JOIN n_referral_code_registry r ON r.referral_code = sc_d.marketing_details->>'referredByCode'
-                JOIN n_stage_config sc ON sc."key" = COALESCE(l.workflow_details->'currentStageDetails'->>'stageKey', '')
-                  AND sc.is_active = true
-                  AND sc.stage_config->>'externalDisplayName' IS NOT NULL
-                  AND TRIM(sc.stage_config->>'externalDisplayName') <> ''
                 WHERE r.entity_type::text = 'ADVISOR' AND r.entity_identifier = ?
-                GROUP BY sc.stage_config->>'externalDisplayName', sc.stage_config->>'externalOrder'
-                ORDER BY (sc.stage_config->>'externalOrder')::int ASC NULLS LAST
+                GROUP BY l.status, l.substatus
+                ORDER BY l.status, l.substatus NULLS FIRST
                 """;
         try {
-            List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql, advisorIdentifier);
-            Map<String, Long> countsByExternalStage = new LinkedHashMap<>();
-            for (Map<String, Object> row : rows) {
-                String externalStage = row.get("external_stage") != null ? row.get("external_stage").toString() : "";
-                if (externalStage.isBlank()) {
-                    continue;
-                }
-                Long count = row.get("lead_count") != null ? ((Number) row.get("lead_count")).longValue() : 0L;
-                countsByExternalStage.put(externalStage, count);
-            }
-            return countsByExternalStage;
+            return jdbcTemplate.query(sql, (rs, rowNum) -> LeadStatusCount.builder()
+                    .status(rs.getString("status"))
+                    .subStatus(rs.getString("sub_status"))
+                    .count(rs.getLong("lead_count"))
+                    .build(), advisorIdentifier);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to fetch lead counts by external stage for advisor", e);
+            throw new RuntimeException("Failed to fetch lead counts by status for advisor", e);
         }
-    }
-
-    private SelfAdvisorDashboard mapSelfDashboard(ResultSet rs, int rowNum) throws SQLException {
-        return SelfAdvisorDashboard.builder()
-                .name(rs.getString("name"))
-                .segmentationValue(rs.getString("segmentation_value"))
-                .salesOwner(rs.getString("sales_owner"))
-                .salesOwnerMobile(rs.getString("sales_owner_mobile"))
-                .build();
     }
 
     private void appendOfficeHierarchyFilter(String currentOfficeCode, StringBuilder whereClause, List<Object> params) {
