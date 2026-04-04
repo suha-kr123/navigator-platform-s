@@ -83,6 +83,8 @@ public class NotificationExecutorListener {
         running = true;
         pollerThread = new Thread(this::pollLoop, "notification-executor-poller");
         pollerThread.setDaemon(true);
+        pollerThread.setUncaughtExceptionHandler((t, e) ->
+                log.error("NotificationExecutorListener poller thread crashed: {}", t.getName(), e));
         pollerThread.start();
         log.info("NotificationExecutorListener: SQS continuous poller started");
     }
@@ -99,10 +101,9 @@ public class NotificationExecutorListener {
     }
 
     private void pollLoop() {
-        String queueUrl = messagingProperties.getSqs().resolveQueueUrl(QueueType.NOTIFICATION_EXECUTOR);
-
         while (running) {
             try {
+                String queueUrl = messagingProperties.getSqs().resolveQueueUrl(QueueType.NOTIFICATION_EXECUTOR);
                 SqsClient sqsClient = sqsClientProvider.getIfAvailable();
                 if (sqsClient == null) {
                     log.warn("NotificationExecutorListener: SqsClient not available, retrying in {}ms", ERROR_BACKOFF_MS);

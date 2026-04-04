@@ -94,6 +94,8 @@ public class BulkOperationValidationListener {
         running = true;
         pollerThread = new Thread(this::pollSqsLoop, "bulk-validation-poller");
         pollerThread.setDaemon(true);
+        pollerThread.setUncaughtExceptionHandler((t, e) ->
+                log.error("BulkOperationValidationListener poller thread crashed: {}", t.getName(), e));
         pollerThread.start();
         log.info("BulkOperationValidationListener: SQS continuous poller started");
     }
@@ -119,10 +121,9 @@ public class BulkOperationValidationListener {
     }
 
     private void pollSqsLoop() {
-        String queueUrl = messagingProperties.getSqs().resolveQueueUrl(QueueType.BULK_OPERATION_VALIDATION);
-
         while (running) {
             try {
+                String queueUrl = messagingProperties.getSqs().resolveQueueUrl(QueueType.BULK_OPERATION_VALIDATION);
                 SqsClient sqsClient = sqsClientProvider.getIfAvailable();
                 if (sqsClient == null) {
                     log.warn("BulkOperationValidationListener: SqsClient not available, retrying in {}ms", ERROR_BACKOFF_MS);

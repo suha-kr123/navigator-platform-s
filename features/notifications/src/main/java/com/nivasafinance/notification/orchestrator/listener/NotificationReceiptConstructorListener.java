@@ -97,6 +97,8 @@ public class NotificationReceiptConstructorListener {
         running = true;
         pollerThread = new Thread(this::pollLoop, "notification-receipt-constructor-poller");
         pollerThread.setDaemon(true);
+        pollerThread.setUncaughtExceptionHandler((t, e) ->
+                log.error("NotificationReceiptConstructorListener poller thread crashed: {}", t.getName(), e));
         pollerThread.start();
         log.info("NotificationReceiptConstructorListener: SQS continuous poller started");
     }
@@ -113,10 +115,9 @@ public class NotificationReceiptConstructorListener {
     }
 
     private void pollLoop() {
-        String queueUrl = messagingProperties.getSqs().resolveQueueUrl(QueueType.NOTIFICATION);
-
         while (running) {
             try {
+                String queueUrl = messagingProperties.getSqs().resolveQueueUrl(QueueType.NOTIFICATION);
                 SqsClient sqsClient = sqsClientProvider.getIfAvailable();
                 if (sqsClient == null) {
                     log.warn("NotificationReceiptConstructorListener: SqsClient not available, retrying in {}ms", ERROR_BACKOFF_MS);

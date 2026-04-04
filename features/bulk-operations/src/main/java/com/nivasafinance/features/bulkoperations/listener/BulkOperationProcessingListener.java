@@ -83,6 +83,8 @@ public class BulkOperationProcessingListener {
         running = true;
         pollerThread = new Thread(this::pollSqsLoop, "bulk-processing-poller");
         pollerThread.setDaemon(true);
+        pollerThread.setUncaughtExceptionHandler((t, e) ->
+                log.error("BulkOperationProcessingListener poller thread crashed: {}", t.getName(), e));
         pollerThread.start();
         log.info("BulkOperationProcessingListener: SQS continuous poller started");
     }
@@ -108,10 +110,9 @@ public class BulkOperationProcessingListener {
     }
 
     private void pollSqsLoop() {
-        String queueUrl = messagingProperties.getSqs().resolveQueueUrl(QueueType.BULK_OPERATION_PROCESSING);
-
         while (running) {
             try {
+                String queueUrl = messagingProperties.getSqs().resolveQueueUrl(QueueType.BULK_OPERATION_PROCESSING);
                 SqsClient sqsClient = sqsClientProvider.getIfAvailable();
                 if (sqsClient == null) {
                     log.warn("BulkOperationProcessingListener: SqsClient not available, retrying in {}ms", ERROR_BACKOFF_MS);
