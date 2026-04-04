@@ -194,17 +194,14 @@ public class NotificationReceiptConstructorListener {
     private boolean handleMessageWithinTransaction(String rawMessage, TransactionStatus status) {
         log.info("Processing notification receipt message: {}", rawMessage);
 
-        Map<String, Object> messageMap = parseMessage(rawMessage);
-
-        // Only recordId is published - load the full record
-        UUID recordId = UUID.fromString((String) messageMap.get("recordId"));
-
+        UUID recordId = null;
         try {
-            // Load the notification record by recordId
+            Map<String, Object> messageMap = parseMessage(rawMessage);
+            recordId = UUID.fromString((String) messageMap.get("recordId"));
+
             Optional<NotificationRecord> recordOpt = notificationRecordService.findById(recordId);
             if (recordOpt.isEmpty()) {
-                log.warn("Notification record not found: {}. This may be an old message or the record was deleted. Deleting message from queue.", recordId);
-                // Return true to delete the message from queue (don't retry forever)
+                log.warn("Notification record not found: {}. Deleting message from queue.", recordId);
                 return true;
             }
 
@@ -224,11 +221,9 @@ public class NotificationReceiptConstructorListener {
                 return true;
             }
 
-            // Get configId, eventType, and payload from the record
             Long configId = record.getNotificationConfigId();
             Map<String, Object> notificationPayload = record.getNotificationPayload();
             
-            // Get eventType from details JSONB column
             Map<String, Object> details = record.getDetails();
             if (details == null || !details.containsKey("event_type")) {
                 throw new IllegalStateException("Notification record details missing event_type");
@@ -239,17 +234,13 @@ public class NotificationReceiptConstructorListener {
                 throw new IllegalStateException("Notification payload is empty");
             }
 
-            // Load the notification config
             NotificationConfig config = notificationConfigRepository.findById(configId)
                     .orElseThrow(() -> new IllegalStateException("NotificationConfig not found for id " + configId));
 
             Map<String, Object> configMap = config.getConfig();
 
-            // Use the payload fields directly as query parameters
-            // The parameter names in the DataProvider query must match the keys in this map
             Map<String, Object> queryParams = new HashMap<>(notificationPayload);
 
-            // Get data provider configuration
             Map<String, Object> dataProviderConfig = asMap(configMap.get("dataProvider"), "config.dataProvider");
             if (dataProviderConfig == null) {
                 throw new IllegalStateException("Notification config missing dataProvider definition");
@@ -259,19 +250,16 @@ public class NotificationReceiptConstructorListener {
                 throw new IllegalStateException("Notification config missing dataProvider key");
             }
 
-            // Execute data provider with payload fields as parameters
             Map<String, String> dataProviderResult = dataProviderExecutor.executeDataProvider(
                     providerKey,
                     queryParams
             );
 
-            // Get recipients from config - no defaults, each recipient must specify mode and channelType
             List<Map<String, Object>> recipients = asListOfMaps(configMap.get("recipients"), "config.recipients");
             if (recipients == null || recipients.isEmpty()) {
                 throw new IllegalStateException("Notification config must specify at least one recipient");
             }
 
-            // Create receipt for each recipient
             log.info("Creating receipts for {} recipient(s). Data provider result keys: {}", 
                     recipients.size(), dataProviderResult.keySet());
             
@@ -284,8 +272,6 @@ public class NotificationReceiptConstructorListener {
                 }
             }
 
-            // If no receipts were created (all recipients skipped due to missing template/contact),
-            // mark the record as SKIPPED
             if (receiptsCreated == 0) {
                 log.warn("No receipts were created for record {} - all recipients were skipped. Marking record as SKIPPED.", recordId);
                 notificationRecordService.updateStatusIfExists(recordId, NotificationStatus.SKIPPED);
@@ -295,21 +281,20 @@ public class NotificationReceiptConstructorListener {
             }
             return true;
         } catch (Exception ex) {
-            log.error("Failed to process notification record {}", recordId, ex);
-            Map<String, Object> errorJson = buildErrorJson(ex);
-            status.setRollbackOnly();
-            try {
-                TransactionTemplate requiresNew = new TransactionTemplate(transactionManager);
-                requiresNew.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-                requiresNew.execute(s -> {
-                    notificationRecordService.updateStatusAndErrorIfExists(recordId, NotificationStatus.FAILED, errorJson);
-                    return null;
-                });
-                log.warn("Marked notification record {} as FAILED. Deleting message from queue.", recordId);
+            if (recordId != null) {
+                log.error("Failed to process notification record {}", recordId, ex);
+                try {
+                    notificationRecordService.updateStatusAndErrorIfExists(recordId, NotificationStatus.FAILED, buildErrorJson(ex));
+                    log.warn("Marked notification record {} as FAILED. Deleting message from queue.", recordId);
+                    return true;
+                } catch (Exception updateEx) {
+                    log.error("Failed to mark notification record {} as FAILED; will retry from SQS.", recordId, updateEx);
+                    status.setRollbackOnly();
+                    return false;
+                }
+            } else {
+                log.error("Failed to parse notification message, deleting from queue: {}", rawMessage, ex);
                 return true;
-            } catch (Exception updateEx) {
-                log.error("Failed to mark notification record {} as FAILED; record stays INITIATED. Message will be retried by SQS.", recordId, updateEx);
-                return false;
             }
         }
     }
