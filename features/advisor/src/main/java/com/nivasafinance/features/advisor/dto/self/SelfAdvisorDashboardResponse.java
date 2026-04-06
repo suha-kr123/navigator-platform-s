@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Map;
+import java.util.List;
 
 @Data
 @Builder
@@ -13,9 +13,7 @@ import java.util.Map;
 @AllArgsConstructor
 public class SelfAdvisorDashboardResponse {
     private String advisorName;
-    private String segmentation;
     private String salesOwner;
     private String salesOwnerMobile;
-    private long totalLeads;
-    private Map<String, Long> leadsCountByStage;
+    private List<LeadStatusCount> leadCounts;
 }

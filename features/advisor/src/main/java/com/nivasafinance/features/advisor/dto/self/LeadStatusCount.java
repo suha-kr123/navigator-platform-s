@@ -9,8 +9,8 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class SelfAdvisorDashboard {
-    private String name;
-    private String salesOwner;
-    private String salesOwnerMobile;
+public class LeadStatusCount {
+    private String status;
+    private String subStatus;
+    private long count;
 }

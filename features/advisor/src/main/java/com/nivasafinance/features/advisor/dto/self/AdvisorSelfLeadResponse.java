@@ -1,5 +1,6 @@
 package com.nivasafinance.features.advisor.dto.self;
 import com.nivasafinance.features.lead.enums.LeadStatus;
+import com.nivasafinance.features.lead.enums.LeadSubStatus;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,6 +21,7 @@ public class AdvisorSelfLeadResponse {
     private String leadNumber;
     private String loanType;
     private LeadStatus leadStatus;
+    private LeadSubStatus leadSubStatus;
     private BigDecimal requestedAmount;
     private LocalDateTime createdAt;
     private String leadStageDisplayName;
