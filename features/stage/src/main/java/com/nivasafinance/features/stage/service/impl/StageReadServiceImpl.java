@@ -7,6 +7,8 @@ import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import com.nivasafinance.features.master.codemaster.service.CodeMasterService;
 import com.nivasafinance.features.rolemanagement.role.dto.UserAssignmentResponse;
 import com.nivasafinance.features.rolemanagement.role.service.UserQueryService;
+import com.nivasafinance.features.rolemanagement.enums.Role;
+import com.nivasafinance.features.rolemanagement.role.service.UserRoleService;
 import com.nivasafinance.features.stage.dto.StageConfigResponse;
 import com.nivasafinance.features.stage.dto.StageFilterResponse;
 import com.nivasafinance.features.stage.dto.StageTemplateResponse;
@@ -34,6 +36,7 @@ public class StageReadServiceImpl implements StageReadService, ApplicationContex
     private final StageConfigRepositoryWrapper stageConfigRepositoryWrapper;
     private final CodeMasterService codeMasterService;
     private final UserQueryService userQueryService;
+    private final UserRoleService userRoleService;
     private ApplicationContext applicationContext;
     
     @Override
@@ -46,20 +49,26 @@ public class StageReadServiceImpl implements StageReadService, ApplicationContex
         StageConfig stageConfig = stageConfigRepositoryWrapper.findByKeyWithException(key);
         
         StageConfig.StageConfigDetails stageConfigDetails = stageConfig.getStageConfig();
-        List<String> possibleNextStages = ValidationUtils.isNonNull(stageConfigDetails) 
+        List<StageConfig.PossibleNextStage> possibleNextStages = ValidationUtils.isNonNull(stageConfigDetails)
                 && ValidationUtils.isNonNull(stageConfigDetails.getPossibleNextStages())
-                ? stageConfigDetails.getPossibleNextStages() 
+                ? stageConfigDetails.getPossibleNextStages()
                 : Collections.emptyList();
-        
+
+        possibleNextStages = filterByCurrentUserRole(possibleNextStages);
+
+        List<String> possibleNextStageKeys = possibleNextStages.stream()
+                .map(StageConfig.PossibleNextStage::getStageKey)
+                .collect(Collectors.toList());
+
         StageConfig.AssigneeRoles assigneeRolesEntity = stageConfig.getAssigneeRoles();
-        List<String> assigneeRoles = ValidationUtils.isNonNull(assigneeRolesEntity) 
+        List<String> assigneeRoles = ValidationUtils.isNonNull(assigneeRolesEntity)
                 && ValidationUtils.isNonNull(assigneeRolesEntity.getRoles())
-                ? assigneeRolesEntity.getRoles() 
+                ? assigneeRolesEntity.getRoles()
                 : Collections.emptyList();
-        
+
         List<CodeValueResponse> subStages = fetchSubStages(stageConfig.getSubStagesCode());
-        
-        return StageConfigResponse.from(stageConfig, possibleNextStages, assigneeRoles, subStages);
+
+        return StageConfigResponse.from(stageConfig, possibleNextStageKeys, assigneeRoles, subStages);
     }
 
     private List<CodeValueResponse> fetchSubStages(String subStagesCode) {
@@ -251,6 +260,32 @@ public class StageReadServiceImpl implements StageReadService, ApplicationContex
         }
     }
     
+    private List<StageConfig.PossibleNextStage> filterByCurrentUserRole(List<StageConfig.PossibleNextStage> possibleNextStages) {
+        if (possibleNextStages.isEmpty()) {
+            return possibleNextStages;
+        }
+
+        String username = UserContext.getUsername();
+        if (!ValidationUtils.isNonNull(username)) {
+            return Collections.emptyList();
+        }
+
+        List<String> userRoles = userRoleService.getRolesByUsername(username);
+        if (userRoles.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        if (userRoles.contains(Role.ADMIN.name())) {
+            return possibleNextStages;
+        }
+
+        return possibleNextStages.stream()
+                .filter(stage -> stage.getAllowedRoles() == null
+                        || stage.getAllowedRoles().isEmpty()
+                        || stage.getAllowedRoles().stream().anyMatch(userRoles::contains))
+                .collect(Collectors.toList());
+    }
+
     private Set<String> collectRolesFromStages(List<String> stageKeys) {
         Set<String> allRoles = new HashSet<>();
         for (String stageKey : stageKeys) {

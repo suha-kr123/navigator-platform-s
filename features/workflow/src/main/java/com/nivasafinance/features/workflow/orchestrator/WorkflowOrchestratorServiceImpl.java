@@ -29,6 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -45,7 +46,7 @@ public class WorkflowOrchestratorServiceImpl implements WorkflowOrchestratorServ
     private final StageConfigRepositoryWrapper stageConfigRepositoryWrapper;
     private final CodeMasterService codeMasterService;
     private final EntityWorkflowAdapterRegistry adapterRegistry;
-    
+
     public WorkflowOrchestratorServiceImpl(
             ObjectMapper objectMapper,
             MessageSource messageSource,
@@ -275,11 +276,16 @@ public class WorkflowOrchestratorServiceImpl implements WorkflowOrchestratorServ
         ValidationUtils.requireNonNullOrEmpty(stageKey, WorkflowValidationException::nullOrEmptyStageKey);
         StageConfig stageConfig = stageConfigRepositoryWrapper.findByKeyWithException(stageKey);
         StageConfig.StageConfigDetails stageConfigDetails = stageConfig.getStageConfig();
-        List<String> possibleNextStages = ValidationUtils.isNonNull(stageConfigDetails) 
+        List<com.nivasafinance.features.workflow.dto.PossibleNextStage> possibleNextStages = ValidationUtils.isNonNull(stageConfigDetails)
                 && ValidationUtils.isNonNull(stageConfigDetails.getPossibleNextStages())
-                ? stageConfigDetails.getPossibleNextStages() 
-                : List.of();
-        
+                ? stageConfigDetails.getPossibleNextStages().stream()
+                    .map(stage -> com.nivasafinance.features.workflow.dto.PossibleNextStage.builder()
+                            .stageKey(stage.getStageKey())
+                            .allowedRoles(stage.getAllowedRoles())
+                            .build())
+                    .collect(Collectors.toList())
+                : Collections.emptyList();
+
         StageConfig.AssigneeRoles assigneeRolesEntity = stageConfig.getAssigneeRoles();
         List<String> assigneeRoles = ValidationUtils.isNonNull(assigneeRolesEntity) 
                 && ValidationUtils.isNonNull(assigneeRolesEntity.getRoles())

@@ -16,6 +16,9 @@ import com.nivasafinance.features.leadstages.exception.LeadStageValidationExcept
 import com.nivasafinance.features.leadstages.repository.LeadStageHistoryRepositoryWrapper;
 import com.nivasafinance.features.leadstages.service.LeadStageHistoryWriteService;
 import com.nivasafinance.common.enums.EntityType;
+import com.nivasafinance.features.rolemanagement.enums.Role;
+import com.nivasafinance.features.rolemanagement.role.service.UserRoleService;
+import com.nivasafinance.features.workflow.dto.PossibleNextStage;
 import com.nivasafinance.features.workflow.dto.StageConfigResponse;
 import com.nivasafinance.features.workflow.orchestrator.WorkflowOrchestratorService;
 import com.nivasafinance.features.workflow.service.WorkflowConfigReadService;
@@ -49,6 +52,7 @@ public class LeadStageHistoryWriteServiceImpl implements LeadStageHistoryWriteSe
     private final WorkflowConfigReadService workflowConfigReadService;
     private final MessageSource messageSource;
     private final ApplicationEventPublisher eventPublisher;
+    private final UserRoleService userRoleService;
 
     @Override
     @Transactional
@@ -360,11 +364,40 @@ public class LeadStageHistoryWriteServiceImpl implements LeadStageHistoryWriteSe
 
     private void validateStageTransition(LeadStageHistory previousEntry, String newStageKey) {
         StageConfigResponse previousStageConfig = workflowOrchestratorService.getStageConfig(previousEntry.getStageKey());
-        List<String> possibleNextStages = previousStageConfig.getPossibleNextStages();
+        List<PossibleNextStage> possibleNextStages = previousStageConfig.getPossibleNextStages();
 
-        if (ValidationUtils.isNonNull(possibleNextStages) && !possibleNextStages.contains(newStageKey)) {
-            throw LeadStageHistoryValidationException.invalidStageTransition(
-                    previousEntry.getStageKey(), newStageKey, messageSource);
+        if (ValidationUtils.isNonNull(possibleNextStages) && !possibleNextStages.isEmpty()) {
+            PossibleNextStage targetStage = possibleNextStages.stream()
+                    .filter(stage -> stage.getStageKey().equals(newStageKey))
+                    .findFirst()
+                    .orElse(null);
+
+            if (!ValidationUtils.isNonNull(targetStage)) {
+                throw LeadStageHistoryValidationException.invalidStageTransition(
+                        previousEntry.getStageKey(), newStageKey, messageSource);
+            }
+
+            validateRoleForTransition(previousEntry.getStageKey(), newStageKey, targetStage.getAllowedRoles());
+        }
+    }
+
+    private void validateRoleForTransition(String fromStageKey, String toStageKey, List<String> allowedRoles) {
+        if (allowedRoles == null || allowedRoles.isEmpty()) {
+            return;
+        }
+
+        String username = UserContext.getUsername();
+        List<String> userRoles = userRoleService.getRolesByUsername(username);
+
+        if (userRoles.contains(Role.ADMIN.name())) {
+            return;
+        }
+
+        boolean hasAllowedRole = userRoles.stream().anyMatch(allowedRoles::contains);
+        if (!hasAllowedRole) {
+            String primaryRole = userRoles.isEmpty() ? "UNKNOWN" : userRoles.get(0);
+            throw LeadStageHistoryValidationException.roleNotAllowedForStageTransition(
+                    primaryRole, fromStageKey, toStageKey, allowedRoles, messageSource);
         }
     }
 
