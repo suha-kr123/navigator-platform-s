@@ -181,6 +181,28 @@ public class Lead extends AuditableEntity {
         private String taskName;
     }
 
+    @Type(JsonType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "bre_executions", columnDefinition = "jsonb")
+    private BREExecutions breExecutions;
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class BREExecutions {
+        private BREExecutionSummary eligibility;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class BREExecutionSummary {
+        private String status;
+        private UUID resultIdentifier;
+    }
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor

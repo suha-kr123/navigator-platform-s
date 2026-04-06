@@ -1,11 +1,12 @@
 package com.nivasafinance.features.lead.service.impl;
 
-import com.nivasafinance.features.leadbre.entity.LeadBREResult;
-import com.nivasafinance.features.leadbre.repository.LeadBREResultRepositoryWrapper;
 import com.nivasafinance.features.lead.dto.LeadBREResultResponse;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadBREResultReadService;
+import com.nivasafinance.features.leadbre.entity.LeadBREResult;
+import com.nivasafinance.features.leadbre.repository.LeadBREResultRepositoryWrapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -13,6 +14,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class LeadBREResultReadServiceImpl implements LeadBREResultReadService {
 
     private final LeadRepositoryWrapper leadRepositoryWrapper;

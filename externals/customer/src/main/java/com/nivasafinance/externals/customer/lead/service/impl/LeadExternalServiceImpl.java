@@ -1,20 +1,11 @@
 package com.nivasafinance.externals.customer.lead.service.impl;
 
 import com.nivasafinance.externals.customer.lead.service.LeadExternalService;
-import com.nivasafinance.features.lead.dto.CurrentCustomerFormStepResponse;
-import com.nivasafinance.features.lead.dto.LeadBREResultExecuteResponse;
-import com.nivasafinance.features.lead.dto.LeadBREResultResponse;
-import com.nivasafinance.features.lead.dto.PatchLeadRequest;
-import com.nivasafinance.features.lead.service.LeadBREResultReadService;
-import com.nivasafinance.features.lead.service.LeadBREResultWriteService;
+import com.nivasafinance.features.lead.dto.*;
 import com.nivasafinance.features.lead.service.LeadContactReadService;
+import com.nivasafinance.features.lead.service.LeadEligibilityReadService;
+import com.nivasafinance.features.lead.service.LeadEligibilityWriteService;
 import com.nivasafinance.features.lead.service.LeadReadService;
-import com.nivasafinance.features.lead.dto.LeadContactResponse;
-import com.nivasafinance.features.lead.dto.LeadResponse;
-import com.nivasafinance.features.lead.dto.DocumentChecklistResponse;
-import com.nivasafinance.features.lead.dto.IncomeObligationDetailsResponse;
-import com.nivasafinance.features.lead.dto.PreliminaryDetailsResponse;
-import com.nivasafinance.features.lead.dto.PropertyDetailsResponse;
 import com.nivasafinance.features.lead.service.LeadWriteService;
 import lombok.RequiredArgsConstructor;
 
@@ -32,13 +23,11 @@ import java.util.UUID;
 @Transactional
 public class LeadExternalServiceImpl implements LeadExternalService {
 
-    private static final String ELIGIBILITY_CONFIG = "eligibility";
-
     private final LeadWriteService leadWriteService;
     private final LeadReadService leadReadService;
     private final LeadContactReadService leadContactReadService;
-    private final LeadBREResultWriteService leadBREResultWriteService;
-    private final LeadBREResultReadService leadBREResultReadService;
+    private final LeadEligibilityWriteService leadEligibilityWriteService;
+    private final LeadEligibilityReadService leadEligibilityReadService;
 
     @Override
     public void patchLead(UUID leadIdentifier, PatchLeadRequest request) {
@@ -89,12 +78,12 @@ public class LeadExternalServiceImpl implements LeadExternalService {
 
     @Override
     public LeadBREResultExecuteResponse executeEligibility(UUID leadIdentifier) {
-        return leadBREResultWriteService.executeBre(leadIdentifier, ELIGIBILITY_CONFIG);
+        return leadEligibilityWriteService.executeEligibility(leadIdentifier);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<LeadBREResultResponse> getLatestEligibility(UUID leadIdentifier) {
-        return leadBREResultReadService.getResults(leadIdentifier, ELIGIBILITY_CONFIG).stream().findFirst();
+    public Optional<LeadEligibilityResponse> getLatestEligibility(UUID leadIdentifier) {
+        return leadEligibilityReadService.getLatestEligibility(leadIdentifier);
     }
 }
