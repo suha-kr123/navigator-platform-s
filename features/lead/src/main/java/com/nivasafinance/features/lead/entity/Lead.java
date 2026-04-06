@@ -157,6 +157,30 @@ public class Lead extends AuditableEntity {
     @Column(name = "call_summary_details", columnDefinition = "jsonb")
     private CallSummaryDetails callSummaryDetails;
 
+    @Type(JsonType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "task_timeline", columnDefinition = "jsonb")
+    private TaskTimeline taskTimeline;
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class TaskTimeline {
+        private TaskTimelineSlot previous;
+        private TaskTimelineSlot next;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class TaskTimelineSlot {
+        private UUID taskIdentifier;
+        private LocalDateTime dueAt;
+        private String taskName;
+    }
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor

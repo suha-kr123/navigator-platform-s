@@ -62,6 +62,10 @@ public class LeadDashboardResponse {
     private LocalDateTime stageAssignedAt;
     private LocalDateTime stageEnteredAt;
 
+    /** Denormalized from {@code n_lead.task_timeline} (previous / next in due-date timeline). */
+    private LeadDashboardTaskSummary previousTask;
+    private LeadDashboardTaskSummary nextTask;
+
     //referral details
     private String referredByCode;
     private UUID referredByIdentifier;
