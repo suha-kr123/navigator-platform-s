@@ -19,7 +19,12 @@ public class TaskAssignedEventPayload {
     UUID entityId;
 
     @JsonProperty("leadIdentifier")
-    public UUID getLeadIdentifier() {
-        return entityType == EntityType.LEAD ? entityId : null;
+    public String getLeadIdentifier() {
+        return entityType == EntityType.LEAD ? entityId.toString() : "";
+    }
+
+    @JsonProperty("advisorIdentifier")
+    public String getAdvisorIdentifier() {
+        return entityType == EntityType.ADVISOR ? entityId.toString() : "";
     }
 }
