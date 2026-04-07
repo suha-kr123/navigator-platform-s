@@ -64,6 +64,13 @@ public class DataProviderExecutor {
         return namedParameterJdbcTemplate.queryForList(query, params);
     }
 
+    public List<Map<String, Object>> executeDataProviderForList(String providerName, Map<String, Object> params) {
+        DataProvider provider = dataProviderRepository.findByName(providerName)
+                .orElseThrow(() -> new IllegalArgumentException("Data provider not found: " + providerName));
+        log.info("Executing data provider '{}' for list with parameters: {}", providerName, params);
+        return executeQueryForList(provider.getQuery(), params);
+    }
+
     public Map<String, String> executeDataProvider(String providerName, Map<String, Object> params) {
         DataProvider provider = dataProviderRepository.findByName(providerName)
                 .orElseThrow(() -> new IllegalArgumentException("Data provider not found: " + providerName));

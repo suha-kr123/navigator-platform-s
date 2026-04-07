@@ -10,6 +10,7 @@ dependencies {
     implementation(project(":common"))
     implementation(project(":integrations"))
     implementation(project(":redash"))
+    implementation(project(":features:dataprovider"))
 }
 
 springBoot {

@@ -2,12 +2,12 @@ package com.nivasafinance.features.creditbureau.service.impl;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nivasafinance.features.creditbureau.dto.RedashDerivedQueryConfig;
+import com.nivasafinance.features.creditbureau.dto.CbDerivedQueryConfig;
 import com.nivasafinance.features.creditbureau.entity.CreditBureauDerivedAttribute;
 import com.nivasafinance.features.creditbureau.repository.CbConfigRepositoryWrapper;
 import com.nivasafinance.features.creditbureau.repository.CreditBureauDerivedAttributeRepositoryWrapper;
 import com.nivasafinance.features.creditbureau.service.CreditBureauDerivedAttributeWriteService;
-import com.nivasafinance.redash.service.RedashService;
+import com.nivasafinance.features.dataprovider.service.DataProviderExecutor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,19 +25,19 @@ import java.util.concurrent.CompletableFuture;
 @Slf4j
 public class CreditBureauDerivedAttributeWriteServiceImpl implements CreditBureauDerivedAttributeWriteService {
 
-    static final String REDASH_CB_DERIVED_QUERIES_KEY = "REDASH_CB_DERIVED_QUERIES";
+    static final String CB_DERIVED_QUERIES_KEY = "CB_DERIVED_QUERIES";
 
     private final CbConfigRepositoryWrapper cbConfigRepositoryWrapper;
     private final CreditBureauDerivedAttributeRepositoryWrapper cbDerivedAttributeRepositoryWrapper;
-    private final RedashService redashService;
+    private final DataProviderExecutor dataProviderExecutor;
     private final ObjectMapper objectMapper;
 
     @Override
     @Transactional
     public void saveDerivedAttributesForEnquiry(Long enquiryId, Long leadId) {
-        List<RedashDerivedQueryConfig> queryConfigs = loadDerivedQueryConfigs();
+        List<CbDerivedQueryConfig> queryConfigs = loadDerivedQueryConfigs();
         if (queryConfigs.isEmpty()) {
-            log.warn("No {} config or empty list; skipping derived attributes for enquiry {}", REDASH_CB_DERIVED_QUERIES_KEY, enquiryId);
+            log.warn("No {} config or empty list; skipping derived attributes for enquiry {}", CB_DERIVED_QUERIES_KEY, enquiryId);
             return;
         }
 
@@ -46,14 +46,14 @@ public class CreditBureauDerivedAttributeWriteServiceImpl implements CreditBurea
         Map<String, Object> parameters = Map.of("enquiryId", enquiryId);
 
         List<CompletableFuture<List<Map<String, Object>>>> futures = new ArrayList<>();
-        for (RedashDerivedQueryConfig cfg : queryConfigs) {
-            if (cfg.getQueryId() == null) {
+        for (CbDerivedQueryConfig cfg : queryConfigs) {
+            if (cfg.getProviderName() == null || cfg.getProviderName().isBlank()) {
                 continue;
             }
             CompletableFuture<List<Map<String, Object>>> future = CompletableFuture
-                    .supplyAsync(() -> redashService.getQueryResultRows(cfg.getQueryId(), parameters))
+                    .supplyAsync(() -> dataProviderExecutor.executeDataProviderForList(cfg.getProviderName(), parameters))
                     .exceptionally(ex -> {
-                        log.error("Redash derived query failed for enquiryId {}, queryId {}", enquiryId, cfg.getQueryId(), ex);
+                        log.error("Data provider query failed for enquiryId {}, provider {}", enquiryId, cfg.getProviderName(), ex);
                         return List.of();
                     });
             futures.add(future);
@@ -77,29 +77,29 @@ public class CreditBureauDerivedAttributeWriteServiceImpl implements CreditBurea
         }
     }
 
-    private List<RedashDerivedQueryConfig> loadDerivedQueryConfigs() {
-        return cbConfigRepositoryWrapper.findByConfigKey(REDASH_CB_DERIVED_QUERIES_KEY)
+    private List<CbDerivedQueryConfig> loadDerivedQueryConfigs() {
+        return cbConfigRepositoryWrapper.findByConfigKey(CB_DERIVED_QUERIES_KEY)
                 .map(config -> {
                     try {
                         String json = config.getConfigValue();
                         if (json == null || json.isBlank()) {
-                            return List.<RedashDerivedQueryConfig>of();
+                            return List.<CbDerivedQueryConfig>of();
                         }
-                        List<RedashDerivedQueryConfig> list =
-                                objectMapper.readValue(json, new TypeReference<List<RedashDerivedQueryConfig>>() { });
-                        return list != null ? list : List.<RedashDerivedQueryConfig>of();
+                        List<CbDerivedQueryConfig> list =
+                                objectMapper.readValue(json, new TypeReference<List<CbDerivedQueryConfig>>() { });
+                        return list != null ? list : List.<CbDerivedQueryConfig>of();
                     } catch (Exception e) {
-                        log.error("Failed to parse {} config_value", REDASH_CB_DERIVED_QUERIES_KEY, e);
-                        return List.<RedashDerivedQueryConfig>of();
+                        log.error("Failed to parse {} config_value", CB_DERIVED_QUERIES_KEY, e);
+                        return List.<CbDerivedQueryConfig>of();
                     }
                 })
-                .orElse(List.<RedashDerivedQueryConfig>of());
+                .orElse(List.<CbDerivedQueryConfig>of());
     }
 
     private CreditBureauDerivedAttribute mapRowToEntity(Long enquiryId, Map<String, Object> row, Map<String, Object> dataExt) {
         String attrName = firstString(row, "attr_name", "attrName", "attribute_name");
         if (attrName == null || attrName.isBlank()) {
-            log.warn("Skipping Redash row without attr_name/attribute_name for enquiry {}", enquiryId);
+            log.warn("Skipping row without attr_name/attribute_name for enquiry {}", enquiryId);
             return null;
         }
         String attrValue = firstString(row, "attr_value", "attrValue", "attribute_value");

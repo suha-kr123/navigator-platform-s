@@ -6,15 +6,15 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Parses {@code n_cb_config} entry {@code REDASH_CB_DERIVED_QUERIES} (JSON array of {@code { "queryId": ... }}).
- * Each Redash row: {@code attr_name} or {@code attribute_name}, {@code attr_value} or {@code attribute_value}.
+ * Parses {@code n_cb_config} entry {@code CB_DERIVED_QUERIES} (JSON array of {@code { "providerName": ... }}).
+ * Each provider query row: {@code attr_name} or {@code attribute_name}, {@code attr_value} or {@code attribute_value}.
  * Row {@code enquiry_id} is optional; persisted rows use the event enquiry id.
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class RedashDerivedQueryConfig {
+public class CbDerivedQueryConfig {
 
-    private Long queryId;
+    private String providerName;
 }
