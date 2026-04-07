@@ -55,9 +55,18 @@ public class StageConfig extends IdentifiableEntity {
     @AllArgsConstructor
     @Builder
     public static class StageConfigDetails {
-        private List<String> possibleNextStages;
+        private List<PossibleNextStage> possibleNextStages;
         private String externalDisplayName;
         private Integer externalOrder;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class PossibleNextStage {
+        private String stageKey;
+        private List<String> allowedRoles;
     }
 
     @Data

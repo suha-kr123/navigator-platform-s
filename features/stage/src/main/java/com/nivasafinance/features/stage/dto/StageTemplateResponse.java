@@ -13,7 +13,7 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class StageTemplateResponse {
-    
+
     private String stageKey;
     private String stageName;
     private String stageDescription;

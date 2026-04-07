@@ -21,6 +21,7 @@ public class LeadStageHistoryValidationException extends BadRequestException {
     private static final String STAGE_ALREADY_EXITED_MESSAGE_KEY = "lead.stage.history.stage.already.exited";
     private static final String INVALID_SUB_STAGE_KEY_MESSAGE_KEY = "lead.stage.history.invalid.sub.stage.key";
     private static final String INVALID_STAGE_TRANSITION_MESSAGE_KEY = "lead.stage.history.invalid.stage.transition";
+    private static final String ROLE_NOT_ALLOWED_FOR_STAGE_TRANSITION_MESSAGE_KEY = "lead.stage.history.role.not.allowed.for.stage.transition";
 
     private LeadStageHistoryValidationException(String message) {
         super(message);
@@ -134,6 +135,24 @@ public class LeadStageHistoryValidationException extends BadRequestException {
         String message = messageSource != null
                 ? messageSource.getMessage(INVALID_STAGE_TRANSITION_MESSAGE_KEY,
                 new Object[]{fromStageKey, toStageKey}, defaultMessage, LocaleContextHolder.getLocale())
+                : defaultMessage;
+
+        return new LeadStageHistoryValidationException(message);
+    }
+
+    public static LeadStageHistoryValidationException roleNotAllowedForStageTransition(String userRole,
+                                                                                        String fromStageKey,
+                                                                                        String toStageKey,
+                                                                                        List<String> allowedRoles,
+                                                                                        MessageSource messageSource) {
+        List<String> safeRoles = allowedRoles == null ? Collections.emptyList() : allowedRoles;
+        String joinedRoles = safeRoles.stream().collect(Collectors.joining(", "));
+        String defaultMessage = String.format("Role %s is not allowed to transition from stage %s to %s. Allowed roles: [%s]",
+                userRole, fromStageKey, toStageKey, joinedRoles);
+
+        String message = messageSource != null
+                ? messageSource.getMessage(ROLE_NOT_ALLOWED_FOR_STAGE_TRANSITION_MESSAGE_KEY,
+                new Object[]{userRole, fromStageKey, toStageKey, joinedRoles}, defaultMessage, LocaleContextHolder.getLocale())
                 : defaultMessage;
 
         return new LeadStageHistoryValidationException(message);

@@ -21,7 +21,7 @@ public class StageConfigResponse {
     
     private String description;
     
-    private List<String> possibleNextStages;
+    private List<PossibleNextStage> possibleNextStages;
     
     private List<String> assigneeRoles;
     

@@ -38,7 +38,7 @@ public class StageConfigResponse {
     
     private String updatedBy;
     
-    public static StageConfigResponse from(StageConfig stageConfig, List<String> possibleNextStages, 
+    public static StageConfigResponse from(StageConfig stageConfig, List<String> possibleNextStages,
                                            List<String> assigneeRoles, List<CodeValueResponse> subStages) {
         return StageConfigResponse.builder()
                 .key(stageConfig.getKey())

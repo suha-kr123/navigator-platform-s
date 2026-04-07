@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="migrate_possible_next_stages_to_object_list" author="system">
+        <comment>Migrate possibleNextStages from string array to object list with stageKey and allowedRoles</comment>
+        <sql>
+            UPDATE n_stage_config
+            SET stage_config = jsonb_set(
+                stage_config,
+                '{possibleNextStages}',
+                (
+                    SELECT COALESCE(
+                        jsonb_agg(
+                            jsonb_build_object('stageKey', elem, 'allowedRoles', '[]'::jsonb)
+                        ),
+                        '[]'::jsonb
+                    )
+                    FROM jsonb_array_elements_text(stage_config -> 'possibleNextStages') AS elem
+                )
+            )
+            WHERE stage_config -> 'possibleNextStages' IS NOT NULL
+              AND jsonb_typeof(stage_config -> 'possibleNextStages') = 'array'
+              AND (
+                  jsonb_array_length(stage_config -> 'possibleNextStages') = 0
+                  OR jsonb_typeof((stage_config -> 'possibleNextStages') -> 0) = 'string'
+              );
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>
