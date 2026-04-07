@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nivasafinance.features.bre.dto.BREExecutionRequest;
 import com.nivasafinance.features.bre.dto.BREExecutionResponse;
+import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.leadbre.entity.LeadBREResult;
 import com.nivasafinance.features.leadbre.enums.LeadBREResultStatus;
 import com.nivasafinance.features.leadbre.repository.LeadBREResultRepositoryWrapper;
@@ -25,6 +26,7 @@ import java.util.concurrent.CompletableFuture;
 @Slf4j
 public class LeadBREResultWriteServiceImpl implements LeadBREResultWriteService {
 
+    private static final String ELIGIBILITY_CONFIG = "eligibility";
     private static final String LOG_PERSIST_FAILED = "Failed to persist lead BRE result after execution identifier={}";
 
     private final LeadRepositoryWrapper leadRepositoryWrapper;
@@ -75,6 +77,7 @@ public class LeadBREResultWriteServiceImpl implements LeadBREResultWriteService 
                     toUpdate.setStatus(LeadBREResultStatus.FAILED);
                 }
                 leadBREResultRepositoryWrapper.saveWithException(toUpdate);
+                updateLeadBREExecution(lead.getId(), config, toUpdate.getStatus().name(), resultIdentifier);
             } catch (Exception e) {
                 log.error(LOG_PERSIST_FAILED, resultIdentifier, e);
             }
@@ -83,6 +86,29 @@ public class LeadBREResultWriteServiceImpl implements LeadBREResultWriteService 
         return LeadBREResultExecuteResponse.builder()
                 .identifier(resultIdentifier)
                 .build();
+    }
+
+    private void updateLeadBREExecution(Long leadDbId, String config, String status, UUID resultIdentifier) {
+        try {
+            var lead = leadRepositoryWrapper.findByIdWithException(leadDbId);
+            Lead.BREExecutionSummary summary = Lead.BREExecutionSummary.builder()
+                    .status(status)
+                    .resultIdentifier(resultIdentifier)
+                    .build();
+
+            Lead.BREExecutions executions = lead.getBreExecutions() != null
+                    ? lead.getBreExecutions()
+                    : new Lead.BREExecutions();
+
+            if (ELIGIBILITY_CONFIG.equals(config)) {
+                executions.setEligibility(summary);
+            }
+
+            lead.setBreExecutions(executions);
+            leadRepositoryWrapper.saveWithException(lead);
+        } catch (Exception e) {
+            log.error("Failed to update BRE execution summary on lead for config={}, resultIdentifier={}", config, resultIdentifier, e);
+        }
     }
 
     private String mapToJson(Map<String, Object> map) {

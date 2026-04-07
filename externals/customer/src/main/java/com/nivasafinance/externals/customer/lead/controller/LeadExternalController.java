@@ -4,8 +4,8 @@ import com.nivasafinance.common.constants.ApiConstants;
 import com.nivasafinance.externals.customer.lead.service.LeadExternalService;
 import com.nivasafinance.features.lead.dto.CurrentCustomerFormStepResponse;
 import com.nivasafinance.features.lead.dto.LeadBREResultExecuteResponse;
-import com.nivasafinance.features.lead.dto.LeadBREResultResponse;
 import com.nivasafinance.features.lead.dto.LeadContactResponse;
+import com.nivasafinance.features.lead.dto.LeadEligibilityResponse;
 import com.nivasafinance.features.lead.dto.LeadResponse;
 import com.nivasafinance.features.lead.dto.PatchLeadRequest;
 import com.nivasafinance.features.lead.dto.DocumentChecklistResponse;
@@ -88,7 +88,7 @@ public class LeadExternalController {
     }
 
     @GetMapping("/{leadIdentifier}/bre/execute/eligibility/latest")
-    public ResponseEntity<LeadBREResultResponse> getLatestEligibility(@PathVariable UUID leadIdentifier) {
+    public ResponseEntity<LeadEligibilityResponse> getLatestEligibility(@PathVariable UUID leadIdentifier) {
         return leadExternalService.getLatestEligibility(leadIdentifier)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.noContent().build());
