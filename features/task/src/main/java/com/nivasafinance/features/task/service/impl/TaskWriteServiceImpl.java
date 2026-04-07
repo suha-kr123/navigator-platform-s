@@ -25,8 +25,10 @@ import com.nivasafinance.features.task.service.TaskEntityService;
 import com.nivasafinance.features.task.service.TaskEntityServiceFactory;
 import com.nivasafinance.features.task.service.TaskWriteService;
 import com.nivasafinance.common.context.UserContext;
+import com.nivasafinance.common.enums.EntityType;
 import com.nivasafinance.common.events.BusinessEvent;
 import com.nivasafinance.common.events.SystemEvent;
+import com.nivasafinance.common.events.payload.LeadTaskTimelineRefreshPayload;
 import com.nivasafinance.common.events.payload.TaskAssignedEventPayload;
 import com.nivasafinance.common.utils.ValidationUtils;
 import lombok.RequiredArgsConstructor;
@@ -69,6 +71,7 @@ public class TaskWriteServiceImpl implements TaskWriteService {
         Task task = buildTaskFromRequest(request, taskConfig);
         Task savedTask = taskRepositoryWrapper.saveWithException(task);
         publishTaskAssignedIfAssigned(savedTask);
+        publishLeadTaskTimelineRefresh(savedTask);
         return TaskResponse.from(savedTask, taskConfig, objectMapper);
     }
 
@@ -101,6 +104,7 @@ public class TaskWriteServiceImpl implements TaskWriteService {
         updateTaskAssignment(task, request.getNewAssignedTo());
         Task savedTask = taskRepositoryWrapper.saveWithException(task);
         publishTaskAssignedIfAssigned(savedTask);
+        publishLeadTaskTimelineRefresh(savedTask);
         TaskConfig taskConfig = getActiveTaskConfig(task.getTaskConfigKey());
         return TaskResponse.from(savedTask, taskConfig, objectMapper);
     }
@@ -110,6 +114,7 @@ public class TaskWriteServiceImpl implements TaskWriteService {
         Task task = validateUpdateDueDateRequest(request);
         task.setDueAt(request.getDueAt());
         Task savedTask = taskRepositoryWrapper.saveWithException(task);
+        publishLeadTaskTimelineRefresh(savedTask);
         TaskConfig taskConfig = getActiveTaskConfig(task.getTaskConfigKey());
         return TaskResponse.from(savedTask, taskConfig, objectMapper);
     }
@@ -119,6 +124,7 @@ public class TaskWriteServiceImpl implements TaskWriteService {
         Task task = validateUpdateTaskNameRequest(taskIdentifier, request);
         task.setName(request.getName());
         Task savedTask = taskRepositoryWrapper.saveWithException(task);
+        publishLeadTaskTimelineRefresh(savedTask);
         TaskConfig taskConfig = getActiveTaskConfig(task.getTaskConfigKey());
         return TaskResponse.from(savedTask, taskConfig, objectMapper);
     }
@@ -138,6 +144,7 @@ public class TaskWriteServiceImpl implements TaskWriteService {
         Task newTask = buildTaskFromRequest(createTaskRequest, taskConfig);
         Task savedTask = taskRepositoryWrapper.saveWithException(newTask);
         publishTaskAssignedIfAssigned(savedTask);
+        publishLeadTaskTimelineRefresh(savedTask);
 
         return TaskResponse.from(oldTask, taskConfig, objectMapper);
     }
@@ -150,6 +157,7 @@ public class TaskWriteServiceImpl implements TaskWriteService {
 
         updateTaskOutcome(validationResult.task, request.getOutcomeCodeValueKey(), outcomeDetails);
         Task savedTask = taskRepositoryWrapper.saveWithException(validationResult.task);
+        publishLeadTaskTimelineRefresh(savedTask);
         return TaskResponse.from(savedTask, validationResult.taskConfig, objectMapper);
     }
 
@@ -419,6 +427,31 @@ public class TaskWriteServiceImpl implements TaskWriteService {
         }
     }
 
+    private void publishLeadTaskTimelineRefresh(UUID leadIdentifier) {
+        if (!ValidationUtils.isNonNull(leadIdentifier)) {
+            return;
+        }
+        applicationEventPublisher.publishEvent(
+                new SystemEvent<>(
+                        BusinessEvent.LEAD_TASK_TIMELINE_REFRESH.toString(),
+                        LeadTaskTimelineRefreshPayload.builder().leadIdentifier(leadIdentifier).build(),
+                        UserContext.getUsername()));
+    }
+
+    private void publishLeadTaskTimelineRefresh(Task task) {
+        if (task == null || task.getTaskDetails() == null) {
+            return;
+        }
+        if (task.getTaskDetails().getEntityType() != EntityType.LEAD) {
+            return;
+        }
+        UUID leadId = task.getTaskDetails().getEntityId();
+        if (!ValidationUtils.isNonNull(leadId)) {
+            return;
+        }
+        publishLeadTaskTimelineRefresh(leadId);
+    }
+
     private void publishTaskAssignedIfAssigned(Task task) {
         String assignedTo = task.getAssignedTo();
         if (ValidationUtils.isNonNullOrEmpty(assignedTo)) {
@@ -457,6 +490,9 @@ public class TaskWriteServiceImpl implements TaskWriteService {
             Task.OutcomeDetails outcomeDetails = buildOutcomeDetailsForClose(outcome);
             updateTaskOutcome(task, outcome, outcomeDetails);
             taskRepositoryWrapper.saveWithException(task);
+        }
+        if (!openTasks.isEmpty()) {
+            publishLeadTaskTimelineRefresh(leadIdentifier);
         }
     }
 

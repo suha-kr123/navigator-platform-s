@@ -6,6 +6,7 @@ import com.nivasafinance.common.enums.EntityType;
 import com.nivasafinance.features.task.dto.TaskResponse;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 public interface TaskReadService {
@@ -15,4 +16,9 @@ public interface TaskReadService {
 
     
     PaginatedResponse<TaskResponse> getAllTasks(EntityType entityType, UUID entityId, boolean includeCompleted, PaginationRequest paginationRequest);
+
+    /**
+     * All tasks for a lead (open and/or completed), ordered by due date. Used for dashboard task timeline.
+     */
+    List<TaskResponse> findAllTasksForLead(UUID leadIdentifier, boolean includeCompleted);
 }

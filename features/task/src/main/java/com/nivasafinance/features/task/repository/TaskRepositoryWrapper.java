@@ -140,6 +140,24 @@ public class TaskRepositoryWrapper {
         return total != null ? total : 0L;
     }
 
+    /**
+     * All tasks for an entity (no pagination). Ordered by due_at ASC NULLS LAST, created_at ASC.
+     */
+    public java.util.List<TaskResponse> findAllTasksForEntity(EntityType entityType, UUID entityId,
+            boolean includeCompleted) {
+        List<Object> params = new ArrayList<>();
+        StringBuilder sb = new StringBuilder();
+        sb.append(BASE_QUERY);
+        sb.append("WHERE (t.task_details->>'entityType') = ? AND (t.task_details->>'entityId')::uuid = ? ");
+        if (!includeCompleted) {
+            sb.append("AND t.outcome IS NULL ");
+        }
+        sb.append("ORDER BY t.due_at ASC NULLS LAST, t.created_at ASC ");
+        params.add(entityType.name());
+        params.add(entityId);
+        return jdbcTemplate.query(sb.toString(), new TaskResponseRowMapper(objectMapper), params.toArray());
+    }
+
     public java.util.List<TaskResponse> findTasksByEntity(EntityType entityType, UUID entityId, boolean includeCompleted,
             PaginationRequest paginationRequest) {
         List<Object> params = new ArrayList<>();

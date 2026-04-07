@@ -3,8 +3,11 @@ package com.nivasafinance.features.lead.repository;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationInfo;
 import com.nivasafinance.common.base.model.PaginationRequest;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nivasafinance.features.lead.dto.LeadDashboardTaskSummary;
 import com.nivasafinance.features.lead.dto.LeadDashboardFilters;
 import com.nivasafinance.features.lead.dto.LeadDashboardResponse;
+import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.enums.LeadStatus;
 import com.nivasafinance.features.lead.enums.LeadSubStatus;
 import com.nivasafinance.features.referral.enums.EntityType;
@@ -20,6 +23,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.sql.ResultSet;
@@ -40,20 +44,35 @@ import java.util.UUID;
 public class LeadDashboardWrapper {
 
     private static final Logger logger = LoggerFactory.getLogger(LeadDashboardWrapper.class);
+
+    private static LeadDashboardTaskSummary toDashboardSummary(Lead.TaskTimelineSlot slot) {
+        if (slot == null) {
+            return null;
+        }
+        return LeadDashboardTaskSummary.builder()
+                .taskIdentifier(slot.getTaskIdentifier())
+                .dueAt(slot.getDueAt())
+                .taskName(slot.getTaskName())
+                .build();
+    }
     private static final Map<String, String> SORTABLE_COLUMNS;
 
     static {
-        SORTABLE_COLUMNS = Map.of("requestLoanAmount", "l.requested_amount",
+        SORTABLE_COLUMNS = Map.of(
+                "requestLoanAmount", "l.requested_amount",
                 "leadCreatedAt", "l.created_at",
                 "lastActivityDate", "l.updated_at",
                 "stageAssignedAt", "stage_assigned_at",
-                "stageEnteredAt", "stage_entered_at");
+                "stageEnteredAt", "stage_entered_at",
+                "nextTaskDueAt", "(l.task_timeline->'next'->>'dueAt')::timestamp",
+                "previousTaskDueAt", "(l.task_timeline->'previous'->>'dueAt')::timestamp");
     }
 
     private final JdbcTemplate jdbcTemplate;
     private final CodeValueMasterService codeValueMasterService;
     private final StaffReadService staffReadService;
     private final OfficeReadService officeReadService;
+    private final ObjectMapper objectMapper;
 
     @SuppressWarnings("text-blocks")
     public PaginatedResponse<LeadDashboardResponse> findLeadDashboard(
@@ -94,6 +113,7 @@ public class LeadDashboardWrapper {
 
         String sortColumn = resolveSortColumn(effectivePagination.getSortBy());
         String sortDirection = resolveSortDirection(effectivePagination.getSortDirection());
+        String orderBySuffix = isTaskTimelineSortKey(effectivePagination.getSortBy()) ? " NULLS LAST" : "";
 
         // Optimized COUNT query - only join tables needed for filtering
         String countFromClause = """
@@ -173,10 +193,11 @@ public class LeadDashboardWrapper {
                         (jsonb_path_query_first(COALESCE(ref_lead_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
                         (jsonb_path_query_first(COALESCE(ref_lead_app_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
                         (jsonb_path_query_first(COALESCE(ref_app_by_uuid_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number')
-                    ) AS referred_by_number
+                    ) AS referred_by_number,
+                    l.task_timeline::text AS task_timeline
                 """
                 + fromClause + whereClause +
-                " ORDER BY " + sortColumn + " " + sortDirection +
+                " ORDER BY " + sortColumn + " " + sortDirection + orderBySuffix +
                 " LIMIT ? OFFSET ?";
 
         try {
@@ -189,7 +210,7 @@ public class LeadDashboardWrapper {
 
             List<LeadDashboardResponse> content = jdbcTemplate.query(
                     dataSql,
-                    new LeadDashboardRowMapper(codeValueMasterService),
+                    new LeadDashboardRowMapper(codeValueMasterService, objectMapper),
                     dataQueryParams.toArray());
 
             PaginationInfo paginationInfo = buildPaginationInfo(
@@ -603,6 +624,14 @@ public class LeadDashboardWrapper {
         return SORTABLE_COLUMNS.getOrDefault(sortBy, SORTABLE_COLUMNS.get("leadCreatedAt"));
     }
 
+    /**
+     * Sort keys that use {@code n_lead.task_timeline} JSON (dueAt ISO strings from Jackson).
+     * Clients pass these as {@link PaginationRequest#getSortBy()}: {@code nextTaskDueAt}, {@code previousTaskDueAt}.
+     */
+    private static boolean isTaskTimelineSortKey(String sortBy) {
+        return "nextTaskDueAt".equals(sortBy) || "previousTaskDueAt".equals(sortBy);
+    }
+
     private String resolveSortDirection(String direction) {
         if (direction == null) {
             return "DESC";
@@ -634,9 +663,11 @@ public class LeadDashboardWrapper {
     private static class LeadDashboardRowMapper implements RowMapper<LeadDashboardResponse> {
 
         private final CodeValueMasterService codeValueMasterService;
+        private final ObjectMapper objectMapper;
 
-        private LeadDashboardRowMapper(CodeValueMasterService codeValueMasterService) {
+        private LeadDashboardRowMapper(CodeValueMasterService codeValueMasterService, ObjectMapper objectMapper) {
             this.codeValueMasterService = codeValueMasterService;
+            this.objectMapper = objectMapper;
         }
 
         @Override
@@ -751,6 +782,19 @@ public class LeadDashboardWrapper {
                 try {
                     builder.referredByIdentifier(UUID.fromString(referredByIdentifierStr));
                 } catch (IllegalArgumentException ex) {
+                }
+            }
+
+            String taskTimelineJson = rs.getString("task_timeline");
+            if (StringUtils.hasText(taskTimelineJson)) {
+                try {
+                    Lead.TaskTimeline tl = objectMapper.readValue(taskTimelineJson, Lead.TaskTimeline.class);
+                    if (tl != null) {
+                        builder.previousTask(toDashboardSummary(tl.getPrevious()));
+                        builder.nextTask(toDashboardSummary(tl.getNext()));
+                    }
+                } catch (Exception e) {
+                    logger.warn("Failed to parse task_timeline for lead dashboard row: {}", e.getMessage());
                 }
             }
 

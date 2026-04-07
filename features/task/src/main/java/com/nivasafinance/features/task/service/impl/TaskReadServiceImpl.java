@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -70,6 +71,16 @@ public class TaskReadServiceImpl implements TaskReadService {
             return taskRepositoryWrapper.findTasksByEntityPaginated(entityType, entityId, includeCompleted, paginationRequest);
         }
         return taskRepositoryWrapper.findAllTasksPaginated(includeCompleted, paginationRequest);
+    }
+
+    @Override
+    public List<TaskResponse> findAllTasksForLead(UUID leadIdentifier, boolean includeCompleted) {
+        if (!ValidationUtils.isNonNull(leadIdentifier)) {
+            return Collections.emptyList();
+        }
+        TaskEntityService taskEntityService = taskEntityServiceFactory.getTaskEntityService(EntityType.LEAD);
+        taskEntityService.validate(leadIdentifier);
+        return taskRepositoryWrapper.findAllTasksForEntity(EntityType.LEAD, leadIdentifier, includeCompleted);
     }
 
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
