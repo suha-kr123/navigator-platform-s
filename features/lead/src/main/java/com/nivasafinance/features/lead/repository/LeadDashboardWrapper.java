@@ -52,6 +52,7 @@ public class LeadDashboardWrapper {
         return LeadDashboardTaskSummary.builder()
                 .taskIdentifier(slot.getTaskIdentifier())
                 .dueAt(slot.getDueAt())
+                .taskConfigKey(slot.getTaskConfigKey())
                 .taskName(slot.getTaskName())
                 .build();
     }

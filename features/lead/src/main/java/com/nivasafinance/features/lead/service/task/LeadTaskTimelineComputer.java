@@ -79,6 +79,7 @@ public final class LeadTaskTimelineComputer {
         return Lead.TaskTimelineSlot.builder()
                 .taskIdentifier(t.getTaskIdentifier())
                 .dueAt(t.getDueAt())
+                .taskConfigKey(t.getTaskConfigKey())
                 .taskName(t.getTaskName())
                 .build();
     }

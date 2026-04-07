@@ -15,5 +15,6 @@ import java.util.UUID;
 public class LeadDashboardTaskSummary {
     private UUID taskIdentifier;
     private LocalDateTime dueAt;
+    private String taskConfigKey;
     private String taskName;
 }
