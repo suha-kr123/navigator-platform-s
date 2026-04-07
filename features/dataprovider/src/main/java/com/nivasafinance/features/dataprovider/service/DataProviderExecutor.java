@@ -1,7 +1,7 @@
-package com.nivasafinance.notification.orchestrator.service;
+package com.nivasafinance.features.dataprovider.service;
 
-import com.nivasafinance.notification.orchestrator.entity.DataProvider;
-import com.nivasafinance.notification.orchestrator.repository.DataProviderRepository;
+import com.nivasafinance.features.dataprovider.entity.DataProvider;
+import com.nivasafinance.features.dataprovider.repository.DataProviderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -72,7 +72,7 @@ public class DataProviderExecutor {
         Map<String, Object> result = executeQuerySafely(provider.getQuery(), params);
         log.info("Data provider '{}' returned {} result(s). Keys: {}", providerName, result.size(), result.keySet());
 
-        // Convert to Map<String, String> with null → "". Downstream receipt constructor uses this for template
+        // Convert to Map<String, String> with null -> "". Downstream receipt constructor uses this for template
         // substitution (e.g. Gallabox/WATI); empty string lets callers treat "no value" via isBlank() and avoids
         // NPE when building template parameters. Intentional: use executeDataProvider for notification flow.
         // Note: executeQueryAsStringMap keeps nulls; use that when you need to distinguish null from "".
@@ -95,5 +95,3 @@ public class DataProviderExecutor {
         });
     }
 }
-
-

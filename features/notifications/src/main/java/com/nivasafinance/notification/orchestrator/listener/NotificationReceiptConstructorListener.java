@@ -11,7 +11,7 @@ import com.nivasafinance.notification.orchestrator.entity.NotificationConfig;
 import com.nivasafinance.notification.orchestrator.entity.NotificationRecord;
 import com.nivasafinance.notification.orchestrator.entity.NotificationReceipt;
 import com.nivasafinance.notification.orchestrator.repository.NotificationConfigRepository;
-import com.nivasafinance.notification.orchestrator.service.DataProviderExecutor;
+import com.nivasafinance.features.dataprovider.service.DataProviderExecutor;
 import com.nivasafinance.notification.orchestrator.service.NotificationReceiptService;
 import com.nivasafinance.notification.orchestrator.service.NotificationRecordService;
 import lombok.RequiredArgsConstructor;

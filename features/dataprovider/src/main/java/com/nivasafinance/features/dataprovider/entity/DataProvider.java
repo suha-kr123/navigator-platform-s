@@ -1,4 +1,4 @@
-package com.nivasafinance.notification.orchestrator.entity;
+package com.nivasafinance.features.dataprovider.entity;
 
 import com.nivasafinance.common.audit.IdentifiableEntity;
 import jakarta.persistence.Column;
@@ -10,9 +10,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
-/**
- * Represents a SQL data provider used to fetch notification context.
- */
 @Entity
 @Table(name = "n_data_provider")
 @Data
@@ -31,5 +28,3 @@ public class DataProvider extends IdentifiableEntity {
     @Column(name = "status", nullable = false, length = 50)
     private String status;
 }
-
-
