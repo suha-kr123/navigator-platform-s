@@ -65,8 +65,8 @@ public class LeadDashboardWrapper {
                 "lastActivityDate", "l.updated_at",
                 "stageAssignedAt", "stage_assigned_at",
                 "stageEnteredAt", "stage_entered_at",
-                "nextTaskDueAt", "(l.task_timeline->'next'->>'dueAt')::timestamp",
-                "previousTaskDueAt", "(l.task_timeline->'previous'->>'dueAt')::timestamp");
+                "nextTaskDueAt", "to_timestamp(l.task_timeline->'next'->>'dueAt', 'DD-MM-YYYY HH24:MI:SS')",
+                "previousTaskDueAt", "to_timestamp(l.task_timeline->'previous'->>'dueAt', 'DD-MM-YYYY HH24:MI:SS')");
     }
 
     private final JdbcTemplate jdbcTemplate;
@@ -626,7 +626,7 @@ public class LeadDashboardWrapper {
     }
 
     /**
-     * Sort keys that use {@code n_lead.task_timeline} JSON (dueAt ISO strings from Jackson).
+     * Sort keys that use {@code n_lead.task_timeline} JSON {@code dueAt} (dd-MM-yyyy HH:mm:ss or ISO year-first).
      * Clients pass these as {@link PaginationRequest#getSortBy()}: {@code nextTaskDueAt}, {@code previousTaskDueAt}.
      */
     private static boolean isTaskTimelineSortKey(String sortBy) {
