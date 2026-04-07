@@ -3,13 +3,14 @@ package com.nivasafinance.features.lead.workflow;
 import com.nivasafinance.common.enums.EntityType;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
+import com.nivasafinance.features.leadstages.dto.StageTransitionRequest;
+import com.nivasafinance.features.leadstages.service.LeadStageHistoryWriteService;
 import com.nivasafinance.features.task.dto.CreateTaskRequest;
 import com.nivasafinance.features.task.dto.TaskDetailsRequest;
 import com.nivasafinance.features.task.service.TaskWriteService;
 import com.nivasafinance.features.workflow.adapter.EntityWorkflowAdapter;
 
-import lombok.RequiredArgsConstructor;
-
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -18,11 +19,20 @@ import java.util.Map;
 import java.util.UUID;
 
 @Component
-@RequiredArgsConstructor
 public class LeadWorkflowAdapter implements EntityWorkflowAdapter {
     
     private final LeadRepositoryWrapper leadRepositoryWrapper;
     private final TaskWriteService taskWriteService;
+    private final LeadStageHistoryWriteService leadStageHistoryWriteService;
+
+    public LeadWorkflowAdapter(
+            LeadRepositoryWrapper leadRepositoryWrapper,
+            TaskWriteService taskWriteService,
+            @Lazy LeadStageHistoryWriteService leadStageHistoryWriteService) {
+        this.leadRepositoryWrapper = leadRepositoryWrapper;
+        this.taskWriteService = taskWriteService;
+        this.leadStageHistoryWriteService = leadStageHistoryWriteService;
+    }
 
     
     @Override
@@ -85,5 +95,30 @@ public class LeadWorkflowAdapter implements EntityWorkflowAdapter {
         }
         throw new IllegalArgumentException("Invalid CreateTaskRequest type");
     }
-    
+
+    @Override
+    public Long resolveEntityId(UUID entityIdentifier) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(entityIdentifier);
+        return lead.getId();
+    }
+
+    @Override
+    public void transitionStage(UUID entityIdentifier, String fromStageKey, String toStageKey, String assignTo) {
+        StageTransitionRequest request = StageTransitionRequest.builder()
+                .stageKey(toStageKey)
+                .previousStageKey(fromStageKey)
+                .assignedTo(assignTo)
+                .build();
+        leadStageHistoryWriteService.createStageEntry(entityIdentifier, request);
+    }
+
+    @Override
+    public void closeOpenTasks(UUID entityIdentifier, String outcome) {
+        taskWriteService.closeAllOpenTasksForLead(entityIdentifier, outcome);
+    }
+
+    @Override
+    public void changeSubStage(UUID entityIdentifier, String stageKey, String subStageKey) {
+        leadStageHistoryWriteService.changeSubStage(entityIdentifier, stageKey, subStageKey);
+    }
 }

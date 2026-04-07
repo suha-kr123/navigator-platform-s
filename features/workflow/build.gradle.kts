@@ -11,6 +11,7 @@ dependencies {
     implementation(project(":features:master"))
     implementation(project(":features:stage"))
     implementation(project(":features:rolemanagement"))
+    implementation(project(":features:bre"))
 }
 
 springBoot {

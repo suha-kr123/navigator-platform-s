@@ -42,5 +42,25 @@ public interface EntityWorkflowAdapter {
      * Creates a task and associates it with the entity (synchronous, no reflection).
      */
     Object createTaskAndAssociate(Long entityId, Object createTaskRequest, Map<String, Object> taskDetails);
+
+    /**
+     * Resolves the database ID (Long) from the entity's UUID identifier.
+     */
+    Long resolveEntityId(UUID entityIdentifier);
+
+    /**
+     * Transitions the entity from one stage to another.
+     */
+    void transitionStage(UUID entityIdentifier, String fromStageKey, String toStageKey, String assignTo);
+
+    /**
+     * Closes all open tasks for the entity with the given outcome.
+     */
+    void closeOpenTasks(UUID entityIdentifier, String outcome);
+
+    /**
+     * Changes the substage of the entity within its current stage.
+     */
+    void changeSubStage(UUID entityIdentifier, String stageKey, String subStageKey);
 }
 

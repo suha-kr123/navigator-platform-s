@@ -1,7 +1,11 @@
 package com.nivasafinance.features.workflow.orchestrator;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nivasafinance.common.utils.ValidationUtils;
+import com.nivasafinance.features.bre.dto.BREExecutionRequest;
+import com.nivasafinance.features.bre.dto.BREExecutionResponse;
+import com.nivasafinance.features.bre.service.BREExecutionService;
 import com.nivasafinance.features.task.dto.CreateTaskRequest;
 import com.nivasafinance.features.task.dto.TaskDetailsRequest;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
@@ -12,8 +16,12 @@ import com.nivasafinance.common.enums.EntityType;
 import com.nivasafinance.features.task.entity.TaskConfig;
 import com.nivasafinance.features.task.repository.TaskConfigRepositoryWrapper;
 import com.nivasafinance.features.workflow.constants.WorkflowConstants;
+import com.nivasafinance.features.workflow.dto.PostTaskAction;
+import com.nivasafinance.features.workflow.dto.TaskCompletionRule;
 import com.nivasafinance.features.workflow.dto.WorkflowConfigDto;
 import com.nivasafinance.features.workflow.dto.WorkflowStageConfig;
+import com.nivasafinance.features.workflow.entity.PendingWorkflowAction;
+import com.nivasafinance.features.workflow.repository.PendingWorkflowActionRepositoryWrapper;
 import com.nivasafinance.features.workflow.enums.TaskType;
 import com.nivasafinance.features.workflow.exception.WorkflowConfigParseException;
 import com.nivasafinance.features.workflow.exception.WorkflowConfigValidationException;
@@ -30,6 +38,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -46,7 +55,9 @@ public class WorkflowOrchestratorServiceImpl implements WorkflowOrchestratorServ
     private final StageConfigRepositoryWrapper stageConfigRepositoryWrapper;
     private final CodeMasterService codeMasterService;
     private final EntityWorkflowAdapterRegistry adapterRegistry;
-
+    private final BREExecutionService breExecutionService;
+    private final PendingWorkflowActionRepositoryWrapper pendingActionRepositoryWrapper;
+    
     public WorkflowOrchestratorServiceImpl(
             ObjectMapper objectMapper,
             MessageSource messageSource,
@@ -54,7 +65,9 @@ public class WorkflowOrchestratorServiceImpl implements WorkflowOrchestratorServ
             WorkflowConfigReadService workflowConfigReadService,
             StageConfigRepositoryWrapper stageConfigRepositoryWrapper,
             CodeMasterService codeMasterService,
-            @Lazy EntityWorkflowAdapterRegistry adapterRegistry) {
+            @Lazy EntityWorkflowAdapterRegistry adapterRegistry,
+            BREExecutionService breExecutionService,
+            PendingWorkflowActionRepositoryWrapper pendingActionRepositoryWrapper) {
         this.objectMapper = objectMapper;
         this.messageSource = messageSource;
         this.taskConfigRepositoryWrapper = taskConfigRepositoryWrapper;
@@ -62,6 +75,8 @@ public class WorkflowOrchestratorServiceImpl implements WorkflowOrchestratorServ
         this.stageConfigRepositoryWrapper = stageConfigRepositoryWrapper;
         this.codeMasterService = codeMasterService;
         this.adapterRegistry = adapterRegistry;
+        this.breExecutionService = breExecutionService;
+        this.pendingActionRepositoryWrapper = pendingActionRepositoryWrapper;
     }
 
 
@@ -362,5 +377,272 @@ public class WorkflowOrchestratorServiceImpl implements WorkflowOrchestratorServ
         
         EntityWorkflowAdapter adapter = adapterRegistry.getAdapter(entityType);
         return adapter.getWorkflowConfigKey(entityId);
+    }
+
+    @Override
+    @Transactional
+    public void processTaskCompletion(
+            UUID entityIdentifier,
+            EntityType entityType,
+            UUID sourceTaskIdentifier,
+            String taskConfigKey,
+            String outcome,
+            String stageKey,
+            String assignedTo) {
+
+        EntityWorkflowAdapter adapter = adapterRegistry.getAdapter(entityType);
+        Long entityId = adapter.resolveEntityId(entityIdentifier);
+
+        String workflowConfigKey = adapter.getWorkflowConfigKey(entityId);
+        if (!ValidationUtils.isNonNullOrEmpty(workflowConfigKey)) {
+            log.warn("Workflow config key not found for entity: {} ({}). Skipping post-task actions.",
+                    entityIdentifier, entityType);
+            return;
+        }
+
+        com.nivasafinance.features.workflow.entity.WorkflowConfig workflowConfig =
+                workflowConfigReadService.getWorkflowConfigByKey(workflowConfigKey);
+        WorkflowConfigDto workflowConfigDto = parseWorkflowConfig(workflowConfig);
+
+        WorkflowStageConfig stageConfig = findStageConfig(workflowConfigDto, stageKey);
+        if (!ValidationUtils.isNonNull(stageConfig)
+                || !ValidationUtils.isNonNull(stageConfig.getTaskCompletionRules())) {
+            log.debug("No task completion rules for stage: {} in workflow: {}. Skipping.", stageKey, workflowConfigKey);
+            return;
+        }
+
+        TaskCompletionRule rule = findMatchingTaskCompletionRule(stageConfig.getTaskCompletionRules(), taskConfigKey);
+        if (!ValidationUtils.isNonNull(rule)) {
+            log.debug("No task completion rule for task: {} in stage: {}. Skipping.", taskConfigKey, stageKey);
+            return;
+        }
+
+        BREExecutionResponse breResponse = executeBRERule(rule.getBreRuleUname(),
+                taskConfigKey, outcome, entityType, entityIdentifier, stageKey, assignedTo);
+        if (!ValidationUtils.isNonNull(breResponse)) {
+            return;
+        }
+
+        List<PostTaskAction> actions = parseActionsFromBREResponse(breResponse);
+        if (actions.isEmpty()) {
+            log.debug("No actions returned by BRE rule {} for task: {} with outcome: {}.",
+                    rule.getBreRuleUname(), taskConfigKey, outcome);
+            return;
+        }
+
+        processActions(actions, entityId, entityIdentifier, entityType, sourceTaskIdentifier,
+                taskConfigKey, outcome, stageKey, adapter);
+    }
+
+    @Override
+    @Transactional
+    public void executePendingAction(UUID actionIdentifier, String assignTo, LocalDateTime dueDate) {
+        PendingWorkflowAction pending = pendingActionRepositoryWrapper
+                .findByActionIdentifierWithException(actionIdentifier);
+
+        if (!PendingWorkflowAction.STATUS_PENDING.equals(pending.getStatus())) {
+            throw WorkflowValidationException.actionAlreadyProcessed();
+        }
+
+        EntityWorkflowAdapter adapter = adapterRegistry.getAdapter(pending.getEntityType());
+        Long entityId = adapter.resolveEntityId(pending.getEntityIdentifier());
+
+        PendingWorkflowAction.ActionDetails details = pending.getActionDetails();
+        PostTaskAction action = PostTaskAction.builder()
+                .type(details.getType())
+                .taskConfigKey(details.getTaskConfigKey())
+                .targetStageKey(details.getTargetStageKey())
+                .targetSubStageKey(details.getTargetSubStageKey())
+                .assignTo(assignTo)
+                .outcome(details.getOutcome())
+                .dueDate(dueDate)
+                .build();
+
+        executeSingleAction(action, entityId, pending.getEntityIdentifier(),
+                pending.getEntityType(), pending.getCurrentStageKey(), adapter);
+
+        pending.setStatus(PendingWorkflowAction.STATUS_EXECUTED);
+        pending.setExecutedAt(LocalDateTime.now());
+        pending.setExecutedBy(com.nivasafinance.common.context.UserContext.getUsername());
+        pending.getActionDetails().setAssignTo(assignTo);
+        pending.getActionDetails().setDueDate(dueDate);
+        pendingActionRepositoryWrapper.save(pending);
+    }
+
+    @Override
+    @Transactional
+    public void cancelPendingAction(UUID actionIdentifier) {
+        PendingWorkflowAction pending = pendingActionRepositoryWrapper
+                .findByActionIdentifierWithException(actionIdentifier);
+
+        if (!PendingWorkflowAction.STATUS_PENDING.equals(pending.getStatus())) {
+            throw WorkflowValidationException.actionAlreadyProcessed();
+        }
+
+        pending.setStatus(PendingWorkflowAction.STATUS_CANCELLED);
+        pending.setExecutedAt(LocalDateTime.now());
+        pending.setExecutedBy(com.nivasafinance.common.context.UserContext.getUsername());
+        pendingActionRepositoryWrapper.save(pending);
+    }
+
+    @Override
+    @Transactional
+    public void cancelPendingActionsBySourceTask(UUID sourceTaskIdentifier) {
+        List<PendingWorkflowAction> pendingActions = pendingActionRepositoryWrapper
+                .findPendingBySourceTask(sourceTaskIdentifier);
+
+        String cancelledBy = com.nivasafinance.common.context.UserContext.getUsername();
+        LocalDateTime now = LocalDateTime.now();
+
+        for (PendingWorkflowAction pending : pendingActions) {
+            pending.setStatus(PendingWorkflowAction.STATUS_CANCELLED);
+            pending.setExecutedAt(now);
+            pending.setExecutedBy(cancelledBy);
+            pendingActionRepositoryWrapper.save(pending);
+        }
+    }
+
+    private TaskCompletionRule findMatchingTaskCompletionRule(List<TaskCompletionRule> rules, String taskConfigKey) {
+        return rules.stream()
+                .filter(r -> taskConfigKey.equals(r.getTaskConfigKey()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private BREExecutionResponse executeBRERule(String breRuleUname, String taskConfigKey, String outcome,
+            EntityType entityType, UUID entityIdentifier, String stageKey, String assignedTo) {
+        Map<String, Object> breContext = new HashMap<>();
+        breContext.put("taskConfigKey", taskConfigKey);
+        breContext.put("outcome", outcome);
+        breContext.put("entityType", entityType.name());
+        breContext.put("entityIdentifier", entityIdentifier.toString());
+        breContext.put("stageKey", stageKey);
+        breContext.put("assignedTo", assignedTo);
+
+        BREExecutionRequest breRequest = BREExecutionRequest.builder().params(breContext).build();
+        try {
+            BREExecutionResponse breResponse = breExecutionService.execute(breRuleUname, breRequest).join();
+            if (!ValidationUtils.isNonNull(breResponse) || ValidationUtils.isNonNullOrEmpty(breResponse.getError())) {
+                log.error("BRE rule {} returned error: {}", breRuleUname,
+                        breResponse != null ? breResponse.getError() : "null response");
+                return null;
+            }
+            return breResponse;
+        } catch (Exception e) {
+            log.error("Failed to execute BRE rule {} for task completion: {}", breRuleUname, e.getMessage(), e);
+            return null;
+        }
+    }
+
+    private List<PostTaskAction> parseActionsFromBREResponse(BREExecutionResponse breResponse) {
+        if (!ValidationUtils.isNonNull(breResponse.getResponse())) {
+            return List.of();
+        }
+        Object actionsObj = breResponse.getResponse().get("actions");
+        if (!ValidationUtils.isNonNull(actionsObj)) {
+            return List.of();
+        }
+        try {
+            return objectMapper.convertValue(actionsObj, new TypeReference<List<PostTaskAction>>() {});
+        } catch (Exception e) {
+            log.error("Failed to parse post-task actions from BRE response: {}", e.getMessage(), e);
+            return List.of();
+        }
+    }
+
+    private void processActions(List<PostTaskAction> actions, Long entityId, UUID entityIdentifier,
+            EntityType entityType, UUID sourceTaskIdentifier, String sourceTaskConfigKey,
+            String sourceOutcome, String currentStageKey, EntityWorkflowAdapter adapter) {
+        String effectiveStageKey = currentStageKey;
+
+        for (PostTaskAction action : actions) {
+            boolean autoExecute = Boolean.TRUE.equals(action.getAutoExecute());
+
+            if (autoExecute) {
+                try {
+                    executeSingleAction(action, entityId, entityIdentifier, entityType,
+                            effectiveStageKey, adapter);
+                    if (PostTaskAction.TYPE_MOVE_STAGE.equals(action.getType())) {
+                        effectiveStageKey = action.getTargetStageKey();
+                    }
+                } catch (Exception e) {
+                    log.error("Failed to auto-execute post-task action {} for entity {}: {}",
+                            action.getType(), entityIdentifier, e.getMessage(), e);
+                }
+            } else {
+                storePendingAction(action, entityIdentifier, entityType, effectiveStageKey,
+                        sourceTaskIdentifier, sourceTaskConfigKey, sourceOutcome);
+            }
+        }
+    }
+
+    private void executeSingleAction(PostTaskAction action, Long entityId, UUID entityIdentifier,
+            EntityType entityType, String stageKey, EntityWorkflowAdapter adapter) {
+        switch (action.getType()) {
+            case PostTaskAction.TYPE_CREATE_TASK:
+                executeCreateTaskAction(action, entityId, entityType, stageKey, adapter);
+                break;
+            case PostTaskAction.TYPE_MOVE_STAGE:
+                adapter.transitionStage(entityIdentifier, stageKey,
+                        action.getTargetStageKey(), action.getAssignTo());
+                break;
+            case PostTaskAction.TYPE_CLOSE_TASKS:
+                String closeOutcome = ValidationUtils.isNonNullOrEmpty(action.getOutcome())
+                        ? action.getOutcome() : "AUTO_CLOSED";
+                adapter.closeOpenTasks(entityIdentifier, closeOutcome);
+                break;
+            case PostTaskAction.TYPE_CHANGE_SUBSTAGE:
+                adapter.changeSubStage(entityIdentifier, stageKey, action.getTargetSubStageKey());
+                break;
+            default:
+                log.warn("Unknown post-task action type: {}. Skipping.", action.getType());
+        }
+    }
+
+    private void storePendingAction(PostTaskAction action, UUID entityIdentifier, EntityType entityType,
+            String currentStageKey, UUID sourceTaskIdentifier, String sourceTaskConfigKey, String sourceOutcome) {
+        PendingWorkflowAction pending = new PendingWorkflowAction();
+        pending.setEntityIdentifier(entityIdentifier);
+        pending.setEntityType(entityType);
+        pending.setCurrentStageKey(currentStageKey);
+        pending.setSourceTaskIdentifier(sourceTaskIdentifier);
+        pending.setSourceTaskConfigKey(sourceTaskConfigKey);
+        pending.setSourceOutcome(sourceOutcome);
+        pending.setStatus(PendingWorkflowAction.STATUS_PENDING);
+        pending.setActionDetails(PendingWorkflowAction.ActionDetails.builder()
+                .type(action.getType())
+                .taskConfigKey(action.getTaskConfigKey())
+                .targetStageKey(action.getTargetStageKey())
+                .targetSubStageKey(action.getTargetSubStageKey())
+                .assignTo(action.getAssignTo())
+                .outcome(action.getOutcome())
+                .dueDate(action.getDueDate())
+                .build());
+        pendingActionRepositoryWrapper.save(pending);
+    }
+
+    private void executeCreateTaskAction(PostTaskAction action, Long entityId, EntityType entityType,
+            String stageKey, EntityWorkflowAdapter adapter) {
+        Object entityInfo = adapter.getEntity(entityId);
+        UUID entityIdentifier = ValidationUtils.isNonNull(entityInfo)
+                ? adapter.getEntityIdentifier(entityInfo) : null;
+        TaskDetailsRequest.PreferredCallWindow preferredCallWindow = ValidationUtils.isNonNull(entityInfo)
+                ? adapter.getPreferredCallWindow(entityInfo) : null;
+
+        TaskDetailsRequest taskDetails = TaskDetailsRequest.builder()
+                .entityId(entityIdentifier)
+                .entityType(entityType)
+                .stageKey(stageKey)
+                .preferredCallWindow(preferredCallWindow)
+                .build();
+
+        CreateTaskRequest createTaskRequest = CreateTaskRequest.builder()
+                .taskConfigKey(action.getTaskConfigKey())
+                .assignedTo(action.getAssignTo())
+                .taskDetails(taskDetails)
+                .build();
+
+        adapter.createTaskAndAssociate(entityId, createTaskRequest,
+                Map.of(WorkflowConstants.TaskDetails.STAGE_KEY, stageKey));
     }
 }

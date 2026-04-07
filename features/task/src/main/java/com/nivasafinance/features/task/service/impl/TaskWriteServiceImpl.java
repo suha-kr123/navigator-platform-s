@@ -30,6 +30,7 @@ import com.nivasafinance.common.events.BusinessEvent;
 import com.nivasafinance.common.events.SystemEvent;
 import com.nivasafinance.common.events.payload.LeadTaskTimelineRefreshPayload;
 import com.nivasafinance.common.events.payload.TaskAssignedEventPayload;
+import com.nivasafinance.common.events.payload.TaskCompletedEventPayload;
 import com.nivasafinance.common.utils.ValidationUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -157,7 +158,7 @@ public class TaskWriteServiceImpl implements TaskWriteService {
 
         updateTaskOutcome(validationResult.task, request.getOutcomeCodeValueKey(), outcomeDetails);
         Task savedTask = taskRepositoryWrapper.saveWithException(validationResult.task);
-        publishLeadTaskTimelineRefresh(savedTask);
+        publishTaskCompletedEvent(savedTask);
         return TaskResponse.from(savedTask, validationResult.taskConfig, objectMapper);
     }
 
@@ -427,29 +428,19 @@ public class TaskWriteServiceImpl implements TaskWriteService {
         }
     }
 
-    private void publishLeadTaskTimelineRefresh(UUID leadIdentifier) {
-        if (!ValidationUtils.isNonNull(leadIdentifier)) {
-            return;
-        }
+    private void publishTaskCompletedEvent(Task task) {
+        Task.TaskDetails details = task.getTaskDetails();
+        TaskCompletedEventPayload payload = TaskCompletedEventPayload.builder()
+                .taskIdentifier(task.getTaskIdentifier())
+                .taskConfigKey(task.getTaskConfigKey())
+                .outcome(task.getOutcome())
+                .entityIdentifier(details != null ? details.getEntityId() : null)
+                .entityType(details != null ? details.getEntityType() : null)
+                .stageKey(details != null ? details.getStageKey() : null)
+                .assignedTo(task.getAssignedTo())
+                .build();
         applicationEventPublisher.publishEvent(
-                new SystemEvent<>(
-                        BusinessEvent.LEAD_TASK_TIMELINE_REFRESH.toString(),
-                        LeadTaskTimelineRefreshPayload.builder().leadIdentifier(leadIdentifier).build(),
-                        UserContext.getUsername()));
-    }
-
-    private void publishLeadTaskTimelineRefresh(Task task) {
-        if (task == null || task.getTaskDetails() == null) {
-            return;
-        }
-        if (task.getTaskDetails().getEntityType() != EntityType.LEAD) {
-            return;
-        }
-        UUID leadId = task.getTaskDetails().getEntityId();
-        if (!ValidationUtils.isNonNull(leadId)) {
-            return;
-        }
-        publishLeadTaskTimelineRefresh(leadId);
+                new SystemEvent<>(BusinessEvent.TASK_COMPLETED.toString(), payload, UserContext.getUsername()));
     }
 
     private void publishTaskAssignedIfAssigned(Task task) {
@@ -467,6 +458,21 @@ public class TaskWriteServiceImpl implements TaskWriteService {
             applicationEventPublisher.publishEvent(
                     new SystemEvent<>(BusinessEvent.TASK_ASSIGNED.toString(), payload, assignedTo));
         }
+    }
+
+    private void publishLeadTaskTimelineRefresh(Task task) {
+        Task.TaskDetails details = task.getTaskDetails();
+        if (ValidationUtils.isNonNull(details) && ValidationUtils.isNonNull(details.getEntityId())) {
+            publishLeadTaskTimelineRefresh(details.getEntityId());
+        }
+    }
+
+    private void publishLeadTaskTimelineRefresh(UUID leadIdentifier) {
+        LeadTaskTimelineRefreshPayload payload = LeadTaskTimelineRefreshPayload.builder()
+                .leadIdentifier(leadIdentifier)
+                .build();
+        applicationEventPublisher.publishEvent(
+                new SystemEvent<>(BusinessEvent.LEAD_TASK_TIMELINE_REFRESH.toString(), payload, UserContext.getUsername()));
     }
 
     private void closeTaskWithRescheduledOutcome(Task task, RescheduleTaskRequest request) {

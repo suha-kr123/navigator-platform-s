@@ -2,6 +2,7 @@ package com.nivasafinance.features.workflow.listener;
 
 import com.nivasafinance.common.events.SystemEvent;
 import com.nivasafinance.common.events.payload.StageTransitionEventPayload;
+import com.nivasafinance.common.events.payload.TaskCompletedEventPayload;
 import com.nivasafinance.common.enums.EntityType;
 import com.nivasafinance.common.utils.ValidationUtils;
 import com.nivasafinance.features.workflow.constants.WorkflowConstants;
@@ -15,6 +16,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Listener that handles workflow events and creates tasks for stage transitions.
@@ -85,6 +87,48 @@ public class WorkflowEventListener {
         } catch (Exception e) {
             log.error("Failed to create tasks for stage transition: entityId={}, entityType={}, fromStage={}, toStage={}",
                     entityId, entityType, fromStageKey, toStageKey, e);
+        }
+    }
+
+    /**
+     * Handles TASK_COMPLETED events synchronously (BEFORE_COMMIT) so that
+     * pending actions are created within the same transaction as task completion.
+     * This eliminates the timing gap — pending actions are available immediately
+     * when the completeTask API response reaches the frontend.
+     */
+    @TransactionalEventListener(
+            phase = TransactionPhase.BEFORE_COMMIT,
+            condition = "#event.eventType == 'TASK_COMPLETED'"
+    )
+    public void handleTaskCompletedEvent(SystemEvent<?> event) {
+        if (!(event.getPayload() instanceof TaskCompletedEventPayload)) {
+            log.warn("Received non-TaskCompletedEventPayload for TASK_COMPLETED event: {}", event.getEventType());
+            return;
+        }
+
+        TaskCompletedEventPayload payload = (TaskCompletedEventPayload) event.getPayload();
+
+        UUID entityIdentifier = payload.getEntityIdentifier();
+        EntityType entityType = payload.getEntityType();
+        UUID taskIdentifier = payload.getTaskIdentifier();
+        String taskConfigKey = payload.getTaskConfigKey();
+        String outcome = payload.getOutcome();
+        String stageKey = payload.getStageKey();
+        String assignedTo = payload.getAssignedTo();
+
+        if (!ValidationUtils.isNonNull(entityIdentifier) || !ValidationUtils.isNonNull(entityType)
+                || !ValidationUtils.isNonNullOrEmpty(taskConfigKey) || !ValidationUtils.isNonNullOrEmpty(stageKey)) {
+            log.debug("Incomplete task completed payload (entityIdentifier={}, entityType={}, taskConfigKey={}, stageKey={}). Skipping.",
+                    entityIdentifier, entityType, taskConfigKey, stageKey);
+            return;
+        }
+
+        try {
+            workflowOrchestratorService.processTaskCompletion(
+                    entityIdentifier, entityType, taskIdentifier, taskConfigKey, outcome, stageKey, assignedTo);
+        } catch (Exception e) {
+            log.error("Failed to process task completion: taskConfigKey={}, outcome={}, entityIdentifier={}, entityType={}",
+                    taskConfigKey, outcome, entityIdentifier, entityType, e);
         }
     }
 }

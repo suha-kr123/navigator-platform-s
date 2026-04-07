@@ -37,5 +37,13 @@ public class WorkflowValidationException extends ValidationException {
     public static WorkflowValidationException nullOrEmptyToStageKey() {
         return new WorkflowValidationException("toStageKey cannot be null or empty");
     }
+
+    public static WorkflowValidationException actionAlreadyProcessed() {
+        return new WorkflowValidationException("Pending action has already been processed");
+    }
+
+    public static WorkflowValidationException pendingActionNotFound() {
+        return new WorkflowValidationException("Pending workflow action not found");
+    }
 }
 

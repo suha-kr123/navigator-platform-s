@@ -20,5 +20,6 @@ public class WorkflowStageConfig {
      * If not specified, substage will be null.
      */
     private String defaultSubStage;
+    private List<TaskCompletionRule> taskCompletionRules;
 }
 
