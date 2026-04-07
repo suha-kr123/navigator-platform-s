@@ -178,6 +178,7 @@ public class Lead extends AuditableEntity {
     public static class TaskTimelineSlot {
         private UUID taskIdentifier;
         private LocalDateTime dueAt;
+        private String taskConfigKey;
         private String taskName;
     }
 
