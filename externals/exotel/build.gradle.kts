@@ -15,6 +15,7 @@ dependencies {
     implementation(project(":features:task"))
     implementation(project(":features:person"))
     implementation(project(":features:workflow"))
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 
 springBoot {

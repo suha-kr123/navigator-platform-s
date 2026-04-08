@@ -11,6 +11,7 @@ dependencies {
     // Note: Removed staff dependency to break circular dependency. Using reflection instead.
     implementation(project(":features:offices"))
     implementation(project(":features:person"))
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 
 springBoot {
