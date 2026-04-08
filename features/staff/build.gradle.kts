@@ -13,6 +13,7 @@ dependencies {
     implementation(project(":features:rolemanagement"))
     implementation(project(":features:referral"))
     implementation(project(":integrations"))
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 
 springBoot {

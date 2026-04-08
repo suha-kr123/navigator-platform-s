@@ -8,6 +8,7 @@ plugins {
 
 dependencies {
     implementation(project(":features:person"))
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 
 springBoot {
