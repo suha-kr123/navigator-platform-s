@@ -43,6 +43,7 @@
             <column name="created_by" type="VARCHAR(255)"/>
             <column name="updated_at" type="TIMESTAMP" defaultValueComputed="NOW()"/>
             <column name="updated_by" type="VARCHAR(255)"/>
+            <column name="version" type="BIGINT" defaultValueNumeric="0"/>
         </createTable>
 
         <createIndex indexName="idx_pending_action_entity" tableName="n_pending_workflow_actions">
