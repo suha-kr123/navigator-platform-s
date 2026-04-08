@@ -7,6 +7,7 @@ plugins {
 }
 
 dependencies {
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
     implementation(project(":features:address"))
     implementation(project(":features:identifier"))
     implementation(project(":features:creditbureau"))
