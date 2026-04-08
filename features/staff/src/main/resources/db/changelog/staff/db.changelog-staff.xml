@@ -14,6 +14,8 @@
              relativeToChangelogFile="true"/>
     <include file="tables/V1769700000001_44__set_not_null_referral_code_staff.xml"
              relativeToChangelogFile="true"/>
+    <include file="tables/V1775000000000_45__add_soft_delete_to_staff.xml"
+             relativeToChangelogFile="true"/>
 
 </databaseChangeLog>
 

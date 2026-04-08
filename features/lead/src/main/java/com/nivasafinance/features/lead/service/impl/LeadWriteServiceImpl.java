@@ -1105,6 +1105,32 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         }
     }
 
+    @Override
+    @Transactional
+    public void deleteLead(UUID leadIdentifier) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierIncludingDeletedWithException(leadIdentifier);
+
+        if (Boolean.TRUE.equals(lead.getIsDeleted())) {
+            throw LeadExceptionFactory.leadAlreadyDeleted(leadIdentifier, messageSource);
+        }
+
+        lead.setIsDeleted(true);
+        leadRepositoryWrapper.saveWithException(lead);
+    }
+
+    @Override
+    @Transactional
+    public void undoDeleteLead(UUID leadIdentifier) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierIncludingDeletedWithException(leadIdentifier);
+
+        if (!Boolean.TRUE.equals(lead.getIsDeleted())) {
+            throw LeadExceptionFactory.leadNotDeleted(leadIdentifier, messageSource);
+        }
+
+        lead.setIsDeleted(false);
+        leadRepositoryWrapper.saveWithException(lead);
+    }
+
     private void publishLeadStatusChangeEvent(Lead lead, BusinessEvent event, String reason) {
         LeadStatusChangeEventPayload payload = LeadStatusChangeEventPayload.builder()
                 .leadId(lead.getId())

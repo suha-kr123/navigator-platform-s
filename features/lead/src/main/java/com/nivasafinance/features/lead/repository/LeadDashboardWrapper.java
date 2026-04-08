@@ -87,6 +87,7 @@ public class LeadDashboardWrapper {
 
         List<Object> queryParams = new ArrayList<>();
         StringBuilder whereClause = new StringBuilder(" WHERE 1=1 ");
+        whereClause.append(" AND l.is_deleted = false ");
 
         // Always apply office hierarchy filter first
         appendOfficeHierarchyFilter(currentUserOfficeCode, whereClause, queryParams);

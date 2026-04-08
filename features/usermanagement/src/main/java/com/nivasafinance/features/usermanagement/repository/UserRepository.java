@@ -2,12 +2,13 @@ package com.nivasafinance.features.usermanagement.repository;
 
 import com.nivasafinance.features.usermanagement.entity.User;
 import org.javers.spring.annotation.JaversSpringDataAuditable;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
@@ -18,21 +19,21 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByUsername(String username);
 
-    Optional<User> findByPerson_Id(Long personId);
+    Optional<User> findByPerson_Id(@Param("personId") Long personId);
 
     boolean existsByUsername(String username);
 
-    Page<User> findAll(Pageable pageable);
     Page<User> findByUsernameContainingIgnoreCase(String username, Pageable pageable);
 
-
     @Query(value = "SELECT u.* FROM n_user u " +
-            "JOIN n_person p ON p.id = u.person_id " +
-            "WHERE EXISTS (" +
-            "  SELECT 1 FROM jsonb_array_elements(COALESCE(p.mobile_numbers, '[]'::jsonb)) AS m " +
-            "  WHERE RIGHT(REGEXP_REPLACE(m->>'number', '[^0-9]', '', 'g'), 10) = " +
-            "        RIGHT(REGEXP_REPLACE(:phoneNumber, '[^0-9]', '', 'g'), 10) " +
-            "  AND (m->>'isPrimary')::boolean = true" +
-            ")", nativeQuery = true)
+           "JOIN n_person p ON p.id = u.person_id " +
+           "WHERE EXISTS (" +
+           "  SELECT 1 FROM jsonb_array_elements(COALESCE(p.mobile_numbers, '[]'::jsonb)) AS m " +
+           "  WHERE RIGHT(REGEXP_REPLACE(m->>'number', '[^0-9]', '', 'g'), 10) = " +
+           "        RIGHT(REGEXP_REPLACE(:phoneNumber, '[^0-9]', '', 'g'), 10) " +
+           "  AND (m->>'isPrimary')::boolean = true" +
+           ")", nativeQuery = true)
     List<User> findByPersonPhoneNumber(@Param("phoneNumber") String phoneNumber);
+
+    Page<User> findByIsDeletedTrue(Pageable pageable);
 }

@@ -1,5 +1,9 @@
 package com.nivasafinance.features.usermanagement.exception;
 
+import com.nivasafinance.common.exception.BadRequestException;
+import com.nivasafinance.common.exception.ExceptionUtils;
+import org.springframework.context.MessageSource;
+
 public class UserExceptionFactory {
 
     public static UserNotFoundException userNotFoundById(Long userId) {
@@ -16,6 +20,16 @@ public class UserExceptionFactory {
 
     public static UserOperationException userOperationFailed(String operation, Throwable cause) {
         return new UserOperationException(String.format("User operation failed: %s", operation), cause);
+    }
+
+    public static BadRequestException userAlreadyDeleted(Object identifier, MessageSource messageSource) {
+        return new BadRequestException(ExceptionUtils.createLocalizedMessage(
+                "error.user.already.deleted", new Object[]{identifier}, messageSource));
+    }
+
+    public static BadRequestException userNotDeleted(Object identifier, MessageSource messageSource) {
+        return new BadRequestException(ExceptionUtils.createLocalizedMessage(
+                "error.user.not.deleted", new Object[]{identifier}, messageSource));
     }
 }
 

@@ -3,6 +3,7 @@ package com.nivasafinance.features.lead.repository;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationInfo;
 import com.nivasafinance.common.base.model.PaginationRequest;
+import com.nivasafinance.features.lead.dto.AdminLeadSearchResponse;
 import com.nivasafinance.features.lead.dto.LeadBasicResponse;
 import com.nivasafinance.features.lead.dto.LeadResponse;
 import com.nivasafinance.features.lead.dto.LeadSearchRequest;
@@ -14,6 +15,7 @@ import com.nivasafinance.features.lead.enums.LeadSubStatus;
 import com.nivasafinance.features.lead.exception.LeadConflictException;
 import com.nivasafinance.features.lead.exception.LeadExceptionFactory;
 import com.nivasafinance.features.lead.exception.LeadNotFoundException;
+import com.nivasafinance.features.lead.exception.LeadOperationException;
 import com.nivasafinance.features.lead.mapper.LeadBasicResponseMapper;
 import com.nivasafinance.features.lead.mapper.LeadWorkflowDetailsRowMapper;
 import com.nivasafinance.features.master.codemaster.SystemControlledMasterCodes;
@@ -101,6 +103,22 @@ public class LeadRepositoryWrapper {
                     .orElseThrow(() -> new LeadNotFoundException(leadIdentifier, messageSource));
         } catch (DataAccessException e) {
             RuntimeException exception = new RuntimeException("Failed to retrieve lead by identifier", e);
+            exception.initCause(e);
+            throw exception;
+        }
+    }
+
+    /**
+     * Unfiltered — returns lead including soft-deleted. Used by admin delete/undo-delete.
+     */
+    public Lead findByLeadIdentifierIncludingDeletedWithException(UUID leadIdentifier) {
+        try {
+            return leadRepository.findByLeadIdentifierIncludingDeleted(leadIdentifier)
+                    .orElseThrow(() -> new LeadNotFoundException(leadIdentifier, messageSource));
+        } catch (LeadNotFoundException e) {
+            throw e;
+        } catch (DataAccessException e) {
+            LeadOperationException exception = LeadExceptionFactory.retrieveEntityFailed(messageSource);
             exception.initCause(e);
             throw exception;
         }
@@ -231,6 +249,7 @@ public class LeadRepositoryWrapper {
                 LEFT JOIN n_lender_office lender_office ON lender_office.key = latest_lender.lender_office_key
                  LEFT JOIN n_office o ON o.key = l.office_key
                  WHERE l.lead_identifier = ?
+                   AND l.is_deleted = false
                 """;
 
         try {
@@ -247,6 +266,8 @@ public class LeadRepositoryWrapper {
             throw new RuntimeException("Failed to retrieve lead response by identifier", e);
         }
     }
+
+
 
     /**
      * Find active or onhold lead where the given person is a contact.
@@ -267,6 +288,7 @@ public class LeadRepositoryWrapper {
                 JOIN n_contact c ON c.id = contact_ids.id
                 WHERE c.person_id = ?
                   AND l.status = 'ACTIVE'
+                  AND l.is_deleted = false
                 LIMIT 1
                 """;
 
@@ -555,6 +577,7 @@ public class LeadRepositoryWrapper {
                     SELECT l.id, l.office_key
                     FROM contact_ids_with_phone cip
                     JOIN n_lead l ON l.contacts @> jsonb_build_array(cip.id)
+                    WHERE l.is_deleted = false
                  )
             SELECT COUNT(DISTINCT lm.id)
             FROM lead_match lm
@@ -571,6 +594,7 @@ public class LeadRepositoryWrapper {
                            l.status, l.substatus, l.created_at, l.updated_at, l.office_key
                     FROM contact_ids_with_phone cip
                     JOIN n_lead l ON l.contacts @> jsonb_build_array(cip.id)
+                    WHERE l.is_deleted = false
                  )
             SELECT DISTINCT
                 lm.lead_identifier,
@@ -649,6 +673,7 @@ public class LeadRepositoryWrapper {
                     SELECT 1 FROM n_contact c
                     INNER JOIN n_lead l ON l.contacts @> jsonb_build_array(c.id)
                     WHERE c.person_id = p.id
+                      AND l.is_deleted = false
                 )
             ) AS exists_flag
             """;
@@ -657,6 +682,132 @@ public class LeadRepositoryWrapper {
             return Boolean.TRUE.equals(result);
         } catch (DataAccessException e) {
             throw new RuntimeException("Failed to check existence of lead by mobile number", e);
+        }
+    }
+
+    /**
+     * Admin search: returns all leads (deleted + non-deleted) matching the phone number,
+     * without office hierarchy filtering.
+     */
+    public PaginatedResponse<AdminLeadSearchResponse> adminSearchLeadsByPhoneNumber(
+            PaginationRequest paginationRequest, LeadSearchRequest request) {
+        if (request == null || !StringUtils.hasText(request.getMobileNumber())) {
+            return new PaginatedResponse<>(Collections.emptyList(),
+                    buildPaginationInfo(paginationRequest, 0));
+        }
+
+        String mobileNumber = request.getMobileNumber().trim();
+        String phoneJson = buildPhoneNumberJsonb(mobileNumber);
+
+        String countSql = """
+            WITH person_with_phone AS MATERIALIZED (SELECT id FROM n_person WHERE mobile_numbers @> :phoneJson::jsonb),
+                 contact_ids_with_phone AS MATERIALIZED (SELECT c.id FROM n_contact c INNER JOIN person_with_phone p ON c.person_id = p.id),
+                 lead_match AS MATERIALIZED (
+                    SELECT l.id
+                    FROM contact_ids_with_phone cip
+                    JOIN n_lead l ON l.contacts @> jsonb_build_array(cip.id)
+                 )
+            SELECT COUNT(DISTINCT lm.id)
+            FROM lead_match lm
+            """;
+
+        String dataSql = """
+            WITH person_with_phone AS MATERIALIZED (SELECT id FROM n_person WHERE mobile_numbers @> :phoneJson::jsonb),
+                 contact_ids_with_phone AS MATERIALIZED (SELECT c.id FROM n_contact c INNER JOIN person_with_phone p ON c.person_id = p.id),
+                 lead_match AS MATERIALIZED (
+                    SELECT cip.id AS cip_id,
+                           l.lead_identifier, l.requested_amount, l.other_details, l.product_code,
+                           l.status, l.substatus, l.created_at, l.updated_at, l.is_deleted
+                    FROM contact_ids_with_phone cip
+                    JOIN n_lead l ON l.contacts @> jsonb_build_array(cip.id)
+                 )
+            SELECT DISTINCT
+                lm.lead_identifier,
+                lm.requested_amount,
+                p.name->>'default' as product_name,
+                primary_person.display_name as primary_person_name,
+                (jsonb_path_query_first(COALESCE(primary_person.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') AS primary_person_number,
+                lm.status,
+                lm.substatus,
+                lm.created_at as lead_created_at,
+                lm.updated_at as last_activity_date,
+                lm.is_deleted
+            FROM lead_match lm
+            LEFT JOIN n_contact primary_contact ON primary_contact.id = (lm.other_details->>'primaryContactId')::bigint
+            LEFT JOIN n_person primary_person ON primary_contact.person_id = primary_person.id
+            LEFT JOIN n_product p ON p.code = lm.product_code
+            ORDER BY lm.updated_at DESC
+            LIMIT :limit OFFSET :offset
+            """;
+
+        try {
+            MapSqlParameterSource params = new MapSqlParameterSource();
+            params.addValue("phoneJson", phoneJson);
+
+            Long totalCount = namedParameterJdbcTemplate.queryForObject(countSql, params, Long.class);
+            long total = totalCount != null ? totalCount : 0L;
+
+            params.addValue("limit", paginationRequest.getLimit());
+            params.addValue("offset", paginationRequest.getOffset());
+
+            List<AdminLeadSearchResponse> results = namedParameterJdbcTemplate.query(
+                    dataSql, params, new AdminLeadSearchRowMapper());
+
+            return new PaginatedResponse<>(results, buildPaginationInfo(paginationRequest, total));
+        } catch (EmptyResultDataAccessException e) {
+            return new PaginatedResponse<>(Collections.emptyList(),
+                    buildPaginationInfo(paginationRequest, 0));
+        } catch (DataAccessException e) {
+            LeadOperationException exception = LeadExceptionFactory.retrieveEntityFailed(messageSource);
+            exception.initCause(e);
+            throw exception;
+        }
+    }
+
+    /**
+     * Admin: returns only soft-deleted leads, paginated.
+     */
+    public PaginatedResponse<AdminLeadSearchResponse> findDeletedLeads(PaginationRequest paginationRequest) {
+        String countSql = "SELECT COUNT(*) FROM n_lead l WHERE l.is_deleted = true";
+
+        String dataSql = """
+            SELECT DISTINCT
+                l.lead_identifier,
+                l.requested_amount,
+                p.name->>'default' as product_name,
+                primary_person.display_name as primary_person_name,
+                (jsonb_path_query_first(COALESCE(primary_person.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') AS primary_person_number,
+                l.status,
+                l.substatus,
+                l.created_at as lead_created_at,
+                l.updated_at as last_activity_date,
+                l.is_deleted
+            FROM n_lead l
+            LEFT JOIN n_contact primary_contact ON primary_contact.id = (l.other_details->>'primaryContactId')::bigint
+            LEFT JOIN n_person primary_person ON primary_contact.person_id = primary_person.id
+            LEFT JOIN n_product p ON p.code = l.product_code
+            WHERE l.is_deleted = true
+            ORDER BY l.updated_at DESC
+            LIMIT :limit OFFSET :offset
+            """;
+
+        try {
+            MapSqlParameterSource params = new MapSqlParameterSource();
+
+            Long totalCount = namedParameterJdbcTemplate.queryForObject(countSql, params, Long.class);
+            long total = totalCount != null ? totalCount : 0L;
+
+            params.addValue("limit", paginationRequest.getLimit());
+            params.addValue("offset", paginationRequest.getOffset());
+
+            List<AdminLeadSearchResponse> results = namedParameterJdbcTemplate.query(
+                    dataSql, params, new AdminLeadSearchRowMapper());
+
+            return new PaginatedResponse<>(results, buildPaginationInfo(paginationRequest, total));
+        } catch (DataAccessException e) {
+            LeadOperationException exception = LeadExceptionFactory.retrieveEntityFailed(messageSource);
+            exception.initCause(e);
+            throw exception;
         }
     }
 
@@ -766,6 +917,7 @@ public class LeadRepositoryWrapper {
                 CROSS JOIN LATERAL jsonb_array_elements_text(COALESCE(l.contacts, '[]'::jsonb)) AS cid
                 JOIN n_contact c ON c.id = (cid::bigint)
                 WHERE c.cb_enquiry_id IS NOT NULL
+                  AND l.is_deleted = false
                   AND EXISTS (
                       SELECT 1 FROM jsonb_array_elements_text(c.cb_enquiry_id) AS eid
                       WHERE eid::bigint = ?
@@ -833,6 +985,7 @@ public class LeadRepositoryWrapper {
 
         sql.append("AND l.status = ANY (:statuses::text[]) ");
         sql.append("AND (l.substatus IS NULL OR l.substatus = ANY (:substatuses::text[])) ");
+        sql.append("AND l.is_deleted = false ");
 
         sql.append("ORDER BY l.created_at DESC ");
 
@@ -896,6 +1049,7 @@ public class LeadRepositoryWrapper {
         sql.append("LEFT JOIN n_person primary_contact ON primary_contact.id = primary_contact_person.person_id ");
         sql.append("LEFT JOIN n_office o ON o.key = l.office_key ");
         sql.append("WHERE l.referral_tracking_code = :referralTrackingCode ");
+        sql.append("AND l.is_deleted = false ");
 
         return sql.toString();
     }
@@ -951,6 +1105,7 @@ public class LeadRepositoryWrapper {
             FROM n_sourcing_channel_details sc
             JOIN n_lead l ON l.sourcing_channel_id = sc.id
             WHERE sc.marketing_details->>'referredByCode' = ?
+              AND l.is_deleted = false
             """;
         String dataSql = """
             WITH leads AS MATERIALIZED (
@@ -960,6 +1115,7 @@ public class LeadRepositoryWrapper {
               FROM n_sourcing_channel_details sc
               JOIN n_lead l ON l.sourcing_channel_id = sc.id
               WHERE sc.marketing_details->>'referredByCode' = ?
+                AND l.is_deleted = false
             )
             SELECT leads.id AS id,
                    leads.lead_identifier AS lead_identifier,
@@ -1099,6 +1255,7 @@ public class LeadRepositoryWrapper {
         sql.append("LEFT JOIN n_office o ON o.key = l.office_key ");
         sql.append("WHERE l.entity_type = ? ");
         sql.append("AND l.entity_identifier = ? ");
+        sql.append("AND l.is_deleted = false ");
         sql.append("ORDER BY l.").append(sortBy).append(" ").append(sortDirection).append(" ");
         sql.append("LIMIT ? OFFSET ? ");
 
@@ -1110,4 +1267,66 @@ public class LeadRepositoryWrapper {
         "created_at");
     private static final Set<String> ALLOWED_SORT_DIRECTIONS = Set.of("ASC", "DESC");
 
+    public Long findPrimaryPersonIdForLead(UUID leadIdentifier) {
+        String sql = """
+            SELECT c.person_id
+            FROM n_lead l
+            JOIN n_contact c ON c.id = (l.other_details->>'primaryContactId')::bigint
+            WHERE l.lead_identifier = :leadIdentifier
+            """;
+        try {
+            MapSqlParameterSource params = new MapSqlParameterSource();
+            params.addValue("leadIdentifier", leadIdentifier);
+            return namedParameterJdbcTemplate.queryForObject(sql, params, Long.class);
+        } catch (EmptyResultDataAccessException e) {
+            return null;
+        }
+    }
+
+    private static class AdminLeadSearchRowMapper implements RowMapper<AdminLeadSearchResponse> {
+        @Override
+        public AdminLeadSearchResponse mapRow(ResultSet rs, int rowNum) throws SQLException {
+            AdminLeadSearchResponse.AdminLeadSearchResponseBuilder builder = AdminLeadSearchResponse.builder();
+
+            String leadIdentifierStr = rs.getString("lead_identifier");
+            if (leadIdentifierStr != null) {
+                builder.leadIdentifier(UUID.fromString(leadIdentifierStr));
+            }
+
+            builder.requestedAmount(rs.getBigDecimal("requested_amount"));
+            builder.productName(rs.getString("product_name"));
+            builder.primaryPersonName(rs.getString("primary_person_name"));
+            builder.primaryPersonNumber(rs.getString("primary_person_number"));
+
+            String status = rs.getString("status");
+            if (status != null) {
+                try {
+                    builder.status(LeadStatus.valueOf(status));
+                } catch (IllegalArgumentException ignored) {
+                }
+            }
+
+            String subStatus = rs.getString("substatus");
+            if (subStatus != null) {
+                try {
+                    builder.subStatus(LeadSubStatus.valueOf(subStatus));
+                } catch (IllegalArgumentException ignored) {
+                }
+            }
+
+            java.sql.Timestamp leadCreatedAt = rs.getTimestamp("lead_created_at");
+            if (leadCreatedAt != null) {
+                builder.leadCreatedAt(leadCreatedAt.toLocalDateTime());
+            }
+
+            java.sql.Timestamp lastActivityDate = rs.getTimestamp("last_activity_date");
+            if (lastActivityDate != null) {
+                builder.lastActivityDate(lastActivityDate.toLocalDateTime());
+            }
+
+            builder.deleted(rs.getBoolean("is_deleted"));
+
+            return builder.build();
+        }
+    }
 }

@@ -1,9 +1,10 @@
 package com.nivasafinance.features.usermanagement.controller;
 
 import com.nivasafinance.common.annotations.RequireRole;
-import com.nivasafinance.common.constants.ApiConstants;
-import com.nivasafinance.common.base.model.PaginationRequest;
+import com.nivasafinance.features.usermanagement.dto.MobileSearchRequest;
 import com.nivasafinance.common.base.model.PaginatedResponse;
+import com.nivasafinance.common.base.model.PaginationRequest;
+import com.nivasafinance.common.constants.ApiConstants;
 import com.nivasafinance.features.usermanagement.dto.UserResponse;
 import com.nivasafinance.features.usermanagement.service.UserReadService;
 import com.nivasafinance.features.usermanagement.service.UserWriteService;
@@ -13,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -54,5 +56,25 @@ public class AdminUserController {
             return ResponseEntity.ok(empty);
         }
         return ResponseEntity.ok(userReadService.getUsers(paginationRequest, query));
+    }
+
+    @GetMapping("/deleted")
+    @RequireRole({"ADMIN"})
+    public ResponseEntity<PaginatedResponse<UserResponse>> getDeletedUsers(@Valid PaginationRequest paginationRequest) {
+        return ResponseEntity.ok(userReadService.getDeletedUsers(paginationRequest));
+    }
+
+    @PostMapping("/search")
+    @RequireRole({"ADMIN"})
+    public ResponseEntity<UserResponse> searchUserByMobile(@Valid @RequestBody MobileSearchRequest request) {
+        return userReadService.findUserByPersonMobile(request.getMobileNumber().trim())
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/{username}")
+    @RequireRole({"ADMIN"})
+    public ResponseEntity<UserResponse> adminGetUser(@PathVariable String username) {
+        return ResponseEntity.ok(userReadService.adminGetUserByUsername(username));
     }
 }

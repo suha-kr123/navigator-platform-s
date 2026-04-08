@@ -39,6 +39,9 @@ public class Staff extends AuditableEntity {
     @Column(name = "referral_code", length = 255, unique = true, nullable = false)
     private String referralCode;
 
+    @Column(name = "is_deleted", nullable = false)
+    private Boolean isDeleted = false;
+
     @PrePersist
     public void prePersist() {
         if (identifier == null) {

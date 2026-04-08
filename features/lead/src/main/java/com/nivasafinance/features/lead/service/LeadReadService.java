@@ -44,4 +44,10 @@ public interface LeadReadService {
     CurrentCustomerFormStepResponse getCurrentCustomerFormStep(UUID leadIdentifier);
 
     DocumentChecklistResponse getDocumentChecklist(UUID leadIdentifier);
+
+    PaginatedResponse<AdminLeadSearchResponse> adminSearchLeads(PaginationRequest paginationRequest, LeadSearchRequest request);
+
+    PaginatedResponse<AdminLeadSearchResponse> getDeletedLeads(PaginationRequest paginationRequest);
+
+    Long findPrimaryPersonIdForLead(UUID leadIdentifier);
 }

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1775000000000_12" author="system" context="default">
+        <comment>Add soft delete support to n_user table</comment>
+        <addColumn tableName="n_user">
+            <column name="is_deleted" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <sql>CREATE INDEX idx_n_user_is_deleted ON n_user (is_deleted) WHERE is_deleted = false;</sql>
+    </changeSet>
+
+</databaseChangeLog>

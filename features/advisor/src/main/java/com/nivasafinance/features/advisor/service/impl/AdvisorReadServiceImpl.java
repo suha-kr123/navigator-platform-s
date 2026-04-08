@@ -4,6 +4,7 @@ import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.common.context.UserContext;
 import com.nivasafinance.common.utils.ValidationUtils;
+import com.nivasafinance.features.advisor.dto.AdminAdvisorBasicResponse;
 import com.nivasafinance.features.advisor.dto.AdvisorDashboardFilters;
 import com.nivasafinance.features.advisor.dto.AdvisorDashboardResponse;
 import com.nivasafinance.features.advisor.dto.AdvisorResponse;
@@ -62,6 +63,19 @@ public class AdvisorReadServiceImpl implements AdvisorReadService {
             return Optional.empty();
         }
         return advisorRepositoryWrapper.findByUsername(username);
+    }
+
+    @Override
+    public Optional<Advisor> findAdvisorByUsernameIncludingDeleted(String username) {
+        if (username == null || username.isBlank()) {
+            return Optional.empty();
+        }
+        return advisorRepositoryWrapper.findByUsernameIncludingDeleted(username);
+    }
+
+    @Override
+    public Advisor findAdvisorByIdentifierIncludingDeleted(UUID identifier) {
+        return advisorRepositoryWrapper.findByIdentifierIncludingDeletedWithException(identifier);
     }
 
     @Override
@@ -261,5 +275,16 @@ public class AdvisorReadServiceImpl implements AdvisorReadService {
     public PaginatedResponse<AdvisorBasicResponse> getAdvisorsByReferralCode(String referralCode, PaginationRequest paginationRequest) {
         return advisorRepositoryWrapper.findAdvisorsByReferralCode(referralCode, paginationRequest);
     }
+
+    @Override
+    public PaginatedResponse<AdminAdvisorBasicResponse> adminSearchAdvisors(PaginationRequest paginationRequest, AdvisorSearchRequest request) {
+        return advisorRepositoryWrapper.adminSearchAdvisorsByPhoneNumber(paginationRequest, request);
+    }
+
+    @Override
+    public PaginatedResponse<AdminAdvisorBasicResponse> getDeletedAdvisors(PaginationRequest paginationRequest) {
+        return advisorRepositoryWrapper.findDeletedAdvisors(paginationRequest);
+    }
+
 
 }

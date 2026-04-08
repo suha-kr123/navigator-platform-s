@@ -81,15 +81,15 @@ public class StaffWriteServiceImpl implements StaffWriteService {
             Long personId = existingPerson.get().getId();
             
             // Find user linked to this person
-            Optional<com.nivasafinance.features.usermanagement.entity.User> existingUser = 
+            Optional<com.nivasafinance.features.usermanagement.entity.User> existingUser =
                 userRepository.findByPerson_Id(personId);
             
             if (existingUser.isPresent()) {
                 // User exists for this person - check if staff exists
                 Long existingUserId = existingUser.get().getId();
-                Optional<com.nivasafinance.features.staff.entity.Staff> existingStaff = 
-                    staffRepositoryWrapper.findByUserId(existingUserId);
-                
+                Optional<com.nivasafinance.features.staff.entity.Staff> existingStaff =
+                    staffRepositoryWrapper.findByUserIdIncludingDeleted(existingUserId);
+
                 if (existingStaff.isPresent()) {
                     // Staff already exists for this person - throw error
                     throw StaffExceptionFactory.alreadyExists(
@@ -162,10 +162,13 @@ public class StaffWriteServiceImpl implements StaffWriteService {
     public void mapUserToOffice(String username, String officeKey) {
         officeReadService.getOfficeByKey(officeKey);
         UserResponse user = userReadService.getUserByUsername(username);
-        Optional<Staff> existingOpt = staffRepositoryWrapper.findByUserId(user.getId());
+        Optional<Staff> existingOpt = staffRepositoryWrapper.findByUserIdIncludingDeleted(user.getId());
         if (existingOpt.isPresent()) {
             Staff staff = existingOpt.get();
             staff.setOfficeKey(officeKey);
+            if (Boolean.TRUE.equals(staff.getIsDeleted())) {
+                staff.setIsDeleted(false);
+            }
             staffRepositoryWrapper.saveWithException(staff);
         } else {
             Staff staff = new Staff();
@@ -210,5 +213,33 @@ public class StaffWriteServiceImpl implements StaffWriteService {
                 .map(MobileNumberDetails::getNumber)
                 .findFirst()
                 .orElse(null);
+    }
+
+    @Override
+    @Transactional
+    public void deleteStaff(UUID identifier) {
+        Staff staff = staffRepositoryWrapper.findByIdentifierIncludingDeleted(identifier)
+                .orElseThrow(() -> StaffExceptionFactory.notFoundByIdentifier(identifier, messageSource));
+
+        if (Boolean.TRUE.equals(staff.getIsDeleted())) {
+            throw StaffExceptionFactory.staffAlreadyDeleted(identifier, messageSource);
+        }
+
+        staff.setIsDeleted(true);
+        staffRepositoryWrapper.saveWithException(staff);
+    }
+
+    @Override
+    @Transactional
+    public void undoDeleteStaff(UUID identifier) {
+        Staff staff = staffRepositoryWrapper.findByIdentifierIncludingDeleted(identifier)
+                .orElseThrow(() -> StaffExceptionFactory.notFoundByIdentifier(identifier, messageSource));
+
+        if (!Boolean.TRUE.equals(staff.getIsDeleted())) {
+            throw StaffExceptionFactory.staffNotDeleted(identifier, messageSource);
+        }
+
+        staff.setIsDeleted(false);
+        staffRepositoryWrapper.saveWithException(staff);
     }
 }

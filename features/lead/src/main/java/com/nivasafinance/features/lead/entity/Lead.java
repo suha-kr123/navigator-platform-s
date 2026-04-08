@@ -227,6 +227,9 @@ public class Lead extends AuditableEntity {
         private LocalTime end;
     }
 
+    @Column(name = "is_deleted", nullable = false)
+    private Boolean isDeleted = false;
+
     // Nested data classes for JSONB fields
 
     @Data

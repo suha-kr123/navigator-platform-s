@@ -32,4 +32,14 @@ public final class LeadExceptionFactory {
         return new BadRequestException(
                 ExceptionUtils.createLocalizedMessage("error.lead.document.checklist.status.invalid", new Object[]{}, messageSource));
     }
+
+    public static BadRequestException leadAlreadyDeleted(Object identifier, MessageSource messageSource) {
+        return new BadRequestException(
+                ExceptionUtils.createLocalizedMessage("error.lead.already.deleted", new Object[]{identifier}, messageSource));
+    }
+
+    public static BadRequestException leadNotDeleted(Object identifier, MessageSource messageSource) {
+        return new BadRequestException(
+                ExceptionUtils.createLocalizedMessage("error.lead.not.deleted", new Object[]{identifier}, messageSource));
+    }
 }

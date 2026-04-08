@@ -28,5 +28,9 @@ public interface PersonWriteService {
     void updateCreditBureauFields(Long personId, List<Long> cbEnquiryIds, Person.CreditBureauDetails cbDetails);
 
     void updateDateOfBirthIfAbsent(Long personId, LocalDate dateOfBirth);
+
+    void deletePerson(String mobileNumber);
+
+    void undoDeletePerson(String mobileNumber);
 }
 

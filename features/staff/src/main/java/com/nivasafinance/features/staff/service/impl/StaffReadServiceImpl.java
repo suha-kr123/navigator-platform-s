@@ -73,12 +73,53 @@ public class StaffReadServiceImpl implements StaffReadService {
     }
 
     @Override
+    public Optional<Staff> findStaffByUserIdIncludingDeleted(Long userId) {
+        return staffRepositoryWrapper.findByUserIdIncludingDeleted(userId);
+    }
+
+    @Override
+    public Staff findStaffByIdentifierIncludingDeleted(UUID identifier) {
+        return staffRepositoryWrapper.findByIdentifierIncludingDeleted(identifier)
+                .orElseThrow(() -> StaffExceptionFactory.notFoundByIdentifier(identifier, messageSource));
+    }
+
+    @Override
     public Optional<StaffResponse> getStaffByIdentifier(UUID identifier) {
         if (identifier == null) {
             return Optional.empty();
         }
         return staffRepositoryWrapper.findByIdentifier(identifier)
                 .map(staff -> mapToResponse(staff, userReadService.getUserById(staff.getUserId())));
+    }
+
+    @Override
+    public PaginatedResponse<StaffResponse> getDeletedStaff(PaginationRequest paginationRequest) {
+        return staffRepositoryWrapper.findDeletedStaffWithLightweightRelations(paginationRequest);
+    }
+
+    @Override
+    public PaginatedResponse<StaffResponse> adminSearchStaff(String name, PaginationRequest paginationRequest) {
+        PaginatedResponse<Staff> paginated = staffRepositoryWrapper.adminSearchStaff(name, paginationRequest);
+        List<StaffResponse> content = paginated.getContent().stream()
+                .map(this::mapStaffSafe)
+                .collect(Collectors.toList());
+        return new PaginatedResponse<>(content, paginated.getPagination());
+    }
+
+    private StaffResponse mapStaffSafe(Staff staff) {
+        try {
+            UserResponse userResponse = userReadService.getUserById(staff.getUserId());
+            return mapToResponse(staff, userResponse);
+        } catch (Exception e) {
+            return StaffResponse.builder()
+                    .id(staff.getId())
+                    .identifier(staff.getIdentifier())
+                    .officeKey(staff.getOfficeKey())
+                    .userResponse(null)
+                    .referralCode(staff.getReferralCode())
+                    .deleted(staff.getIsDeleted())
+                    .build();
+        }
     }
 
     private StaffResponse mapToResponse(Staff staff, UserResponse userResponse) {
@@ -89,6 +130,7 @@ public class StaffReadServiceImpl implements StaffReadService {
                 .officeName(officeReadService.getOfficeByKey(staff.getOfficeKey()).getName())
                 .userResponse(userResponse)
                 .referralCode(staff.getReferralCode())
+                .deleted(staff.getIsDeleted())
                 .build();
     }
 }
