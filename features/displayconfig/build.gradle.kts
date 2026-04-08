@@ -6,6 +6,10 @@ plugins {
     id("common-feature-conventions")
 }
 
+dependencies {
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+}
+
 springBoot {
     mainClass.set("com.nivasafinance.NavigatorApplication")
 }
