@@ -5,6 +5,7 @@ import com.nivasafinance.analytics.AnalyticsHelper;
 import com.nivasafinance.common.enums.SystemEntities;
 import com.nivasafinance.common.events.BusinessEvent;
 import com.nivasafinance.common.events.SystemEvent;
+import com.nivasafinance.common.events.payload.LeadCbConsentRecordedEventPayload;
 import com.nivasafinance.common.events.payload.LeadCbSuccessEventPayload;
 import com.nivasafinance.features.consent.dto.AcceptConsentRequest;
 import com.nivasafinance.features.consent.dto.ResendConsentRequest;
@@ -127,6 +128,12 @@ public class LeadCreditBureauWriteServiceImpl implements LeadCreditBureauWriteSe
         validateContactBelongsToLead(lead, contact.getId());
         RecordCbConsentResult result = personCreditBureauService.recordCbConsentReceived(contact.getPersonId());
         analyticsHelper.captureLead(new AnalyticsEvent(leadIdentifier.toString(),"consent_granted"));
+        applicationEventPublisher.publishEvent(new SystemEvent<>(
+                BusinessEvent.LEAD_CB_CONSENT_RECORDED.toString(),
+                LeadCbConsentRecordedEventPayload.builder()
+                        .leadIdentifier(leadIdentifier)
+                        .contactIdentifier(contactIdentifier)
+                        .build()));
         return RecordCbConsentResponse.builder()
                 .consentIdentifier(result.getConsentIdentifier())
                 .build();
