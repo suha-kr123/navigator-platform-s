@@ -1,0 +1,88 @@
+---
+description: Unit testing standards for Java service tests using JUnit 5 + Mockito
+globs: **/*Test.java
+alwaysApply: false
+---
+
+# Unit Testing Standards (JUnit 5 + Mockito)
+
+## 1. Small, Focused Tests
+
+- Each test covers ONE behavior or scenario — a failure must point to a single, clear cause.
+- Keep tests short with minimal branches; no business logic inside tests.
+
+## 2. Descriptive Test Names
+
+- Pattern: `methodUnderTest_condition_expectedResult`
+- Names act as living documentation of domain rules.
+
+```java
+// BAD
+void test1() { ... }
+void checkCreate() { ... }
+
+// GOOD
+void createAdvisor_withNullPersonId_throwsValidationException() { ... }
+void getAdvisor_whenAdvisorExists_returnsResponse() { ... }
+```
+
+## 3. One Logical Assertion Per Test
+
+- Verify a single behavior per test. Group only tightly related assertions for one outcome.
+- Avoid asserting unrelated fields in one test — split into separate tests.
+
+## 4. Assertion Messages
+
+- Add custom messages to every assertion explaining the expected behavior.
+- State the business rule, not the code expression.
+
+```java
+// BAD
+assertEquals(expected, actual);
+
+// GOOD
+assertEquals("ACTIVE", result.getStatus(), "Newly created advisor should have ACTIVE status");
+assertNotNull(result.getIdentifier(), "Advisor identifier must be generated on creation");
+```
+
+## 5. Correct Assert Methods and Order
+
+- Use the most specific assertion: `assertNull`, `assertTrue`, `assertThrows`, `assertEquals`.
+- Follow `assertEquals(expected, actual, message)` order consistently.
+- Use `assertThrows` for exception tests — verify exception type AND message when relevant.
+
+## 6. Lifecycle Methods
+
+- Use `@BeforeEach` for per-test setup (common mocks, test data builders).
+- Use `@AfterEach` for cleanup (e.g., `UserContext.setUsername(null)`, static state).
+- Extract shared test data construction into helper methods or a `@BeforeEach` block.
+
+## 7. Isolate Units with Mocks
+
+- Use `@ExtendWith(MockitoExtension.class)`, `@Mock`, `@InjectMocks`.
+- Mock all external dependencies — test ONLY the class under test.
+- Use `verify()` to confirm interactions; `verifyNoInteractions()` to confirm no side effects.
+
+## 8. Parameterized Tests for Repeated Patterns
+
+- Use `@ParameterizedTest` + `@NullAndEmptySource` / `@ValueSource` / `@MethodSource` for validation tests with multiple invalid inputs.
+
+```java
+@ParameterizedTest
+@NullAndEmptySource
+void createAdvisor_withInvalidName_throwsValidationException(String name) {
+    assertThrows(ValidationException.class, () -> service.create(name),
+            "Null or empty name should trigger validation exception");
+}
+```
+
+## 9. Coverage Targets
+
+- Target: **90%+ line coverage**, **80%+ branch coverage** per service class.
+- Cover: happy paths, null guards, empty collections, exception branches, edge cases.
+- Do NOT write tests solely to increase coverage — each test must verify meaningful behavior.
+
+## 10. Test Structure
+
+- Follow Arrange–Act–Assert (AAA) pattern with clear visual separation.
+- Group tests by method using comment separators for readability.
