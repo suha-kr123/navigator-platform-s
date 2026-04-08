@@ -9,6 +9,7 @@ import com.nivasafinance.features.advisoractivity.repository.AdvisorActivityRepo
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.dao.DataRetrievalFailureException;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -17,6 +18,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -56,5 +58,16 @@ class AdvisorActivityReadServiceImplTest {
         assertEquals(expected, result);
         verify(advisorReadService).getAdvisorByIdentifier(advisorIdentifier);
         verify(advisorActivityRepositoryWrapper).findAllByAdvisorIdWithException(1L, paginationRequest);
+    }
+
+    @Test
+    void getActivities_whenAdvisorReadFails_doesNotCallActivityWrapper() {
+        when(advisorReadService.getAdvisorByIdentifier(advisorIdentifier))
+                .thenThrow(new DataRetrievalFailureException("not found"));
+
+        assertThrows(DataRetrievalFailureException.class,
+                () -> advisorActivityReadService.getActivities(advisorIdentifier, paginationRequest));
+
+        verify(advisorActivityRepositoryWrapper, never()).findAllByAdvisorIdWithException(any(), any());
     }
 }
