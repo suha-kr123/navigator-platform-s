@@ -9,6 +9,7 @@ plugins {
 dependencies {
     implementation(project(":features:master"))
     implementation(project(":features:address"))
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 
 springBoot {
