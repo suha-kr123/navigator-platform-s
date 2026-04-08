@@ -121,7 +121,7 @@ class AdvisorWriteServiceImplTest {
         when(userReadService.findUserByPersonMobile("9876543210")).thenReturn(Optional.empty());
         when(userWriteService.createUserForMobile(eq("9876543210"), any(PersonCreateRequest.class)))
                 .thenReturn(UserResponse.builder().username(NEW_USERNAME).build());
-        when(advisorRepositoryWrapper.findByUsernameIncludingDeleted(NEW_USERNAME)).thenReturn(Optional.empty());
+        when(advisorRepositoryWrapper.findByUsername(NEW_USERNAME)).thenReturn(Optional.empty());
         when(advisorRepositoryWrapper.saveWithException(any(Advisor.class))).thenAnswer(inv -> inv.getArgument(0));
         stubReferralCode();
 
@@ -147,7 +147,7 @@ class AdvisorWriteServiceImplTest {
     void createAdvisor_existingUserNoAdvisor_success() {
         when(userReadService.findUserByPersonMobile("9876543210"))
                 .thenReturn(Optional.of(UserResponse.builder().username(EXISTING_USERNAME).build()));
-        when(advisorRepositoryWrapper.findByUsernameIncludingDeleted(EXISTING_USERNAME)).thenReturn(Optional.empty());
+        when(advisorRepositoryWrapper.findByUsername(EXISTING_USERNAME)).thenReturn(Optional.empty());
         when(advisorRepositoryWrapper.saveWithException(any(Advisor.class))).thenAnswer(inv -> inv.getArgument(0));
         stubReferralCode();
 
@@ -166,7 +166,7 @@ class AdvisorWriteServiceImplTest {
     void createAdvisor_existingUserWithAdvisor_throwsException() {
         when(userReadService.findUserByPersonMobile("9876543210"))
                 .thenReturn(Optional.of(UserResponse.builder().username(EXISTING_USERNAME).build()));
-        when(advisorRepositoryWrapper.findByUsernameIncludingDeleted(EXISTING_USERNAME)).thenReturn(Optional.of(advisor));
+        when(advisorRepositoryWrapper.findByUsername(EXISTING_USERNAME)).thenReturn(Optional.of(advisor));
 
         assertThrows(BadRequestException.class, () -> advisorWriteService.createAdvisor(createRequest));
         verify(advisorRepositoryWrapper, never()).saveWithException(any());
@@ -188,7 +188,7 @@ class AdvisorWriteServiceImplTest {
         when(userReadService.findUserByPersonMobile("9876543210")).thenReturn(Optional.empty());
         when(userWriteService.createUserForMobile(eq("9876543210"), any(PersonCreateRequest.class)))
                 .thenReturn(UserResponse.builder().username(NEW_USERNAME).build());
-        when(advisorRepositoryWrapper.findByUsernameIncludingDeleted(NEW_USERNAME)).thenReturn(Optional.empty());
+        when(advisorRepositoryWrapper.findByUsername(NEW_USERNAME)).thenReturn(Optional.empty());
 
         try (MockedStatic<UserContext> userContext = mockStatic(UserContext.class)) {
             userContext.when(UserContext::getUsername).thenReturn("staff1");
@@ -202,7 +202,7 @@ class AdvisorWriteServiceImplTest {
         when(userReadService.findUserByPersonMobile("9876543210")).thenReturn(Optional.empty());
         when(userWriteService.createUserForMobile(eq("9876543210"), any(PersonCreateRequest.class)))
                 .thenReturn(UserResponse.builder().username(NEW_USERNAME).build());
-        when(advisorRepositoryWrapper.findByUsernameIncludingDeleted(NEW_USERNAME)).thenReturn(Optional.empty());
+        when(advisorRepositoryWrapper.findByUsername(NEW_USERNAME)).thenReturn(Optional.empty());
 
         try (MockedStatic<UserContext> userContext = mockStatic(UserContext.class)) {
             userContext.when(UserContext::getUsername).thenReturn("staff1");
@@ -216,7 +216,7 @@ class AdvisorWriteServiceImplTest {
         when(userReadService.findUserByPersonMobile("9876543210")).thenReturn(Optional.empty());
         when(userWriteService.createUserForMobile(eq("9876543210"), any(PersonCreateRequest.class)))
                 .thenReturn(UserResponse.builder().username(NEW_USERNAME).build());
-        when(advisorRepositoryWrapper.findByUsernameIncludingDeleted(NEW_USERNAME)).thenReturn(Optional.empty());
+        when(advisorRepositoryWrapper.findByUsername(NEW_USERNAME)).thenReturn(Optional.empty());
         when(officeReadService.getOfficeByKey("OFF1")).thenReturn(
                 new com.nivasafinance.features.offices.dto.OfficeResponse(1L, "Office", "OFF1", "O1", null, null, true));
         when(advisorRepositoryWrapper.saveWithException(any(Advisor.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -449,45 +449,6 @@ class AdvisorWriteServiceImplTest {
     }
 
     @Test
-    void deleteAdvisor_success() {
-        advisor.setIsDeleted(false);
-        when(advisorRepositoryWrapper.findByIdentifierIncludingDeletedWithException(identifier)).thenReturn(advisor);
-        when(advisorRepositoryWrapper.saveWithException(any(Advisor.class))).thenReturn(advisor);
-
-        advisorWriteService.deleteAdvisor(identifier);
-
-        assertTrue(Boolean.TRUE.equals(advisor.getIsDeleted()));
-        verify(advisorRepositoryWrapper).saveWithException(advisor);
-    }
-
-    @Test
-    void deleteAdvisor_alreadyDeleted_throws() {
-        advisor.setIsDeleted(true);
-        when(advisorRepositoryWrapper.findByIdentifierIncludingDeletedWithException(identifier)).thenReturn(advisor);
-
-        assertThrows(BadRequestException.class, () -> advisorWriteService.deleteAdvisor(identifier));
-    }
-
-    @Test
-    void undoDeleteAdvisor_success() {
-        advisor.setIsDeleted(true);
-        when(advisorRepositoryWrapper.findByIdentifierIncludingDeletedWithException(identifier)).thenReturn(advisor);
-        when(advisorRepositoryWrapper.saveWithException(any(Advisor.class))).thenReturn(advisor);
-
-        advisorWriteService.undoDeleteAdvisor(identifier);
-
-        assertFalse(Boolean.TRUE.equals(advisor.getIsDeleted()));
-    }
-
-    @Test
-    void undoDeleteAdvisor_notDeleted_throws() {
-        advisor.setIsDeleted(false);
-        when(advisorRepositoryWrapper.findByIdentifierIncludingDeletedWithException(identifier)).thenReturn(advisor);
-
-        assertThrows(BadRequestException.class, () -> advisorWriteService.undoDeleteAdvisor(identifier));
-    }
-
-    @Test
     void updateAdvisor_onlyOnePreferredCallTime_clearsBoth() {
         advisor.setOtherDetails(new OtherDetails());
         UpdateAdvisorRequest request = new UpdateAdvisorRequest();
@@ -620,7 +581,7 @@ class AdvisorWriteServiceImplTest {
         when(userReadService.findUserByPersonMobile("9876543210")).thenReturn(Optional.empty());
         when(userWriteService.createUserForMobile(eq("9876543210"), any(PersonCreateRequest.class)))
                 .thenReturn(UserResponse.builder().username(NEW_USERNAME).build());
-        when(advisorRepositoryWrapper.findByUsernameIncludingDeleted(NEW_USERNAME)).thenReturn(Optional.empty());
+        when(advisorRepositoryWrapper.findByUsername(NEW_USERNAME)).thenReturn(Optional.empty());
         when(advisorRepositoryWrapper.saveWithException(any(Advisor.class))).thenAnswer(inv -> inv.getArgument(0));
         stubReferralCode();
         SourcingChannelResponse channelResponse = new SourcingChannelResponse(5L, UUID.randomUUID(), null, null, null);

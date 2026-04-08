@@ -3,7 +3,6 @@ package com.nivasafinance.features.advisor.service.impl;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.common.context.UserContext;
-import com.nivasafinance.features.advisor.dto.AdminAdvisorBasicResponse;
 import com.nivasafinance.features.advisor.dto.AdvisorBasicResponse;
 import com.nivasafinance.features.advisor.dto.AdvisorDashboardFilters;
 import com.nivasafinance.features.advisor.dto.AdvisorDashboardResponse;
@@ -552,30 +551,6 @@ class AdvisorReadServiceImplTest {
 
         assertEquals(expected, result);
         verify(advisorRepositoryWrapper).findAdvisorByMobileNo("9876543210");
-    }
-
-    @Test
-    void adminSearchAdvisors_success_delegatesToWrapper() {
-        AdvisorSearchRequest searchRequest = new AdvisorSearchRequest();
-        PaginatedResponse<AdminAdvisorBasicResponse> expected = new PaginatedResponse<>(List.of(), null);
-        when(advisorRepositoryWrapper.adminSearchAdvisorsByPhoneNumber(paginationRequest, searchRequest)).thenReturn(expected);
-
-        PaginatedResponse<AdminAdvisorBasicResponse> result =
-                advisorReadService.adminSearchAdvisors(paginationRequest, searchRequest);
-
-        assertEquals(expected, result);
-        verify(advisorRepositoryWrapper).adminSearchAdvisorsByPhoneNumber(paginationRequest, searchRequest);
-    }
-
-    @Test
-    void getDeletedAdvisors_success_delegatesToWrapper() {
-        PaginatedResponse<AdminAdvisorBasicResponse> expected = new PaginatedResponse<>(List.of(), null);
-        when(advisorRepositoryWrapper.findDeletedAdvisors(paginationRequest)).thenReturn(expected);
-
-        PaginatedResponse<AdminAdvisorBasicResponse> result = advisorReadService.getDeletedAdvisors(paginationRequest);
-
-        assertEquals(expected, result);
-        verify(advisorRepositoryWrapper).findDeletedAdvisors(paginationRequest);
     }
 
 }
