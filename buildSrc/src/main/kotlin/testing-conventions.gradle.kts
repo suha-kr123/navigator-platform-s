@@ -54,14 +54,19 @@ tasks.named<JacocoReport>("jacocoTestReport") {
                 include("**/repository/**")
                 include("**/provider/**")
                 include("**/framework/**")
+                include("**/orchestrator/**")
+                include("**/listener/**")
+                include("**/adapter/**")
                 exclude(
                     "**/dto/**",
                     "**/entity/**",
                     "**/enum/**",
+                    "**/enums/**",
                     "**/exception/**",
                     "**/config/**",
                     "**/base/**",
-                    "**/test/**"
+                    "**/test/**",
+                    "**/constants/**"
                 )
             }
         })
@@ -105,14 +110,19 @@ tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
                 include("**/repository/**")
                 include("**/provider/**")
                 include("**/framework/**")
+                include("**/orchestrator/**")
+                include("**/listener/**")
+                include("**/adapter/**")
                 exclude(
                     "**/dto/**",
                     "**/entity/**",
                     "**/enum/**",
+                    "**/enums/**",
                     "**/exception/**",
                     "**/config/**",
                     "**/base/**",
-                    "**/test/**"
+                    "**/test/**",
+                    "**/constants/**"
                 )
             }
         })

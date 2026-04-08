@@ -11,6 +11,7 @@ dependencies {
     implementation(project(":features:person"))
     implementation(project(":features:lead"))
     implementation(project(":features:consent"))
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 
 springBoot {

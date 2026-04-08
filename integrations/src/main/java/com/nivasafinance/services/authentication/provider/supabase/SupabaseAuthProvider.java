@@ -77,7 +77,7 @@ public class SupabaseAuthProvider implements AuthenticationProvider {
         validateSendOtpRequest(request);
         SupabaseSendOtpRequest.SupabaseSendOtpRequestBuilder bodyBuilder = SupabaseSendOtpRequest.builder()
                 .phone(request.getPhone())
-                .options(new SupabaseSendOtpRequest.Options("sms"));
+                .options(new SupabaseSendOtpRequest.Options(""));
         if (request.getUsername() != null && !request.getUsername().isBlank()) {
             bodyBuilder.data(new SupabaseSendOtpRequest.MetaData(request.getUsername()));
         }

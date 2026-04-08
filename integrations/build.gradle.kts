@@ -10,6 +10,7 @@ dependencies {
     implementation(project(":features:master"))
     implementation(project(":features:address"))
     implementation("org.apache.commons:commons-lang3:3.18.0")
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 
 springBoot {

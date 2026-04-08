@@ -35,7 +35,10 @@ public class PosthogAnalyticsHelper implements AnalyticsHelper {
         event.extras().stream()
                 .filter(p -> !AnalyticsEvent.ParamKeys.DISTINCT_ID.equals(p.key()))
                 .forEach(p -> optionsBuilder.property(p.key(), p.value()));
-        optionsBuilder.property("username", UserContext.getUsername());
+        String username = UserContext.getUsername();
+        if (username != null) {
+            optionsBuilder.property("username", username);
+        }
         posthog.capture(distinctId, event.type(), optionsBuilder.build());
     }
 }

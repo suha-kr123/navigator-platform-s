@@ -7,6 +7,7 @@ plugins {
 }
 
 dependencies {
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
     implementation(project(":features:task"))
     implementation(project(":features:master"))
     implementation(project(":features:stage"))

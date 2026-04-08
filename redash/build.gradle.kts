@@ -8,6 +8,7 @@ plugins {
 dependencies {
     implementation(project(":common"))
     implementation(libs.poi.ooxml)
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 
 springBoot {
