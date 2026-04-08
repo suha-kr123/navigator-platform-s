@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="create_n_pending_workflow_actions_table" author="system">
+        <createTable tableName="n_pending_workflow_actions">
+            <column name="id" type="BIGSERIAL" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="action_identifier" type="UUID">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="entity_identifier" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="entity_type" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="current_stage_key" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="source_task_identifier" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="source_task_config_key" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="source_outcome" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="action_details" type="JSONB">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="executed_at" type="TIMESTAMP"/>
+            <column name="executed_by" type="VARCHAR(255)"/>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="NOW()"/>
+            <column name="created_by" type="VARCHAR(255)"/>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="NOW()"/>
+            <column name="updated_by" type="VARCHAR(255)"/>
+        </createTable>
+
+        <createIndex indexName="idx_pending_action_entity" tableName="n_pending_workflow_actions">
+            <column name="entity_identifier"/>
+            <column name="entity_type"/>
+        </createIndex>
+
+        <createIndex indexName="idx_pending_action_source_task" tableName="n_pending_workflow_actions">
+            <column name="source_task_identifier"/>
+        </createIndex>
+
+        <createIndex indexName="idx_pending_action_status" tableName="n_pending_workflow_actions">
+            <column name="status"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>
