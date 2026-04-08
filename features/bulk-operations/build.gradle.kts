@@ -4,6 +4,8 @@ plugins {
 
 dependencies {
 
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+
     implementation(project(":features:lead"))
     implementation(project(":features:workflow"))
     implementation(project(":features:stage"))
