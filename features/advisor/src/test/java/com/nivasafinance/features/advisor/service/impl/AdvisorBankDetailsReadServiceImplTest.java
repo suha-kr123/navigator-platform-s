@@ -72,4 +72,15 @@ class AdvisorBankDetailsReadServiceImplTest {
         assertTrue(result.get(0).getIsPrimary());
         assertEquals("Name", result.get(0).getNameAsPerPassbook());
     }
+
+    @Test
+    void getAllBankDetails_emptyBankDetailsList_returnsEmptyList() {
+        advisor.setBankDetails(List.of());
+        when(advisorRepositoryWrapper.findByIdentifierWithException(advisorIdentifier)).thenReturn(advisor);
+
+        List<BankDetailsResponse> result = advisorBankDetailsReadService.getAllBankDetails(advisorIdentifier);
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
 }

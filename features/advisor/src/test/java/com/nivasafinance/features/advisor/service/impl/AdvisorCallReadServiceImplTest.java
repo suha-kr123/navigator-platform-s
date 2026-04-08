@@ -92,4 +92,31 @@ class AdvisorCallReadServiceImplTest {
         assertNotNull(result.getPagination());
         verify(callReadService).getCallLogsByIDs(List.of(101L, 100L));
     }
+
+    @Test
+    void getCallLogs_withOffset_appliesSkipAndLimitAndPaginationFlags() {
+        Advisor.CallLogDetails d1 = new Advisor.CallLogDetails();
+        d1.setCallLogId(1L);
+        Advisor.CallLogDetails d2 = new Advisor.CallLogDetails();
+        d2.setCallLogId(2L);
+        Advisor.CallLogDetails d3 = new Advisor.CallLogDetails();
+        d3.setCallLogId(3L);
+        advisor.setCallLogDetails(List.of(d1, d2, d3));
+
+        PaginationRequest page = new PaginationRequest(1, 1, "createdAt", "DESC");
+        CallLogResponse callLogResponse = new CallLogResponse();
+        when(advisorRepositoryWrapper.findByIdentifierWithException(advisorIdentifier)).thenReturn(advisor);
+        when(callReadService.getCallLogsByIDs(List.of(2L))).thenReturn(List.of(callLogResponse));
+
+        PaginatedResponse<AdvisorCallLogResponse> result =
+                advisorCallReadService.getCallLogs(advisorIdentifier, page);
+
+        assertNotNull(result);
+        assertEquals(1, result.getContent().size());
+        assertNotNull(result.getPagination());
+        assertEquals(3, result.getPagination().getTotalElements());
+        assertTrue(result.getPagination().isHasNext());
+        assertTrue(result.getPagination().isHasPrevious());
+        verify(callReadService).getCallLogsByIDs(List.of(2L));
+    }
 }

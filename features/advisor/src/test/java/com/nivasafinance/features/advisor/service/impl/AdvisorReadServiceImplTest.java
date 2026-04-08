@@ -3,6 +3,7 @@ package com.nivasafinance.features.advisor.service.impl;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.common.context.UserContext;
+import com.nivasafinance.features.advisor.dto.AdminAdvisorBasicResponse;
 import com.nivasafinance.features.advisor.dto.AdvisorBasicResponse;
 import com.nivasafinance.features.advisor.dto.AdvisorDashboardFilters;
 import com.nivasafinance.features.advisor.dto.AdvisorDashboardResponse;
@@ -19,8 +20,6 @@ import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import com.nivasafinance.features.master.codemaster.service.CodeMasterService;
 import com.nivasafinance.features.offices.exception.OfficeNotFoundException;
 import com.nivasafinance.features.offices.service.OfficeReadService;
-import com.nivasafinance.features.person.entity.Person;
-import com.nivasafinance.features.person.repository.PersonRepositoryWrapper;
 import com.nivasafinance.features.referral.dto.ReferralCodeRegistryResponse;
 import com.nivasafinance.features.referral.enums.EntityType;
 import com.nivasafinance.features.referral.service.ReferralCodeRegistryService;
@@ -29,7 +28,9 @@ import com.nivasafinance.features.sourcechannel.repository.SourcingChannelReposi
 import com.nivasafinance.features.staff.dto.StaffResponse;
 import com.nivasafinance.features.staff.service.StaffReadService;
 import com.nivasafinance.features.person.dto.PersonResponse;
+import com.nivasafinance.features.person.entity.MobileNumberDetails;
 import com.nivasafinance.features.usermanagement.dto.UserResponse;
+import com.nivasafinance.features.usermanagement.service.UserReadService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,6 +46,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -55,7 +57,7 @@ class AdvisorReadServiceImplTest {
     private AdvisorRepositoryWrapper advisorRepositoryWrapper;
 
     @Mock
-    private PersonRepositoryWrapper personRepositoryWrapper;
+    private UserReadService userReadService;
 
     @Mock
     private SourcingChannelRepositoryWrapper sourcingChannelRepositoryWrapper;
@@ -81,12 +83,12 @@ class AdvisorReadServiceImplTest {
     @InjectMocks
     private AdvisorReadServiceImpl advisorReadService;
 
-    private static final Long TEST_PERSON_ID = 2L;
-    private static final Long REFERRER_PERSON_ID = 3L;
+    private static final String ADVISOR_USERNAME = "adv_user";
+    private static final String REFERRER_USERNAME = "referrer_user";
 
     private UUID identifier;
     private Advisor advisor;
-    private Person person;
+    private PersonResponse personResponse;
     private PaginationRequest paginationRequest;
 
     @BeforeEach
@@ -97,23 +99,23 @@ class AdvisorReadServiceImplTest {
         advisor = new Advisor();
         advisor.setId(1L);
         advisor.setIdentifier(identifier);
-        advisor.setPersonId(TEST_PERSON_ID);
+        advisor.setUsername(ADVISOR_USERNAME);
         advisor.setStatus(AdvisorStatus.CREATED);
         advisor.setOfficeKey("HQ");
         advisor.setSourceChannelId(null);
         advisor.setReferralCode(null);
 
-        person = new Person();
-        person.setId(TEST_PERSON_ID);
-        person.setFirstName("John");
-        person.setLastName("Doe");
-        person.setMobileNumbers(null);
+        personResponse = PersonResponse.builder()
+                .firstName("John")
+                .lastName("Doe")
+                .mobileNumbers(null)
+                .build();
     }
 
     @Test
     void getAdvisorByIdentifier_success_returnsMappedResponse() {
         when(advisorRepositoryWrapper.findByIdentifierWithException(identifier)).thenReturn(advisor);
-        when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(person);
+        when(userReadService.getPersonForUser(ADVISOR_USERNAME)).thenReturn(personResponse);
         when(officeReadService.getOfficeByKey("HQ")).thenReturn(new com.nivasafinance.features.offices.dto.OfficeResponse(1L, "Headquarters", "HQ", "HQ", null, null, true));
 
         AdvisorResponse result = advisorReadService.getAdvisorByIdentifier(identifier);
@@ -124,14 +126,14 @@ class AdvisorReadServiceImplTest {
         assertEquals("HQ", result.getOfficeKey());
         assertEquals("Headquarters", result.getOfficeName());
         verify(advisorRepositoryWrapper).findByIdentifierWithException(identifier);
-        verify(personRepositoryWrapper).findByIdWithException(TEST_PERSON_ID);
+        verify(userReadService).getPersonForUser(ADVISOR_USERNAME);
     }
 
     @Test
     void getAdvisorByIdentifier_officeKeyNull_setsOfficeNameNull() {
         advisor.setOfficeKey(null);
         when(advisorRepositoryWrapper.findByIdentifierWithException(identifier)).thenReturn(advisor);
-        when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(person);
+        when(userReadService.getPersonForUser(ADVISOR_USERNAME)).thenReturn(personResponse);
 
         AdvisorResponse result = advisorReadService.getAdvisorByIdentifier(identifier);
 
@@ -144,7 +146,7 @@ class AdvisorReadServiceImplTest {
     @Test
     void getAdvisorByIdentifier_officeNotFound_setsOfficeNameNull() {
         when(advisorRepositoryWrapper.findByIdentifierWithException(identifier)).thenReturn(advisor);
-        when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(person);
+        when(userReadService.getPersonForUser(ADVISOR_USERNAME)).thenReturn(personResponse);
         when(messageSource.getMessage(eq("error.office.key.not.found"), any(Object[].class), any())).thenReturn("Not found");
         doThrow(new OfficeNotFoundException("HQ", messageSource)).when(officeReadService).getOfficeByKey("HQ");
 
@@ -191,7 +193,7 @@ class AdvisorReadServiceImplTest {
         List<CodeValueResponse> qualifications = List.of(new CodeValueResponse());
         List<CodeValueResponse> segmentations = List.of(new CodeValueResponse());
 
-        when(codeMasterService.getAllCodeValuesByCodeKey(any(), eq(true)))
+        when(codeMasterService.getAllCodeValuesByCodeKey(anyString(), eq(true), eq("default")))
                 .thenReturn(rejectionReasons)
                 .thenReturn(dormantReasons)
                 .thenReturn(occupationTypes)
@@ -208,7 +210,7 @@ class AdvisorReadServiceImplTest {
         assertNotNull(result.getOccupations());
         assertNotNull(result.getQualifications());
         assertNotNull(result.getSegmentations());
-        verify(codeMasterService, times(6)).getAllCodeValuesByCodeKey(any(), eq(true));
+        verify(codeMasterService, times(6)).getAllCodeValuesByCodeKey(anyString(), eq(true), eq("default"));
     }
 
     @Test
@@ -294,7 +296,7 @@ class AdvisorReadServiceImplTest {
         SourcingChannelResponse channelResponse = new SourcingChannelResponse(1L, UUID.randomUUID(), null, null, null);
 
         when(advisorRepositoryWrapper.findByIdentifierWithException(identifier)).thenReturn(advisor);
-        when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(person);
+        when(userReadService.getPersonForUser(ADVISOR_USERNAME)).thenReturn(personResponse);
         when(officeReadService.getOfficeByKey("HQ")).thenReturn(new com.nivasafinance.features.offices.dto.OfficeResponse(1L, "HQ", "HQ", "HQ", null, null, true));
         when(sourcingChannelRepositoryWrapper.findByIdAsResponseWithException(sourceChannelId)).thenReturn(channelResponse);
 
@@ -316,7 +318,7 @@ class AdvisorReadServiceImplTest {
         channelResponse.setMarketingDetails(marketingDetails);
 
         when(advisorRepositoryWrapper.findByIdentifierWithException(identifier)).thenReturn(advisor);
-        when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(person);
+        when(userReadService.getPersonForUser(ADVISOR_USERNAME)).thenReturn(personResponse);
         when(officeReadService.getOfficeByKey("HQ")).thenReturn(new com.nivasafinance.features.offices.dto.OfficeResponse(1L, "HQ", "HQ", "HQ", null, null, true));
         when(sourcingChannelRepositoryWrapper.findByIdAsResponseWithException(sourceChannelId)).thenReturn(channelResponse);
         when(referralCodeRegistryService.getReferralCodeByCode("REFCODE")).thenReturn(null);
@@ -347,7 +349,7 @@ class AdvisorReadServiceImplTest {
                 new AdvisorRepositoryWrapper.ReferrerDisplayInfo("Applicant Name", "9999999999");
 
         when(advisorRepositoryWrapper.findByIdentifierWithException(identifier)).thenReturn(advisor);
-        when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(person);
+        when(userReadService.getPersonForUser(ADVISOR_USERNAME)).thenReturn(personResponse);
         when(officeReadService.getOfficeByKey("HQ")).thenReturn(new com.nivasafinance.features.offices.dto.OfficeResponse(1L, "HQ", "HQ", "HQ", null, null, true));
         when(sourcingChannelRepositoryWrapper.findByIdAsResponseWithException(sourceChannelId)).thenReturn(channelResponse);
         when(referralCodeRegistryService.getReferralCodeByCode("REF_APP")).thenReturn(registry);
@@ -379,20 +381,21 @@ class AdvisorReadServiceImplTest {
                 .entityIdentifier(referrerAdvisorId)
                 .build();
         Advisor referrerAdvisor = new Advisor();
-        referrerAdvisor.setPersonId(REFERRER_PERSON_ID);
-        Person referrerPerson = new Person();
-        referrerPerson.setDisplayName("Referrer Advisor");
-        com.nivasafinance.features.person.entity.MobileNumberDetails primaryMobile =
-                new com.nivasafinance.features.person.entity.MobileNumberDetails("8888888888", true, false);
-        referrerPerson.setMobileNumbers(List.of(primaryMobile));
+        referrerAdvisor.setUsername(REFERRER_USERNAME);
+        MobileNumberDetails primaryMobile =
+                new MobileNumberDetails("8888888888", true, false);
+        PersonResponse referrerPersonResponse = PersonResponse.builder()
+                .displayName("Referrer Advisor")
+                .mobileNumbers(List.of(primaryMobile))
+                .build();
 
         when(advisorRepositoryWrapper.findByIdentifierWithException(identifier)).thenReturn(advisor);
-        when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(person);
+        when(userReadService.getPersonForUser(ADVISOR_USERNAME)).thenReturn(personResponse);
         when(officeReadService.getOfficeByKey("HQ")).thenReturn(new com.nivasafinance.features.offices.dto.OfficeResponse(1L, "HQ", "HQ", "HQ", null, null, true));
         when(sourcingChannelRepositoryWrapper.findByIdAsResponseWithException(sourceChannelId)).thenReturn(channelResponse);
         when(referralCodeRegistryService.getReferralCodeByCode("REF_ADV")).thenReturn(registry);
         when(advisorRepositoryWrapper.findByIdentifierWithException(referrerAdvisorId)).thenReturn(referrerAdvisor);
-        when(personRepositoryWrapper.findByIdWithException(REFERRER_PERSON_ID)).thenReturn(referrerPerson);
+        when(userReadService.getPersonForUser(REFERRER_USERNAME)).thenReturn(referrerPersonResponse);
 
         AdvisorResponse result = advisorReadService.getAdvisorByIdentifier(identifier);
 
@@ -406,13 +409,17 @@ class AdvisorReadServiceImplTest {
 
     @Test
     void getAdvisorByIdentifier_personWithPrimaryMobile_extractsPrimaryNumber() {
-        com.nivasafinance.features.person.entity.MobileNumberDetails primary =
-                new com.nivasafinance.features.person.entity.MobileNumberDetails("9876543210", true, false);
-        person.setMobileNumbers(List.of(primary));
-        person.setDisplayName("John Doe");
+        MobileNumberDetails primary =
+                new MobileNumberDetails("9876543210", true, false);
+        personResponse = PersonResponse.builder()
+                .displayName("John Doe")
+                .mobileNumbers(List.of(primary))
+                .firstName("John")
+                .lastName("Doe")
+                .build();
 
         when(advisorRepositoryWrapper.findByIdentifierWithException(identifier)).thenReturn(advisor);
-        when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(person);
+        when(userReadService.getPersonForUser(ADVISOR_USERNAME)).thenReturn(personResponse);
         when(officeReadService.getOfficeByKey("HQ")).thenReturn(new com.nivasafinance.features.offices.dto.OfficeResponse(1L, "HQ", "HQ", "HQ", null, null, true));
 
         AdvisorResponse result = advisorReadService.getAdvisorByIdentifier(identifier);
@@ -437,7 +444,7 @@ class AdvisorReadServiceImplTest {
                 .build();
 
         when(advisorRepositoryWrapper.findByIdentifierWithException(identifier)).thenReturn(advisor);
-        when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(person);
+        when(userReadService.getPersonForUser(ADVISOR_USERNAME)).thenReturn(personResponse);
         when(officeReadService.getOfficeByKey("HQ")).thenReturn(new com.nivasafinance.features.offices.dto.OfficeResponse(1L, "HQ", "HQ", "HQ", null, null, true));
         when(sourcingChannelRepositoryWrapper.findByIdAsResponseWithException(sourceChannelId)).thenReturn(channelResponse);
         when(referralCodeRegistryService.getReferralCodeByCode("REF_NULL")).thenReturn(registry);
@@ -475,7 +482,7 @@ class AdvisorReadServiceImplTest {
         StaffResponse staffResponse = StaffResponse.builder().userResponse(userResponse).build();
 
         when(advisorRepositoryWrapper.findByIdentifierWithException(identifier)).thenReturn(advisor);
-        when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(person);
+        when(userReadService.getPersonForUser(ADVISOR_USERNAME)).thenReturn(personResponse);
         when(officeReadService.getOfficeByKey("HQ")).thenReturn(new com.nivasafinance.features.offices.dto.OfficeResponse(1L, "HQ", "HQ", "HQ", null, null, true));
         when(sourcingChannelRepositoryWrapper.findByIdAsResponseWithException(sourceChannelId)).thenReturn(channelResponse);
         when(referralCodeRegistryService.getReferralCodeByCode("REF_STAFF")).thenReturn(registry);
@@ -493,13 +500,17 @@ class AdvisorReadServiceImplTest {
 
     @Test
     void getAdvisorByIdentifier_personWithMobileNumbersNonePrimary_returnsNullForPrimary() {
-        com.nivasafinance.features.person.entity.MobileNumberDetails secondary =
-                new com.nivasafinance.features.person.entity.MobileNumberDetails("9876543210", false, false);
-        person.setMobileNumbers(List.of(secondary));
-        person.setDisplayName("John Doe");
+        MobileNumberDetails secondary =
+                new MobileNumberDetails("9876543210", false, false);
+        personResponse = PersonResponse.builder()
+                .displayName("John Doe")
+                .mobileNumbers(List.of(secondary))
+                .firstName("John")
+                .lastName("Doe")
+                .build();
 
         when(advisorRepositoryWrapper.findByIdentifierWithException(identifier)).thenReturn(advisor);
-        when(personRepositoryWrapper.findByIdWithException(TEST_PERSON_ID)).thenReturn(person);
+        when(userReadService.getPersonForUser(ADVISOR_USERNAME)).thenReturn(personResponse);
         when(officeReadService.getOfficeByKey("HQ")).thenReturn(new com.nivasafinance.features.offices.dto.OfficeResponse(1L, "HQ", "HQ", "HQ", null, null, true));
 
         AdvisorResponse result = advisorReadService.getAdvisorByIdentifier(identifier);
@@ -507,6 +518,64 @@ class AdvisorReadServiceImplTest {
         assertNotNull(result);
         assertNotNull(result.getPersonalDetails());
         assertTrue(result.getPersonalDetails().getMobileNumbers() != null && !result.getPersonalDetails().getMobileNumbers().isEmpty());
+    }
+
+    @Test
+    void findAdvisorByUsername_null_returnsEmptyWithoutCallingWrapper() {
+        assertTrue(advisorReadService.findAdvisorByUsername(null).isEmpty());
+        verify(advisorRepositoryWrapper, never()).findByUsername(any());
+    }
+
+    @Test
+    void findAdvisorByUsername_blank_returnsEmptyWithoutCallingWrapper() {
+        assertTrue(advisorReadService.findAdvisorByUsername("   ").isEmpty());
+        verify(advisorRepositoryWrapper, never()).findByUsername(any());
+    }
+
+    @Test
+    void findAdvisorByUsername_valid_delegatesToWrapper() {
+        when(advisorRepositoryWrapper.findByUsername("u1")).thenReturn(Optional.of(advisor));
+
+        Optional<Advisor> result = advisorReadService.findAdvisorByUsername("u1");
+
+        assertTrue(result.isPresent());
+        assertEquals(advisor, result.get());
+        verify(advisorRepositoryWrapper).findByUsername("u1");
+    }
+
+    @Test
+    void findAdvisorByMobileNo_success_delegatesToWrapper() {
+        Optional<AdvisorBasicResponse> expected = Optional.of(new AdvisorBasicResponse());
+        when(advisorRepositoryWrapper.findAdvisorByMobileNo("9876543210")).thenReturn(expected);
+
+        Optional<AdvisorBasicResponse> result = advisorReadService.findAdvisorByMobileNo("9876543210");
+
+        assertEquals(expected, result);
+        verify(advisorRepositoryWrapper).findAdvisorByMobileNo("9876543210");
+    }
+
+    @Test
+    void adminSearchAdvisors_success_delegatesToWrapper() {
+        AdvisorSearchRequest searchRequest = new AdvisorSearchRequest();
+        PaginatedResponse<AdminAdvisorBasicResponse> expected = new PaginatedResponse<>(List.of(), null);
+        when(advisorRepositoryWrapper.adminSearchAdvisorsByPhoneNumber(paginationRequest, searchRequest)).thenReturn(expected);
+
+        PaginatedResponse<AdminAdvisorBasicResponse> result =
+                advisorReadService.adminSearchAdvisors(paginationRequest, searchRequest);
+
+        assertEquals(expected, result);
+        verify(advisorRepositoryWrapper).adminSearchAdvisorsByPhoneNumber(paginationRequest, searchRequest);
+    }
+
+    @Test
+    void getDeletedAdvisors_success_delegatesToWrapper() {
+        PaginatedResponse<AdminAdvisorBasicResponse> expected = new PaginatedResponse<>(List.of(), null);
+        when(advisorRepositoryWrapper.findDeletedAdvisors(paginationRequest)).thenReturn(expected);
+
+        PaginatedResponse<AdminAdvisorBasicResponse> result = advisorReadService.getDeletedAdvisors(paginationRequest);
+
+        assertEquals(expected, result);
+        verify(advisorRepositoryWrapper).findDeletedAdvisors(paginationRequest);
     }
 
 }

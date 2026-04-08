@@ -148,6 +148,22 @@ class AdvisorNoteWriteServiceImplTest {
     }
 
     @Test
+    void updateAdvisorNote_nullNotesList_throwsException() {
+        AdvisorNoteUpdateRequest updateRequest = new AdvisorNoteUpdateRequest();
+        NotesResponse note = new NotesResponse();
+        note.setId(10L);
+        note.setIdentifier(noteIdentifier);
+        advisor.setNotes(null);
+
+        when(advisorRepositoryWrapper.findByIdentifierWithException(advisorIdentifier)).thenReturn(advisor);
+        when(notesReadService.getNoteByIdentifier(noteIdentifier)).thenReturn(note);
+
+        assertThrows(RuntimeException.class,
+                () -> advisorNoteWriteService.updateAdvisorNote(advisorIdentifier, noteIdentifier, updateRequest));
+        verify(notesWriteService, never()).updateNote(any(), any());
+    }
+
+    @Test
     void deleteAdvisorNote_success() {
         NotesResponse note = new NotesResponse();
         note.setId(10L);
@@ -182,5 +198,26 @@ class AdvisorNoteWriteServiceImplTest {
         assertThrows(RuntimeException.class,
                 () -> advisorNoteWriteService.deleteAdvisorNote(advisorIdentifier, noteIdentifier));
         verify(notesWriteService, never()).deleteNote(any());
+    }
+
+    @Test
+    void deleteAdvisorNote_nullNotesList_stillDeletesNoteAndDoesNotSaveAdvisor() {
+        NotesResponse note = new NotesResponse();
+        note.setId(10L);
+        note.setIdentifier(noteIdentifier);
+        advisor.setNotes(null);
+
+        when(advisorRepositoryWrapper.findByIdentifierWithException(advisorIdentifier)).thenReturn(advisor);
+        when(notesReadService.getNoteByIdentifier(noteIdentifier)).thenReturn(note);
+
+        try (MockedStatic<UserContext> userContext = mockStatic(UserContext.class)) {
+            userContext.when(UserContext::getUsername).thenReturn("user1");
+
+            advisorNoteWriteService.deleteAdvisorNote(advisorIdentifier, noteIdentifier);
+
+            verify(advisorRepositoryWrapper, never()).saveWithException(any());
+            verify(notesWriteService).deleteNote(noteIdentifier);
+            verify(applicationEventPublisher, atLeast(1)).publishEvent(any(Object.class));
+        }
     }
 }
