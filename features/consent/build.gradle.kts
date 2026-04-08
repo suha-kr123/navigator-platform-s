@@ -8,6 +8,8 @@ plugins {
 
 dependencies {
     implementation(project(":common"))
+    testImplementation(libs.mockk)
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 
 springBoot {

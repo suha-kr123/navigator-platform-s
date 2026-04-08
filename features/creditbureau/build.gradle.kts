@@ -11,6 +11,7 @@ dependencies {
     implementation(project(":integrations"))
     implementation(project(":redash"))
     implementation(project(":features:dataprovider"))
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 
 springBoot {

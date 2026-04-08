@@ -13,6 +13,7 @@ dependencies {
     implementation(project(":features:person"))
     implementation(project(":integrations"))
     implementation(project(":analytics"))
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 
 springBoot {
