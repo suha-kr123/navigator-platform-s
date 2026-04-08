@@ -11,6 +11,8 @@ dependencies {
     implementation(project(":features:notifications"))
     implementation(project(":redash"))
     implementation(project(":integrations"))
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation(libs.mockk)
 }
 
 springBoot {
