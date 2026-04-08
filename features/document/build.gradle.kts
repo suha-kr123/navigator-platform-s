@@ -14,6 +14,7 @@ configurations.all {
 }
 
 dependencies {
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
 
     // Cloud storage dependencies - using centralized version management
     implementation(libs.aws.s3)
