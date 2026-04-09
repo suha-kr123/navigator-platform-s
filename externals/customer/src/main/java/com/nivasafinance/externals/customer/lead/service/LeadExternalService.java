@@ -1,6 +1,7 @@
 package com.nivasafinance.externals.customer.lead.service;
 
 import com.nivasafinance.features.lead.dto.*;
+import com.nivasafinance.features.leadstages.dto.LeadStageHistoryResponse;
 
 import java.util.List;
 import java.util.Optional;
@@ -27,4 +28,6 @@ public interface LeadExternalService {
     LeadBREResultExecuteResponse executeEligibility(UUID leadIdentifier);
 
     Optional<LeadEligibilityResponse> getLatestEligibility(UUID leadIdentifier);
+
+    LeadStageHistoryResponse transitionToExpertScreening(UUID leadIdentifier);
 }

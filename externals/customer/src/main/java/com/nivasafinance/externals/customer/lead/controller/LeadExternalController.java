@@ -12,10 +12,12 @@ import com.nivasafinance.features.lead.dto.DocumentChecklistResponse;
 import com.nivasafinance.features.lead.dto.IncomeObligationDetailsResponse;
 import com.nivasafinance.features.lead.dto.PreliminaryDetailsResponse;
 import com.nivasafinance.features.lead.dto.PropertyDetailsResponse;
+import com.nivasafinance.features.leadstages.dto.LeadStageHistoryResponse;
 
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -92,5 +94,12 @@ public class LeadExternalController {
         return leadExternalService.getLatestEligibility(leadIdentifier)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.noContent().build());
+    }
+
+    @PostMapping("/{leadIdentifier}/stages/transition/expert-screening")
+    public ResponseEntity<LeadStageHistoryResponse> transitionToExpertScreening(
+            @PathVariable UUID leadIdentifier) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(leadExternalService.transitionToExpertScreening(leadIdentifier));
     }
 }

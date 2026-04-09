@@ -7,6 +7,9 @@ import com.nivasafinance.features.lead.service.LeadEligibilityReadService;
 import com.nivasafinance.features.lead.service.LeadEligibilityWriteService;
 import com.nivasafinance.features.lead.service.LeadReadService;
 import com.nivasafinance.features.lead.service.LeadWriteService;
+import com.nivasafinance.features.leadstages.dto.LeadStageHistoryResponse;
+import com.nivasafinance.features.leadstages.dto.StageTransitionRequest;
+import com.nivasafinance.features.leadstages.service.LeadStageHistoryWriteService;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
@@ -23,11 +26,14 @@ import java.util.UUID;
 @Transactional
 public class LeadExternalServiceImpl implements LeadExternalService {
 
+    private static final String EXPERT_SCREENING_STAGE_KEY = "Expert Screening";
+
     private final LeadWriteService leadWriteService;
     private final LeadReadService leadReadService;
     private final LeadContactReadService leadContactReadService;
     private final LeadEligibilityWriteService leadEligibilityWriteService;
     private final LeadEligibilityReadService leadEligibilityReadService;
+    private final LeadStageHistoryWriteService leadStageHistoryWriteService;
 
     @Override
     public void patchLead(UUID leadIdentifier, PatchLeadRequest request) {
@@ -85,5 +91,14 @@ public class LeadExternalServiceImpl implements LeadExternalService {
     @Transactional(readOnly = true)
     public Optional<LeadEligibilityResponse> getLatestEligibility(UUID leadIdentifier) {
         return leadEligibilityReadService.getLatestEligibility(leadIdentifier);
+    }
+
+    @Override
+    public LeadStageHistoryResponse transitionToExpertScreening(UUID leadIdentifier) {
+        StageTransitionRequest request = StageTransitionRequest.builder()
+                .stageKey(EXPERT_SCREENING_STAGE_KEY)
+                .build();
+        return LeadStageHistoryResponse.from(
+                leadStageHistoryWriteService.createStageEntry(leadIdentifier, request));
     }
 }
