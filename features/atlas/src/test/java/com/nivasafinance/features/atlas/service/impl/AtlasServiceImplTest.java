@@ -13,18 +13,15 @@ import com.nivasafinance.features.call.enums.AtlasJobStatus;
 import com.nivasafinance.features.call.enums.CallDirection;
 import com.nivasafinance.features.call.service.CallReadService;
 import com.nivasafinance.features.call.service.CallWriteService;
-import com.nivasafinance.features.rolemanagement.role.service.UserRoleService;
-import com.nivasafinance.features.usermanagement.service.UserReadService;
+import com.nivasafinance.features.dataprovider.service.DataProviderExecutor;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.util.StringUtils;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -43,9 +40,7 @@ class AtlasServiceImplTest {
     @Mock
     private CallWriteService callWriteService;
     @Mock
-    private UserReadService userReadService;
-    @Mock
-    private UserRoleService userRoleService;
+    private DataProviderExecutor dataProviderExecutor;
     @Mock
     private MessagePublisher messagePublisher;
 
@@ -60,11 +55,11 @@ class AtlasServiceImplTest {
         CallLogResponse callLog = callLogWithRecording("https://rec", AtlasJobStatus.COMPLETED);
         when(callReadService.getCallLogByIdentifier(callLogId)).thenReturn(callLog);
         when(messagePublisherFactory.getPublisher()).thenReturn(messagePublisher);
+        stubAtlasLeadRowForLead(leadId, true, "CSE");
 
         service.handleLeadCallLogCreated(LeadCallLogCreationEventPayload.builder()
                 .callLogIdentifier(callLogId)
                 .leadIdentifier(leadId)
-                .primaryRole("CSE")
                 .build());
 
         verify(callWriteService).mergeAiAnalysisByIdentifier(eq(callLogId),
@@ -85,12 +80,12 @@ class AtlasServiceImplTest {
         when(messagePublisherFactory.getPublisher()).thenReturn(messagePublisher);
         doThrow(new RuntimeException("fail")).when(messagePublisher)
                 .publish(eq(QueueType.NAVIGATOR_ATLAS), anyString(), anyMap());
+        stubAtlasLeadRowForLead(leadId, true, "CSE");
 
         service.handleLeadCallLogUpdated(LeadCallLogUpdateEventPayload.builder()
                 .callLogIdentifier(callLogId)
                 .leadIdentifier(leadId)
                 .recordingUrl("https://rec")
-                .primaryRole("CSE")
                 .build());
 
         verify(callWriteService).mergeAiAnalysisByIdentifier(eq(callLogId),
@@ -147,26 +142,57 @@ class AtlasServiceImplTest {
     }
 
     @Test
-    void handleLeadCallLogCreated_roleResolvedFromPhone_setsSmeEventType() {
+    void handleLeadCallLogCreated_dataProviderPrimaryRoleSme_skipsAtlasEnqueue() {
         configureSqsQueue();
         UUID callLogId = UUID.randomUUID();
         UUID leadId = UUID.randomUUID();
         CallLogResponse callLog = callLogWithRecording("https://rec", null);
-        callLog.setDirection(CallDirection.OUTBOUND);
-        callLog.setFromNumber("99999");
         when(callReadService.getCallLogByIdentifier(callLogId)).thenReturn(callLog);
-        when(userReadService.resolveUsernameByPhone("99999")).thenReturn(Optional.of("user1"));
-        when(userRoleService.getPrimaryRoleForUsername("user1")).thenReturn("SME");
-        when(messagePublisherFactory.getPublisher()).thenReturn(messagePublisher);
+        stubAtlasLeadRowForLead(leadId, true, "SME");
 
         service.handleLeadCallLogCreated(LeadCallLogCreationEventPayload.builder()
                 .callLogIdentifier(callLogId)
                 .leadIdentifier(leadId)
                 .build());
 
-        ArgumentCaptor<Map<String, Object>> payloadCaptor = ArgumentCaptor.forClass(Map.class);
-        verify(messagePublisher).publish(eq(QueueType.NAVIGATOR_ATLAS), eq(callLogId.toString()), payloadCaptor.capture());
-        assertEquals("SME", payloadCaptor.getValue().get("eventType"));
+        verify(callWriteService, never()).mergeAiAnalysisByIdentifier(any(), any());
+        verify(messagePublisher, never()).publish(any(), any(), any());
+    }
+
+    @Test
+    void handleLeadCallLogCreated_expertScreeningBlankPrimaryRole_skipsAtlasEnqueue() {
+        configureSqsQueue();
+        UUID callLogId = UUID.randomUUID();
+        UUID leadId = UUID.randomUUID();
+        CallLogResponse callLog = callLogWithRecording("https://rec", null);
+        when(callReadService.getCallLogByIdentifier(callLogId)).thenReturn(callLog);
+        stubAtlasLeadRowForLead(leadId, true, "");
+
+        service.handleLeadCallLogCreated(LeadCallLogCreationEventPayload.builder()
+                .callLogIdentifier(callLogId)
+                .leadIdentifier(leadId)
+                .build());
+
+        verify(callWriteService, never()).mergeAiAnalysisByIdentifier(any(), any());
+        verify(messagePublisher, never()).publish(any(), any(), any());
+    }
+
+    @Test
+    void handleLeadCallLogCreated_stageEligibleFalse_skipsAtlasEnqueue() {
+        configureSqsQueue();
+        UUID callLogId = UUID.randomUUID();
+        UUID leadId = UUID.randomUUID();
+        CallLogResponse callLog = callLogWithRecording("https://rec", null);
+        when(callReadService.getCallLogByIdentifier(callLogId)).thenReturn(callLog);
+        stubAtlasLeadRowForLead(leadId, false, "CSE");
+
+        service.handleLeadCallLogCreated(LeadCallLogCreationEventPayload.builder()
+                .callLogIdentifier(callLogId)
+                .leadIdentifier(leadId)
+                .build());
+
+        verify(callWriteService, never()).mergeAiAnalysisByIdentifier(any(), any());
+        verify(messagePublisher, never()).publish(any(), any(), any());
     }
 
     private void configureSqsQueue() {
@@ -175,6 +201,11 @@ class AtlasServiceImplTest {
         when(messagingProperties.getProvider()).thenReturn(MessageProvider.SQS);
         when(messagingProperties.getSqs()).thenReturn(sqs);
         lenient().when(messagePublisherFactory.getPublisher()).thenReturn(messagePublisher);
+    }
+
+    private void stubAtlasLeadRowForLead(UUID leadId, boolean stageEligible, String primaryRole) {
+        when(dataProviderExecutor.executeDataProvider(eq("atlas_lead_stage"), argThat(m -> leadId.equals(m.get("leadIdentifier")))))
+                .thenReturn(Map.of("stage_eligible", Boolean.toString(stageEligible), "primary_role", primaryRole));
     }
 
     private CallLogResponse callLogWithRecording(String url, AtlasJobStatus aiStatus) {

@@ -10,23 +10,44 @@ import com.nivasafinance.features.atlas.service.AtlasService;
 import com.nivasafinance.features.call.dto.CallLogResponse;
 import com.nivasafinance.features.call.entity.CallLog;
 import com.nivasafinance.features.call.enums.AtlasJobStatus;
-import com.nivasafinance.features.call.enums.CallDirection;
 import com.nivasafinance.features.call.service.CallReadService;
 import com.nivasafinance.features.call.service.CallWriteService;
-import com.nivasafinance.features.rolemanagement.role.service.UserRoleService;
-import com.nivasafinance.features.usermanagement.service.UserReadService;
+import com.nivasafinance.features.dataprovider.service.DataProviderExecutor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
 @Slf4j
 public class AtlasServiceImpl implements AtlasService {
+
+    /**
+     * Data provider {@value #ATLAS_LEAD_STAGE_DATA_PROVIDER_NAME} must return {@code stage_eligible} (boolean) and
+     * {@code primary_role}. Example:
+     * <pre>{@code
+     * SELECT
+     *     (((l.workflow_details->'currentStageDetails')->>'stageKey') = 'Expert Screening') AS stage_eligible,
+     *     (SELECT urm.role FROM n_user_role_mapping urm
+     *      WHERE urm.username = (l.workflow_details->'currentStageDetails')->>'assignedTo'
+     *        AND urm.is_primary = true LIMIT 1) AS primary_role
+     * FROM n_lead l
+     * WHERE l.lead_identifier = :leadIdentifier
+     * }</pre>
+     */
+    private static final String ATLAS_LEAD_STAGE_DATA_PROVIDER_NAME = "atlas_lead_stage";
+
+    /** Bind parameter name for {@link #ATLAS_LEAD_STAGE_DATA_PROVIDER_NAME} SQL. */
+    private static final String LEAD_IDENTIFIER_PARAM = "leadIdentifier";
+
+    /** Whether the lead's stage allows Atlas enqueue; from data provider SQL. */
+    private static final String STAGE_ELIGIBLE_COLUMN = "stage_eligible";
+
+    /** Primary role for Atlas routing; from stage assignee via {@code n_user_role_mapping}. */
+    private static final String PRIMARY_ROLE_COLUMN = "primary_role";
 
     private static final String LEAD_IDENTIFIER = "leadIdentifier";
     private static final String CALL_LOG_IDENTIFIER = "callLogIdentifier";
@@ -37,22 +58,19 @@ public class AtlasServiceImpl implements AtlasService {
     private final MessagingProperties messagingProperties;
     private final CallReadService callReadService;
     private final CallWriteService callWriteService;
-    private final UserReadService userReadService;
-    private final UserRoleService userRoleService;
+    private final DataProviderExecutor dataProviderExecutor;
 
     public AtlasServiceImpl(
             MessagePublisherFactory messagePublisherFactory,
             MessagingProperties messagingProperties,
             CallReadService callReadService,
             CallWriteService callWriteService,
-            UserReadService userReadService,
-            UserRoleService userRoleService) {
+            DataProviderExecutor dataProviderExecutor) {
         this.messagePublisherFactory = messagePublisherFactory;
         this.messagingProperties = messagingProperties;
         this.callReadService = callReadService;
         this.callWriteService = callWriteService;
-        this.userReadService = userReadService;
-        this.userRoleService = userRoleService;
+        this.dataProviderExecutor = dataProviderExecutor;
     }
 
     @Override
@@ -60,8 +78,7 @@ public class AtlasServiceImpl implements AtlasService {
         enqueueAtlasTranscriptionJob(
                 payload.getLeadIdentifier(),
                 payload.getCallLogIdentifier(),
-                null,
-                payload.getPrimaryRole());
+                null);
     }
 
     @Override
@@ -70,8 +87,7 @@ public class AtlasServiceImpl implements AtlasService {
         enqueueAtlasTranscriptionJob(
                 payload.getLeadIdentifier(),
                 payload.getCallLogIdentifier(),
-                recordingOverride,
-                payload.getPrimaryRole());
+                recordingOverride);
     }
 
     /**
@@ -83,8 +99,7 @@ public class AtlasServiceImpl implements AtlasService {
     private void enqueueAtlasTranscriptionJob(
             UUID leadIdentifier,
             UUID callLogIdentifier,
-            String recordingUrlOverride,
-            String primaryRoleFallback) {
+            String recordingUrlOverride) {
         if (!isNavigatorAtlasQueueConfigured()) {
             log.warn("Navigator Atlas queue is not configured; skipping transcription job");
             return;
@@ -105,6 +120,31 @@ public class AtlasServiceImpl implements AtlasService {
             return;
         }
 
+        Map<String, String> atlasLeadRow = loadAtlasLeadDataProviderRow(leadIdentifier, callLogIdentifier);
+        if (atlasLeadRow == null) {
+            return;
+        }
+        if (!isStageEligibleFromProvider(atlasLeadRow)) {
+            log.debug(
+                    "Skipping Atlas enqueue for callLog {} — stage_eligible is false or missing for lead {}",
+                    callLogIdentifier,
+                    leadIdentifier);
+            return;
+        }
+
+        String primaryRoleForEventType = atlasLeadRow.get(PRIMARY_ROLE_COLUMN);
+        if (!StringUtils.hasText(primaryRoleForEventType)) {
+            log.debug(
+                    "Skipping Atlas enqueue for callLog {} — no primary_role from data provider for lead {}",
+                    callLogIdentifier,
+                    leadIdentifier);
+            return;
+        }
+        if ("SME".equals(atlasEventTypeForPrimaryRole(primaryRoleForEventType))) {
+            log.debug("Skipping Atlas enqueue for callLog {} — SME recordings are not sent to Atlas", callLogIdentifier);
+            return;
+        }
+
         callWriteService.mergeAiAnalysisByIdentifier(
                 callLogIdentifier,
                 CallLog.AiAnalysisDetails.builder()
@@ -112,8 +152,7 @@ public class AtlasServiceImpl implements AtlasService {
                         .build());
 
         Map<String, Object> body = new LinkedHashMap<>();
-        String primaryRoleForEventType = resolvePrimaryRoleForAtlasEventType(callLog, primaryRoleFallback);
-        body.put(EVENT_TYPE, atlasEventTypeForPrimaryRole(primaryRoleForEventType));
+        body.put(EVENT_TYPE, atlasEventTypeForPrimaryRole(primaryRoleForEventType.trim()));
         body.put(LEAD_IDENTIFIER, leadIdentifier.toString());
         body.put(CALL_LOG_IDENTIFIER, callLogIdentifier.toString());
         body.put(RECORDING_URL, recordingUrl);
@@ -138,6 +177,39 @@ public class AtlasServiceImpl implements AtlasService {
         return url.isEmpty() ? null : url;
     }
 
+    /**
+     * @return provider row map, or {@code null} if the provider is missing or execution failed
+     */
+    /**
+     * Interprets {@value #STAGE_ELIGIBLE_COLUMN} from JDBC (often {@code "true"}/{@code "false"} string).
+     */
+    private static boolean isStageEligibleFromProvider(Map<String, String> row) {
+        if (row == null) {
+            return false;
+        }
+        String raw = row.get(STAGE_ELIGIBLE_COLUMN);
+        if (!StringUtils.hasText(raw)) {
+            return false;
+        }
+        String v = raw.trim();
+        return "true".equalsIgnoreCase(v) || "t".equalsIgnoreCase(v) || "1".equals(v);
+    }
+
+    private Map<String, String> loadAtlasLeadDataProviderRow(UUID leadIdentifier, UUID callLogIdentifier) {
+        try {
+            return dataProviderExecutor.executeDataProvider(
+                    ATLAS_LEAD_STAGE_DATA_PROVIDER_NAME,
+                    Map.of(LEAD_IDENTIFIER_PARAM, leadIdentifier));
+        } catch (IllegalArgumentException ex) {
+            log.warn(
+                    "Atlas lead stage data provider '{}' missing or invalid; skipping transcription for callLog {}",
+                    ATLAS_LEAD_STAGE_DATA_PROVIDER_NAME,
+                    callLogIdentifier,
+                    ex);
+            return null;
+        }
+    }
+
     private boolean isNavigatorAtlasQueueConfigured() {
         MessageProvider provider = messagingProperties.getProvider();
         if (provider == MessageProvider.LOCAL) {
@@ -148,45 +220,6 @@ public class AtlasServiceImpl implements AtlasService {
         }
         Map<QueueType, String> queues = messagingProperties.getSqs().getQueues();
         return queues != null && StringUtils.hasText(queues.get(QueueType.NAVIGATOR_ATLAS));
-    }
-
-    /**
-     * Inbound: staff leg {@code toNumber}; outbound: staff leg {@code fromNumber}. Resolves role via primary mobile;
-     * falls back to {@code payloadFallbackPrimaryRole} (publisher context user).
-     */
-    private String resolvePrimaryRoleForAtlasEventType(CallLogResponse callLog, String payloadFallbackPrimaryRole) {
-        String routingPhone = routingNumberForStaffRoleResolution(callLog);
-        if (StringUtils.hasText(routingPhone)) {
-            Optional<String> staffUsername = userReadService.resolveUsernameByPhone(routingPhone.trim());
-            if (staffUsername.isPresent() && StringUtils.hasText(staffUsername.get())) {
-                String role = userRoleService.getPrimaryRoleForUsername(staffUsername.get().trim());
-                if (StringUtils.hasText(role)) {
-                    return role;
-                }
-            }
-        }
-        return StringUtils.hasText(payloadFallbackPrimaryRole) ? payloadFallbackPrimaryRole.trim() : null;
-    }
-
-    private static String routingNumberForStaffRoleResolution(CallLogResponse callLog) {
-        if (callLog == null || callLog.getDirection() == null) {
-            return null;
-        }
-        if (callLog.getDirection() == CallDirection.INBOUND) {
-            return nullIfBlank(callLog.getToNumber());
-        }
-        if (callLog.getDirection() == CallDirection.OUTBOUND) {
-            return nullIfBlank(callLog.getFromNumber());
-        }
-        return null;
-    }
-
-    private static String nullIfBlank(String s) {
-        if (!StringUtils.hasText(s)) {
-            return null;
-        }
-        String t = s.trim();
-        return t.isEmpty() ? null : t;
     }
 
     /**
