@@ -9,8 +9,7 @@ plugins {
 dependencies {
     implementation(project(":common"))
     implementation(project(":features:call"))
-    implementation(project(":features:rolemanagement"))
-    implementation(project(":features:usermanagement"))
+    implementation(project(":features:dataprovider"))
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation(libs.mockk)
 }
