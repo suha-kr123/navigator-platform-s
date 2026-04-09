@@ -290,6 +290,21 @@ CREATE TABLE n_master_pincode (
     version      BIGINT          DEFAULT 0
 );
 
+-- Entity: PincodeValuationMaster
+CREATE TABLE n_master_pincode_valuation (
+    id                BIGSERIAL       PRIMARY KEY,
+    pincode           VARCHAR(6)      NOT NULL UNIQUE,
+    tier              VARCHAR(50),
+    form3_valuation   NUMERIC,
+    valuation_11a     NUMERIC,
+    valuation_11b     NUMERIC,
+    created_by        VARCHAR(255),
+    created_at        TIMESTAMP,
+    updated_by        VARCHAR(255),
+    updated_at        TIMESTAMP,
+    version           BIGINT          DEFAULT 0
+);
+
 -- =============================================================================
 -- MODULE: offices
 -- =============================================================================
