@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1776000000000_00" author="system" context="default">
+        <createTable tableName="n_master_pincode_valuation">
+            <column name="id" type="bigserial" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="pincode" type="VARCHAR(6)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="tier" type="VARCHAR(50)"/>
+            <column name="form3_valuation" type="DECIMAL"/>
+            <column name="valuation_11a" type="DECIMAL"/>
+            <column name="valuation_11b" type="DECIMAL"/>
+            <column name="created_by" type="varchar(255)"/>
+            <column name="created_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="updated_by" type="varchar(255)"/>
+            <column name="updated_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="version" type="bigint" defaultValueNumeric="0"/>
+        </createTable>
+
+        <createIndex indexName="idx_n_master_pincode_valuation_pincode" tableName="n_master_pincode_valuation">
+            <column name="pincode"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>
