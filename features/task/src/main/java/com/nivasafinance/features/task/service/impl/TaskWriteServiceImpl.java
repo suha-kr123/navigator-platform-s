@@ -159,6 +159,7 @@ public class TaskWriteServiceImpl implements TaskWriteService {
         updateTaskOutcome(validationResult.task, request.getOutcomeCodeValueKey(), outcomeDetails);
         Task savedTask = taskRepositoryWrapper.saveWithException(validationResult.task);
         publishTaskCompletedEvent(savedTask);
+        publishLeadTaskTimelineRefresh(savedTask);
         return TaskResponse.from(savedTask, validationResult.taskConfig, objectMapper);
     }
 
