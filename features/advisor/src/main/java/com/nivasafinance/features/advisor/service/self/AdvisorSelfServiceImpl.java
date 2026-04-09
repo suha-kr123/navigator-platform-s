@@ -412,6 +412,7 @@ public class AdvisorSelfServiceImpl implements AdvisorSelfService {
                 referralCode, paginationRequest, mobileNumber, name, status, subStatus);
         for (AdvisorSelfLeadResponse item : response.getContent()) {
             item.setLoanType(resolveProductName(item.getLoanType()));
+            item.setLeadStageDisplayName(resolveCurrentStageDisplayName(item.getLeadIdentifier()));
         }
         return response;
     }
