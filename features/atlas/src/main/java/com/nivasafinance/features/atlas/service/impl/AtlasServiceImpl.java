@@ -192,9 +192,20 @@ public class AtlasServiceImpl implements AtlasService {
         body.put(RECORDING_URL, recordingUrl);
         String messageId = callLogIdentifier.toString();
         try {
+            log.info(
+                    "Pushing Atlas transcription job to queue {} for callLog {}, lead {}",
+                    QueueType.NAVIGATOR_ATLAS,
+                    callLogIdentifier,
+                    leadIdentifier);
             messagePublisherFactory.getPublisher().publish(QueueType.NAVIGATOR_ATLAS, messageId, body);
+            log.info("Successfully pushed Atlas transcription job to queue for callLog {}", callLogIdentifier);
         } catch (RuntimeException ex) {
-            log.error("Atlas transcription enqueue failed for callLog {}", callLogIdentifier, ex);
+            log.error(
+                    "Failed to push Atlas transcription job to queue {} for callLog {}, lead {}",
+                    QueueType.NAVIGATOR_ATLAS,
+                    callLogIdentifier,
+                    leadIdentifier,
+                    ex);
             callWriteService.mergeAiAnalysisByIdentifier(
                     callLogIdentifier,
                     CallLog.AiAnalysisDetails.builder()
@@ -228,9 +239,20 @@ public class AtlasServiceImpl implements AtlasService {
 
     private Map<String, String> loadAtlasLeadDataProviderRow(UUID leadIdentifier, UUID callLogIdentifier) {
         try {
-            return dataProviderExecutor.executeDataProvider(
+            log.info(
+                    "Executing data provider '{}' for Atlas (leadIdentifier={}, callLogIdentifier={})",
+                    ATLAS_LEAD_STAGE_DATA_PROVIDER_NAME,
+                    leadIdentifier,
+                    callLogIdentifier);
+            Map<String, String> row = dataProviderExecutor.executeDataProvider(
                     ATLAS_LEAD_STAGE_DATA_PROVIDER_NAME,
                     Map.of(LEAD_IDENTIFIER_PARAM, leadIdentifier));
+            log.info(
+                    "Data provider '{}' finished for callLog {} (result keys: {})",
+                    ATLAS_LEAD_STAGE_DATA_PROVIDER_NAME,
+                    callLogIdentifier,
+                    row != null ? row.keySet() : "null");
+            return row;
         } catch (IllegalArgumentException ex) {
             log.warn(
                     "Atlas lead stage data provider '{}' missing or invalid; skipping transcription for callLog {}",
