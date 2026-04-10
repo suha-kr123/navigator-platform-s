@@ -35,7 +35,7 @@ public class AtlasRemoteDocumentService {
     }
 
     public byte[] fetchAnalysis(UUID callLogIdentifier) {
-        String key = "analyses/" + callLogIdentifier + "-raw.json";
+        String key = "analyses/" + callLogIdentifier + ".json";
         return executeAndReadBody(() -> atlasDocumentHttpClient.getAnalysisDocument(key), "analysis");
     }
 
