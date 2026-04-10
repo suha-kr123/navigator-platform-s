@@ -1,7 +1,9 @@
 package com.nivasafinance.features.atlas.service.impl;
 
+import com.nivasafinance.common.enums.EntityType;
 import com.nivasafinance.common.events.payload.LeadCallLogCreationEventPayload;
 import com.nivasafinance.common.events.payload.LeadCallLogUpdateEventPayload;
+import com.nivasafinance.common.events.payload.StageTransitionEventPayload;
 import com.nivasafinance.common.messaging.config.MessagingProperties;
 import com.nivasafinance.common.messaging.enums.MessageProvider;
 import com.nivasafinance.common.messaging.enums.QueueType;
@@ -10,6 +12,8 @@ import com.nivasafinance.features.atlas.service.AtlasService;
 import com.nivasafinance.features.call.dto.CallLogResponse;
 import com.nivasafinance.features.call.entity.CallLog;
 import com.nivasafinance.features.call.enums.AtlasJobStatus;
+import com.nivasafinance.features.call.entity.CallLogLead;
+import com.nivasafinance.features.call.repository.CallLogLeadRepositoryWrapper;
 import com.nivasafinance.features.call.service.CallReadService;
 import com.nivasafinance.features.call.service.CallWriteService;
 import com.nivasafinance.features.dataprovider.service.DataProviderExecutor;
@@ -18,8 +22,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -59,18 +65,21 @@ public class AtlasServiceImpl implements AtlasService {
     private final CallReadService callReadService;
     private final CallWriteService callWriteService;
     private final DataProviderExecutor dataProviderExecutor;
+    private final CallLogLeadRepositoryWrapper callLogLeadRepositoryWrapper;
 
     public AtlasServiceImpl(
             MessagePublisherFactory messagePublisherFactory,
             MessagingProperties messagingProperties,
             CallReadService callReadService,
             CallWriteService callWriteService,
-            DataProviderExecutor dataProviderExecutor) {
+            DataProviderExecutor dataProviderExecutor,
+            CallLogLeadRepositoryWrapper callLogLeadRepositoryWrapper) {
         this.messagePublisherFactory = messagePublisherFactory;
         this.messagingProperties = messagingProperties;
         this.callReadService = callReadService;
         this.callWriteService = callWriteService;
         this.dataProviderExecutor = dataProviderExecutor;
+        this.callLogLeadRepositoryWrapper = callLogLeadRepositoryWrapper;
     }
 
     @Override
@@ -88,6 +97,31 @@ public class AtlasServiceImpl implements AtlasService {
                 payload.getLeadIdentifier(),
                 payload.getCallLogIdentifier(),
                 recordingOverride);
+    }
+
+    @Override
+    public void handleLeadStageTransitioned(StageTransitionEventPayload payload) {
+        if (payload.getEntityType() != EntityType.LEAD) {
+            return;
+        }
+        UUID leadIdentifier = payload.getEntityIdentifier();
+        Long leadId = payload.getEntityId();
+        if (leadIdentifier == null || leadId == null) {
+            log.debug("Skipping Atlas on stage transition — missing lead identifier or lead id");
+            return;
+        }
+        List<CallLogLead> links = callLogLeadRepositoryWrapper.findAllByLeadIdOrderByCallLogIdDesc(leadId);
+        if (links.isEmpty()) {
+            return;
+        }
+        List<Long> callLogIds = links.stream().map(CallLogLead::getCallLogId).collect(Collectors.toList());
+        List<CallLogResponse> callLogs = callReadService.getCallLogsByIDs(callLogIds);
+        for (CallLogResponse callLog : callLogs) {
+            if (callLog == null || callLog.getIdentifier() == null) {
+                continue;
+            }
+            enqueueAtlasTranscriptionJob(leadIdentifier, callLog.getIdentifier(), null);
+        }
     }
 
     /**
@@ -177,9 +211,6 @@ public class AtlasServiceImpl implements AtlasService {
         return url.isEmpty() ? null : url;
     }
 
-    /**
-     * @return provider row map, or {@code null} if the provider is missing or execution failed
-     */
     /**
      * Interprets {@value #STAGE_ELIGIBLE_COLUMN} from JDBC (often {@code "true"}/{@code "false"} string).
      */

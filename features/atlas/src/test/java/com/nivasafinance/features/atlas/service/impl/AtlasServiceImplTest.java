@@ -11,6 +11,7 @@ import com.nivasafinance.features.call.dto.CallLogResponse;
 import com.nivasafinance.features.call.entity.CallLog;
 import com.nivasafinance.features.call.enums.AtlasJobStatus;
 import com.nivasafinance.features.call.enums.CallDirection;
+import com.nivasafinance.features.call.repository.CallLogLeadRepositoryWrapper;
 import com.nivasafinance.features.call.service.CallReadService;
 import com.nivasafinance.features.call.service.CallWriteService;
 import com.nivasafinance.features.dataprovider.service.DataProviderExecutor;
@@ -41,6 +42,8 @@ class AtlasServiceImplTest {
     private CallWriteService callWriteService;
     @Mock
     private DataProviderExecutor dataProviderExecutor;
+    @Mock
+    private CallLogLeadRepositoryWrapper callLogLeadRepositoryWrapper;
     @Mock
     private MessagePublisher messagePublisher;
 
