@@ -27,10 +27,8 @@ public class AdvisorSelfLeadCreateRequest {
     private String countryCode;
     private String districtCode;
 
-    @NotNull
     private BigDecimal requestedAmount;
 
-    @NotBlank
     private String product;
 
     private BigDecimal monthlyFamilyIncome;

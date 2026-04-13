@@ -638,6 +638,7 @@ public class AdvisorRepositoryWrapper {
         boolean hasStatusFilter = StringUtils.hasText(status);
         boolean hasSubStatusFilter = StringUtils.hasText(subStatus);
         String namePattern = hasName ? "%" + name.trim().replace("%", "\\%").replace("_", "\\_") + "%" : null;
+        String mobilePattern = hasMobile ? "%" + mobileNumber.trim().replace("%", "\\%").replace("_", "\\_") + "%" : null;
 
         StringBuilder statusClause = new StringBuilder();
         List<Object> statusParams = new ArrayList<>();
@@ -657,7 +658,7 @@ public class AdvisorRepositoryWrapper {
 
         List<Object> params = new ArrayList<>();
         if (hasName) params.add(namePattern);
-        if (hasMobile) params.add(buildPhoneNumberJsonb(mobileNumber.trim()));
+        if (hasMobile) params.add(mobilePattern);
         params.add(referralCode.trim());
 
         String countSql;
@@ -667,7 +668,7 @@ public class AdvisorRepositoryWrapper {
             sql.append(" INNER JOIN n_person p ON p.id = c.person_id WHERE ");
             if (hasName) sql.append(" p.display_name ILIKE ? ");
             if (hasName && hasMobile) sql.append(" AND ");
-            if (hasMobile) sql.append(" p.mobile_numbers @> ?::jsonb ");
+            if (hasMobile) sql.append(" EXISTS (SELECT 1 FROM jsonb_array_elements(COALESCE(p.mobile_numbers, '[]'::jsonb)) m WHERE m->>'number' LIKE ?) ");
             sql.append(" ) SELECT COUNT(*) FROM n_lead l ");
             sql.append(" JOIN n_sourcing_channel_details sc ON sc.id = l.sourcing_channel_id ");
             sql.append(" WHERE sc.marketing_details->>'referredByCode' = ? ");
@@ -730,7 +731,7 @@ public class AdvisorRepositoryWrapper {
         sql.append(" INNER JOIN n_person p ON p.id = c.person_id WHERE ");
         if (hasName) sql.append(" p.display_name ILIKE ? ");
         if (hasName && hasMobile) sql.append(" AND ");
-        if (hasMobile) sql.append(" p.mobile_numbers @> ?::jsonb ");
+        if (hasMobile) sql.append(" EXISTS (SELECT 1 FROM jsonb_array_elements(COALESCE(p.mobile_numbers, '[]'::jsonb)) m WHERE m->>'number' LIKE ?) ");
         sql.append(" ) SELECT l.lead_identifier AS lead_identifier, ");
         sql.append(" primary_person.display_name AS primary_contact_name, ");
         sql.append(" (SELECT m->>'number' FROM jsonb_array_elements(COALESCE(primary_person.mobile_numbers, '[]'::jsonb)) m ");

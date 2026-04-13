@@ -44,8 +44,7 @@ public class AdvisorAddressWriteServiceImpl implements AdvisorAddressWriteServic
 
     @Override
     public AddressData updateAddress(UUID advisorIdentifier, String addressId, AddressRequest request) {
-        if (request.getAddress() == null || request.getAddress().isBlank()
-                || request.getPincode() == null
+        if (request.getPincode() == null
                 || request.getPincode().getPincode() == null || request.getPincode().getPincode().isBlank()) {
             throw AdvisorExceptionFactory.addressRequiredFieldsCannotBeCleared(messageSource);
         }
