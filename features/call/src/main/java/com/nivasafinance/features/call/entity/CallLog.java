@@ -1,5 +1,6 @@
 package com.nivasafinance.features.call.entity;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.nivasafinance.common.audit.AuditableEntity;
 import com.nivasafinance.features.call.enums.AtlasJobStatus;
@@ -8,6 +9,7 @@ import com.nivasafinance.features.call.enums.CallDirection;
 import com.nivasafinance.features.call.enums.CallProvider;
 import com.nivasafinance.features.call.enums.CallSource;
 import com.nivasafinance.features.call.enums.CallStatus;
+import com.nivasafinance.features.call.enums.TranscriptAiTool;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -131,6 +133,11 @@ public class CallLog extends AuditableEntity {
         private String summaryUrl;
         private String analysisUrl;
         private String transcriptUrl;
+        private String summary;
+        private JsonNode extractedData;
+        private String executionId;
+        private String agentId;
+        private TranscriptAiTool transcriptAiTool;
         private String error;
     }
 }

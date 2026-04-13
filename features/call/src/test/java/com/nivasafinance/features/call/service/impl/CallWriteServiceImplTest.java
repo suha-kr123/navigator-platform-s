@@ -1,5 +1,7 @@
 package com.nivasafinance.features.call.service.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nivasafinance.common.exception.BadRequestException;
 import com.nivasafinance.common.enums.SystemEntities;
 import com.nivasafinance.common.context.UserContext;
@@ -8,6 +10,7 @@ import com.nivasafinance.features.call.dto.InitiateCallResponse;
 import com.nivasafinance.features.call.dto.UpdateCallLog;
 import com.nivasafinance.features.call.entity.CallLog;
 import com.nivasafinance.features.call.entity.CallLogLead;
+import com.nivasafinance.features.call.enums.TranscriptAiTool;
 import com.nivasafinance.features.call.entity.RoleCallConfigs;
 import com.nivasafinance.features.call.enums.CallStatus;
 import com.nivasafinance.features.call.repository.CallLogLeadRepositoryWrapper;
@@ -216,10 +219,17 @@ class CallWriteServiceImplTest {
 
     @Test
     void mergeAiAnalysisByIdentifier_mergesFields() {
+        ObjectNode existingExtractedData = new ObjectMapper().createObjectNode().put("existing", true);
+        ObjectNode patchExtractedData = new ObjectMapper().createObjectNode().put("patched", true);
         CallLog.AiAnalysisDetails existing = CallLog.AiAnalysisDetails.builder()
                 .jobId("job-1")
                 .status(null)
                 .summaryUrl("old")
+                .summary("old-summary")
+                .extractedData(existingExtractedData)
+                .executionId("old-execution")
+                .agentId("old-agent")
+                .transcriptAiTool(TranscriptAiTool.ATLAS)
                 .build();
         CallLog callLog = new CallLog();
         callLog.setAiAnalysis(existing);
@@ -227,6 +237,11 @@ class CallWriteServiceImplTest {
 
         CallLog.AiAnalysisDetails patch = CallLog.AiAnalysisDetails.builder()
                 .status(com.nivasafinance.features.call.enums.AtlasJobStatus.COMPLETED)
+                .summary("new-summary")
+                .extractedData(patchExtractedData)
+                .executionId("execution-1")
+                .agentId("agent-1")
+                .transcriptAiTool(TranscriptAiTool.BOLNA)
                 .error("err")
                 .build();
 
@@ -239,5 +254,41 @@ class CallWriteServiceImplTest {
         assertEquals(com.nivasafinance.features.call.enums.AtlasJobStatus.COMPLETED, saved.getAiAnalysis().getStatus());
         assertEquals("err", saved.getAiAnalysis().getError());
         assertEquals("old", saved.getAiAnalysis().getSummaryUrl());
+        assertEquals("new-summary", saved.getAiAnalysis().getSummary());
+        assertSame(patchExtractedData, saved.getAiAnalysis().getExtractedData());
+        assertEquals("execution-1", saved.getAiAnalysis().getExecutionId());
+        assertEquals("agent-1", saved.getAiAnalysis().getAgentId());
+        assertEquals(TranscriptAiTool.BOLNA, saved.getAiAnalysis().getTranscriptAiTool());
+    }
+
+    @Test
+    void mergeAiAnalysisByProviderId_mergesFields() {
+        ObjectNode extractedData = new ObjectMapper().createObjectNode().put("loanType", "Home loan");
+        CallLog callLog = new CallLog();
+        when(callLogRepositoryWrapper.findByProviderIdWithException("provider-id-1")).thenReturn(callLog);
+
+        CallLog.AiAnalysisDetails patch = CallLog.AiAnalysisDetails.builder()
+                .summary("summary")
+                .extractedData(extractedData)
+                .executionId("execution-1")
+                .agentId("agent-1")
+                .transcriptAiTool(TranscriptAiTool.BOLNA)
+                .build();
+
+        service.mergeAiAnalysisByProviderId("provider-id-1", patch);
+
+        ArgumentCaptor<CallLog> captor = ArgumentCaptor.forClass(CallLog.class);
+        verify(callLogRepositoryWrapper).saveWithException(captor.capture());
+        CallLog.AiAnalysisDetails saved = captor.getValue().getAiAnalysis();
+        assertEquals("summary", saved.getSummary(),
+                "Provider-id merge should persist summary into aiAnalysis");
+        assertSame(extractedData, saved.getExtractedData(),
+                "Provider-id merge should persist extractedData into aiAnalysis");
+        assertEquals("execution-1", saved.getExecutionId(),
+                "Provider-id merge should persist executionId into aiAnalysis");
+        assertEquals("agent-1", saved.getAgentId(),
+                "Provider-id merge should persist agentId into aiAnalysis");
+        assertEquals(TranscriptAiTool.BOLNA, saved.getTranscriptAiTool(),
+                "Provider-id merge should persist transcriptAiTool into aiAnalysis");
     }
 }

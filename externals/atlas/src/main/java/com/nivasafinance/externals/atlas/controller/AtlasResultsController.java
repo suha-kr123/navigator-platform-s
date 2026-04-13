@@ -4,6 +4,7 @@ import com.nivasafinance.common.constants.ApiConstants;
 import com.nivasafinance.features.atlas.dto.AtlasJobResponseDTO;
 import com.nivasafinance.features.call.entity.CallLog;
 import com.nivasafinance.features.call.enums.AtlasJobStatus;
+import com.nivasafinance.features.call.enums.TranscriptAiTool;
 import com.nivasafinance.features.call.service.CallWriteService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
@@ -41,6 +42,7 @@ public class AtlasResultsController {
                 .summaryUrl(body.getSummaryUrl())
                 .analysisUrl(body.getAnalysisUrl())
                 .transcriptUrl(body.getTranscriptUrl())
+                .transcriptAiTool(TranscriptAiTool.ATLAS)
                 .error(body.getError())
                 .build();
     }

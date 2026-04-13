@@ -130,6 +130,17 @@ public class CallWriteServiceImpl implements CallWriteService {
         callLogRepositoryWrapper.saveWithException(callLog);
     }
 
+    @Override
+    @Transactional
+    public void mergeAiAnalysisByProviderId(String providerId, CallLog.AiAnalysisDetails patch) {
+        if (patch == null) {
+            return;
+        }
+        CallLog callLog = callLogRepositoryWrapper.findByProviderIdWithException(providerId);
+        callLog.setAiAnalysis(mergeAiAnalysis(callLog.getAiAnalysis(), patch));
+        callLogRepositoryWrapper.saveWithException(callLog);
+    }
+
     private static CallLog.AiAnalysisDetails mergeAiAnalysis(
             CallLog.AiAnalysisDetails existing,
             CallLog.AiAnalysisDetails patch) {
@@ -140,6 +151,11 @@ public class CallWriteServiceImpl implements CallWriteService {
                 .summaryUrl(patch.getSummaryUrl() != null ? patch.getSummaryUrl() : base.getSummaryUrl())
                 .analysisUrl(patch.getAnalysisUrl() != null ? patch.getAnalysisUrl() : base.getAnalysisUrl())
                 .transcriptUrl(patch.getTranscriptUrl() != null ? patch.getTranscriptUrl() : base.getTranscriptUrl())
+                .summary(patch.getSummary() != null ? patch.getSummary() : base.getSummary())
+                .extractedData(patch.getExtractedData() != null ? patch.getExtractedData() : base.getExtractedData())
+                .executionId(patch.getExecutionId() != null ? patch.getExecutionId() : base.getExecutionId())
+                .agentId(patch.getAgentId() != null ? patch.getAgentId() : base.getAgentId())
+                .transcriptAiTool(patch.getTranscriptAiTool() != null ? patch.getTranscriptAiTool() : base.getTranscriptAiTool())
                 .error(patch.getError() != null ? patch.getError() : base.getError())
                 .build();
     }

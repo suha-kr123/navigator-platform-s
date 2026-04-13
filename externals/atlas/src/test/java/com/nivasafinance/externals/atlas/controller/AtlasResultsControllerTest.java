@@ -3,6 +3,7 @@ package com.nivasafinance.externals.atlas.controller;
 import com.nivasafinance.features.atlas.dto.AtlasJobResponseDTO;
 import com.nivasafinance.features.call.entity.CallLog;
 import com.nivasafinance.features.call.enums.AtlasJobStatus;
+import com.nivasafinance.features.call.enums.TranscriptAiTool;
 import com.nivasafinance.features.call.service.CallWriteService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -104,6 +105,8 @@ class AtlasResultsControllerTest {
         assertEquals("https://example.com/summary", details.getSummaryUrl(), "AiAnalysisDetails summaryUrl should match request body");
         assertEquals("https://example.com/analysis", details.getAnalysisUrl(), "AiAnalysisDetails analysisUrl should match request body");
         assertEquals("https://example.com/transcript", details.getTranscriptUrl(), "AiAnalysisDetails transcriptUrl should match request body");
+        assertEquals(TranscriptAiTool.ATLAS, details.getTranscriptAiTool(),
+                "Atlas webhook should always mark transcriptAiTool as ATLAS");
         assertNull(details.getError(), "AiAnalysisDetails error should be null when not provided");
     }
 
