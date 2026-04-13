@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.server.ResponseStatusException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -190,6 +192,35 @@ public class GlobalExceptionHandler {
         apiError.setRequestId(requestId);
         apiError.setPath(path);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(apiError);
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ApiError> handleResponseStatusException(
+            ResponseStatusException ex, WebRequest request) {
+        String requestId = generateRequestId();
+        String path = request.getDescription(false);
+        HttpStatusCode statusCode = ex.getStatusCode();
+        HttpStatus resolved = HttpStatus.resolve(statusCode.value());
+        if (resolved == null) {
+            if (statusCode.is4xxClientError()) {
+                resolved = HttpStatus.BAD_REQUEST;
+            } else if (statusCode.is5xxServerError()) {
+                resolved = HttpStatus.BAD_GATEWAY;
+            } else {
+                resolved = HttpStatus.INTERNAL_SERVER_ERROR;
+            }
+        }
+        String message = ex.getReason();
+        if (message == null || message.isBlank()) {
+            message = resolved.getReasonPhrase();
+        }
+        ApiError apiError = new ApiError();
+        apiError.setError(message);
+        apiError.setStatusCode(resolved);
+        apiError.setErrorCode("RESPONSE_STATUS");
+        apiError.setRequestId(requestId);
+        apiError.setPath(path);
+        return ResponseEntity.status(statusCode).body(apiError);
     }
 
     @ExceptionHandler(RuntimeException.class)
