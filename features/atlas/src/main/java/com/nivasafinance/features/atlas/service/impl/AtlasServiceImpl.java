@@ -9,8 +9,11 @@ import com.nivasafinance.common.messaging.enums.MessageProvider;
 import com.nivasafinance.common.messaging.enums.QueueType;
 import com.nivasafinance.common.messaging.factory.MessagePublisherFactory;
 import com.nivasafinance.features.atlas.service.AtlasService;
+import com.nivasafinance.features.call.dto.CallLogResponse;
 import com.nivasafinance.features.call.entity.CallLog;
 import com.nivasafinance.features.call.enums.AtlasJobStatus;
+import com.nivasafinance.features.call.enums.TranscriptAiTool;
+import com.nivasafinance.features.call.service.CallReadService;
 import com.nivasafinance.features.call.service.CallWriteService;
 import com.nivasafinance.features.dataprovider.service.DataProviderExecutor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,16 +49,19 @@ public class AtlasServiceImpl implements AtlasService {
 
     private final MessagePublisherFactory messagePublisherFactory;
     private final MessagingProperties messagingProperties;
+    private final CallReadService callReadService;
     private final CallWriteService callWriteService;
     private final DataProviderExecutor dataProviderExecutor;
 
     public AtlasServiceImpl(
             MessagePublisherFactory messagePublisherFactory,
             MessagingProperties messagingProperties,
+            CallReadService callReadService,
             CallWriteService callWriteService,
             DataProviderExecutor dataProviderExecutor) {
         this.messagePublisherFactory = messagePublisherFactory;
         this.messagingProperties = messagingProperties;
+        this.callReadService = callReadService;
         this.callWriteService = callWriteService;
         this.dataProviderExecutor = dataProviderExecutor;
     }
@@ -99,7 +105,7 @@ public class AtlasServiceImpl implements AtlasService {
             log.warn("Navigator Atlas queue is not configured; skipping transcription job");
             return;
         }
-        if (leadIdentifier == null) {
+        if (leadIdentifier == null || callLogIdentifier == null) {
             log.warn("Lead call log event missing leadIdentifier; skipping Atlas job for callLog {}", callLogIdentifier);
             return;
         }
@@ -129,11 +135,18 @@ public class AtlasServiceImpl implements AtlasService {
         }
 
         UUID callLogIdentifier = UUID.fromString(callLogIdentifierStr);
+        CallLogResponse callLog = callReadService.getCallLogByIdentifier(callLogIdentifier);
+        if (shouldSkipForBolnaAnalysis(callLog.getAiAnalysis())) {
+            log.debug("Skipping Atlas enqueue for callLog {} — analysis already present",
+                    callLogIdentifier);
+            return;
+        }
 
         callWriteService.mergeAiAnalysisByIdentifier(
                 callLogIdentifier,
                 CallLog.AiAnalysisDetails.builder()
                         .status(AtlasJobStatus.INITIATED)
+                        .transcriptAiTool(TranscriptAiTool.ATLAS)
                         .build());
 
         Map<String, Object> body = new LinkedHashMap<>();
@@ -152,6 +165,7 @@ public class AtlasServiceImpl implements AtlasService {
                     callLogIdentifier,
                     CallLog.AiAnalysisDetails.builder()
                             .status(AtlasJobStatus.PUBLISHING_FAILED)
+                            .transcriptAiTool(TranscriptAiTool.ATLAS)
                             .build());
         }
     }
@@ -182,5 +196,12 @@ public class AtlasServiceImpl implements AtlasService {
     private static String getStringValue(Map<String, Object> row, String key) {
         Object value = row.get(key);
         return value != null ? value.toString().trim() : null;
+    }
+
+    private static boolean shouldSkipForBolnaAnalysis(CallLog.AiAnalysisDetails ai) {
+        if (ai == null) {
+            return false;
+        }
+        return ai.getTranscriptAiTool() == TranscriptAiTool.BOLNA;
     }
 }

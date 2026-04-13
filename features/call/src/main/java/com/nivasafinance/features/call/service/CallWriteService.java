@@ -15,4 +15,5 @@ public interface CallWriteService {
     void mapCallLogToLead(Long callLogId, Long leadId, Long contactId);
 
     void mergeAiAnalysisByIdentifier(UUID callLogIdentifier, CallLog.AiAnalysisDetails patch);
+    void mergeAiAnalysisByProviderId(String providerId, CallLog.AiAnalysisDetails patch);
 }
