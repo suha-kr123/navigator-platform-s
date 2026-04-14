@@ -86,7 +86,6 @@ public class LeadDashboardWrapper {
     private final StaffReadService staffReadService;
     private final OfficeReadService officeReadService;
     private final ObjectMapper objectMapper;
-    private final AddressDataService addressDataService;
 
     @SuppressWarnings("text-blocks")
     public PaginatedResponse<LeadDashboardResponse> findLeadDashboard(
