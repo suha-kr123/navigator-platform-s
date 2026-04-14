@@ -782,13 +782,10 @@ public class LeadDashboardWrapper {
 
         private final CodeValueMasterService codeValueMasterService;
         private final ObjectMapper objectMapper;
-        private final AddressDataService addressDataService;
 
-        private LeadDashboardRowMapper(CodeValueMasterService codeValueMasterService, ObjectMapper objectMapper,
-                AddressDataService addressDataService) {
+        private LeadDashboardRowMapper(CodeValueMasterService codeValueMasterService, ObjectMapper objectMapper) {
             this.codeValueMasterService = codeValueMasterService;
             this.objectMapper = objectMapper;
-            this.addressDataService = addressDataService;
         }
 
         @Override
