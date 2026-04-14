@@ -30,6 +30,12 @@ public class LeadDashboardResponse {
     private String primaryPersonName;
     private String primaryPersonNumber;
     private String officeName;
+    private String district;
+    private String taluka;
+    private String countryCode;
+    private String stateCode;
+    private String districtCode;
+    private String talukaCode;
     private String ownerUsername;
     private LeadStatus status;
     private LeadSubStatus subStatus;
