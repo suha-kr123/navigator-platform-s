@@ -253,7 +253,7 @@ public class LeadDashboardWrapper {
 
             List<LeadDashboardResponse> content = jdbcTemplate.query(
                     dataSql,
-                    new LeadDashboardRowMapper(codeValueMasterService, objectMapper, addressDataService),
+                    new LeadDashboardRowMapper(codeValueMasterService, objectMapper),
                     dataQueryParams.toArray());
 
             PaginationInfo paginationInfo = buildPaginationInfo(
