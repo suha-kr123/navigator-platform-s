@@ -98,6 +98,9 @@ public class Advisor extends AuditableEntity {
     @Column(name = "referral_code", length = 255, unique = true, nullable = false)
     private String referralCode;
 
+    @Column(name = "is_deleted", nullable = false)
+    private Boolean isDeleted = false;
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor

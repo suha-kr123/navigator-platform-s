@@ -12,6 +12,10 @@ public interface AdvisorReadService {
 
     Optional<Advisor> findAdvisorByUsername(String username);
 
+    Optional<Advisor> findAdvisorByUsernameIncludingDeleted(String username);
+
+    Advisor findAdvisorByIdentifierIncludingDeleted(UUID identifier);
+
     AdvisorResponse getAdvisorByIdentifier(UUID identifier);
 
     SourcingDetailsResponse getSourcingDetails(UUID identifier);
@@ -37,5 +41,9 @@ public interface AdvisorReadService {
 
     // advisors by the given referral code
     PaginatedResponse<AdvisorBasicResponse> getAdvisorsByReferralCode(String referralCode, PaginationRequest paginationRequest);
+
+    PaginatedResponse<AdminAdvisorBasicResponse> adminSearchAdvisors(PaginationRequest paginationRequest, AdvisorSearchRequest request);
+
+    PaginatedResponse<AdminAdvisorBasicResponse> getDeletedAdvisors(PaginationRequest paginationRequest);
 
 }

@@ -41,4 +41,5 @@ include("features:referral")
 include("features:bre")
 include("features:dataprovider")
 include("features:displayconfig")
+include("features:admin")
 

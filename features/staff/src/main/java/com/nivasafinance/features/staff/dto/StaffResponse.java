@@ -23,4 +23,5 @@ public class StaffResponse {
     private String officeKey;
     private String officeName;
     private String referralCode;
+    private Boolean deleted;
 }

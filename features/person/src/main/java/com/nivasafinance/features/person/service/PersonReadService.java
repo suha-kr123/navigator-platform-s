@@ -1,7 +1,10 @@
 package com.nivasafinance.features.person.service;
 
+import com.nivasafinance.common.base.model.PaginatedResponse;
+import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.common.dto.AddressData;
 import com.nivasafinance.common.dto.IdentifierData;
+import com.nivasafinance.features.person.dto.AdminPersonResponse;
 import com.nivasafinance.features.person.dto.PersonResponse;
 
 import java.util.List;
@@ -20,5 +23,10 @@ public interface PersonReadService {
     List<IdentifierData> getIdentifiers(Long personId);
 
     IdentifierData getIdentifier(Long personId, UUID identifierId);
+
+    PaginatedResponse<AdminPersonResponse> adminSearchPersonsByMobile(PaginationRequest paginationRequest, String mobileNumber);
+
+    PaginatedResponse<AdminPersonResponse> getDeletedPersons(PaginationRequest paginationRequest);
+
 }
 

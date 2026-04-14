@@ -310,6 +310,8 @@ public class LeadController {
         return ResponseEntity.noContent().build();
     }
 
+
+
     // leads by the given referral code
     @GetMapping("/referral-details/{referralCode}")
     @RequirePermission(permissionName = "READ_LEAD")

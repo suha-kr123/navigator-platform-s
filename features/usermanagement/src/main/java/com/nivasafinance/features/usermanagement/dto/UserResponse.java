@@ -16,5 +16,6 @@ public class UserResponse {
     private PersonResponse personResponse;
     private String username;
     private UserStatus status;
+    private Boolean deleted;
 }
 

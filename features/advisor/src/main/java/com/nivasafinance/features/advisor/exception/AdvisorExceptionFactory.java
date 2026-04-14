@@ -55,6 +55,16 @@ public final class AdvisorExceptionFactory {
         return new AdvisorOperationException("error.advisor.not.found.for.current.user", messageSource);
     }
 
+    public static BadRequestException advisorAlreadyDeleted(Object identifier, MessageSource messageSource) {
+        return new BadRequestException(ExceptionUtils.createLocalizedMessage(
+                "error.advisor.already.deleted", new Object[]{identifier}, messageSource));
+    }
+
+    public static BadRequestException advisorNotDeleted(Object identifier, MessageSource messageSource) {
+        return new BadRequestException(ExceptionUtils.createLocalizedMessage(
+                "error.advisor.not.deleted", new Object[]{identifier}, messageSource));
+    }
+
     public static BadRequestException notFoundByReferralTrackingCode(String referralTrackingCode, MessageSource messageSource) {
         return new BadRequestException(ExceptionUtils.createLocalizedMessage(
                 "error.advisor.not.found.by.referral.tracking.code",

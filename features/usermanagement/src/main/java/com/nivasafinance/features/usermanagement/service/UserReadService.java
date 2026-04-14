@@ -45,5 +45,11 @@ public interface UserReadService {
 //    AddressData getAddressForUser(Long userId, String addressId);
 
     AddressData getAddressForUser(String username, String addressId);
+
+    UserResponse adminGetUserByUsername(String username);
+
+    UserResponse adminGetUserById(Long userId);
+
+    PaginatedResponse<UserResponse> getDeletedUsers(PaginationRequest pagination);
 }
 

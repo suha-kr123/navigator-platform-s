@@ -19,6 +19,7 @@ import com.nivasafinance.features.usermanagement.repository.UserRepository;
 import com.nivasafinance.features.usermanagement.service.UserReadService;
 import com.nivasafinance.features.usermanagement.service.UserWriteService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +32,7 @@ public class UserWriteServiceImpl implements UserWriteService {
     private final PersonWriteService personWriteService;
     private final PersonReadService personReadService;
     private final UserReadService userReadService;
+    private final MessageSource messageSource;
 
     @Override
     public UserResponse createUser(UserCreateRequest request) {
@@ -60,6 +62,7 @@ public class UserWriteServiceImpl implements UserWriteService {
                 .username(savedUser.getUsername())
                 .status(savedUser.getStatus())
                 .personResponse(personResponse)
+                .deleted(savedUser.getIsDeleted())
                 .build();
     }
 
@@ -90,6 +93,7 @@ public class UserWriteServiceImpl implements UserWriteService {
                 .username(savedUser.getUsername())
                 .status(savedUser.getStatus())
                 .personResponse(personResponse)
+                .deleted(savedUser.getIsDeleted())
                 .build();
     }
 
@@ -120,6 +124,7 @@ public class UserWriteServiceImpl implements UserWriteService {
                 .username(savedUser.getUsername())
                 .status(savedUser.getStatus())
                 .personResponse(personResponse)
+                .deleted(savedUser.getIsDeleted())
                 .build();
     }
 
@@ -141,5 +146,33 @@ public class UserWriteServiceImpl implements UserWriteService {
     public AddressData updateAddressForUser(String username, String addressId, AddressRequest request) {
         Long personId = userReadService.getPersonIdByUsername(username);
         return personWriteService.updateAddress(personId, addressId, request);
+    }
+
+    @Override
+    @Transactional
+    public void deleteUser(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> UserExceptionFactory.userNotFoundByUsername(username));
+
+        if (Boolean.TRUE.equals(user.getIsDeleted())) {
+            throw UserExceptionFactory.userAlreadyDeleted(username, messageSource);
+        }
+
+        user.setIsDeleted(true);
+        userRepository.save(user);
+    }
+
+    @Override
+    @Transactional
+    public void undoDeleteUser(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> UserExceptionFactory.userNotFoundByUsername(username));
+
+        if (!Boolean.TRUE.equals(user.getIsDeleted())) {
+            throw UserExceptionFactory.userNotDeleted(username, messageSource);
+        }
+
+        user.setIsDeleted(false);
+        userRepository.save(user);
     }
 }

@@ -29,4 +29,6 @@ public interface LeadWriteService {
     void patchPropertyDetails(UUID leadIdentifier, PatchPropertyDetailsRequest request);
     void patchIncomeObligationDetails(UUID leadIdentifier, PatchIncomeAndObligationRequest request);
     void patchLead(UUID leadIdentifier, PatchLeadRequest request);
+    void deleteLead(UUID leadIdentifier);
+    void undoDeleteLead(UUID leadIdentifier);
 }

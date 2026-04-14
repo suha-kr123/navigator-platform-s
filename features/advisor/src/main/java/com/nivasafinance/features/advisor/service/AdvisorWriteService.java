@@ -25,5 +25,9 @@ public interface AdvisorWriteService {
     void activateAdvisor(UUID identifier);
     
     void outOfGeoAdvisor(UUID identifier, OutOfGeoAdvisorRequest request);
+
+    void deleteAdvisor(UUID identifier);
+
+    void undoDeleteAdvisor(UUID identifier);
 }
 

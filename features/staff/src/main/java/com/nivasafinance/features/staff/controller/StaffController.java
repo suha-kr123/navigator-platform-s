@@ -9,10 +9,7 @@ import com.nivasafinance.features.staff.service.StaffReadService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping(ApiConstants.V1 + "/staff")
@@ -20,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class StaffController {
 
     private final StaffReadService staffReadService;
+
     @GetMapping
     @RequirePermission(permissionName = "READ_STAFF")
     public ResponseEntity<PaginatedResponse<StaffResponse>> getStaff(
@@ -36,4 +34,6 @@ public class StaffController {
         StaffResponse staff = staffReadService.getCurrentStaff();
         return ResponseEntity.ok(staff);
     }
+
+
 }

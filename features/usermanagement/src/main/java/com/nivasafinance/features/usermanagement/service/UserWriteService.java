@@ -28,6 +28,10 @@ public interface UserWriteService {
 //    AddressData updateAddressForUser(Long userId, String addressId, AddressRequest request);
 
     AddressData updateAddressForUser(String username, String addressId, AddressRequest request);
+
+    void deleteUser(String username);
+
+    void undoDeleteUser(String username);
 }
 
 

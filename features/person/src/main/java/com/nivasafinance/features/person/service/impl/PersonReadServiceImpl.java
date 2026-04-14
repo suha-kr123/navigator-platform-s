@@ -1,7 +1,10 @@
 package com.nivasafinance.features.person.service.impl;
 
+import com.nivasafinance.common.base.model.PaginatedResponse;
+import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.common.dto.AddressData;
 import com.nivasafinance.common.dto.IdentifierData;
+import com.nivasafinance.features.person.dto.AdminPersonResponse;
 import com.nivasafinance.features.person.dto.PersonResponse;
 import com.nivasafinance.features.person.entity.Person;
 import com.nivasafinance.features.person.repository.PersonRepositoryWrapper;
@@ -109,5 +112,17 @@ public class PersonReadServiceImpl implements PersonReadService {
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public PaginatedResponse<AdminPersonResponse> adminSearchPersonsByMobile(PaginationRequest paginationRequest, String mobileNumber) {
+        return personRepositoryWrapper.adminSearchPersonsByMobileNumber(paginationRequest, mobileNumber);
+    }
+
+    @Override
+    public PaginatedResponse<AdminPersonResponse> getDeletedPersons(PaginationRequest paginationRequest) {
+        return personRepositoryWrapper.findDeletedPersons(paginationRequest);
+    }
+
+
 }
 

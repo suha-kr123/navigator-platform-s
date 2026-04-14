@@ -1,5 +1,7 @@
 package com.nivasafinance.features.staff.exception;
 
+import com.nivasafinance.common.exception.BadRequestException;
+import com.nivasafinance.common.exception.ExceptionUtils;
 import org.springframework.context.MessageSource;
 
 import java.util.UUID;
@@ -32,6 +34,16 @@ public final class StaffExceptionFactory {
 
     public static StaffNotFoundException notFoundByIdentifier(UUID identifier, MessageSource messageSource) {
         return new StaffNotFoundException(identifier, messageSource);
+    }
+
+    public static BadRequestException staffAlreadyDeleted(Object identifier, MessageSource messageSource) {
+        return new BadRequestException(ExceptionUtils.createLocalizedMessage(
+                "error.staff.already.deleted", new Object[]{identifier}, messageSource));
+    }
+
+    public static BadRequestException staffNotDeleted(Object identifier, MessageSource messageSource) {
+        return new BadRequestException(ExceptionUtils.createLocalizedMessage(
+                "error.staff.not.deleted", new Object[]{identifier}, messageSource));
     }
 }
 

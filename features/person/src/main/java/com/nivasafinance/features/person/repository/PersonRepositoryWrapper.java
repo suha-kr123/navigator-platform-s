@@ -1,7 +1,14 @@
 package com.nivasafinance.features.person.repository;
 
+import com.nivasafinance.common.base.model.PaginatedResponse;
+import com.nivasafinance.common.base.model.PaginationInfo;
+import com.nivasafinance.common.base.model.PaginationRequest;
+import com.nivasafinance.features.person.dto.AdminPersonResponse;
+import com.nivasafinance.features.person.dto.PersonResponse;
+import com.nivasafinance.features.person.entity.MobileNumberDetails;
 import com.nivasafinance.features.person.entity.Person;
 import com.nivasafinance.features.person.exception.PersonExceptionFactory;
+import java.util.Collections;
 import java.util.Map;
 import lombok.AllArgsConstructor;
 import org.springframework.context.MessageSource;
@@ -9,6 +16,7 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.Optional;
 import java.util.List;
@@ -32,7 +40,7 @@ public class PersonRepositoryWrapper {
 
     public Person findByIdWithException(Long id) {
         try {
-            return personRepository.findById(id)
+            return personRepository.findByIdAndNotDeleted(id)
                     .orElseThrow(() -> PersonExceptionFactory.notFound(id, messageSource));
         } catch (DataAccessException e) {
             throw PersonExceptionFactory.retrieveEntityFailed(messageSource);
@@ -42,6 +50,17 @@ public class PersonRepositoryWrapper {
     public Optional<Person> findByPrimaryMobileNumber(String mobileNumber) {
         try {
             return personRepository.findByPrimaryMobileNumber(mobileNumber);
+        } catch (DataAccessException e) {
+            throw PersonExceptionFactory.retrieveEntityFailed(messageSource);
+        }
+    }
+
+    /**
+     * Unfiltered — returns person including soft-deleted. Used by creation flows to prevent duplicates.
+     */
+    public Optional<Person> findByPrimaryMobileNumberIncludingDeleted(String mobileNumber) {
+        try {
+            return personRepository.findByPrimaryMobileNumberIncludingDeleted(mobileNumber);
         } catch (DataAccessException e) {
             throw PersonExceptionFactory.retrieveEntityFailed(messageSource);
         }
@@ -86,6 +105,7 @@ public class PersonRepositoryWrapper {
                 INNER JOIN n_cb_enquiry e
                        ON e.id = (p.cb_details->>'latestSuccessEnquiryId')::bigint
                 WHERE p.id = :personId
+                  AND p.is_deleted = false
                   AND p.cb_details->>'latestSuccessEnquiryId' IS NOT NULL
                   AND e.status = 'SUCCESS'
                   AND e.report_id IS NOT NULL
@@ -119,6 +139,7 @@ public class PersonRepositoryWrapper {
         String query = """
                 SELECT p.id FROM n_person p
                 WHERE p.cb_enquiry_id IS NOT NULL
+                  AND p.is_deleted = false
                   AND EXISTS (
                     SELECT 1 FROM jsonb_array_elements_text(p.cb_enquiry_id) AS elem
                     WHERE elem::bigint = :enquiryId
@@ -162,6 +183,7 @@ public class PersonRepositoryWrapper {
                 INNER JOIN n_consent c
                        ON c.id = (consent_elem->>'id')::bigint
                 WHERE p.id = :personId
+                  AND p.is_deleted = false
                   AND p.consent_details IS NOT NULL
                   AND consent_elem->>'type' = 'CB'
                   AND c.status = 'RECEIVED'
@@ -197,5 +219,134 @@ public class PersonRepositoryWrapper {
         } catch (DataAccessException e) {
             throw PersonExceptionFactory.retrieveEntityFailed(messageSource);
         }
+    }
+
+    /**
+     * Admin search: returns all persons (deleted + non-deleted) matching the mobile number.
+     */
+    public PaginatedResponse<AdminPersonResponse> adminSearchPersonsByMobileNumber(
+            PaginationRequest paginationRequest, String mobileNumber) {
+        if (!StringUtils.hasText(mobileNumber)) {
+            return new PaginatedResponse<>(Collections.emptyList(),
+                    buildPaginationInfo(paginationRequest, 0));
+        }
+
+        String phoneJson = buildPhoneNumberJsonb(mobileNumber.trim());
+
+        String countSql = """
+            SELECT COUNT(*) FROM n_person p
+            WHERE p.mobile_numbers @> :phoneJson::jsonb
+            """;
+
+        String dataSql = """
+            SELECT p.first_name, p.middle_name, p.last_name, p.display_name,
+                   p.email, p.created_at, p.created_by, p.updated_at, p.updated_by,
+                   p.is_deleted,
+                   (jsonb_path_query_first(COALESCE(p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') AS primary_mobile_number
+            FROM n_person p
+            WHERE p.mobile_numbers @> :phoneJson::jsonb
+            ORDER BY p.updated_at DESC
+            LIMIT :limit OFFSET :offset
+            """;
+
+        try {
+            MapSqlParameterSource params = new MapSqlParameterSource();
+            params.addValue("phoneJson", phoneJson);
+
+            Long totalCount = namedParameterJdbcTemplate.queryForObject(countSql, params, Long.class);
+            long total = totalCount != null ? totalCount : 0L;
+
+            params.addValue("limit", paginationRequest.getLimit());
+            params.addValue("offset", paginationRequest.getOffset());
+
+            List<AdminPersonResponse> results = namedParameterJdbcTemplate.query(dataSql, params,
+                    (rs, rowNum) -> AdminPersonResponse.builder()
+                            .firstName(rs.getString("first_name"))
+                            .middleName(rs.getString("middle_name"))
+                            .lastName(rs.getString("last_name"))
+                            .displayName(rs.getString("display_name"))
+                            .email(rs.getString("email"))
+                            .createdAt(rs.getTimestamp("created_at") != null ? rs.getTimestamp("created_at").toLocalDateTime() : null)
+                            .createdBy(rs.getString("created_by"))
+                            .updatedAt(rs.getTimestamp("updated_at") != null ? rs.getTimestamp("updated_at").toLocalDateTime() : null)
+                            .updatedBy(rs.getString("updated_by"))
+                            .deleted(rs.getBoolean("is_deleted"))
+                            .primaryMobileNumber(rs.getString("primary_mobile_number"))
+                            .build());
+
+            return new PaginatedResponse<>(results, buildPaginationInfo(paginationRequest, total));
+        } catch (DataAccessException e) {
+            throw PersonExceptionFactory.retrieveEntityFailed(messageSource);
+        }
+    }
+
+    /**
+     * Admin: returns only soft-deleted persons, paginated.
+     */
+    public PaginatedResponse<AdminPersonResponse> findDeletedPersons(PaginationRequest paginationRequest) {
+        String countSql = "SELECT COUNT(*) FROM n_person p WHERE p.is_deleted = true";
+
+        String dataSql = """
+            SELECT p.first_name, p.middle_name, p.last_name, p.display_name,
+                   p.email, p.created_at, p.created_by, p.updated_at, p.updated_by,
+                   p.is_deleted,
+                   (jsonb_path_query_first(COALESCE(p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') AS primary_mobile_number
+            FROM n_person p
+            WHERE p.is_deleted = true
+            ORDER BY p.updated_at DESC
+            LIMIT :limit OFFSET :offset
+            """;
+
+        try {
+            MapSqlParameterSource params = new MapSqlParameterSource();
+            Long totalCount = namedParameterJdbcTemplate.queryForObject(countSql, params, Long.class);
+            long total = totalCount != null ? totalCount : 0L;
+
+            params.addValue("limit", paginationRequest.getLimit());
+            params.addValue("offset", paginationRequest.getOffset());
+
+            List<AdminPersonResponse> results = namedParameterJdbcTemplate.query(dataSql, params,
+                    (rs, rowNum) -> AdminPersonResponse.builder()
+                            .firstName(rs.getString("first_name"))
+                            .middleName(rs.getString("middle_name"))
+                            .lastName(rs.getString("last_name"))
+                            .displayName(rs.getString("display_name"))
+                            .email(rs.getString("email"))
+                            .createdAt(rs.getTimestamp("created_at") != null ? rs.getTimestamp("created_at").toLocalDateTime() : null)
+                            .createdBy(rs.getString("created_by"))
+                            .updatedAt(rs.getTimestamp("updated_at") != null ? rs.getTimestamp("updated_at").toLocalDateTime() : null)
+                            .updatedBy(rs.getString("updated_by"))
+                            .deleted(rs.getBoolean("is_deleted"))
+                            .primaryMobileNumber(rs.getString("primary_mobile_number"))
+                            .build());
+
+            return new PaginatedResponse<>(results, buildPaginationInfo(paginationRequest, total));
+        } catch (DataAccessException e) {
+            throw PersonExceptionFactory.retrieveEntityFailed(messageSource);
+        }
+    }
+
+    private static String buildPhoneNumberJsonb(String mobileNumber) {
+        String escaped = mobileNumber.replace("\\", "\\\\").replace("\"", "\\\"");
+        return "[{\"number\":\"" + escaped + "\"}]";
+    }
+
+    private PaginationInfo buildPaginationInfo(PaginationRequest paginationRequest, long totalElements) {
+        int limit = paginationRequest.getLimit();
+        int offset = paginationRequest.getOffset();
+        int totalPages = limit == 0 ? 0 : (int) Math.ceil((double) totalElements / limit);
+        int currentPage = limit == 0 ? 0 : offset / limit;
+        boolean hasNext = offset + limit < totalElements;
+        boolean hasPrevious = offset > 0;
+
+        return PaginationInfo.builder()
+                .offset(offset)
+                .limit(limit)
+                .totalElements(totalElements)
+                .totalPages(totalPages)
+                .currentPage(currentPage)
+                .hasNext(hasNext)
+                .hasPrevious(hasPrevious)
+                .build();
     }
 }

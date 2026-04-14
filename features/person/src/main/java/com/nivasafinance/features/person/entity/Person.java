@@ -90,6 +90,9 @@ public class Person extends AuditableEntity {
     @Column(name = "consent_details", columnDefinition = "jsonb")
     private List<ConsentInfo> consentDetails;
 
+    @Column(name = "is_deleted", nullable = false)
+    private Boolean isDeleted = false;
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor

@@ -398,6 +398,23 @@ public class LeadReadServiceImpl implements LeadReadService {
     }
 
     @Override
+    public PaginatedResponse<AdminLeadSearchResponse> adminSearchLeads(PaginationRequest paginationRequest, LeadSearchRequest request) {
+        return leadRepositoryWrapper.adminSearchLeadsByPhoneNumber(paginationRequest, request);
+    }
+
+    @Override
+    public PaginatedResponse<AdminLeadSearchResponse> getDeletedLeads(PaginationRequest paginationRequest) {
+        return leadRepositoryWrapper.findDeletedLeads(paginationRequest);
+    }
+
+    @Override
+    public Long findPrimaryPersonIdForLead(UUID leadIdentifier) {
+        return leadRepositoryWrapper.findPrimaryPersonIdForLead(leadIdentifier);
+    }
+
+
+
+    @Override
     public LeadDashboardFiltersResponse getLeadDashboardFilters(LeadDashboardFiltersFilters filters) {
         // Get current user's staff and office
         StaffResponse currentStaff = staffReadService.getCurrentStaff();

@@ -1,6 +1,7 @@
 package com.nivasafinance.features.staff.service;
 
 import com.nivasafinance.features.staff.dto.StaffResponse;
+import com.nivasafinance.features.staff.entity.Staff;
 
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
@@ -14,4 +15,12 @@ public interface StaffReadService {
     StaffResponse getCurrentStaff();
     List<StaffResponse> getStaffByOfficeKeys(List<String> officeKeys);
     Optional<StaffResponse> getStaffByIdentifier(UUID identifier);
+
+    Optional<Staff> findStaffByUserIdIncludingDeleted(Long userId);
+
+    Staff findStaffByIdentifierIncludingDeleted(UUID identifier);
+
+    PaginatedResponse<StaffResponse> getDeletedStaff(PaginationRequest paginationRequest);
+
+    PaginatedResponse<StaffResponse> adminSearchStaff(String name, PaginationRequest paginationRequest);
 }

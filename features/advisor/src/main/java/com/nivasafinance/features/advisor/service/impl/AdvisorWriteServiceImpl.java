@@ -79,7 +79,7 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
         } catch (UserAlreadyExistsException e) {
             throw AdvisorExceptionFactory.advisorAlreadyExistsForMobileNumber(mobile, messageSource);
         }
-        if (advisorRepositoryWrapper.findByUsername(advisorUsername).isPresent()) {
+        if (advisorRepositoryWrapper.findByUsernameIncludingDeleted(advisorUsername).isPresent()) {
             throw AdvisorExceptionFactory.advisorAlreadyExistsForMobileNumber(mobile, messageSource);
         }
 
@@ -435,6 +435,32 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
         // Publish ADVISOR_OUT_OF_GEO event
         String reason = advisor.getRemarks() != null ? advisor.getRemarks().getOutOfGeo() : null;
         publishAdvisorStatusChangeEvent(advisor, BusinessEvent.ADVISOR_OUT_OF_GEO, reason);
+    }
+
+    @Override
+    @Transactional
+    public void deleteAdvisor(UUID identifier) {
+        Advisor advisor = advisorRepositoryWrapper.findByIdentifierIncludingDeletedWithException(identifier);
+
+        if (Boolean.TRUE.equals(advisor.getIsDeleted())) {
+            throw AdvisorExceptionFactory.advisorAlreadyDeleted(identifier, messageSource);
+        }
+
+        advisor.setIsDeleted(true);
+        advisorRepositoryWrapper.saveWithException(advisor);
+    }
+
+    @Override
+    @Transactional
+    public void undoDeleteAdvisor(UUID identifier) {
+        Advisor advisor = advisorRepositoryWrapper.findByIdentifierIncludingDeletedWithException(identifier);
+
+        if (!Boolean.TRUE.equals(advisor.getIsDeleted())) {
+            throw AdvisorExceptionFactory.advisorNotDeleted(identifier, messageSource);
+        }
+
+        advisor.setIsDeleted(false);
+        advisorRepositoryWrapper.saveWithException(advisor);
     }
 
     private void publishAdvisorStatusChangeEvent(Advisor advisor, BusinessEvent event, String reason) {

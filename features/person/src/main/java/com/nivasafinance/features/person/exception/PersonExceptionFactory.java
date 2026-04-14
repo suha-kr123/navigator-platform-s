@@ -33,11 +33,21 @@ public class PersonExceptionFactory {
     }
 
     public static BadRequestException addressTypeMandatory(MessageSource messageSource) {
-    return new BadRequestException(ExceptionUtils.createLocalizedMessage(
-            "error.person.address.type.mandatory",
-            null,
-            messageSource
-    ));
-}
+        return new BadRequestException(ExceptionUtils.createLocalizedMessage(
+                "error.person.address.type.mandatory",
+                null,
+                messageSource
+        ));
+    }
+
+    public static BadRequestException personAlreadyDeleted(Object identifier, MessageSource messageSource) {
+        return new BadRequestException(ExceptionUtils.createLocalizedMessage(
+                "error.person.already.deleted", new Object[]{identifier}, messageSource));
+    }
+
+    public static BadRequestException personNotDeleted(Object identifier, MessageSource messageSource) {
+        return new BadRequestException(ExceptionUtils.createLocalizedMessage(
+                "error.person.not.deleted", new Object[]{identifier}, messageSource));
+    }
 }
 

@@ -2,10 +2,12 @@ package com.nivasafinance.features.usermanagement.service.impl;
 
 import com.nivasafinance.common.dto.AddressData;
 import com.nivasafinance.common.exception.BadRequestException;
+import com.nivasafinance.common.exception.ResourceNotFoundException;
 import com.nivasafinance.features.person.dto.PersonResponse;
 import com.nivasafinance.features.person.service.PersonReadService;
 import com.nivasafinance.features.usermanagement.dto.UserResponse;
 import com.nivasafinance.features.usermanagement.entity.User;
+import com.nivasafinance.features.usermanagement.exception.UserExceptionFactory;
 import com.nivasafinance.features.usermanagement.repository.UserRepositoryWrapper;
 import com.nivasafinance.features.usermanagement.service.UserReadService;
 import lombok.AllArgsConstructor;
@@ -160,6 +162,44 @@ public class UserReadServiceImpl implements UserReadService {
                 .personResponse(personResponse)  // Set full PersonResponse
                 .username(user.getUsername())
                 .status(user.getStatus())
+                .deleted(user.getIsDeleted())
                 .build();
+    }
+
+    @Override
+    public UserResponse adminGetUserByUsername(String username) {
+        User user = userRepositoryWrapper.findByUsername(username)
+                .orElseThrow(() -> UserExceptionFactory.userNotFoundByUsername(username));
+        try {
+            return mapToResponse(user);
+        } catch (ResourceNotFoundException e) {
+            // Person may also be soft-deleted — return user without person details
+            return UserResponse.builder()
+                    .id(user.getId())
+                    .username(user.getUsername())
+                    .status(user.getStatus())
+                    .deleted(user.getIsDeleted())
+                    .build();
+        }
+    }
+
+    @Override
+    public UserResponse adminGetUserById(Long userId) {
+        User user = userRepositoryWrapper.findByIdWithException(userId);
+        try {
+            return mapToResponse(user);
+        } catch (ResourceNotFoundException e) {
+            return UserResponse.builder()
+                    .id(user.getId())
+                    .username(user.getUsername())
+                    .status(user.getStatus())
+                    .deleted(user.getIsDeleted())
+                    .build();
+        }
+    }
+
+    @Override
+    public PaginatedResponse<UserResponse> getDeletedUsers(PaginationRequest pagination) {
+        return userRepositoryWrapper.findDeletedUsersWithLightweightPerson(pagination);
     }
 }

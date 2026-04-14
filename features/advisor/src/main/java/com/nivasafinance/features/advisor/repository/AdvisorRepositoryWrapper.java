@@ -3,6 +3,7 @@ package com.nivasafinance.features.advisor.repository;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationInfo;
 import com.nivasafinance.common.base.model.PaginationRequest;
+import com.nivasafinance.features.advisor.dto.AdminAdvisorBasicResponse;
 import com.nivasafinance.features.advisor.dto.AdvisorSearchRequest;
 import com.nivasafinance.features.advisor.dto.AdvisorBasicResponse;
 import com.nivasafinance.features.advisor.dto.self.AdvisorSelfLeadResponse;
@@ -93,9 +94,39 @@ public class AdvisorRepositoryWrapper {
         }
     }
 
+    /**
+     * Unfiltered — returns advisor including soft-deleted. Used by admin delete/undo-delete.
+     */
+    public Advisor findByIdentifierIncludingDeletedWithException(UUID identifier) {
+        try {
+            return advisorRepository.findByIdentifierIncludingDeleted(identifier).orElseThrow(() ->
+                    AdvisorExceptionFactory.notFound(identifier, messageSource)
+            );
+        } catch (AdvisorNotFoundException e) {
+            throw e;
+        } catch (DataAccessException e) {
+            AdvisorOperationException exception = AdvisorExceptionFactory.retrieveEntityFailed(messageSource);
+            exception.initCause(e);
+            throw exception;
+        }
+    }
+
     public Optional<Advisor> findByUsername(String username) {
         try {
             return advisorRepository.findByUsername(username);
+        } catch (DataAccessException e) {
+            AdvisorOperationException exception = AdvisorExceptionFactory.retrieveEntityFailed(messageSource);
+            exception.initCause(e);
+            throw exception;
+        }
+    }
+
+    /**
+     * Unfiltered — returns advisor including soft-deleted. Used by creation uniqueness checks.
+     */
+    public Optional<Advisor> findByUsernameIncludingDeleted(String username) {
+        try {
+            return advisorRepository.findByUsernameIncludingDeleted(username);
         } catch (DataAccessException e) {
             AdvisorOperationException exception = AdvisorExceptionFactory.retrieveEntityFailed(messageSource);
             exception.initCause(e);
@@ -209,6 +240,7 @@ public class AdvisorRepositoryWrapper {
             JOIN n_advisor a ON a.username = u_phone.username
             LEFT JOIN n_office o ON o.key = a.office_key
             WHERE o.code LIKE ?
+              AND a.is_deleted = false
             """;
 
         String dataSql = """
@@ -254,6 +286,7 @@ public class AdvisorRepositoryWrapper {
             LEFT JOIN n_applicant ref_app_by_uuid ON ref_app_by_uuid.identifier = r.entity_identifier AND r.entity_type::text = 'APPLICANT'
             LEFT JOIN n_person ref_app_by_uuid_p ON ref_app_by_uuid_p.id = ref_app_by_uuid.person_id
             WHERE o.code LIKE ?
+              AND a.is_deleted = false
             ORDER BY a.updated_at DESC
             LIMIT ? OFFSET ?
             """;
@@ -322,6 +355,7 @@ public class AdvisorRepositoryWrapper {
         // Build WHERE clause dynamically
         List<Object> queryParams = new ArrayList<>();
         StringBuilder whereClause = new StringBuilder(" WHERE 1=1 ");
+        whereClause.append(" AND a.is_deleted = false ");
 
         // Apply office hierarchy filter
         whereClause.append(" AND (o.code LIKE ? OR a.office_key IS NULL) ");
@@ -431,6 +465,7 @@ public class AdvisorRepositoryWrapper {
             JOIN n_user u ON u.username = a.username
             JOIN n_person p ON p.id = u.person_id
             WHERE a.owner = ?
+              AND a.is_deleted = false
             """;
         String dataSql = """
             SELECT DISTINCT
@@ -473,6 +508,7 @@ public class AdvisorRepositoryWrapper {
             LEFT JOIN n_applicant ref_app_by_uuid ON ref_app_by_uuid.identifier = r.entity_identifier AND r.entity_type::text = 'APPLICANT'
             LEFT JOIN n_person ref_app_by_uuid_p ON ref_app_by_uuid_p.id = ref_app_by_uuid.person_id
             WHERE a.owner = ?
+              AND a.is_deleted = false
             ORDER BY a.updated_at DESC
             LIMIT ? OFFSET ?
             """;
@@ -507,6 +543,7 @@ public class AdvisorRepositoryWrapper {
             JOIN n_user u ON u.username = a.username
             JOIN n_person p ON p.id = u.person_id
             WHERE sc.marketing_details->>'referredByCode' = ?
+              AND a.is_deleted = false
             """;
         String dataSql = """
             SELECT DISTINCT
@@ -548,6 +585,7 @@ public class AdvisorRepositoryWrapper {
             LEFT JOIN n_applicant ref_app_by_uuid ON ref_app_by_uuid.identifier = r.entity_identifier AND r.entity_type::text = 'APPLICANT'
             LEFT JOIN n_person ref_app_by_uuid_p ON ref_app_by_uuid_p.id = ref_app_by_uuid.person_id
             WHERE sc.marketing_details->>'referredByCode' = ?
+              AND a.is_deleted = false
             ORDER BY a.updated_at DESC
             LIMIT ? OFFSET ?
             """;
@@ -751,6 +789,115 @@ public class AdvisorRepositoryWrapper {
 
     public record ReferrerDisplayInfo(String name, String phone) {}
 
+    /**
+     * Admin search: returns all advisors (deleted + non-deleted) matching the phone number,
+     * without office hierarchy filtering.
+     */
+    public PaginatedResponse<AdminAdvisorBasicResponse> adminSearchAdvisorsByPhoneNumber(
+            PaginationRequest paginationRequest, AdvisorSearchRequest request) {
+        if (request == null || !StringUtils.hasText(request.getMobileNumber())) {
+            return new PaginatedResponse<>(Collections.emptyList(),
+                    buildPaginationInfo(paginationRequest, 0));
+        }
+
+        String mobileNumber = request.getMobileNumber().trim();
+        String phoneJson = buildPhoneNumberJsonb(mobileNumber);
+
+        String countSql = """
+            WITH person_with_phone AS (SELECT id FROM n_person WHERE mobile_numbers @> ?::jsonb)
+            SELECT COUNT(DISTINCT a.id)
+            FROM person_with_phone pwp
+            JOIN n_user u ON u.person_id = pwp.id
+            JOIN n_advisor a ON a.username = u.username
+            """;
+
+        String dataSql = """
+            WITH person_with_phone AS (SELECT id FROM n_person WHERE mobile_numbers @> ?::jsonb)
+            SELECT DISTINCT
+                a.identifier as advisor_identifier,
+                p.display_name as person_name,
+                (jsonb_path_query_first(COALESCE(p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') AS mobile_number,
+                a.status,
+                a.created_at,
+                a.updated_at,
+                a.office_key as office_key,
+                a.username as advisor_username,
+                a.is_deleted
+            FROM person_with_phone pwp
+            JOIN n_user u ON u.person_id = pwp.id
+            JOIN n_advisor a ON a.username = u.username
+            JOIN n_person p ON p.id = u.person_id
+            ORDER BY a.updated_at DESC
+            LIMIT ? OFFSET ?
+            """;
+
+        try {
+            Long totalCount = jdbcTemplate.queryForObject(countSql, Long.class, phoneJson);
+            long total = totalCount != null ? totalCount : 0L;
+
+            List<AdminAdvisorBasicResponse> results = jdbcTemplate.query(
+                    dataSql,
+                    new AdminAdvisorSearchRowMapper(),
+                    phoneJson,
+                    paginationRequest.getLimit(),
+                    paginationRequest.getOffset()
+            );
+
+            return new PaginatedResponse<>(results, buildPaginationInfo(paginationRequest, total));
+        } catch (EmptyResultDataAccessException e) {
+            return new PaginatedResponse<>(Collections.emptyList(),
+                    buildPaginationInfo(paginationRequest, 0));
+        } catch (DataAccessException e) {
+            AdvisorOperationException exception = AdvisorExceptionFactory.retrieveEntityFailed(messageSource);
+            exception.initCause(e);
+            throw exception;
+        }
+    }
+
+    /**
+     * Admin: returns only soft-deleted advisors, paginated.
+     */
+    public PaginatedResponse<AdminAdvisorBasicResponse> findDeletedAdvisors(PaginationRequest paginationRequest) {
+        String countSql = "SELECT COUNT(*) FROM n_advisor a WHERE a.is_deleted = true";
+
+        String dataSql = """
+            SELECT DISTINCT
+                a.identifier as advisor_identifier,
+                p.display_name as person_name,
+                (jsonb_path_query_first(COALESCE(p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') AS mobile_number,
+                a.status,
+                a.created_at,
+                a.updated_at,
+                a.office_key as office_key,
+                a.username as advisor_username,
+                a.is_deleted
+            FROM n_advisor a
+            JOIN n_user u ON u.username = a.username
+            JOIN n_person p ON p.id = u.person_id
+            WHERE a.is_deleted = true
+            ORDER BY a.updated_at DESC
+            LIMIT ? OFFSET ?
+            """;
+
+        try {
+            Long totalCount = jdbcTemplate.queryForObject(countSql, Long.class);
+            long total = totalCount != null ? totalCount : 0L;
+
+            List<AdminAdvisorBasicResponse> results = jdbcTemplate.query(
+                    dataSql,
+                    new AdminAdvisorSearchRowMapper(),
+                    paginationRequest.getLimit(),
+                    paginationRequest.getOffset()
+            );
+
+            return new PaginatedResponse<>(results, buildPaginationInfo(paginationRequest, total));
+        } catch (DataAccessException e) {
+            AdvisorOperationException exception = AdvisorExceptionFactory.retrieveEntityFailed(messageSource);
+            exception.initCause(e);
+            throw exception;
+        }
+    }
+
     private static String buildPhoneNumberJsonb(String mobileNumber) {
         String escaped = mobileNumber.replace("\\", "\\\\").replace("\"", "\\\"");
         return "[{\"number\":\"" + escaped + "\"}]";
@@ -851,5 +998,43 @@ public class AdvisorRepositoryWrapper {
             return builder.build();
         }
     }
-}
 
+    private static class AdminAdvisorSearchRowMapper implements RowMapper<AdminAdvisorBasicResponse> {
+        @Override
+        public AdminAdvisorBasicResponse mapRow(ResultSet rs, int rowNum) throws SQLException {
+            AdminAdvisorBasicResponse.AdminAdvisorBasicResponseBuilder builder = AdminAdvisorBasicResponse.builder();
+
+            String advisorIdentifierStr = rs.getString("advisor_identifier");
+            if (advisorIdentifierStr != null) {
+                builder.advisorIdentifier(UUID.fromString(advisorIdentifierStr));
+            }
+
+            builder.name(rs.getString("person_name"));
+            builder.mobileNumber(rs.getString("mobile_number"));
+
+            String status = rs.getString("status");
+            if (status != null) {
+                try {
+                    builder.status(AdvisorStatus.valueOf(status));
+                } catch (IllegalArgumentException ignored) {
+                }
+            }
+
+            java.sql.Timestamp createdAt = rs.getTimestamp("created_at");
+            if (createdAt != null) {
+                builder.createdAt(createdAt.toLocalDateTime());
+            }
+
+            java.sql.Timestamp updatedAt = rs.getTimestamp("updated_at");
+            if (updatedAt != null) {
+                builder.updatedAt(updatedAt.toLocalDateTime());
+            }
+
+            builder.officeKey(rs.getString("office_key"));
+            builder.username(rs.getString("advisor_username"));
+            builder.deleted(rs.getBoolean("is_deleted"));
+
+            return builder.build();
+        }
+    }
+}

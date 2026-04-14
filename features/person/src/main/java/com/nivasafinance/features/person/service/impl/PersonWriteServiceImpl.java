@@ -42,9 +42,9 @@ public class PersonWriteServiceImpl implements PersonWriteService {
         // Extract primary mobile number
         String primaryMobile = extractPrimaryMobileNumber(request.getMobileNumbers());
         
-        // Check if primary mobile already exists
+        // Check if primary mobile already exists (including soft-deleted to prevent duplicates)
         if (primaryMobile != null) {
-            Optional<Person> existingPerson = personRepositoryWrapper.findByPrimaryMobileNumber(primaryMobile);
+            Optional<Person> existingPerson = personRepositoryWrapper.findByPrimaryMobileNumberIncludingDeleted(primaryMobile);
             if (existingPerson.isPresent()) {
                 throw PersonExceptionFactory.primaryMobileAlreadyExists(primaryMobile, messageSource);
             }
@@ -83,9 +83,9 @@ public class PersonWriteServiceImpl implements PersonWriteService {
         // Extract primary mobile number from request
         String primaryMobile = extractPrimaryMobileNumber(request.getMobileNumbers());
         
-        // Check if primary mobile exists for a different person
+        // Check if primary mobile exists for a different person (including soft-deleted)
         if (primaryMobile != null) {
-            Optional<Person> existingPerson = personRepositoryWrapper.findByPrimaryMobileNumber(primaryMobile);
+            Optional<Person> existingPerson = personRepositoryWrapper.findByPrimaryMobileNumberIncludingDeleted(primaryMobile);
             if (existingPerson.isPresent() && !existingPerson.get().getId().equals(personId)) {
                 throw PersonExceptionFactory.primaryMobileAlreadyExists(primaryMobile, messageSource);
             }
@@ -121,6 +121,34 @@ public class PersonWriteServiceImpl implements PersonWriteService {
                 .map(MobileNumberDetails::getNumber)
                 .findFirst()
                 .orElseThrow(()-> new BadRequestException("One Mobile Number is required to be marked as primary"));
+    }
+
+    @Override
+    @Transactional
+    public void deletePerson(String mobileNumber) {
+        Person person = personRepositoryWrapper.findByPrimaryMobileNumberIncludingDeleted(mobileNumber)
+                .orElseThrow(() -> PersonExceptionFactory.mobileNumberNotFound(mobileNumber, messageSource));
+
+        if (Boolean.TRUE.equals(person.getIsDeleted())) {
+            throw PersonExceptionFactory.personAlreadyDeleted(mobileNumber, messageSource);
+        }
+
+        person.setIsDeleted(true);
+        personRepositoryWrapper.saveWithException(person);
+    }
+
+    @Override
+    @Transactional
+    public void undoDeletePerson(String mobileNumber) {
+        Person person = personRepositoryWrapper.findByPrimaryMobileNumberIncludingDeleted(mobileNumber)
+                .orElseThrow(() -> PersonExceptionFactory.mobileNumberNotFound(mobileNumber, messageSource));
+
+        if (!Boolean.TRUE.equals(person.getIsDeleted())) {
+            throw PersonExceptionFactory.personNotDeleted(mobileNumber, messageSource);
+        }
+
+        person.setIsDeleted(false);
+        personRepositoryWrapper.saveWithException(person);
     }
 
     private String generateDisplayName(String firstName, String middleName, String lastName) {
