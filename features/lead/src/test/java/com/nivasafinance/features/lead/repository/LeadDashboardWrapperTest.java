@@ -99,7 +99,7 @@ class LeadDashboardWrapperTest {
 
         verify(jdbcTemplate).query(sqlCaptor.capture(), any(RowMapper.class), objectArrayCaptor.capture());
         assertTrue(sqlCaptor.getAllValues().get(1).contains("ln_filt.key IN ("), "data SQL should filter partners by n_lender.key");
-        assertArrayEquals(new Object[] { OFFICE_CODE + "%", "ACTIVE", "VERITAS_HL", 15, 0 }, objectArrayCaptor.getValue());
+        assertArrayEquals(new Object[] { OFFICE_CODE + "%", "ACTIVE", "VERITAS_HL", 15, 0 }, objectArrayCaptor.getValue(), "Data SQL parameters should include pagination offsets");
     }
 
     @Test
