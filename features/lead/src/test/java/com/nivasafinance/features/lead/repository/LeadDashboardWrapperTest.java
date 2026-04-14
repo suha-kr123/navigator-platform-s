@@ -90,7 +90,7 @@ class LeadDashboardWrapperTest {
 
         PaginatedResponse<LeadDashboardResponse> result = leadDashboardWrapper.findLeadDashboard(page(0, 15), filters);
 
-        assertEquals(0, result.getContent().size());
+        assertEquals(0, result.getContent().size(), "Result content should be empty for the mocked empty response");
 
         verify(jdbcTemplate).queryForObject(sqlCaptor.capture(), eq(Long.class), objectArrayCaptor.capture());
         assertTrue(sqlCaptor.getValue().contains("ln_filt.key IN ("), "count SQL should filter partners by n_lender.key");
