@@ -1,5 +1,8 @@
 package com.nivasafinance.externals.customer.lead.service.impl;
 
+import com.nivasafinance.common.base.model.PaginatedResponse;
+import com.nivasafinance.common.base.model.PaginationRequest;
+import com.nivasafinance.externals.customer.lead.dto.LeadSearchMinimalResponse;
 import com.nivasafinance.externals.customer.lead.service.LeadExternalService;
 import com.nivasafinance.features.lead.dto.*;
 import com.nivasafinance.features.lead.service.LeadContactReadService;
@@ -100,5 +103,25 @@ public class LeadExternalServiceImpl implements LeadExternalService {
                 .build();
         return LeadStageHistoryResponse.from(
                 leadStageHistoryWriteService.createStageEntry(leadIdentifier, request));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PaginatedResponse<LeadSearchMinimalResponse> searchLeads(
+            PaginationRequest paginationRequest, LeadSearchRequest request) {
+        PaginatedResponse<LeadSearchResponse> result =
+                leadReadService.searchLeads(paginationRequest, request);
+        List<LeadSearchMinimalResponse> minimalResults = result.getContent().stream()
+                .map(r -> LeadSearchMinimalResponse.builder()
+                        .leadIdentifier(r.getLeadIdentifier())
+                        .primaryPersonName(r.getPrimaryPersonName())
+                        .status(r.getStatus())
+                        .subStatus(r.getSubStatus())
+                        .build())
+                .toList();
+        return PaginatedResponse.<LeadSearchMinimalResponse>builder()
+                .content(minimalResults)
+                .pagination(result.getPagination())
+                .build();
     }
 }

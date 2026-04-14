@@ -1,18 +1,23 @@
 package com.nivasafinance.externals.customer.lead.controller;
 
+import com.nivasafinance.common.base.model.PaginatedResponse;
+import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.common.constants.ApiConstants;
+import com.nivasafinance.externals.customer.lead.dto.LeadSearchMinimalResponse;
 import com.nivasafinance.externals.customer.lead.service.LeadExternalService;
 import com.nivasafinance.features.lead.dto.CurrentCustomerFormStepResponse;
 import com.nivasafinance.features.lead.dto.LeadBREResultExecuteResponse;
 import com.nivasafinance.features.lead.dto.LeadContactResponse;
 import com.nivasafinance.features.lead.dto.LeadEligibilityResponse;
 import com.nivasafinance.features.lead.dto.LeadResponse;
+import com.nivasafinance.features.lead.dto.LeadSearchRequest;
 import com.nivasafinance.features.lead.dto.PatchLeadRequest;
 import com.nivasafinance.features.lead.dto.DocumentChecklistResponse;
 import com.nivasafinance.features.lead.dto.IncomeObligationDetailsResponse;
 import com.nivasafinance.features.lead.dto.PreliminaryDetailsResponse;
 import com.nivasafinance.features.lead.dto.PropertyDetailsResponse;
 import com.nivasafinance.features.leadstages.dto.LeadStageHistoryResponse;
+import jakarta.validation.Valid;
 
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -101,5 +106,14 @@ public class LeadExternalController {
             @PathVariable UUID leadIdentifier) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(leadExternalService.transitionToExpertScreening(leadIdentifier));
+    }
+
+    @PostMapping("/search")
+    public ResponseEntity<PaginatedResponse<LeadSearchMinimalResponse>> searchLeads(
+            @Valid PaginationRequest paginationRequest,
+            @Valid @RequestBody LeadSearchRequest searchRequest) {
+        PaginatedResponse<LeadSearchMinimalResponse> response =
+                leadExternalService.searchLeads(paginationRequest, searchRequest);
+        return ResponseEntity.ok(response);
     }
 }
