@@ -127,7 +127,7 @@ class LeadDashboardWrapperTest {
         assertArrayEquals(new Object[] { OFFICE_CODE + "%", "ACTIVE" }, objectArrayCaptor.getValue(), "Bound parameters should only include office and status when no partners are filtered");
 
         verify(jdbcTemplate).query(anyString(), any(RowMapper.class), objectArrayCaptor.capture());
-        assertArrayEquals(new Object[] { OFFICE_CODE + "%", "ACTIVE", 5, 0 }, objectArrayCaptor.getValue());
+        assertArrayEquals(new Object[] { OFFICE_CODE + "%", "ACTIVE", 5, 0 }, objectArrayCaptor.getValue(), "Data SQL parameters should only include office, status, and pagination");
     }
 
     @Test
