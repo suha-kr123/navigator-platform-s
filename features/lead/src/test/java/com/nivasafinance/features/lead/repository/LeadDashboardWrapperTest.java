@@ -95,7 +95,7 @@ class LeadDashboardWrapperTest {
         verify(jdbcTemplate).queryForObject(sqlCaptor.capture(), eq(Long.class), objectArrayCaptor.capture());
         assertTrue(sqlCaptor.getValue().contains("ln_filt.key IN ("), "count SQL should filter partners by n_lender.key");
         assertTrue(sqlCaptor.getValue().contains("ll_filt.status IN ('SELECTED', 'SUBMITTED')"));
-        assertArrayEquals(new Object[] { OFFICE_CODE + "%", "ACTIVE", "VERITAS_HL" }, objectArrayCaptor.getValue());
+        assertArrayEquals(new Object[] { OFFICE_CODE + "%", "ACTIVE", "VERITAS_HL" }, objectArrayCaptor.getValue(), "Bound parameters should match office, status, and partner filter");
 
         verify(jdbcTemplate).query(sqlCaptor.capture(), any(RowMapper.class), objectArrayCaptor.capture());
         assertTrue(sqlCaptor.getAllValues().get(1).contains("ln_filt.key IN ("), "data SQL should filter partners by n_lender.key");
