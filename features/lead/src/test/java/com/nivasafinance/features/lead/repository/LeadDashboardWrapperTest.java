@@ -138,6 +138,6 @@ class LeadDashboardWrapperTest {
         leadDashboardWrapper.findLeadDashboard(page(0, 5), filters);
 
         verify(jdbcTemplate).queryForObject(anyString(), eq(Long.class), objectArrayCaptor.capture());
-        assertArrayEquals(new Object[] { OFFICE_CODE + "%", "ACTIVE" }, objectArrayCaptor.getValue());
+        assertArrayEquals(new Object[] { OFFICE_CODE + "%", "ACTIVE" }, objectArrayCaptor.getValue(), "Bound parameters should only include office and status when partner filter is blank");
     }
 }
