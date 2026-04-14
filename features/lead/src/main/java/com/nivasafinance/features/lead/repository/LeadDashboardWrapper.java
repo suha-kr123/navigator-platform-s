@@ -925,25 +925,25 @@ public class LeadDashboardWrapper {
         }
 
         private void applyDistrictTalukaWithPrimaryContactFallback(ResultSet rs,
-            LeadDashboardResponse.LeadDashboardResponseBuilder builder) throws SQLException {
-        String propertyDistrict = trimToNull(rs.getString("lead_property_district"));
-        String propertyTaluka = trimToNull(rs.getString("lead_property_taluka"));
-        if (StringUtils.hasText(propertyDistrict) || StringUtils.hasText(propertyTaluka)) {
-            builder.district(propertyDistrict);
-            builder.taluka(propertyTaluka);
-            builder.countryCode(trimToNull(rs.getString("lead_addr_country_code")));
-            builder.stateCode(trimToNull(rs.getString("lead_addr_state_code")));
-            builder.districtCode(trimToNull(rs.getString("lead_addr_district_code")));
-            builder.talukaCode(trimToNull(rs.getString("lead_addr_taluka_code")));
-            return;
+                LeadDashboardResponse.LeadDashboardResponseBuilder builder) throws SQLException {
+            String propertyDistrict = trimToNull(rs.getString("lead_property_district"));
+            String propertyTaluka = trimToNull(rs.getString("lead_property_taluka"));
+            if (StringUtils.hasText(propertyDistrict) || StringUtils.hasText(propertyTaluka)) {
+                builder.district(propertyDistrict);
+                builder.taluka(propertyTaluka);
+                builder.countryCode(trimToNull(rs.getString("lead_addr_country_code")));
+                builder.stateCode(trimToNull(rs.getString("lead_addr_state_code")));
+                builder.districtCode(trimToNull(rs.getString("lead_addr_district_code")));
+                builder.talukaCode(trimToNull(rs.getString("lead_addr_taluka_code")));
+                return;
+            }
+            builder.district(trimToNull(rs.getString("pc_addr_district")));
+            builder.taluka(trimToNull(rs.getString("pc_addr_taluka")));
+            builder.countryCode(trimToNull(rs.getString("pc_addr_country_code")));
+            builder.stateCode(trimToNull(rs.getString("pc_addr_state_code")));
+            builder.districtCode(trimToNull(rs.getString("pc_addr_district_code")));
+            builder.talukaCode(trimToNull(rs.getString("pc_addr_taluka_code")));
         }
-        builder.district(trimToNull(rs.getString("pc_addr_district")));
-        builder.taluka(trimToNull(rs.getString("pc_addr_taluka")));
-        builder.countryCode(trimToNull(rs.getString("pc_addr_country_code")));
-        builder.stateCode(trimToNull(rs.getString("pc_addr_state_code")));
-        builder.districtCode(trimToNull(rs.getString("pc_addr_district_code")));
-        builder.talukaCode(trimToNull(rs.getString("pc_addr_taluka_code")));
-    }
 
         private static String trimToNull(String value) {
             if (!StringUtils.hasText(value)) {
