@@ -1,11 +1,12 @@
 package com.nivasafinance.features.master.products.exception;
 
 import com.nivasafinance.common.exception.ExceptionUtils;
+import com.nivasafinance.common.exception.ResourceNotFoundException;
 import org.springframework.context.MessageSource;
 
 import java.io.Serial;
 
-public class ProductCodeNotFoundException extends RuntimeException {
+public class ProductCodeNotFoundException extends ResourceNotFoundException {
 
     @Serial
     private static final long serialVersionUID = 1L;
