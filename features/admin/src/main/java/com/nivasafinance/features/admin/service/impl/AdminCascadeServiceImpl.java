@@ -8,7 +8,7 @@ import com.nivasafinance.features.advisor.entity.Advisor;
 import com.nivasafinance.features.advisor.service.AdvisorReadService;
 import com.nivasafinance.features.advisor.service.AdvisorWriteService;
 import com.nivasafinance.features.lead.dto.AdminLeadSearchResponse;
-import com.nivasafinance.features.lead.dto.LeadSearchRequest;
+import com.nivasafinance.features.lead.dto.AdminLeadSearchRequest;
 import com.nivasafinance.features.lead.service.LeadReadService;
 import com.nivasafinance.features.lead.service.LeadWriteService;
 import com.nivasafinance.features.person.service.PersonWriteService;
@@ -173,7 +173,7 @@ public class AdminCascadeServiceImpl implements AdminCascadeService {
     private static final int CASCADE_BATCH_SIZE = 500;
 
     private void cascadeDeleteLeadsForMobile(String mobileNumber) {
-        LeadSearchRequest searchRequest = new LeadSearchRequest();
+        AdminLeadSearchRequest searchRequest = new AdminLeadSearchRequest();
         searchRequest.setMobileNumber(mobileNumber);
         PaginationRequest paginationRequest = new PaginationRequest();
         paginationRequest.setLimit(CASCADE_BATCH_SIZE);
@@ -198,7 +198,7 @@ public class AdminCascadeServiceImpl implements AdminCascadeService {
     }
 
     private void cascadeRestoreLeadsForMobile(String mobileNumber) {
-        LeadSearchRequest searchRequest = new LeadSearchRequest();
+        AdminLeadSearchRequest searchRequest = new AdminLeadSearchRequest();
         searchRequest.setMobileNumber(mobileNumber);
         PaginationRequest paginationRequest = new PaginationRequest();
         paginationRequest.setLimit(CASCADE_BATCH_SIZE);

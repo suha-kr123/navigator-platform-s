@@ -2,7 +2,6 @@ package com.nivasafinance.features.usermanagement.service.impl;
 
 import com.nivasafinance.common.dto.AddressData;
 import com.nivasafinance.common.exception.BadRequestException;
-import com.nivasafinance.common.exception.ResourceNotFoundException;
 import com.nivasafinance.features.person.dto.PersonResponse;
 import com.nivasafinance.features.person.service.PersonReadService;
 import com.nivasafinance.features.usermanagement.dto.UserResponse;
@@ -170,32 +169,27 @@ public class UserReadServiceImpl implements UserReadService {
     public UserResponse adminGetUserByUsername(String username) {
         User user = userRepositoryWrapper.findByUsername(username)
                 .orElseThrow(() -> UserExceptionFactory.userNotFoundByUsername(username));
-        try {
-            return mapToResponse(user);
-        } catch (ResourceNotFoundException e) {
-            // Person may also be soft-deleted — return user without person details
-            return UserResponse.builder()
-                    .id(user.getId())
-                    .username(user.getUsername())
-                    .status(user.getStatus())
-                    .deleted(user.getIsDeleted())
-                    .build();
-        }
+        return buildAdminUserResponse(user);
     }
 
     @Override
     public UserResponse adminGetUserById(Long userId) {
         User user = userRepositoryWrapper.findByIdWithException(userId);
-        try {
-            return mapToResponse(user);
-        } catch (ResourceNotFoundException e) {
-            return UserResponse.builder()
-                    .id(user.getId())
-                    .username(user.getUsername())
-                    .status(user.getStatus())
-                    .deleted(user.getIsDeleted())
-                    .build();
+        return buildAdminUserResponse(user);
+    }
+
+    private UserResponse buildAdminUserResponse(User user) {
+        PersonResponse personResponse = null;
+        if (user.getPerson() != null && !Boolean.TRUE.equals(user.getPerson().getIsDeleted())) {
+            personResponse = personReadService.getPersonById(user.getPerson().getId());
         }
+        return UserResponse.builder()
+                .id(user.getId())
+                .personResponse(personResponse)
+                .username(user.getUsername())
+                .status(user.getStatus())
+                .deleted(user.getIsDeleted())
+                .build();
     }
 
     @Override

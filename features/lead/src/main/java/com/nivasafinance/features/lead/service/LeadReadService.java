@@ -45,7 +45,7 @@ public interface LeadReadService {
 
     DocumentChecklistResponse getDocumentChecklist(UUID leadIdentifier);
 
-    PaginatedResponse<AdminLeadSearchResponse> adminSearchLeads(PaginationRequest paginationRequest, LeadSearchRequest request);
+    PaginatedResponse<AdminLeadSearchResponse> adminSearchLeads(PaginationRequest paginationRequest, AdminLeadSearchRequest request);
 
     PaginatedResponse<AdminLeadSearchResponse> getDeletedLeads(PaginationRequest paginationRequest);
 

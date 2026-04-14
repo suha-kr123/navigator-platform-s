@@ -5,8 +5,8 @@ import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.common.constants.ApiConstants;
 import com.nivasafinance.features.admin.service.AdminLeadService;
+import com.nivasafinance.features.lead.dto.AdminLeadSearchRequest;
 import com.nivasafinance.features.lead.dto.AdminLeadSearchResponse;
-import com.nivasafinance.features.lead.dto.LeadSearchRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -39,7 +39,7 @@ public class AdminLeadController {
     @RequireRole({"ADMIN"})
     public ResponseEntity<PaginatedResponse<AdminLeadSearchResponse>> adminSearchLeads(
             @Valid PaginationRequest paginationRequest,
-            @Valid @RequestBody LeadSearchRequest searchRequest
+            @Valid @RequestBody AdminLeadSearchRequest searchRequest
     ) {
         return ResponseEntity.ok(adminLeadService.adminSearchLeads(paginationRequest, searchRequest));
     }
