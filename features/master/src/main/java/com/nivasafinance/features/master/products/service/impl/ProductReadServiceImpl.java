@@ -7,7 +7,6 @@ import com.nivasafinance.features.master.products.entity.Product;
 import com.nivasafinance.features.master.products.exception.ProductExceptionFactory;
 import com.nivasafinance.features.master.products.repository.ProductRepository;
 import com.nivasafinance.features.master.products.service.ProductReadService;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,7 +25,6 @@ public class ProductReadServiceImpl extends BaseNavigatorService implements Prod
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(cacheNames = "products")
     public List<ProductResponse> getAllProducts() {
         try {
             List<Product> products = productRepository.findAll();
@@ -39,7 +37,6 @@ public class ProductReadServiceImpl extends BaseNavigatorService implements Prod
     }
 
     @Override
-    @Cacheable(cacheNames = "products", key = "#code")
     public ProductResponse getProductByCode(String code) {
         Product product = productRepository.findByCode(code).orElseThrow(()->
                 ProductExceptionFactory.productCodeNotFound(code, getMessageSource()));
