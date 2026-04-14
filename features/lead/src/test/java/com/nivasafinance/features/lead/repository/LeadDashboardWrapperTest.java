@@ -113,7 +113,8 @@ class LeadDashboardWrapperTest {
         verify(jdbcTemplate).queryForObject(anyString(), eq(Long.class), objectArrayCaptor.capture());
         assertArrayEquals(
                 new Object[] { OFFICE_CODE + "%", "ACTIVE", "VERITAS_HL", "OTHER_LENDER" },
-                objectArrayCaptor.getValue());
+                objectArrayCaptor.getValue(),
+                "Bound parameters should include all partner keys");
     }
 
     @Test
