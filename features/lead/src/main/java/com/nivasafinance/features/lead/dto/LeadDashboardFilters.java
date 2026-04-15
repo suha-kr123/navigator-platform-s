@@ -26,6 +26,10 @@ public class LeadDashboardFilters {
     BigDecimal minAmount;
     BigDecimal maxAmount;
     List<String> branch;
+    List<String> stateCode;
+    List<String> districtCode;
+    List<String> talukaCode;
+    List<String> partners;
     List<String> lastCallDirection;
     List<String> lastCallStatus;
     List<String> stageKey;

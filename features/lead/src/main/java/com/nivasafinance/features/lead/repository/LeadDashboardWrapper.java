@@ -3,6 +3,7 @@ package com.nivasafinance.features.lead.repository;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationInfo;
 import com.nivasafinance.common.base.model.PaginationRequest;
+import com.nivasafinance.common.dto.AddressData;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nivasafinance.features.lead.dto.LeadDashboardTaskSummary;
 import com.nivasafinance.features.lead.dto.LeadDashboardFilters;
@@ -69,6 +70,16 @@ public class LeadDashboardWrapper {
                 "previousTaskDueAt", "to_timestamp(l.task_timeline->'previous'->>'dueAt', 'DD-MM-YYYY HH24:MI:SS')");
     }
 
+    /** Property address JSON object on {@code n_lead.other_details} (may be null / partial). */
+    private static final String PROPERTY_ADDRESS_JSON = "(l.other_details->'propertyDetails'->'address')";
+
+    /** Picked primary-contact {@link AddressData} element (CURRENT, else first list item). */
+    private static final String PC_PICKED_ADDRESS_ELEM = "picked_pc_addr.elem";
+
+    private static String nullifTrimJsonText(String addressExpr, String jsonLeaf) {
+        return "NULLIF(TRIM(BOTH FROM (" + addressExpr + "->>'" + jsonLeaf + "')), '')";
+    }
+
     private final JdbcTemplate jdbcTemplate;
     private final CodeValueMasterService codeValueMasterService;
     private final StaffReadService staffReadService;
@@ -96,6 +107,10 @@ public class LeadDashboardWrapper {
         appendStatusFilter(effectiveFilters, whereClause, queryParams);
         appendSubstatusFilter(effectiveFilters, whereClause, queryParams);
         appendBranchFilter(effectiveFilters, currentUserOfficeCode, whereClause, queryParams);
+        appendStateCodeFilter(effectiveFilters, whereClause, queryParams);
+        appendDistrictCodeFilter(effectiveFilters, whereClause, queryParams);
+        appendTalukaCodeFilter(effectiveFilters, whereClause, queryParams);
+        appendPartnersFilter(effectiveFilters, whereClause, queryParams);
         appendAmountFilter(effectiveFilters, whereClause, queryParams);
         appendLeadCreatedDateFilter(effectiveFilters, whereClause, queryParams);
         appendActivityDateFilter(effectiveFilters, whereClause, queryParams);
@@ -122,6 +137,17 @@ public class LeadDashboardWrapper {
                 FROM n_lead l
                 LEFT JOIN n_office o ON o.key = l.office_key
                 LEFT JOIN n_call_log latest_call ON latest_call.id = (l.other_details->>'lastCallId')::bigint
+                LEFT JOIN n_contact primary_contact ON primary_contact.id = (l.other_details->>'primaryContactId')::bigint
+                LEFT JOIN n_person primary_contact_person ON primary_contact.person_id = primary_contact_person.id
+                LEFT JOIN LATERAL (
+                    SELECT COALESCE(
+                        jsonb_path_query_first(
+                            COALESCE(primary_contact_person.address, '[]'::jsonb),
+                            '$[*] ? (@.addressType == "CURRENT")'::jsonpath
+                        ),
+                        COALESCE(primary_contact_person.address, '[]'::jsonb) -> 0
+                    ) AS elem
+                ) picked_pc_addr ON true
                 """;
         String countSql = "SELECT COUNT(*) " + countFromClause + whereClause;
 
@@ -137,6 +163,20 @@ public class LeadDashboardWrapper {
                     primary_contact_person.display_name         AS primary_person_name,
                     (jsonb_path_query_first(COALESCE(primary_contact_person.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') AS primary_person_number,
                     o.name                                      AS office_name,
+                    TRIM(BOTH FROM (l.other_details->'propertyDetails'->'address'->>'district')) AS lead_property_district,
+                    TRIM(BOTH FROM (l.other_details->'propertyDetails'->'address'->>'taluka')) AS lead_property_taluka,
+                    TRIM(BOTH FROM (l.other_details->'propertyDetails'->'address'->>'countryCode')) AS lead_addr_country_code,
+                    TRIM(BOTH FROM (l.other_details->'propertyDetails'->'address'->>'stateCode')) AS lead_addr_state_code,
+                    TRIM(BOTH FROM (l.other_details->'propertyDetails'->'address'->>'districtCode')) AS lead_addr_district_code,
+                    TRIM(BOTH FROM (l.other_details->'propertyDetails'->'address'->>'talukaCode')) AS lead_addr_taluka_code,
+                    TRIM(BOTH FROM (l.other_details->'propertyDetails'->'address'->>'villageCode')) AS lead_addr_village_code,
+                    TRIM(BOTH FROM (picked_pc_addr.elem->>'district')) AS pc_addr_district,
+                    TRIM(BOTH FROM (picked_pc_addr.elem->>'taluka')) AS pc_addr_taluka,
+                    TRIM(BOTH FROM (picked_pc_addr.elem->>'countryCode')) AS pc_addr_country_code,
+                    TRIM(BOTH FROM (picked_pc_addr.elem->>'stateCode')) AS pc_addr_state_code,
+                    TRIM(BOTH FROM (picked_pc_addr.elem->>'districtCode')) AS pc_addr_district_code,
+                    TRIM(BOTH FROM (picked_pc_addr.elem->>'talukaCode')) AS pc_addr_taluka_code,
+                    TRIM(BOTH FROM (picked_pc_addr.elem->>'villageCode')) AS pc_addr_village_code,
                     l.owner                                     AS owner_username,
                     l.status                                    AS lead_status,
                     l.created_at                                AS lead_created_at,
@@ -328,6 +368,73 @@ public class LeadDashboardWrapper {
                 params.addAll(validatedBranches);
             }
         }
+    }
+
+    private void appendStateCodeFilter(LeadDashboardFilters filters, StringBuilder whereClause, List<Object> params) {
+        appendDualAddressJsonCodeInFilter(filters.getStateCode(), "stateCode", whereClause, params);
+    }
+
+    private void appendDistrictCodeFilter(LeadDashboardFilters filters, StringBuilder whereClause, List<Object> params) {
+        appendDualAddressJsonCodeInFilter(filters.getDistrictCode(), "districtCode", whereClause, params);
+    }
+
+    private void appendTalukaCodeFilter(LeadDashboardFilters filters, StringBuilder whereClause, List<Object> params) {
+        appendDualAddressJsonCodeInFilter(filters.getTalukaCode(), "talukaCode", whereClause, params);
+    }
+
+    /**
+     * Matches when the trimmed JSON text for {@code jsonLeaf} on property address or picked primary-contact
+     * address is in {@code values} (same codes as returned on {@link LeadDashboardResponse}).
+     */
+    private void appendDualAddressJsonCodeInFilter(
+            List<String> rawValues, String jsonLeaf, StringBuilder whereClause, List<Object> params) {
+        if (CollectionUtils.isEmpty(rawValues)) {
+            return;
+        }
+        List<String> values = rawValues.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(StringUtils::hasText)
+                .toList();
+        if (values.isEmpty()) {
+            return;
+        }
+        whereClause.append(" AND ((")
+                .append(nullifTrimJsonText(PROPERTY_ADDRESS_JSON, jsonLeaf))
+                .append(") IN (")
+                .append(createPlaceholders(values.size()))
+                .append(") OR (")
+                .append(nullifTrimJsonText(PC_PICKED_ADDRESS_ELEM, jsonLeaf))
+                .append(") IN (")
+                .append(createPlaceholders(values.size()))
+                .append(")) ");
+        params.addAll(values);
+        params.addAll(values);
+    }
+
+    private void appendPartnersFilter(LeadDashboardFilters filters, StringBuilder whereClause, List<Object> params) {
+        if (CollectionUtils.isEmpty(filters.getPartners())) {
+            return;
+        }
+        List<String> values = filters.getPartners().stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(StringUtils::hasText)
+                .toList();
+        if (values.isEmpty()) {
+            return;
+        }
+        whereClause.append(
+                """
+                 AND EXISTS (
+                    SELECT 1 FROM n_lead_lender ll_filt
+                    JOIN n_lender ln_filt ON ln_filt.key = ll_filt.lender_key
+                    WHERE ll_filt.lead_id = l.id
+                    AND ll_filt.status IN ('SELECTED', 'SUBMITTED')
+                    AND ln_filt.key IN (""")
+                .append(createPlaceholders(values.size()))
+                .append(")) ");
+        params.addAll(values);
     }
 
     private void appendAmountFilter(LeadDashboardFilters filters, StringBuilder whereClause, List<Object> params) {
@@ -584,6 +691,15 @@ public class LeadDashboardWrapper {
                 LEFT JOIN n_contact primary_contact ON primary_contact.id = (l.other_details->>'primaryContactId')::bigint
                 LEFT JOIN n_person primary_contact_person ON primary_contact.person_id = primary_contact_person.id
                 LEFT JOIN LATERAL (
+                    SELECT COALESCE(
+                        jsonb_path_query_first(
+                            COALESCE(primary_contact_person.address, '[]'::jsonb),
+                            '$[*] ? (@.addressType == "CURRENT")'::jsonpath
+                        ),
+                        COALESCE(primary_contact_person.address, '[]'::jsonb) -> 0
+                    ) AS elem
+                ) picked_pc_addr ON true
+                LEFT JOIN LATERAL (
                     SELECT
                         n.content
                     FROM jsonb_array_elements_text(COALESCE(l.notes, '[]'::jsonb)) note_id
@@ -627,7 +743,7 @@ public class LeadDashboardWrapper {
     }
 
     /**
-     * Sort keys that use {@code n_lead.task_timeline} JSON {@code dueAt} (dd-MM-yyyy HH:mm:ss or ISO year-first).
+     * Sort keys that use {@code n_lead.task_timeline} JSON (dueAt ISO strings from Jackson).
      * Clients pass these as {@link PaginationRequest#getSortBy()}: {@code nextTaskDueAt}, {@code previousTaskDueAt}.
      */
     private static boolean isTaskTimelineSortKey(String sortBy) {
@@ -800,7 +916,38 @@ public class LeadDashboardWrapper {
                 }
             }
 
+            applyDistrictTalukaWithPrimaryContactFallback(rs, builder);
+
             return builder.build();
+        }
+
+        private void applyDistrictTalukaWithPrimaryContactFallback(ResultSet rs,
+                LeadDashboardResponse.LeadDashboardResponseBuilder builder) throws SQLException {
+            String propertyDistrict = trimToNull(rs.getString("lead_property_district"));
+            String propertyTaluka = trimToNull(rs.getString("lead_property_taluka"));
+            if (StringUtils.hasText(propertyDistrict) || StringUtils.hasText(propertyTaluka)) {
+                builder.district(propertyDistrict);
+                builder.taluka(propertyTaluka);
+                builder.countryCode(trimToNull(rs.getString("lead_addr_country_code")));
+                builder.stateCode(trimToNull(rs.getString("lead_addr_state_code")));
+                builder.districtCode(trimToNull(rs.getString("lead_addr_district_code")));
+                builder.talukaCode(trimToNull(rs.getString("lead_addr_taluka_code")));
+                return;
+            }
+            builder.district(trimToNull(rs.getString("pc_addr_district")));
+            builder.taluka(trimToNull(rs.getString("pc_addr_taluka")));
+            builder.countryCode(trimToNull(rs.getString("pc_addr_country_code")));
+            builder.stateCode(trimToNull(rs.getString("pc_addr_state_code")));
+            builder.districtCode(trimToNull(rs.getString("pc_addr_district_code")));
+            builder.talukaCode(trimToNull(rs.getString("pc_addr_taluka_code")));
+        }
+
+        private static String trimToNull(String value) {
+            if (!StringUtils.hasText(value)) {
+                return null;
+            }
+            String trimmed = value.trim();
+            return trimmed.isEmpty() ? null : trimmed;
         }
 
         private LocalDateTime getLocalDateTime(ResultSet rs, String column) throws SQLException {
