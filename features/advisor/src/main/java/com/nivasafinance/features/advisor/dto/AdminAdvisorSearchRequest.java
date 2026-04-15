@@ -15,6 +15,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class AdminAdvisorSearchRequest {
 
-    @NotBlank(message = "Mobile number is mandatory")
+    @NotBlank(message = "{validation.mobile.mandatory}")
     private String mobileNumber;
 }
