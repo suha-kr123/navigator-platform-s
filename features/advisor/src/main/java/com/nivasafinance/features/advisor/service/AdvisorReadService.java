@@ -42,7 +42,7 @@ public interface AdvisorReadService {
     // advisors by the given referral code
     PaginatedResponse<AdvisorBasicResponse> getAdvisorsByReferralCode(String referralCode, PaginationRequest paginationRequest);
 
-    PaginatedResponse<AdminAdvisorBasicResponse> adminSearchAdvisors(PaginationRequest paginationRequest, AdvisorSearchRequest request);
+    PaginatedResponse<AdminAdvisorBasicResponse> adminSearchAdvisors(PaginationRequest paginationRequest, AdminAdvisorSearchRequest request);
 
     PaginatedResponse<AdminAdvisorBasicResponse> getDeletedAdvisors(PaginationRequest paginationRequest);
 

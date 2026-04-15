@@ -6,6 +6,7 @@ import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.features.lead.dto.AdminLeadSearchResponse;
 import com.nivasafinance.features.lead.dto.LeadBasicResponse;
 import com.nivasafinance.features.lead.dto.LeadResponse;
+import com.nivasafinance.features.lead.dto.AdminLeadSearchRequest;
 import com.nivasafinance.features.lead.dto.LeadSearchRequest;
 import com.nivasafinance.features.lead.dto.LeadSearchResponse;
 import com.nivasafinance.features.lead.dto.LeadWorkflowDetailsDto;
@@ -690,7 +691,7 @@ public class LeadRepositoryWrapper {
      * without office hierarchy filtering.
      */
     public PaginatedResponse<AdminLeadSearchResponse> adminSearchLeadsByPhoneNumber(
-            PaginationRequest paginationRequest, LeadSearchRequest request) {
+            PaginationRequest paginationRequest, AdminLeadSearchRequest request) {
         if (request == null || !StringUtils.hasText(request.getMobileNumber())) {
             return new PaginatedResponse<>(Collections.emptyList(),
                     buildPaginationInfo(paginationRequest, 0));

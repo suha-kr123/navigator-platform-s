@@ -6,7 +6,7 @@ import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.common.constants.ApiConstants;
 import com.nivasafinance.features.admin.service.AdminAdvisorService;
 import com.nivasafinance.features.advisor.dto.AdminAdvisorBasicResponse;
-import com.nivasafinance.features.advisor.dto.AdvisorSearchRequest;
+import com.nivasafinance.features.advisor.dto.AdminAdvisorSearchRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -39,7 +39,7 @@ public class AdminAdvisorController {
     @RequireRole({"ADMIN"})
     public ResponseEntity<PaginatedResponse<AdminAdvisorBasicResponse>> adminSearchAdvisors(
             @Valid PaginationRequest paginationRequest,
-            @Valid @RequestBody AdvisorSearchRequest searchRequest
+            @Valid @RequestBody AdminAdvisorSearchRequest searchRequest
     ) {
         return ResponseEntity.ok(adminAdvisorService.adminSearchAdvisors(paginationRequest, searchRequest));
     }

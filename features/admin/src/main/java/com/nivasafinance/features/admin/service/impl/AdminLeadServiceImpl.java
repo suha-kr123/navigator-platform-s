@@ -5,7 +5,7 @@ import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.features.admin.exception.AdminExceptionFactory;
 import com.nivasafinance.features.admin.service.AdminLeadService;
 import com.nivasafinance.features.lead.dto.AdminLeadSearchResponse;
-import com.nivasafinance.features.lead.dto.LeadSearchRequest;
+import com.nivasafinance.features.lead.dto.AdminLeadSearchRequest;
 import com.nivasafinance.features.lead.service.LeadReadService;
 import com.nivasafinance.features.lead.service.LeadWriteService;
 import com.nivasafinance.common.exception.ResourceNotFoundException;
@@ -44,7 +44,7 @@ public class AdminLeadServiceImpl implements AdminLeadService {
     }
 
     @Override
-    public PaginatedResponse<AdminLeadSearchResponse> adminSearchLeads(PaginationRequest paginationRequest, LeadSearchRequest request) {
+    public PaginatedResponse<AdminLeadSearchResponse> adminSearchLeads(PaginationRequest paginationRequest, AdminLeadSearchRequest request) {
         return leadReadService.adminSearchLeads(paginationRequest, request);
     }
 

@@ -398,7 +398,7 @@ public class LeadReadServiceImpl implements LeadReadService {
     }
 
     @Override
-    public PaginatedResponse<AdminLeadSearchResponse> adminSearchLeads(PaginationRequest paginationRequest, LeadSearchRequest request) {
+    public PaginatedResponse<AdminLeadSearchResponse> adminSearchLeads(PaginationRequest paginationRequest, AdminLeadSearchRequest request) {
         return leadRepositoryWrapper.adminSearchLeadsByPhoneNumber(paginationRequest, request);
     }
 

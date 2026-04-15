@@ -5,7 +5,7 @@ import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.features.admin.exception.AdminExceptionFactory;
 import com.nivasafinance.features.admin.service.AdminAdvisorService;
 import com.nivasafinance.features.advisor.dto.AdminAdvisorBasicResponse;
-import com.nivasafinance.features.advisor.dto.AdvisorSearchRequest;
+import com.nivasafinance.features.advisor.dto.AdminAdvisorSearchRequest;
 import com.nivasafinance.features.advisor.entity.Advisor;
 import com.nivasafinance.features.advisor.service.AdvisorReadService;
 import com.nivasafinance.features.advisor.service.AdvisorWriteService;
@@ -42,7 +42,7 @@ public class AdminAdvisorServiceImpl implements AdminAdvisorService {
     }
 
     @Override
-    public PaginatedResponse<AdminAdvisorBasicResponse> adminSearchAdvisors(PaginationRequest paginationRequest, AdvisorSearchRequest request) {
+    public PaginatedResponse<AdminAdvisorBasicResponse> adminSearchAdvisors(PaginationRequest paginationRequest, AdminAdvisorSearchRequest request) {
         return advisorReadService.adminSearchAdvisors(paginationRequest, request);
     }
 

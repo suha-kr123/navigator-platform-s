@@ -4,6 +4,7 @@ import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationInfo;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.features.advisor.dto.AdminAdvisorBasicResponse;
+import com.nivasafinance.features.advisor.dto.AdminAdvisorSearchRequest;
 import com.nivasafinance.features.advisor.dto.AdvisorSearchRequest;
 import com.nivasafinance.features.advisor.dto.AdvisorBasicResponse;
 import com.nivasafinance.features.advisor.dto.self.AdvisorSelfLeadResponse;
@@ -794,7 +795,7 @@ public class AdvisorRepositoryWrapper {
      * without office hierarchy filtering.
      */
     public PaginatedResponse<AdminAdvisorBasicResponse> adminSearchAdvisorsByPhoneNumber(
-            PaginationRequest paginationRequest, AdvisorSearchRequest request) {
+            PaginationRequest paginationRequest, AdminAdvisorSearchRequest request) {
         if (request == null || !StringUtils.hasText(request.getMobileNumber())) {
             return new PaginatedResponse<>(Collections.emptyList(),
                     buildPaginationInfo(paginationRequest, 0));

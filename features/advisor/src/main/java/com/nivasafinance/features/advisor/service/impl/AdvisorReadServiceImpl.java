@@ -8,6 +8,7 @@ import com.nivasafinance.features.advisor.dto.AdminAdvisorBasicResponse;
 import com.nivasafinance.features.advisor.dto.AdvisorDashboardFilters;
 import com.nivasafinance.features.advisor.dto.AdvisorDashboardResponse;
 import com.nivasafinance.features.advisor.dto.AdvisorResponse;
+import com.nivasafinance.features.advisor.dto.AdminAdvisorSearchRequest;
 import com.nivasafinance.features.advisor.dto.AdvisorSearchRequest;
 import com.nivasafinance.features.advisor.dto.AdvisorBasicResponse;
 import com.nivasafinance.features.advisor.dto.AdvisorTemplateResponse;
@@ -277,7 +278,7 @@ public class AdvisorReadServiceImpl implements AdvisorReadService {
     }
 
     @Override
-    public PaginatedResponse<AdminAdvisorBasicResponse> adminSearchAdvisors(PaginationRequest paginationRequest, AdvisorSearchRequest request) {
+    public PaginatedResponse<AdminAdvisorBasicResponse> adminSearchAdvisors(PaginationRequest paginationRequest, AdminAdvisorSearchRequest request) {
         return advisorRepositoryWrapper.adminSearchAdvisorsByPhoneNumber(paginationRequest, request);
     }
 
