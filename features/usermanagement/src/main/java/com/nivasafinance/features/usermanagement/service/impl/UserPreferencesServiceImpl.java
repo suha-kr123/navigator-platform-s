@@ -71,7 +71,6 @@ public class UserPreferencesServiceImpl implements UserPreferencesService {
                 .build();
     }
 
-    @TransactionalOptimisticRetry
     private UserPreferencesResponse updatePreferencesForUser(String username, UserPreferencesRequest request) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalStateException("User not found: " + username));
