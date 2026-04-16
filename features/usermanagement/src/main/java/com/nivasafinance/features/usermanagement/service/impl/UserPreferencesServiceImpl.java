@@ -1,6 +1,7 @@
 package com.nivasafinance.features.usermanagement.service.impl;
 
 import com.nivasafinance.common.context.UserContext;
+import com.nivasafinance.features.usermanagement.annotation.TransactionalOptimisticRetry;
 import com.nivasafinance.features.usermanagement.dto.UserPreferencesRequest;
 import com.nivasafinance.features.usermanagement.dto.UserPreferencesResponse;
 import com.nivasafinance.features.usermanagement.entity.User;
@@ -40,7 +41,6 @@ public class UserPreferencesServiceImpl implements UserPreferencesService {
     }
 
     @Override
-    @Transactional
     public UserPreferencesResponse savePreferencesForCurrentUser(UserPreferencesRequest request) {
         String username = UserContext.getUsername();
         if (username == null) {
@@ -50,7 +50,6 @@ public class UserPreferencesServiceImpl implements UserPreferencesService {
     }
 
     @Override
-    @Transactional
     public UserPreferencesResponse updatePreferencesForCurrentUser(UserPreferencesRequest request) {
         String username = UserContext.getUsername();
         if (username == null) {
