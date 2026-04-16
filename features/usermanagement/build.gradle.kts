@@ -8,6 +8,7 @@ plugins {
 
 dependencies {
     implementation(project(":features:person"))
+    implementation("org.springframework.retry:spring-retry")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 

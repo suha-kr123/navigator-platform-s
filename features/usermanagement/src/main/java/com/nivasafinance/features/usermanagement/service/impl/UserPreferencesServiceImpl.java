@@ -1,6 +1,7 @@
 package com.nivasafinance.features.usermanagement.service.impl;
 
 import com.nivasafinance.common.context.UserContext;
+import com.nivasafinance.features.usermanagement.annotation.TransactionalOptimisticRetry;
 import com.nivasafinance.features.usermanagement.dto.UserPreferencesRequest;
 import com.nivasafinance.features.usermanagement.dto.UserPreferencesResponse;
 import com.nivasafinance.features.usermanagement.entity.User;
@@ -40,7 +41,6 @@ public class UserPreferencesServiceImpl implements UserPreferencesService {
     }
 
     @Override
-    @Transactional
     public UserPreferencesResponse savePreferencesForCurrentUser(UserPreferencesRequest request) {
         String username = UserContext.getUsername();
         if (username == null) {
@@ -50,7 +50,6 @@ public class UserPreferencesServiceImpl implements UserPreferencesService {
     }
 
     @Override
-    @Transactional
     public UserPreferencesResponse updatePreferencesForCurrentUser(UserPreferencesRequest request) {
         String username = UserContext.getUsername();
         if (username == null) {
@@ -59,6 +58,7 @@ public class UserPreferencesServiceImpl implements UserPreferencesService {
         return updatePreferencesForUser(username, request);
     }
 
+    @TransactionalOptimisticRetry
     private UserPreferencesResponse savePreferencesForUser(String username, UserPreferencesRequest request) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalStateException("User not found: " + username));
@@ -71,6 +71,7 @@ public class UserPreferencesServiceImpl implements UserPreferencesService {
                 .build();
     }
 
+    @TransactionalOptimisticRetry
     private UserPreferencesResponse updatePreferencesForUser(String username, UserPreferencesRequest request) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalStateException("User not found: " + username));

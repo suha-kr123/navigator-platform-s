@@ -33,6 +33,14 @@ public class UserPreferencesController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @PutMapping
+    @RequirePermission(permissionName = "UPDATE_USER_PREFERENCES")
+    public ResponseEntity<UserPreferencesResponse> updatePreferencesPut(
+            @Valid @RequestBody UserPreferencesRequest request) {
+        UserPreferencesResponse response = userPreferencesService.updatePreferencesForCurrentUser(request);
+        return ResponseEntity.ok(response);
+    }
+
     @PatchMapping
     @RequirePermission(permissionName = "UPDATE_USER_PREFERENCES")
     public ResponseEntity<UserPreferencesResponse> updatePreferences(
