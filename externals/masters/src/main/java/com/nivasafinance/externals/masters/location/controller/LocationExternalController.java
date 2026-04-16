@@ -1,10 +1,7 @@
 package com.nivasafinance.externals.masters.location.controller;
 
 import com.nivasafinance.common.constants.ApiConstants;
-import com.nivasafinance.features.master.location.dto.CountryResponse;
-import com.nivasafinance.features.master.location.dto.DistrictResponse;
-import com.nivasafinance.features.master.location.dto.StateResponse;
-import com.nivasafinance.features.master.location.dto.TalukaResponse;
+import com.nivasafinance.features.master.location.dto.*;
 import com.nivasafinance.features.master.location.service.LocationMasterService;
 import com.nivasafinance.features.master.pincode.dto.PincodeResponse;
 import com.nivasafinance.features.master.pincode.service.PincodeService;
@@ -37,9 +34,21 @@ public class LocationExternalController {
         return ResponseEntity.ok(states);
     }
 
+    @GetMapping("/states/{stateId}/regions")
+    public ResponseEntity<List<RegionResponse>> getRegions(@PathVariable Long stateId) {
+        List<RegionResponse> regions = locationMasterService.getRegionsByStateId(stateId);
+        return ResponseEntity.ok(regions);
+    }
+
     @GetMapping("/states/{stateId}/districts")
     public ResponseEntity<List<DistrictResponse>> getDistricts(@PathVariable Long stateId) {
         List<DistrictResponse> districts = locationMasterService.getDistrictsByStateId(stateId);
+        return ResponseEntity.ok(districts);
+    }
+
+    @GetMapping("/regions/{regionId}/districts")
+    public ResponseEntity<List<DistrictResponse>> getDistrictsByRegionId(@PathVariable Long regionId) {
+        List<DistrictResponse> districts = locationMasterService.getDistrictsByRegionId(regionId);
         return ResponseEntity.ok(districts);
     }
 

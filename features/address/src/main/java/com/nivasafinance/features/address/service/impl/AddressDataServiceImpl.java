@@ -113,7 +113,7 @@ public class AddressDataServiceImpl implements AddressDataService {
             return;
         }
         locationRepository.findDisplayNamesByCodes(
-                a.getCountryCode(), a.getStateCode(), a.getDistrictCode(), a.getTalukaCode(), a.getVillageCode()
+                a.getCountryCode(), a.getStateCode(), a.getRegionCode(), a.getDistrictCode(), a.getTalukaCode(), a.getVillageCode()
         ).ifPresent(names -> {
             if (names.getCountryName() != null) a.setCountry(names.getCountryName());
             if (names.getStateName() != null) a.setState(names.getStateName());

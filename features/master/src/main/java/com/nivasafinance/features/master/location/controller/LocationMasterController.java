@@ -33,10 +33,24 @@ public class LocationMasterController {
         return ResponseEntity.ok(states);
     }
 
+    @GetMapping("/states/{stateId}/regions")
+    @RequirePermission(permissionName = "READ_MASTER_LOCATION")
+    public ResponseEntity<List<RegionResponse>> getRegionsByStateId(@PathVariable Long stateId) {
+        List<RegionResponse> regions = locationMasterService.getRegionsByStateId(stateId);
+        return ResponseEntity.ok(regions);
+    }
+
     @GetMapping("/states/{stateId}/districts")
     @RequirePermission(permissionName = "READ_MASTER_LOCATION")
     public ResponseEntity<List<DistrictResponse>> getDistrictsByStateId(@PathVariable Long stateId) {
         List<DistrictResponse> districts = locationMasterService.getDistrictsByStateId(stateId);
+        return ResponseEntity.ok(districts);
+    }
+
+    @GetMapping("/regions/{regionId}/districts")
+    @RequirePermission(permissionName = "READ_MASTER_LOCATION")
+    public ResponseEntity<List<DistrictResponse>> getDistrictsByRegionId(@PathVariable Long regionId) {
+        List<DistrictResponse> districts = locationMasterService.getDistrictsByRegionId(regionId);
         return ResponseEntity.ok(districts);
     }
 

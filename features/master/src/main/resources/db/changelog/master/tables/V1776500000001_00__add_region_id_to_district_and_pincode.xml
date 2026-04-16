@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1776500000001_00" author="system" context="default">
+        <!-- Add region_id to n_master_district -->
+        <addColumn tableName="n_master_district">
+            <column name="region_id" type="bigint"/>
+        </addColumn>
+
+        <addForeignKeyConstraint baseTableName="n_master_district"
+                                 baseColumnNames="region_id"
+                                 constraintName="fk_district_region"
+                                 referencedTableName="n_master_region"
+                                 referencedColumnNames="id"/>
+
+        <createIndex indexName="idx_district_region_id" tableName="n_master_district">
+            <column name="region_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="V1776500000001_01" author="system" context="default">
+        <!-- Add region_id to n_master_pincode -->
+        <addColumn tableName="n_master_pincode">
+            <column name="region_id" type="bigint"/>
+        </addColumn>
+
+        <addForeignKeyConstraint baseTableName="n_master_pincode"
+                                 baseColumnNames="region_id"
+                                 constraintName="fk_pincode_region"
+                                 referencedTableName="n_master_region"
+                                 referencedColumnNames="id"/>
+
+        <createIndex indexName="idx_pincode_region_id" tableName="n_master_pincode">
+            <column name="region_id"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

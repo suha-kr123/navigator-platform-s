@@ -21,6 +21,7 @@ public class LocationMasterServiceImpl implements LocationMasterService {
 
     private final CountryRepository countryRepository;
     private final StateRepository stateRepository;
+    private final RegionRepository regionRepository;
     private final DistrictRepository districtRepository;
     private final TalukaRepository talukaRepository;
     private final VillageRepository villageRepository;
@@ -43,6 +44,29 @@ public class LocationMasterServiceImpl implements LocationMasterService {
         List<State> states = stateRepository.findByCountryIdAndIsActiveTrue(countryId);
         return states.stream()
                 .map(this::mapToStateResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<RegionResponse> getRegionsByStateId(Long stateId) {
+        // Validate state exists
+        stateRepository.findById(stateId)
+                .orElseThrow(() -> new LocationNotFoundException("State", stateId, messageSource));
+        List<Region> regions = regionRepository.findByStateIdAndIsActiveTrue(stateId);
+        return regions.stream()
+                .map(this::mapToRegionResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<DistrictResponse> getDistrictsByRegionId(Long regionId) {
+        //validate region exists
+        regionRepository.findById(regionId)
+                .orElseThrow(() -> new LocationNotFoundException("Region", regionId, messageSource));
+
+        List<District> districts = districtRepository.findByRegionIdAndIsActiveTrue(regionId);
+        return districts.stream()
+                .map(this::mapToDistrictResponse)
                 .collect(Collectors.toList());
     }
 
@@ -117,6 +141,16 @@ public class LocationMasterServiceImpl implements LocationMasterService {
                 .name(state.getName())
                 .code(state.getCode())
                 .isActive(state.getIsActive())
+                .build();
+    }
+
+    private RegionResponse mapToRegionResponse(Region region) {
+        return RegionResponse.builder()
+                .id(region.getId())
+                .name(MasterLanguageResolver.getDisplayValue(region.getName()))
+                .code(region.getCode())
+                .isActive(region.getIsActive())
+                .displayOrder(region.getDisplayOrder())
                 .build();
     }
 

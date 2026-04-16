@@ -18,5 +18,6 @@ public interface DistrictRepository extends JpaRepository<District, Long> {
             + "AND EXISTS (SELECT 1 FROM com.nivasafinance.features.master.pincode.entity.Pincode p "
             + "WHERE p.districtId = d.id AND p.isServicable = true)")
     List<District> findServiceableDistrictsByStateId(@Param("stateId") Long stateId);
+    List<District> findByRegionIdAndIsActiveTrue(Long regionId);
 }
 

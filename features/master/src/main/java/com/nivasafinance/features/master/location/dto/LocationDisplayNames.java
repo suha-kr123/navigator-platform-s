@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 public class LocationDisplayNames {
     private String countryName;
     private String stateName;
+    private MasterLanguageData regionValue;
     private MasterLanguageData districtValue;
     private MasterLanguageData talukaValue;
     private MasterLanguageData villageValue;

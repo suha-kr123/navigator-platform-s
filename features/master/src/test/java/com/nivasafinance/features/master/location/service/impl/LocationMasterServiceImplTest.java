@@ -30,6 +30,9 @@ class LocationMasterServiceImplTest {
     private StateRepository stateRepository;
 
     @Mock
+    private RegionRepository regionRepository;
+
+    @Mock
     private DistrictRepository districtRepository;
 
     @Mock
@@ -46,6 +49,7 @@ class LocationMasterServiceImplTest {
 
     private Country country;
     private State state;
+    private Region region;
     private District district;
     private Taluka taluka;
     private Village village;
@@ -64,6 +68,14 @@ class LocationMasterServiceImplTest {
         state.setName("Karnataka");
         state.setCode("KA");
         state.setIsActive(true);
+
+        region = new Region();
+        region.setId(50L);
+        region.setStateId(10L);
+        region.setCode("REG01");
+        region.setName(MasterLanguageData.builder().defaultValue("North Karnataka").build());
+        region.setIsActive(true);
+        region.setDisplayOrder(1);
 
         district = new District();
         district.setId(100L);
@@ -306,6 +318,85 @@ class LocationMasterServiceImplTest {
 
         assertTrue(result.isEmpty(),
                 "Should return empty list when no serviceable talukas exist for the district");
+    }
+
+    // ── getRegionByStateId ───────────────────────────────────────────
+
+    @Test
+    void getRegionsByStateId_validState_returnsRegionList() {
+        when(stateRepository.findById(10L)).thenReturn(Optional.of(state));
+        when(regionRepository.findByStateIdAndIsActiveTrue(10L)).thenReturn(List.of(region));
+
+        List<RegionResponse> result = locationMasterService.getRegionsByStateId(10L);
+
+        assertEquals(1, result.size(), "Should return one region for the state");
+        assertEquals("REG01", result.get(0).getCode(), "Region code should match");
+    }
+
+    @Test
+    void getRegionsByStateId_stateNotFound_throwsLocationNotFound() {
+        when(stateRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThrows(LocationNotFoundException.class,
+                () -> locationMasterService.getRegionsByStateId(999L),
+                "Non-existent state ID should throw LocationNotFoundException");
+    }
+
+    @Test
+    void getRegionsByStateId_noRegions_returnsEmptyList() {
+        when(stateRepository.findById(10L)).thenReturn(Optional.of(state));
+        when(regionRepository.findByStateIdAndIsActiveTrue(10L)).thenReturn(Collections.emptyList());
+
+        List<RegionResponse> result = locationMasterService.getRegionsByStateId(10L);
+
+        assertTrue(result.isEmpty(), "Should return empty list when state has no active regions");
+    }
+
+    @Test
+    void getRegionsByStateId_responseFieldsCorrectlyMapped() {
+        when(stateRepository.findById(10L)).thenReturn(Optional.of(state));
+        when(regionRepository.findByStateIdAndIsActiveTrue(10L)).thenReturn(List.of(region));
+
+        List<RegionResponse> result = locationMasterService.getRegionsByStateId(10L);
+
+        RegionResponse response = result.get(0);
+        assertEquals(50L, response.getId(), "Region ID should be mapped correctly");
+        assertEquals("North Karnataka", response.getName(), "Region name should be resolved from MasterLanguageData");
+        assertEquals("REG01", response.getCode(), "Region code should be mapped correctly");
+        assertTrue(response.getIsActive(), "Region isActive should be mapped correctly");
+        assertEquals(1, response.getDisplayOrder(), "Region displayOrder should be mapped correctly");
+    }
+
+    // ── getDistrictsByRegionId ───────────────────────────────────────
+
+    @Test
+    void getDistrictsByRegionId_validRegion_returnsDistrictList() {
+        when(regionRepository.findById(50L)).thenReturn(Optional.of(region));
+        when(districtRepository.findByRegionIdAndIsActiveTrue(50L)).thenReturn(List.of(district));
+
+        List<DistrictResponse> result = locationMasterService.getDistrictsByRegionId(50L);
+
+        assertEquals(1, result.size(), "Should return one district for the region");
+        assertEquals("BLR", result.get(0).getCode(), "District code should match");
+    }
+
+    @Test
+    void getDistrictsByRegionId_regionNotFound_throwsLocationNotFound() {
+        when(regionRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThrows(LocationNotFoundException.class,
+                () -> locationMasterService.getDistrictsByRegionId(999L),
+                "Non-existent region ID should throw LocationNotFoundException");
+    }
+
+    @Test
+    void getDistrictsByRegionId_noDistricts_returnsEmptyList() {
+        when(regionRepository.findById(50L)).thenReturn(Optional.of(region));
+        when(districtRepository.findByRegionIdAndIsActiveTrue(50L)).thenReturn(Collections.emptyList());
+
+        List<DistrictResponse> result = locationMasterService.getDistrictsByRegionId(50L);
+
+        assertTrue(result.isEmpty(), "Should return empty list when region has no active districts");
     }
 
     // ── response mapping ─────────────────────────────────────────────

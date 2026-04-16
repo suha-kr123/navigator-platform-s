@@ -643,12 +643,12 @@ class AddressDataServiceImplTest {
                 .stateCode("KA")
                 .build();
 
-        when(locationRepository.findDisplayNamesByCodes(null, "KA", null, null, null))
+        when(locationRepository.findDisplayNamesByCodes(null, "KA", null, null, null, null))
                 .thenReturn(Optional.empty());
 
         addressDataService.enrichAddressWithDisplayNames(input);
 
-        verify(locationRepository).findDisplayNamesByCodes(null, "KA", null, null, null);
+        verify(locationRepository).findDisplayNamesByCodes(null, "KA", null, null, null, null);
     }
 
     @Test
@@ -657,12 +657,12 @@ class AddressDataServiceImplTest {
                 .districtCode("DIST01")
                 .build();
 
-        when(locationRepository.findDisplayNamesByCodes(null, null, "DIST01", null, null))
+        when(locationRepository.findDisplayNamesByCodes(null, null, null, "DIST01", null, null))
                 .thenReturn(Optional.empty());
 
         addressDataService.enrichAddressWithDisplayNames(input);
 
-        verify(locationRepository).findDisplayNamesByCodes(null, null, "DIST01", null, null);
+        verify(locationRepository).findDisplayNamesByCodes(null, null, null, "DIST01", null, null);
     }
 
     @Test
@@ -671,12 +671,12 @@ class AddressDataServiceImplTest {
                 .talukaCode("TAL01")
                 .build();
 
-        when(locationRepository.findDisplayNamesByCodes(null, null, null, "TAL01", null))
+        when(locationRepository.findDisplayNamesByCodes(null, null, null, null, "TAL01", null))
                 .thenReturn(Optional.empty());
 
         addressDataService.enrichAddressWithDisplayNames(input);
 
-        verify(locationRepository).findDisplayNamesByCodes(null, null, null, "TAL01", null);
+        verify(locationRepository).findDisplayNamesByCodes(null, null, null, null, "TAL01", null);
     }
 
     @Test
@@ -685,12 +685,12 @@ class AddressDataServiceImplTest {
                 .villageCode("VIL01")
                 .build();
 
-        when(locationRepository.findDisplayNamesByCodes(null, null, null, null, "VIL01"))
+        when(locationRepository.findDisplayNamesByCodes(null, null, null, null, null, "VIL01"))
                 .thenReturn(Optional.empty());
 
         addressDataService.enrichAddressWithDisplayNames(input);
 
-        verify(locationRepository).findDisplayNamesByCodes(null, null, null, null, "VIL01");
+        verify(locationRepository).findDisplayNamesByCodes(null, null, null, null, null, "VIL01");
     }
 
     @Test
@@ -851,7 +851,7 @@ class AddressDataServiceImplTest {
                 .villageValue(new MasterLanguageData("Test Village", null))
                 .build();
 
-        when(locationRepository.findDisplayNamesByCodes("IN", "KA", "DIST01", "TAL01", "VIL01"))
+        when(locationRepository.findDisplayNamesByCodes("IN", "KA", null, "DIST01", "TAL01", "VIL01"))
                 .thenReturn(Optional.of(displayNames));
 
         AddressData result = addressDataService.enrichAddressWithDisplayNames(input);
@@ -873,7 +873,7 @@ class AddressDataServiceImplTest {
                 .state("Original State")
                 .build();
 
-        when(locationRepository.findDisplayNamesByCodes(eq("IN"), any(), any(), any(), any()))
+        when(locationRepository.findDisplayNamesByCodes(eq("IN"), any(), any(), any(), any(), any()))
                 .thenReturn(Optional.empty());
 
         AddressData result = addressDataService.enrichAddressWithDisplayNames(input);
@@ -900,7 +900,7 @@ class AddressDataServiceImplTest {
                 .villageValue(null)
                 .build();
 
-        when(locationRepository.findDisplayNamesByCodes("IN", "KA", null, null, null))
+        when(locationRepository.findDisplayNamesByCodes("IN", "KA", null, null, null, null))
                 .thenReturn(Optional.of(displayNames));
 
         AddressData result = addressDataService.enrichAddressWithDisplayNames(input);
@@ -922,7 +922,7 @@ class AddressDataServiceImplTest {
                 .countryName("India")
                 .build();
 
-        when(locationRepository.findDisplayNamesByCodes(eq("IN"), any(), any(), any(), any()))
+        when(locationRepository.findDisplayNamesByCodes(eq("IN"), any(), any(), any(), any(), any()))
                 .thenReturn(Optional.of(displayNames));
 
         AddressData result = addressDataService.enrichAddressWithDisplayNames(input);
@@ -957,7 +957,7 @@ class AddressDataServiceImplTest {
                 .isServiceable(true)
                 .build();
 
-        when(locationRepository.findDisplayNamesByCodes("CC", "SC", "DC", "TC", "VC"))
+        when(locationRepository.findDisplayNamesByCodes("CC", "SC", null, "DC", "TC", "VC"))
                 .thenReturn(Optional.empty());
 
         AddressData result = addressDataService.enrichAddressWithDisplayNames(input);

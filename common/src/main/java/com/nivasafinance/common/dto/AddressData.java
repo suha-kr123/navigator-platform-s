@@ -17,8 +17,10 @@ public class AddressData {
     private String district;
     private String country;
     private String state;
+    private String region;
     private String taluka;
     private String districtCode;
+    private String regionCode;
     private String stateCode;
     private String countryCode;
     private String talukaCode;

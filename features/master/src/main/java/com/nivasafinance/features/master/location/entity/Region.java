@@ -11,40 +11,30 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 @Entity
-@Table(name = "n_master_district")
+@Table(name = "n_master_region")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
-public class District extends AuditableEntity {
+public class Region extends AuditableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "state_id", nullable = false)
+    @Column(name = "state_id",  nullable = false)
     private Long stateId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "state_id", insertable = false, updatable = false)
     private State state;
 
-    @Column(name =  "region_id")
-    private Long regionId;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "region_id", insertable = false, updatable = false)
-    private Region region;
-
-    @Column(name = "name", nullable = false, length = 255)
-    private String name;
-
     @Column(name = "code", length = 50)
     private String code;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "value", columnDefinition = "jsonb")
-    private MasterLanguageData nameValues;
+    @Column(name = "name", columnDefinition = "jsonb")
+    private MasterLanguageData name;
 
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
@@ -52,4 +42,3 @@ public class District extends AuditableEntity {
     @Column(name = "display_order", nullable = false)
     private Integer displayOrder = 0;
 }
-
