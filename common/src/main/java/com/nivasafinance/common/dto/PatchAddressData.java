@@ -21,12 +21,15 @@ public class PatchAddressData {
     private Optional<String> district;
     private Optional<String> country;
     private Optional<String> state;
+    private Optional<String> region;
     private Optional<String> taluka;
     private Optional<String> districtCode;
+    private Optional<String> regionCode;
     private Optional<String> stateCode;
     private Optional<String> countryCode;
     private Optional<String> talukaCode;
     private Optional<Long> districtId;
+    private Optional<Long> regionId;
     private Optional<Long> stateId;
     private Optional<Long> countryId;
     private Optional<Long> talukaId;

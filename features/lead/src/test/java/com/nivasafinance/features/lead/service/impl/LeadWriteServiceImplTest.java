@@ -1369,12 +1369,15 @@ class LeadWriteServiceImplTest {
                 .district(Optional.of("Bangalore"))
                 .state(Optional.of("Karnataka"))
                 .country(Optional.of("India"))
+                .region(Optional.of("North Karnataka"))
                 .taluka(Optional.of("South"))
                 .districtCode(Optional.of("BLR"))
+                .regionCode(Optional.of("REG01"))
                 .stateCode(Optional.of("KA"))
                 .countryCode(Optional.of("IN"))
                 .talukaCode(Optional.of("S"))
                 .districtId(Optional.of(1L))
+                .regionId(Optional.of(6L))
                 .stateId(Optional.of(2L))
                 .countryId(Optional.of(3L))
                 .talukaId(Optional.of(4L))
@@ -1410,15 +1413,30 @@ class LeadWriteServiceImplTest {
         // Assert
         assertNotNull(lead.getOtherDetails().getPropertyDetails(), "Property details should be set");
         assertNotNull(lead.getOtherDetails().getPropertyDetails().getAddress(), "Address should be merged");
-        assertEquals("123 Main St", lead.getOtherDetails().getPropertyDetails().getAddress().getAddress());
-        assertEquals("560001", lead.getOtherDetails().getPropertyDetails().getAddress().getPincode());
-        assertEquals("Bangalore", lead.getOtherDetails().getPropertyDetails().getAddress().getDistrict());
-        assertEquals("A_KHATA", lead.getOtherDetails().getPropertyDetails().getPropertyType());
-        assertEquals("COMPLETED", lead.getOtherDetails().getPropertyDetails().getPropertyConstructionStage());
-        assertEquals("John", lead.getOtherDetails().getPropertyDetails().getOwner());
-        assertEquals("SELF", lead.getOtherDetails().getPropertyDetails().getOwnerRelation());
-        assertNotNull(lead.getOtherDetails().getPropertyDetails().getPropertyMeasurementDetails());
-        assertEquals("1200", lead.getOtherDetails().getPropertyDetails().getPropertyMeasurementDetails().getBuildUpArea());
+        assertEquals("123 Main St", lead.getOtherDetails().getPropertyDetails().getAddress().getAddress(),
+                "Street address should be set from patch");
+        assertEquals("560001", lead.getOtherDetails().getPropertyDetails().getAddress().getPincode(),
+                "Pincode should be set from patch");
+        assertEquals("Bangalore", lead.getOtherDetails().getPropertyDetails().getAddress().getDistrict(),
+                "District name should be set from patch");
+        assertEquals("North Karnataka", lead.getOtherDetails().getPropertyDetails().getAddress().getRegion(),
+                "Region name should be set from patch");
+        assertEquals("REG01", lead.getOtherDetails().getPropertyDetails().getAddress().getRegionCode(),
+                "Region code should be set from patch");
+        assertEquals(6L, lead.getOtherDetails().getPropertyDetails().getAddress().getRegionId(),
+                "Region id should be set from patch");
+        assertEquals("A_KHATA", lead.getOtherDetails().getPropertyDetails().getPropertyType(),
+                "Property type should be set from patch");
+        assertEquals("COMPLETED", lead.getOtherDetails().getPropertyDetails().getPropertyConstructionStage(),
+                "Property construction stage should be set from patch");
+        assertEquals("John", lead.getOtherDetails().getPropertyDetails().getOwner(),
+                "Owner should be set from patch");
+        assertEquals("SELF", lead.getOtherDetails().getPropertyDetails().getOwnerRelation(),
+                "Owner relation should be set from patch");
+        assertNotNull(lead.getOtherDetails().getPropertyDetails().getPropertyMeasurementDetails(),
+                "Property measurement details should be set from patch");
+        assertEquals("1200", lead.getOtherDetails().getPropertyDetails().getPropertyMeasurementDetails().getBuildUpArea(),
+                "Build-up area should be set from patch");
         verify(applicationEventPublisher).publishEvent(any(SystemEvent.class));
     }
 
@@ -1629,6 +1647,64 @@ class LeadWriteServiceImplTest {
         assertNull(lead.getOtherDetails().getPropertyDetails().getGeoData(), "GeoData should be cleared");
         assertNull(lead.getOtherDetails().getPropertyDetails().getPropertyType(), "PropertyType should be cleared");
         assertNull(lead.getOtherDetails().getPropertyDetails().getOwner(), "Owner should be cleared");
+    }
+
+    @Test
+    void patchPropertyDetails_withRegionFields_setsRegionData() {
+        // Arrange
+        PatchAddressData patchAddr = PatchAddressData.builder()
+                .region(Optional.of("North Karnataka"))
+                .regionCode(Optional.of("REG01"))
+                .regionId(Optional.of(50L))
+                .build();
+
+        PatchPropertyDetailsRequest request = PatchPropertyDetailsRequest.builder()
+                .address(Optional.of(patchAddr))
+                .build();
+
+        when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
+        when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
+
+        // Act
+        leadWriteService.patchPropertyDetails(leadIdentifier, request);
+
+        // Assert
+        AddressData addr = lead.getOtherDetails().getPropertyDetails().getAddress();
+        assertEquals("North Karnataka", addr.getRegion(), "Region name should be set from patch");
+        assertEquals("REG01", addr.getRegionCode(), "Region code should be set from patch");
+        assertEquals(50L, addr.getRegionId(), "Region id should be set from patch");
+    }
+
+    @Test
+    void patchPropertyDetails_withNullRegionFields_doesNotOverwrite() {
+        // Arrange
+        AddressData existingAddr = new AddressData();
+        existingAddr.setRegion("Existing Region");
+        existingAddr.setRegionCode("EX_REG");
+        existingAddr.setRegionId(99L);
+        Lead.PropertyDetails existing = new Lead.PropertyDetails();
+        existing.setAddress(existingAddr);
+        lead.setOtherDetails(Lead.OtherDetails.builder().propertyDetails(existing).build());
+
+        PatchAddressData patchAddr = PatchAddressData.builder()
+                .pincode(Optional.of("560001"))
+                .build();
+
+        PatchPropertyDetailsRequest request = PatchPropertyDetailsRequest.builder()
+                .address(Optional.of(patchAddr))
+                .build();
+
+        when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
+        when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
+
+        // Act
+        leadWriteService.patchPropertyDetails(leadIdentifier, request);
+
+        // Assert
+        AddressData addr = lead.getOtherDetails().getPropertyDetails().getAddress();
+        assertEquals("Existing Region", addr.getRegion(), "Region name should not be overwritten when not patched");
+        assertEquals("EX_REG", addr.getRegionCode(), "Region code should not be overwritten when not patched");
+        assertEquals(99L, addr.getRegionId(), "Region id should not be overwritten when not patched");
     }
 
     @Test

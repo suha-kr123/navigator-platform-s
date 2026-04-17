@@ -890,11 +890,17 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         if (patch.getState() != null && patch.getState().isPresent()) {
             existing.setState(patch.getState().get());
         }
+        if (patch.getRegion() != null && patch.getRegion().isPresent()) {
+            existing.setRegion(patch.getRegion().get());
+        }
         if (patch.getTaluka() != null && patch.getTaluka().isPresent()) {
             existing.setTaluka(patch.getTaluka().get());
         }
         if (patch.getDistrictCode() != null && patch.getDistrictCode().isPresent()) {
             existing.setDistrictCode(patch.getDistrictCode().get());
+        }
+        if (patch.getRegionCode() != null && patch.getRegionCode().isPresent()) {
+            existing.setRegionCode(patch.getRegionCode().get());
         }
         if (patch.getStateCode() != null && patch.getStateCode().isPresent()) {
             existing.setStateCode(patch.getStateCode().get());
@@ -907,6 +913,9 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         }
         if (patch.getDistrictId() != null && patch.getDistrictId().isPresent()) {
             existing.setDistrictId(patch.getDistrictId().get());
+        }
+        if (patch.getRegionId() != null && patch.getRegionId().isPresent()) {
+            existing.setRegionId(patch.getRegionId().get());
         }
         if (patch.getStateId() != null && patch.getStateId().isPresent()) {
             existing.setStateId(patch.getStateId().get());

@@ -25,6 +25,7 @@ public class AddressData {
     private String countryCode;
     private String talukaCode;
     private Long districtId;
+    private Long regionId;
     private Long stateId;
     private Long countryId;
     private Long talukaId;
