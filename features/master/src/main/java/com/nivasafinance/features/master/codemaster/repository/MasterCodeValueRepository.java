@@ -12,10 +12,10 @@ import java.util.Optional;
 @Repository
 public interface MasterCodeValueRepository extends JpaRepository<MasterCodeValue, Long> {
     Optional<MasterCodeValue> findByKey(String key);
-    List<MasterCodeValue> findByCodeKey(String codeKey);
+    List<MasterCodeValue> findByCodeKeyOrderByDisplayOrderAsc(String codeKey);
     Page<MasterCodeValue> findByCodeKey(String codeKey, Pageable pageable);
     Optional<MasterCodeValue> findByKeyAndCodeKey(String key, String codeKey);
-    List<MasterCodeValue> findByCodeKeyAndIsActiveTrue(String codeKey);
+    List<MasterCodeValue> findByCodeKeyAndIsActiveTrueOrderByDisplayOrderAsc(String codeKey);
     Page<MasterCodeValue> findByCodeKeyAndIsActiveTrue(String codeKey, Pageable pageable);
 }
 

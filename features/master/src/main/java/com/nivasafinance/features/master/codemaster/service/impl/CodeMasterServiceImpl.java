@@ -218,6 +218,10 @@ public class CodeMasterServiceImpl implements CodeMasterService {
 						buildLanguageData(valueRequest.getDescriptionMap()));
 			}
 
+			if (valueRequest.getDisplayOrder() != null) {
+				masterCodeValue.setDisplayOrder(valueRequest.getDisplayOrder());
+			}
+
 			masterCodeValueRepositoryWrapper.saveWithException(masterCodeValue);
 		}
 	}
