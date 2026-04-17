@@ -99,7 +99,7 @@ public class MasterCodeValueRepositoryWrapper {
 
     public List<MasterCodeValue> findByCodeKeyWithException(String codeKey) {
         try {
-            return masterCodeValueRepository.findByCodeKey(codeKey);
+            return masterCodeValueRepository.findByCodeKeyOrderByDisplayOrderAsc(codeKey);
         } catch (DataAccessException e) {
             CodeMasterOperationException exception = codeMasterExceptionFactory.retrieveEntityFailed(messageSource);
             exception.initCause(e);
@@ -109,7 +109,7 @@ public class MasterCodeValueRepositoryWrapper {
 
     public List<MasterCodeValue> findByCodeKeyAndIsActiveTrueWithException(String codeKey) {
         try {
-            return masterCodeValueRepository.findByCodeKeyAndIsActiveTrue(codeKey);
+            return masterCodeValueRepository.findByCodeKeyAndIsActiveTrueOrderByDisplayOrderAsc(codeKey);
         } catch (DataAccessException e) {
             CodeMasterOperationException exception = codeMasterExceptionFactory.retrieveEntityFailed(messageSource);
             exception.initCause(e);

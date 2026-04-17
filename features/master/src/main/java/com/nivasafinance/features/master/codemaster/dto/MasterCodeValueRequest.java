@@ -21,6 +21,8 @@ public class MasterCodeValueRequest {
     Map<String, String> valueMap;
     Map<String, String> descriptionMap;
     private Icons icons;
+    @Min(value = 0, message = "{mastercode.displayorder.min}")
+    private Integer displayOrder;
 
     @AssertTrue(message = "valueMap must contain default key 'default'")
     public boolean isValueMapValid() {
