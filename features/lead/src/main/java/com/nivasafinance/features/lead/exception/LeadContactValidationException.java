@@ -57,5 +57,10 @@ public class LeadContactValidationException extends ValidationException {
         return new LeadContactValidationException(
                 "This lead already has a contact linked to this person.");
     }
+
+    public static LeadContactValidationException duplicatePhoneNumber() {
+        return new LeadContactValidationException(
+                "error.lead.contact.duplicate.phone.number");
+    }
 }
 

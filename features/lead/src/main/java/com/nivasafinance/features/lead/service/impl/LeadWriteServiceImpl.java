@@ -160,7 +160,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         }
         if (request.getPreferredCallStartTime() != null && request.getPreferredCallEndTime() != null) {
             if (request.getPreferredCallStartTime().isAfter(request.getPreferredCallEndTime())) {
-                throw new BadRequestException("Preferred call start time cannot be after preferred call end time");
+                throw new BadRequestException("lead.validation.preferred_call_time_invalid");
             }
             otherDetails.setPreferredCallStartTime(request.getPreferredCallStartTime());
             otherDetails.setPreferredCallEndTime(request.getPreferredCallEndTime());
@@ -800,6 +800,17 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         }
         if (request.getRequestedAmount() != null) {
             lead.setRequestedAmount(request.getRequestedAmount().orElse(null));
+        }
+        if (request.getPreferredCallStartTime() != null) {
+            otherDetails.setPreferredCallStartTime(request.getPreferredCallStartTime().orElse(null));
+        }
+        if (request.getPreferredCallEndTime() != null) {
+            otherDetails.setPreferredCallEndTime(request.getPreferredCallEndTime().orElse(null));
+        }
+        if (otherDetails.getPreferredCallStartTime() != null
+                && otherDetails.getPreferredCallEndTime() != null
+                && otherDetails.getPreferredCallStartTime().isAfter(otherDetails.getPreferredCallEndTime())) {
+            throw new BadRequestException("lead.validation.preferred_call_time_invalid");
         }
         lead.setOtherDetails(otherDetails);
         leadRepositoryWrapper.saveWithException(lead);

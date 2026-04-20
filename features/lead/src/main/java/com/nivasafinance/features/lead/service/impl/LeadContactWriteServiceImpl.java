@@ -194,6 +194,49 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
 
     @Override
     @Transactional
+    public void addPhoneNumber(
+            UUID leadId,
+            UUID contactId,
+            String phoneNumber,
+            Boolean isPrimary,
+            Boolean isWhatsappAvailable) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadId);
+        Contact contact = findContactByIdentifier(lead, contactId);
+
+        var existingPerson = personReadService.getPersonById(contact.getPersonId());
+        List<MobileNumberDetails> mobileNumbers = existingPerson.getMobileNumbers() == null
+                ? new ArrayList<>()
+                : new ArrayList<>(existingPerson.getMobileNumbers());
+
+        boolean mobileNumberExists = mobileNumbers.stream()
+                .anyMatch(mobileNumber -> phoneNumber.equals(mobileNumber.getNumber()));
+        if (mobileNumberExists) {
+            throw LeadContactValidationException.duplicatePhoneNumber();
+        }
+
+        mobileNumbers.add(MobileNumberDetails.builder()
+                .number(phoneNumber)
+                .isPrimary(Boolean.TRUE.equals(isPrimary))
+                .isWhatsappAvailable(Boolean.TRUE.equals(isWhatsappAvailable))
+                .build());
+
+        PersonUpdateRequest personRequest = new PersonUpdateRequest(
+                existingPerson.getFirstName(),
+                existingPerson.getMiddleName(),
+                existingPerson.getLastName(),
+                existingPerson.getEmail(),
+                mobileNumbers,
+                existingPerson.getDateOfBirth(),
+                existingPerson.getGender()
+        );
+        personWriteService.updatePerson(contact.getPersonId(), personRequest);
+
+        LeadContactPersonType currentType = determineCurrentApplicantType(lead, contact);
+        publishLeadContactUpdatedEvent(lead, contact, currentType);
+    }
+
+    @Override
+    @Transactional
     public void deleteContact(UUID leadId, UUID contactId) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadId);
 

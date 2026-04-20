@@ -3,6 +3,7 @@ package com.nivasafinance.externals.customer.lead.controller;
 import com.nivasafinance.common.constants.ApiConstants;
 import com.nivasafinance.common.dto.IdentifierData;
 import com.nivasafinance.externals.customer.lead.dto.PanRequest;
+import com.nivasafinance.externals.customer.lead.dto.PhoneNumberRequest;
 import com.nivasafinance.externals.customer.lead.service.LeadContactExternalService;
 import com.nivasafinance.features.lead.dto.LeadContactResponse;
 import com.nivasafinance.features.lead.dto.RecordCbConsentResponse;
@@ -14,18 +15,12 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
 @RestController
-@RequestMapping(ApiConstants.OPEN_API_V1 + "/customer/leads/{leadId}/contacts/{contactIdentifier}")
+@RequestMapping(ApiConstants.OPEN_API_V1 + "/customer/leads/{leadId}/contacts")
 @RequiredArgsConstructor
 public class LeadContactExternalController {
 
@@ -41,7 +36,7 @@ public class LeadContactExternalController {
         return ResponseEntity.ok(leadContactReadService.getContactById(leadId, contactIdentifier));
     }
 
-    @GetMapping("/pan")
+    @GetMapping("/{contactIdentifier}/pan")
     public ResponseEntity<IdentifierData> getPan(
             @PathVariable UUID leadId,
             @PathVariable UUID contactIdentifier) {
@@ -50,7 +45,7 @@ public class LeadContactExternalController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PatchMapping("/name")
+    @PatchMapping("/{contactIdentifier}/name")
     public ResponseEntity<Void> updateName(
             @PathVariable UUID leadId,
             @PathVariable UUID contactIdentifier,
@@ -59,7 +54,21 @@ public class LeadContactExternalController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/pan")
+    @PostMapping("/{contactIdentifier}/phone-number")
+    public ResponseEntity<Void> addPhoneNumber(
+            @PathVariable UUID leadId,
+            @PathVariable UUID contactIdentifier,
+            @Valid @RequestBody PhoneNumberRequest request) {
+        leadContactWriteService.addPhoneNumber(
+                leadId,
+                contactIdentifier,
+                request.getNumber(),
+                request.getIsPrimary(),
+                request.getIsWhatsappAvailable());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{contactIdentifier}/pan")
     public ResponseEntity<IdentifierData> addOrReplacePan(
             @PathVariable UUID leadId,
             @PathVariable UUID contactIdentifier,
@@ -68,7 +77,7 @@ public class LeadContactExternalController {
         return ResponseEntity.ok(identifier);
     }
 
-    @PostMapping("/credit-bureau/consent")
+    @PostMapping("/{contactIdentifier}/credit-bureau/consent")
     public ResponseEntity<RecordCbConsentResponse> recordCbConsent(
             @PathVariable UUID leadId,
             @PathVariable UUID contactIdentifier) {

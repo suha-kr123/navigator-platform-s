@@ -1931,4 +1931,105 @@ class LeadContactWriteServiceImplTest {
                 () -> leadContactWriteService.bulkUpdateContacts(leadIdentifier, request),
                 "Should throw when identifier type is null for update");
     }
+
+    // ==================== addPhoneNumber() Tests ====================
+
+    @Test
+    void addPhoneNumber_withProvidedFlags_updatesPersonWithRequestedFlags() {
+        // Arrange
+        PersonResponse existingPerson = PersonResponse.builder()
+                .firstName("John")
+                .middleName("M")
+                .lastName("Doe")
+                .email("john.doe@test.com")
+                .dateOfBirth(LocalDate.of(1990, 1, 1))
+                .gender(Gender.MALE)
+                .mobileNumbers(new ArrayList<>(List.of(
+                        MobileNumberDetails.builder()
+                                .number("9876543210")
+                                .isPrimary(true)
+                                .isWhatsappAvailable(true)
+                                .build())))
+                .build();
+
+        when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
+        when(contactRepositoryWrapper.findByIdentifierWithException(contactIdentifier)).thenReturn(contact);
+        when(personReadService.getPersonById(personId)).thenReturn(existingPerson);
+        lead.setApplicant(null);
+        lead.setCoApplicants(null);
+
+        // Act
+        leadContactWriteService.addPhoneNumber(leadIdentifier, contactIdentifier, "9123456789", true, true);
+
+        // Assert
+        ArgumentCaptor<PersonUpdateRequest> captor = ArgumentCaptor.forClass(PersonUpdateRequest.class);
+        verify(personWriteService).updatePerson(eq(personId), captor.capture());
+
+        List<MobileNumberDetails> capturedNumbers = captor.getValue().getMobileNumbers();
+        MobileNumberDetails addedNumber = capturedNumbers.get(1);
+        assertEquals("9123456789", addedNumber.getNumber(),
+                "New phone number should be appended to the existing mobile numbers");
+        assertTrue(Boolean.TRUE.equals(addedNumber.getIsPrimary()),
+                "Explicit isPrimary flag should be preserved on the added phone number");
+        assertTrue(Boolean.TRUE.equals(addedNumber.getIsWhatsappAvailable()),
+                "Explicit WhatsApp availability flag should be preserved on the added phone number");
+    }
+
+    @Test
+    void addPhoneNumber_withoutFlags_defaultsFlagsToFalse() {
+        // Arrange
+        PersonResponse existingPerson = PersonResponse.builder()
+                .firstName("John")
+                .lastName("Doe")
+                .mobileNumbers(new ArrayList<>(List.of(
+                        MobileNumberDetails.builder()
+                                .number("9876543210")
+                                .isPrimary(true)
+                                .isWhatsappAvailable(true)
+                                .build())))
+                .build();
+
+        when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
+        when(contactRepositoryWrapper.findByIdentifierWithException(contactIdentifier)).thenReturn(contact);
+        when(personReadService.getPersonById(personId)).thenReturn(existingPerson);
+        lead.setApplicant(null);
+        lead.setCoApplicants(null);
+
+        // Act
+        leadContactWriteService.addPhoneNumber(leadIdentifier, contactIdentifier, "9123456789", null, null);
+
+        // Assert
+        ArgumentCaptor<PersonUpdateRequest> captor = ArgumentCaptor.forClass(PersonUpdateRequest.class);
+        verify(personWriteService).updatePerson(eq(personId), captor.capture());
+
+        List<MobileNumberDetails> capturedNumbers = captor.getValue().getMobileNumbers();
+        MobileNumberDetails addedNumber = capturedNumbers.get(1);
+        assertFalse(Boolean.TRUE.equals(addedNumber.getIsPrimary()),
+                "Added phone number should default isPrimary to false when the flag is omitted");
+        assertFalse(Boolean.TRUE.equals(addedNumber.getIsWhatsappAvailable()),
+                "Added phone number should default WhatsApp availability to false when the flag is omitted");
+    }
+
+    @Test
+    void addPhoneNumber_withDuplicateNumber_throwsValidationException() {
+        // Arrange
+        PersonResponse existingPerson = PersonResponse.builder()
+                .mobileNumbers(List.of(
+                        MobileNumberDetails.builder()
+                                .number("9876543210")
+                                .isPrimary(true)
+                                .build()))
+                .build();
+
+        when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
+        when(contactRepositoryWrapper.findByIdentifierWithException(contactIdentifier)).thenReturn(contact);
+        when(personReadService.getPersonById(personId)).thenReturn(existingPerson);
+
+        // Act & Assert
+        assertThrows(LeadContactValidationException.class,
+                () -> leadContactWriteService.addPhoneNumber(
+                        leadIdentifier, contactIdentifier, "9876543210", false, false),
+                "Duplicate phone number should be rejected for the same contact");
+        verify(personWriteService, never()).updatePerson(anyLong(), any(PersonUpdateRequest.class));
+    }
 }
