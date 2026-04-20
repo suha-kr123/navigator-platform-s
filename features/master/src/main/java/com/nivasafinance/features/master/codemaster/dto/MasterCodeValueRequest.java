@@ -5,6 +5,7 @@ import java.util.Map;
 import com.nivasafinance.common.base.model.MasterLanguageData;
 import com.nivasafinance.features.master.codemaster.entity.MasterCodeValue;
 
+import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

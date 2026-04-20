@@ -2092,6 +2092,66 @@ class LeadWriteServiceImplTest {
     }
 
     @Test
+    void patchLead_withPreferredCallTimes_setsBothTimes() {
+        // Arrange
+        PatchLeadRequest request = PatchLeadRequest.builder()
+                .preferredCallStartTime(Optional.of(LocalTime.of(10, 0)))
+                .preferredCallEndTime(Optional.of(LocalTime.of(18, 0)))
+                .build();
+
+        when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
+        when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
+
+        // Act
+        leadWriteService.patchLead(leadIdentifier, request);
+
+        // Assert
+        assertEquals(LocalTime.of(10, 0), lead.getOtherDetails().getPreferredCallStartTime(),
+                "Preferred call start time should be updated from patch request");
+        assertEquals(LocalTime.of(18, 0), lead.getOtherDetails().getPreferredCallEndTime(),
+                "Preferred call end time should be updated from patch request");
+    }
+
+    @Test
+    void patchLead_withOnlyPreferredCallStartTime_retainsExistingEndTime() {
+        // Arrange
+        lead.setOtherDetails(Lead.OtherDetails.builder().build());
+        lead.getOtherDetails().setPreferredCallEndTime(LocalTime.of(17, 0));
+        PatchLeadRequest request = PatchLeadRequest.builder()
+                .preferredCallStartTime(Optional.of(LocalTime.of(9, 30)))
+                .build();
+
+        when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
+        when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
+
+        // Act
+        leadWriteService.patchLead(leadIdentifier, request);
+
+        // Assert
+        assertEquals(LocalTime.of(9, 30), lead.getOtherDetails().getPreferredCallStartTime(),
+                "Patch should update preferred call start time when it is provided");
+        assertEquals(LocalTime.of(17, 0), lead.getOtherDetails().getPreferredCallEndTime(),
+                "Patch should retain preferred call end time when it is not provided");
+    }
+
+    @Test
+    void patchLead_withInvalidPreferredCallTimesAfterMerge_throwsBadRequest() {
+        // Arrange
+        lead.setOtherDetails(Lead.OtherDetails.builder().build());
+        lead.getOtherDetails().setPreferredCallEndTime(LocalTime.of(9, 0));
+        PatchLeadRequest request = PatchLeadRequest.builder()
+                .preferredCallStartTime(Optional.of(LocalTime.of(10, 0)))
+                .build();
+
+        when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
+
+        // Act & Assert
+        assertThrows(BadRequestException.class,
+                () -> leadWriteService.patchLead(leadIdentifier, request),
+                "Patch should reject preferred call times when merged start time is after end time");
+    }
+
+    @Test
     void patchLead_withNullOtherDetails_initializesOtherDetails() {
         // Arrange
         lead.setOtherDetails(null);

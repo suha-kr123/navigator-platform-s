@@ -12,6 +12,12 @@ public interface LeadContactWriteService {
     CreateLeadContactResponse createContact(UUID leadId, CreateLeadContactRequest request);
     void updateContact(UUID leadId, UUID contactId, UpdateLeadContactRequest request);
     void updateContactName(UUID leadId, UUID contactId, UpdateContactNameRequest request);
+    void addPhoneNumber(
+            UUID leadId,
+            UUID contactId,
+            String phoneNumber,
+            Boolean isPrimary,
+            Boolean isWhatsappAvailable);
     void deleteContact(UUID leadId, UUID contactId);
     
     BulkContactsUpdateResponse bulkUpdateContacts(UUID leadId, BulkContactsUpdateRequest request);
