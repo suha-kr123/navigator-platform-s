@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1776000000000_52_01_n_queue_config" author="system" context="default">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="n_queue_config"/>
+            </not>
+        </preConditions>
+        <createTable tableName="n_queue_config">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="queue_name" type="VARCHAR(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="description" type="VARCHAR(500)"/>
+            <column name="data_providers" type="JSONB">
+                <constraints nullable="false"/>
+            </column>
+            <column name="user_ids" type="JSONB">
+                <constraints nullable="false"/>
+            </column>
+            <column name="lock_duration" type="INT" defaultValueNumeric="10">
+                <constraints nullable="false"/>
+            </column>
+            <column name="reorder_time" type="INT" defaultValueNumeric="5">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_reorder_time" type="TIMESTAMP"/>
+            <column name="is_active" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="VARCHAR(255)"/>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="updated_by" type="VARCHAR(255)"/>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="version" type="BIGINT" defaultValueNumeric="0"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="V1776000000000_52_02_n_lead_queue" author="system" context="default">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="n_lead_queue"/>
+            </not>
+        </preConditions>
+        <createTable tableName="n_lead_queue">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="queue_config_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="lead_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="calculated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="position" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="currently_claimed_by" type="VARCHAR(255)"/>
+            <column name="claim_expiry_at" type="TIMESTAMP"/>
+            <column name="claimed_history" type="JSONB"/>
+            <column name="is_active" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="VARCHAR(255)"/>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="updated_by" type="VARCHAR(255)"/>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="version" type="BIGINT" defaultValueNumeric="0"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="n_lead_queue" baseColumnNames="queue_config_id"
+                                 constraintName="fk_n_lead_queue_queue_config"
+                                 referencedTableName="n_queue_config" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="n_lead_queue" baseColumnNames="lead_id"
+                                 constraintName="fk_n_lead_queue_lead"
+                                 referencedTableName="n_lead" referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="V1776000000000_52_03_n_lead_queue_temp" author="system" context="default">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="n_lead_queue_temp"/>
+            </not>
+        </preConditions>
+        <createTable tableName="n_lead_queue_temp">
+            <column name="queue_config_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="lead_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="position" type="INT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="n_lead_queue_temp" columnNames="queue_config_id, lead_id"
+                       constraintName="pk_n_lead_queue_temp"/>
+        <addForeignKeyConstraint baseTableName="n_lead_queue_temp" baseColumnNames="queue_config_id"
+                                 constraintName="fk_n_lead_queue_temp_queue_config"
+                                 referencedTableName="n_queue_config" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="n_lead_queue_temp" baseColumnNames="lead_id"
+                                 constraintName="fk_n_lead_queue_temp_lead"
+                                 referencedTableName="n_lead" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+    </changeSet>
+
+    <changeSet id="V1776000000000_52_05_index_lead_queue" author="system" context="default">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_n_lead_queue_config_active_pos" tableName="n_lead_queue"/>
+            </not>
+        </preConditions>
+        <createIndex tableName="n_lead_queue" indexName="idx_n_lead_queue_config_active_pos">
+            <column name="queue_config_id"/>
+            <column name="is_active"/>
+            <column name="position"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="V1776000000000_52_06_index_lead_queue_lead" author="system" context="default">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_n_lead_queue_lead_id" tableName="n_lead_queue"/>
+            </not>
+        </preConditions>
+        <createIndex tableName="n_lead_queue" indexName="idx_n_lead_queue_lead_id">
+            <column name="lead_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="V1776000000000_52_07_gin_user_ids" author="system" context="default" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_n_queue_config_user_ids_gin" tableName="n_queue_config"/>
+            </not>
+        </preConditions>
+        <sql>CREATE INDEX idx_n_queue_config_user_ids_gin ON n_queue_config USING GIN (user_ids);</sql>
+    </changeSet>
+
+    <changeSet id="V1776000000000_52_08_index_lead_queue_temp" author="system" context="default">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_n_lead_queue_temp_qid" tableName="n_lead_queue_temp"/>
+            </not>
+        </preConditions>
+        <createIndex tableName="n_lead_queue_temp" indexName="idx_n_lead_queue_temp_qid">
+            <column name="queue_config_id"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

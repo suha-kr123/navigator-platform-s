@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1780000000000_01_reorder_time_seconds" author="system" context="default">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="n_queue_config"/>
+        </preConditions>
+        <comment>reorder_time in n_queue_config is seconds. Default 5s between reorders (after last_reorder_time).</comment>
+        <sql>
+            ALTER TABLE n_queue_config ALTER COLUMN reorder_time SET DEFAULT 5;
+        </sql>
+    </changeSet>
+</databaseChangeLog>

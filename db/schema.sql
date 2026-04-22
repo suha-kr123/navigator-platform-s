@@ -399,6 +399,59 @@ CREATE TABLE n_contact (
     version         BIGINT          DEFAULT 0
 );
 
+-- Entity: QueueConfig (lead routing / ordering)
+CREATE TABLE n_queue_config (
+    id                  BIGSERIAL       PRIMARY KEY,
+    queue_name          VARCHAR(255)    NOT NULL UNIQUE,
+    description         VARCHAR(500),
+    data_providers      JSONB           NOT NULL,
+    user_ids            JSONB           NOT NULL,
+    lock_duration       INT             NOT NULL DEFAULT 10,
+    reorder_time        INT             NOT NULL DEFAULT 5,
+    last_reorder_time   TIMESTAMP,
+    is_active           BOOLEAN         NOT NULL DEFAULT true,
+    created_by          VARCHAR(255),
+    created_at          TIMESTAMP,
+    updated_by          VARCHAR(255),
+    updated_at          TIMESTAMP,
+    version             BIGINT          DEFAULT 0
+);
+
+-- Entity: LeadQueue (per-queue lead order and claim state)
+CREATE TABLE n_lead_queue (
+    id                      BIGSERIAL       PRIMARY KEY,
+    queue_config_id         BIGINT          NOT NULL,
+    lead_id                 BIGINT          NOT NULL,
+    calculated_at           TIMESTAMP       NOT NULL,
+    position                INT             NOT NULL,
+    currently_claimed_by    VARCHAR(255),
+    claim_expiry_at         TIMESTAMP,
+    claimed_history         JSONB,
+    is_active               BOOLEAN         NOT NULL DEFAULT true,
+    created_by              VARCHAR(255),
+    created_at              TIMESTAMP,
+    updated_by              VARCHAR(255),
+    updated_at              TIMESTAMP,
+    version                 BIGINT          DEFAULT 0,
+    CONSTRAINT fk_n_lead_queue_queue_config FOREIGN KEY (queue_config_id) REFERENCES n_queue_config (id),
+    CONSTRAINT fk_n_lead_queue_lead FOREIGN KEY (lead_id) REFERENCES n_lead (id)
+);
+
+-- Staging table (reorder job; JDBC bulk / temp positions)
+CREATE TABLE n_lead_queue_temp (
+    queue_config_id     BIGINT          NOT NULL,
+    lead_id             BIGINT          NOT NULL,
+    position            INT             NOT NULL,
+    PRIMARY KEY (queue_config_id, lead_id),
+    CONSTRAINT fk_n_lead_queue_temp_queue_config FOREIGN KEY (queue_config_id) REFERENCES n_queue_config (id) ON DELETE CASCADE,
+    CONSTRAINT fk_n_lead_queue_temp_lead FOREIGN KEY (lead_id) REFERENCES n_lead (id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_n_lead_queue_config_active_pos ON n_lead_queue (queue_config_id, is_active, position);
+CREATE INDEX idx_n_lead_queue_lead_id ON n_lead_queue (lead_id);
+CREATE INDEX idx_n_queue_config_user_ids_gin ON n_queue_config USING GIN (user_ids);
+CREATE INDEX idx_n_lead_queue_temp_qid ON n_lead_queue_temp (queue_config_id);
+
 -- =============================================================================
 -- MODULE: leadstages
 -- =============================================================================
