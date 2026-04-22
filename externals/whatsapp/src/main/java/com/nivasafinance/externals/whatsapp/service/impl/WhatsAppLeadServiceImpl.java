@@ -45,6 +45,15 @@ public class WhatsAppLeadServiceImpl implements WhatsAppLeadService {
     private final ObjectMapper objectMapper;
 
     @Override
+    public Optional<UUID> resolveLeadIdentifierByPrimaryMobileNumber(String mobileNumber) {
+        Optional<Person> existingPerson = personRepositoryWrapper.findByPrimaryMobileNumber(mobileNumber);
+        if (existingPerson.isEmpty()) {
+            return Optional.empty();
+        }
+        return findLeadByContactPersonId(existingPerson.get().getId()).map(Lead::getLeadIdentifier);
+    }
+
+    @Override
     @Transactional
     public WhatsAppLeadResponse createOrGetLead(WhatsAppLeadRequest request) {
         // Map WhatsAppLeadRequest to CreateLeadRequest
