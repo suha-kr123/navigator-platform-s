@@ -5,6 +5,8 @@ import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.common.constants.ApiConstants;
 import com.nivasafinance.externals.customer.lead.dto.LeadSearchMinimalResponse;
 import com.nivasafinance.externals.customer.lead.service.LeadExternalService;
+import com.nivasafinance.features.lead.dto.CreateLeadRequest;
+import com.nivasafinance.features.lead.dto.CreateLeadResponse;
 import com.nivasafinance.features.lead.dto.CurrentCustomerFormStepResponse;
 import com.nivasafinance.features.lead.dto.LeadBREResultExecuteResponse;
 import com.nivasafinance.features.lead.dto.LeadContactResponse;
@@ -35,6 +37,12 @@ import java.util.UUID;
 public class LeadExternalController {
 
     private final LeadExternalService leadExternalService;
+
+    @PostMapping
+    public ResponseEntity<CreateLeadResponse> createLead(@Valid @RequestBody CreateLeadRequest request) {
+        CreateLeadResponse response = leadExternalService.createLead(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
 
     @PatchMapping("/{leadIdentifier}")
     public ResponseEntity<Void> patchLead(

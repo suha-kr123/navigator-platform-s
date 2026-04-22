@@ -687,6 +687,93 @@ public class LeadRepositoryWrapper {
     }
 
     /**
+     * Returns a reusable lead for the given mobile number without office hierarchy filtering.
+     * Preference order:
+     * 1. Any ACTIVE lead
+     * 2. The most recent REJECTED lead, only if all matching leads are rejected
+     */
+    public Optional<LeadBasicResponse> findReusableLeadByPhoneNumber(String mobileNumber) {
+        if (!StringUtils.hasText(mobileNumber)) {
+            return Optional.empty();
+        }
+
+        String trimmed = mobileNumber.trim();
+        String phoneJson = buildPhoneNumberJsonb(trimmed);
+        String sql = """
+            WITH person_with_phone AS MATERIALIZED (
+                SELECT id
+                FROM n_person
+                WHERE mobile_numbers @> ?::jsonb
+            ),
+            contact_ids_with_phone AS MATERIALIZED (
+                SELECT c.id
+                FROM n_contact c
+                INNER JOIN person_with_phone p ON c.person_id = p.id
+            )
+            SELECT DISTINCT
+                l.id,
+                l.lead_identifier,
+                l.status,
+                l.substatus,
+                l.product_code,
+                l.created_at
+            FROM contact_ids_with_phone cip
+            INNER JOIN n_lead l ON l.contacts @> jsonb_build_array(cip.id)
+            WHERE l.is_deleted = false
+            ORDER BY l.created_at DESC
+            """;
+
+        try {
+            List<LeadBasicResponse> leads = jdbcTemplate.query(
+                    sql,
+                    (rs, rowNum) -> {
+                        LeadBasicResponse.LeadBasicResponseBuilder builder = LeadBasicResponse.builder()
+                                .id(rs.getLong("id"))
+                                .leadIdentifier(UUID.fromString(rs.getString("lead_identifier")))
+                                .productCode(rs.getString("product_code"))
+                                .createdAt(getLocalDateTime(rs, "created_at"));
+
+                        String status = rs.getString("status");
+                        if (status != null) {
+                            try {
+                                builder.status(LeadStatus.valueOf(status));
+                            } catch (IllegalArgumentException ignored) {
+                            }
+                        }
+
+                        String subStatus = rs.getString("substatus");
+                        if (subStatus != null) {
+                            try {
+                                builder.substatus(LeadSubStatus.valueOf(subStatus));
+                            } catch (IllegalArgumentException ignored) {
+                            }
+                        }
+
+                        return builder.build();
+                    },
+                    phoneJson
+            );
+
+            Optional<LeadBasicResponse> activeLead = leads.stream()
+                    .filter(lead -> LeadStatus.ACTIVE.equals(lead.getStatus()))
+                    .findFirst();
+            if (activeLead.isPresent()) {
+                return activeLead;
+            }
+
+            boolean allRejected = !leads.isEmpty() && leads.stream()
+                    .allMatch(lead -> LeadStatus.REJECTED.equals(lead.getStatus()));
+            if (allRejected) {
+                return Optional.of(leads.get(0));
+            }
+
+            return Optional.empty();
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Failed to find reusable lead by mobile number", e);
+        }
+    }
+
+    /**
      * Admin search: returns all leads (deleted + non-deleted) matching the phone number,
      * without office hierarchy filtering.
      */

@@ -8,6 +8,7 @@ import com.nivasafinance.features.lead.enums.LeadSubStatus;
 import com.nivasafinance.features.referral.enums.EntityType;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface LeadReadService {
@@ -31,6 +32,7 @@ public interface LeadReadService {
      * Returns whether at least one lead exists for the given mobile number.
      */
     boolean hasLeadWithMobileNumber(String mobileNumber);
+    Optional<LeadBasicResponse> findLeadByPhoneNumber(String mobileNumber);
     LeadDashboardFiltersResponse getLeadDashboardFilters(LeadDashboardFiltersFilters filters);
     List<LeadWorkflowDetailsDto> findLeadsByPersonIdsAndStatusesAndSubstatuses(List<Long> personIds,
         List<LeadStatus> statuses, List<LeadSubStatus> substatuses);

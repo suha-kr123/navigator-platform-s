@@ -36,6 +36,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -1070,6 +1071,75 @@ class LeadReadServiceImplTest {
         assertEquals(1, result.getStaffs().size(), "Should return staff from filtered offices");
         assertEquals("John", result.getStaffs().get(0).getDisplayName());
         verify(officeReadService).getOfficeByKeys(List.of("BRANCH-002"));
+    }
+
+    // ==================== findLeadByPhoneNumber() Tests ====================
+
+    @Test
+    void findLeadByPhoneNumber_whenFound_returnsOptionalWithResponse() {
+        // Arrange
+        LeadBasicResponse expected = LeadBasicResponse.builder().leadIdentifier(leadIdentifier).build();
+        when(leadRepositoryWrapper.findLeadByPhoneNumber("9876543210")).thenReturn(Optional.of(expected));
+
+        // Act
+        Optional<LeadBasicResponse> result = leadReadService.findLeadByPhoneNumber("9876543210");
+
+        // Assert
+        assertTrue(result.isPresent(), "Should return non-empty Optional");
+        assertSame(expected, result.get(), "Should return the response from repository wrapper");
+        verify(leadRepositoryWrapper).findLeadByPhoneNumber("9876543210");
+    }
+
+    // ==================== adminSearchLeads() Tests ====================
+
+    @Test
+    void adminSearchLeads_delegatesToRepositoryWrapper() {
+        // Arrange
+        PaginationRequest paginationRequest = new PaginationRequest();
+        AdminLeadSearchRequest request = new AdminLeadSearchRequest();
+        PaginatedResponse<AdminLeadSearchResponse> expected = PaginatedResponse.<AdminLeadSearchResponse>builder()
+                .content(List.of()).pagination(PaginationInfo.builder().totalElements(0L).build()).build();
+        when(leadRepositoryWrapper.adminSearchLeadsByPhoneNumber(paginationRequest, request)).thenReturn(expected);
+
+        // Act
+        PaginatedResponse<AdminLeadSearchResponse> result = leadReadService.adminSearchLeads(paginationRequest, request);
+
+        // Assert
+        assertNotNull(result, "Response should not be null");
+        verify(leadRepositoryWrapper).adminSearchLeadsByPhoneNumber(paginationRequest, request);
+    }
+
+    // ==================== getDeletedLeads() Tests ====================
+
+    @Test
+    void getDeletedLeads_delegatesToRepositoryWrapper() {
+        // Arrange
+        PaginationRequest paginationRequest = new PaginationRequest();
+        PaginatedResponse<AdminLeadSearchResponse> expected = PaginatedResponse.<AdminLeadSearchResponse>builder()
+                .content(List.of()).pagination(PaginationInfo.builder().totalElements(0L).build()).build();
+        when(leadRepositoryWrapper.findDeletedLeads(paginationRequest)).thenReturn(expected);
+
+        // Act
+        PaginatedResponse<AdminLeadSearchResponse> result = leadReadService.getDeletedLeads(paginationRequest);
+
+        // Assert
+        assertNotNull(result, "Response should not be null");
+        verify(leadRepositoryWrapper).findDeletedLeads(paginationRequest);
+    }
+
+    // ==================== findPrimaryPersonIdForLead() Tests ====================
+
+    @Test
+    void findPrimaryPersonIdForLead_delegatesToRepositoryWrapper() {
+        // Arrange
+        when(leadRepositoryWrapper.findPrimaryPersonIdForLead(leadIdentifier)).thenReturn(42L);
+
+        // Act
+        Long result = leadReadService.findPrimaryPersonIdForLead(leadIdentifier);
+
+        // Assert
+        assertEquals(42L, result, "Should return the primary person id from repository wrapper");
+        verify(leadRepositoryWrapper).findPrimaryPersonIdForLead(leadIdentifier);
     }
 
     @Test

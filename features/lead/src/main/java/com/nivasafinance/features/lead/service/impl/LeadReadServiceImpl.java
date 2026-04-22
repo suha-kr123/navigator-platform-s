@@ -32,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -395,6 +396,11 @@ public class LeadReadServiceImpl implements LeadReadService {
     @Override
     public boolean hasLeadWithMobileNumber(String mobileNumber) {
         return leadRepositoryWrapper.existsLeadWithMobileNumber(mobileNumber);
+    }
+
+    @Override
+    public Optional<LeadBasicResponse> findLeadByPhoneNumber(String mobileNumber) {
+        return leadRepositoryWrapper.findReusableLeadByPhoneNumber(mobileNumber);
     }
 
     @Override

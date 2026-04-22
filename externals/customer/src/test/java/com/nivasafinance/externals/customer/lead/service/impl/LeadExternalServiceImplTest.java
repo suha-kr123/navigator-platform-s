@@ -1,22 +1,34 @@
 package com.nivasafinance.externals.customer.lead.service.impl;
 
+import com.nivasafinance.common.base.model.PaginatedResponse;
+import com.nivasafinance.common.base.model.PaginationInfo;
+import com.nivasafinance.common.base.model.PaginationRequest;
+import com.nivasafinance.externals.customer.lead.dto.LeadSearchMinimalResponse;
 import com.nivasafinance.features.lead.dto.*;
+import com.nivasafinance.features.lead.enums.LeadStatus;
+import com.nivasafinance.features.lead.enums.LeadSubStatus;
 import com.nivasafinance.features.lead.service.LeadContactReadService;
 import com.nivasafinance.features.lead.service.LeadEligibilityReadService;
 import com.nivasafinance.features.lead.service.LeadEligibilityWriteService;
 import com.nivasafinance.features.lead.service.LeadReadService;
 import com.nivasafinance.features.lead.service.LeadWriteService;
+import com.nivasafinance.features.leadstages.dto.LeadStageHistoryResponse;
+import com.nivasafinance.features.leadstages.dto.StageTransitionRequest;
+import com.nivasafinance.features.leadstages.entity.LeadStageHistory;
+import com.nivasafinance.features.leadstages.service.LeadStageHistoryWriteService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -34,9 +46,46 @@ class LeadExternalServiceImplTest {
     private LeadEligibilityWriteService leadEligibilityWriteService;
     @Mock
     private LeadEligibilityReadService leadEligibilityReadService;
+    @Mock
+    private LeadStageHistoryWriteService leadStageHistoryWriteService;
 
     @InjectMocks
     private LeadExternalServiceImpl leadExternalService;
+
+    @Test
+    void createLead_whenLeadAlreadyExists_returnsExistingLeadIdentifier() {
+        // Arrange
+        CreateLeadRequest.MobileNumberDetails phone = new CreateLeadRequest.MobileNumberDetails("9876543210", false);
+        CreateLeadRequest request = new CreateLeadRequest();
+        request.setPhoneNumber(phone);
+        LeadBasicResponse existing = LeadBasicResponse.builder().leadIdentifier(LEAD_IDENTIFIER).build();
+        when(leadReadService.findLeadByPhoneNumber("9876543210")).thenReturn(Optional.of(existing));
+
+        // Act
+        CreateLeadResponse result = leadExternalService.createLead(request);
+
+        // Assert
+        assertEquals(LEAD_IDENTIFIER, result.getLeadIdentifier(), "Should return existing lead identifier");
+        verify(leadWriteService, never()).createLead(any());
+    }
+
+    @Test
+    void createLead_whenLeadDoesNotExist_delegatesToLeadWriteService() {
+        // Arrange
+        CreateLeadRequest.MobileNumberDetails phone = new CreateLeadRequest.MobileNumberDetails("9876543210", false);
+        CreateLeadRequest request = new CreateLeadRequest();
+        request.setPhoneNumber(phone);
+        CreateLeadResponse expected = CreateLeadResponse.builder().leadIdentifier(LEAD_IDENTIFIER).build();
+        when(leadReadService.findLeadByPhoneNumber("9876543210")).thenReturn(Optional.empty());
+        when(leadWriteService.createLead(request)).thenReturn(expected);
+
+        // Act
+        CreateLeadResponse result = leadExternalService.createLead(request);
+
+        // Assert
+        assertSame(expected, result, "Should return response from leadWriteService");
+        verify(leadWriteService).createLead(request);
+    }
 
     @Test
     void patchLead_delegatesToLeadWriteService() {
@@ -189,5 +238,57 @@ class LeadExternalServiceImplTest {
         // Assert
         assertTrue(result.isEmpty(), "Should return an empty Optional");
         verify(leadEligibilityReadService).getLatestEligibility(LEAD_IDENTIFIER);
+    }
+
+    @Test
+    void transitionToExpertScreening_createsStageEntryAndReturnsResponse() {
+        // Arrange
+        LeadStageHistory stageHistory = LeadStageHistory.builder()
+                .leadId(1L)
+                .stageKey("Expert Screening")
+                .movedBy("system")
+                .enteredAt(LocalDateTime.now())
+                .build();
+        when(leadStageHistoryWriteService.createStageEntry(eq(LEAD_IDENTIFIER), any(StageTransitionRequest.class)))
+                .thenReturn(stageHistory);
+
+        // Act
+        LeadStageHistoryResponse result = leadExternalService.transitionToExpertScreening(LEAD_IDENTIFIER);
+
+        // Assert
+        assertNotNull(result, "Response should not be null");
+        assertEquals("Expert Screening", result.getStageKey(), "Stage key should be Expert Screening");
+        verify(leadStageHistoryWriteService).createStageEntry(eq(LEAD_IDENTIFIER),
+                argThat(req -> "Expert Screening".equals(req.getStageKey())));
+    }
+
+    @Test
+    void searchLeads_mapsLeadSearchResponseToMinimalResponse() {
+        // Arrange
+        PaginationRequest paginationRequest = new PaginationRequest();
+        LeadSearchRequest searchRequest = new LeadSearchRequest();
+        LeadSearchResponse searchResponse = LeadSearchResponse.builder()
+                .leadIdentifier(LEAD_IDENTIFIER)
+                .primaryPersonName("John Doe")
+                .status(LeadStatus.ACTIVE)
+                .subStatus(LeadSubStatus.ONHOLD)
+                .build();
+        PaginatedResponse<LeadSearchResponse> serviceResult = PaginatedResponse.<LeadSearchResponse>builder()
+                .content(List.of(searchResponse))
+                .pagination(PaginationInfo.builder().totalElements(1L).build())
+                .build();
+        when(leadReadService.searchLeads(paginationRequest, searchRequest)).thenReturn(serviceResult);
+
+        // Act
+        PaginatedResponse<LeadSearchMinimalResponse> result =
+                leadExternalService.searchLeads(paginationRequest, searchRequest);
+
+        // Assert
+        assertEquals(1, result.getContent().size(), "Should have one result");
+        LeadSearchMinimalResponse minimal = result.getContent().get(0);
+        assertEquals(LEAD_IDENTIFIER, minimal.getLeadIdentifier(), "Lead identifier should be mapped");
+        assertEquals("John Doe", minimal.getPrimaryPersonName(), "Primary person name should be mapped");
+        assertEquals(LeadStatus.ACTIVE, minimal.getStatus(), "Status should be mapped");
+        assertEquals(LeadSubStatus.ONHOLD, minimal.getSubStatus(), "Sub-status should be mapped");
     }
 }

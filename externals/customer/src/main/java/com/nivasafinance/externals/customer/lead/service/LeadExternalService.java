@@ -12,6 +12,8 @@ import java.util.UUID;
 
 public interface LeadExternalService {
 
+    CreateLeadResponse createLead(CreateLeadRequest request);
+
     void patchLead(UUID leadIdentifier, PatchLeadRequest request);
 
     LeadResponse getLeadByIdentifier(UUID leadIdentifier);

@@ -39,6 +39,21 @@ public class LeadExternalServiceImpl implements LeadExternalService {
     private final LeadStageHistoryWriteService leadStageHistoryWriteService;
 
     @Override
+    public CreateLeadResponse createLead(CreateLeadRequest request) {
+        if (request.getPhoneNumber() != null && request.getPhoneNumber().getMobileNumber() != null) {
+            Optional<LeadBasicResponse> existingLead =
+                    leadReadService.findLeadByPhoneNumber(request.getPhoneNumber().getMobileNumber());
+            if (existingLead.isPresent()) {
+                return CreateLeadResponse.builder()
+                        .leadIdentifier(existingLead.get().getLeadIdentifier())
+                        .build();
+            }
+        }
+
+        return leadWriteService.createLead(request);
+    }
+
+    @Override
     public void patchLead(UUID leadIdentifier, PatchLeadRequest request) {
         leadWriteService.patchLead(leadIdentifier, request);
     }
