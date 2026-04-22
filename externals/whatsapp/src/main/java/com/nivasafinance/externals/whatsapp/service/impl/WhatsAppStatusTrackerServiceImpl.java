@@ -4,24 +4,28 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.nivasafinance.common.exception.BadRequestException;
 import com.nivasafinance.externals.whatsapp.dto.WhatsAppStatusTrackerRequest;
 import com.nivasafinance.externals.whatsapp.dto.WhatsAppStatusTrackerResponse;
 import com.nivasafinance.externals.whatsapp.service.WhatsAppStatusTrackerService;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+@Slf4j
 @Service
 @AllArgsConstructor
 public class WhatsAppStatusTrackerServiceImpl implements WhatsAppStatusTrackerService {
+
+    private static final String LOG_BAD_REQUEST_PREFIX = "WhatsApp status tracker bad request";
 
     private static final String LEAD_TABLE = "n_lead_whatsapp_notification";
     private static final String ADVISOR_TABLE = "n_advisor_whatsapp_notification";
@@ -37,6 +41,8 @@ public class WhatsAppStatusTrackerServiceImpl implements WhatsAppStatusTrackerSe
     @Override
     @Transactional
     public WhatsAppStatusTrackerResponse trackStatus(WhatsAppStatusTrackerRequest request) {
+        requireNonBlankMessageId(request.getId());
+        requireNonBlankTimestamp(request.getId(), request.getTimestamp());
         LocalDateTime eventTimeIst = toIstLocalDateTime(request.getTimestamp());
         String status = normalize(request.getStatus());
         String interaction = normalize(request.getInteraction());
@@ -54,9 +60,17 @@ public class WhatsAppStatusTrackerServiceImpl implements WhatsAppStatusTrackerSe
                     jsonPatch("click_time", eventTimeIst, "click", request.getClick()));
             advisorUpdatedRows = mergeStatusTrack(ADVISOR_TABLE, request.getId(),
                     jsonPatch("click_time", eventTimeIst, "click", request.getClick()));
-        } else if (SUPPORTED_STATUSES.contains(status)) {
+        } else if (status != null && SUPPORTED_STATUSES.contains(status)) {
             leadUpdatedRows = updateStatusJson(LEAD_TABLE, request.getId(), status, eventTimeIst, request.getErrors());
             advisorUpdatedRows = updateStatusJson(ADVISOR_TABLE, request.getId(), status, eventTimeIst, request.getErrors());
+        } else if (status == null || status.isEmpty()) {
+            log.warn("{}: messageId={}, reason=status or interaction is required (status missing or blank after normalize)",
+                    LOG_BAD_REQUEST_PREFIX, request.getId());
+            throw new BadRequestException("status or interaction is required");
+        } else {
+            log.warn("{}: messageId={}, reason=invalid status, status={}",
+                    LOG_BAD_REQUEST_PREFIX, request.getId(), status);
+            throw new BadRequestException("invalid status");
         }
 
         String eventType = status != null ? status : interaction;
@@ -93,9 +107,29 @@ public class WhatsAppStatusTrackerServiceImpl implements WhatsAppStatusTrackerSe
         return jdbcTemplate.update(sql, toJsonString(patch), whatsappMessageId);
     }
 
+    private void requireNonBlankMessageId(String messageId) {
+        if (messageId == null || messageId.isBlank()) {
+            log.warn("{}: messageId is null or blank", LOG_BAD_REQUEST_PREFIX);
+            throw new BadRequestException("id is required");
+        }
+    }
+
+    private void requireNonBlankTimestamp(String messageId, String unixEpochSeconds) {
+        if (unixEpochSeconds == null || unixEpochSeconds.isBlank()) {
+            log.warn("{}: messageId={}, reason=timestamp is null or blank", LOG_BAD_REQUEST_PREFIX, messageId);
+            throw new BadRequestException("timestamp is required");
+        }
+    }
+
     private LocalDateTime toIstLocalDateTime(String unixEpochSeconds) {
-        long epochSeconds = Long.parseLong(unixEpochSeconds);
-        return Instant.ofEpochSecond(epochSeconds).atZone(IST_ZONE_ID).toLocalDateTime();
+        try {
+            long epochSeconds = Long.parseLong(unixEpochSeconds.trim());
+            return Instant.ofEpochSecond(epochSeconds).atZone(IST_ZONE_ID).toLocalDateTime();
+        } catch (NumberFormatException e) {
+            log.warn("{}: invalid timestamp value (expected Unix epoch seconds), raw={}",
+                    LOG_BAD_REQUEST_PREFIX, unixEpochSeconds);
+            throw new BadRequestException("timestamp must be a Unix epoch in seconds");
+        }
     }
 
     private String normalize(String value) {

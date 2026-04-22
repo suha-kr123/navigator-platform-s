@@ -2,6 +2,7 @@ package com.nivasafinance.externals.whatsapp.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nivasafinance.common.exception.BadRequestException;
 import com.nivasafinance.externals.whatsapp.dto.WhatsAppStatusTrackerRequest;
 import com.nivasafinance.externals.whatsapp.dto.WhatsAppStatusTrackerResponse;
 import org.junit.jupiter.api.Test;
@@ -185,20 +186,16 @@ class WhatsAppStatusTrackerServiceImplTest {
     // ── trackStatus: unsupported status ──
 
     @Test
-    void trackStatus_withUnsupportedStatus_doesNotUpdateAnyTable() {
+    void trackStatus_withUnsupportedStatus_throwsBadRequestException() {
         WhatsAppStatusTrackerRequest request = new WhatsAppStatusTrackerRequest();
         request.setId("msg-008");
         request.setTimestamp("1700000000");
         request.setStatus("sent");
 
-        WhatsAppStatusTrackerResponse result = service.trackStatus(request);
-
-        assertEquals("sent", result.getEventType(),
-                "Event type should still reflect the provided status");
-        assertFalse(result.isUpdatedInLeadNotification(),
-                "Should not update lead notification for unsupported status");
-        assertFalse(result.isUpdatedInAdvisorNotification(),
-                "Should not update advisor notification for unsupported status");
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> service.trackStatus(request),
+                "Unsupported status should be rejected with 400 to avoid silent drops");
+        assertTrue(ex.getMessage().toLowerCase().contains("status"),
+                "Error message should indicate an invalid status");
         verify(jdbcTemplate, never()).update(anyString(), anyString(), anyString());
     }
 
@@ -256,12 +253,27 @@ class WhatsAppStatusTrackerServiceImplTest {
     // ── trackStatus: null status and interaction ──
 
     @Test
-    void trackStatus_withNullStatusAndNullInteraction_throwsNullPointerException() {
+    void trackStatus_withNullStatusAndNullInteraction_throwsBadRequestException() {
         WhatsAppStatusTrackerRequest request = new WhatsAppStatusTrackerRequest();
         request.setId("msg-012");
         request.setTimestamp("1700000000");
 
-        assertThrows(NullPointerException.class, () -> service.trackStatus(request),
-                "List.of() does not support contains(null); production code needs a null guard on status");
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> service.trackStatus(request),
+                "Missing status and interaction should be rejected with a clear client error");
+        assertTrue(ex.getMessage().contains("status") || ex.getMessage().contains("interaction"),
+                "Error message should mention status or interaction");
+        verify(jdbcTemplate, never()).update(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void trackStatus_withBlankStatusAndNullInteraction_throwsBadRequestException() {
+        WhatsAppStatusTrackerRequest request = new WhatsAppStatusTrackerRequest();
+        request.setId("msg-013");
+        request.setTimestamp("1700000000");
+        request.setStatus("   ");
+
+        assertThrows(BadRequestException.class, () -> service.trackStatus(request),
+                "Whitespace-only status should be treated as missing");
+        verify(jdbcTemplate, never()).update(anyString(), anyString(), anyString());
     }
 }
