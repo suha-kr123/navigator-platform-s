@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,6 +47,9 @@ public class AtlasServiceImpl implements AtlasService {
     private static final String CALL_LOG_IDENTIFIER = "callLogIdentifier";
     private static final String RECORDING_URL = "recordingUrl";
     private static final String EVENT_TYPE = "eventType";
+    private static final String START_TIME = "startTime";
+
+    private static final DateTimeFormatter START_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
 
     private final MessagePublisherFactory messagePublisherFactory;
     private final MessagingProperties messagingProperties;
@@ -154,6 +158,9 @@ public class AtlasServiceImpl implements AtlasService {
         body.put(LEAD_IDENTIFIER, leadIdentifier.toString());
         body.put(CALL_LOG_IDENTIFIER, callLogIdentifierStr);
         body.put(RECORDING_URL, recordingUrl);
+        if (callLog.getCompletionDetails() != null && callLog.getCompletionDetails().getStartTime() != null) {
+            body.put(START_TIME, callLog.getCompletionDetails().getStartTime().format(START_TIME_FORMATTER));
+        }
 
         try {
             log.info("Pushing Atlas transcription job for callLog {}, lead {}", callLogIdentifierStr, leadIdentifier);
