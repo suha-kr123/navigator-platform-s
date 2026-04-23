@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!--
+      Speeds LATERAL/lookup: open LEAD tasks by (task_details->>entityId)::uuid.
+      Replaces full bitmap on idx_tasks_outcome + filter when joining n_tasks to n_lead.
+    -->
+    <changeSet id="V1769800000000_07_add_n_tasks_lead_entity_open_index" author="system">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_n_tasks_lead_entity_open" tableName="n_tasks"/>
+            </not>
+        </preConditions>
+        <sql splitStatements="true" stripComments="true">
+            <![CDATA[
+            CREATE INDEX idx_n_tasks_lead_entity_open
+            ON n_tasks ( ((task_details->>'entityId')::uuid) )
+            WHERE outcome IS NULL
+              AND (task_details->>'entityType') = 'LEAD';
+
+            COMMENT ON INDEX idx_n_tasks_lead_entity_open IS
+            'Partial: open (outcome null) LEAD tasks, lookup by task_details entityId (uuid).';
+            ]]>
+        </sql>
+        <rollback>
+            <sql>DROP INDEX IF EXISTS idx_n_tasks_lead_entity_open</sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

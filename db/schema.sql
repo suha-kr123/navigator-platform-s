@@ -736,6 +736,12 @@ CREATE TABLE n_tasks (
     version         BIGINT          DEFAULT 0
 );
 
+-- Open LEAD tasks: lookup n_tasks from n_lead via task_details->>entityId (used by LATERAL queue / dashboard)
+CREATE INDEX idx_n_tasks_lead_entity_open
+    ON n_tasks ( ((task_details->>'entityId')::uuid) )
+    WHERE outcome IS NULL
+      AND (task_details->>'entityType') = 'LEAD';
+
 -- Entity: TaskConfig
 CREATE TABLE n_task_config (
     id                  BIGSERIAL       PRIMARY KEY,
