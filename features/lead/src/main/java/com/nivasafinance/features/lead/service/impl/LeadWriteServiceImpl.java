@@ -47,6 +47,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 
+import static com.nivasafinance.features.master.codemaster.SystemControlledMasterCodes.LEAD_INTENT_MASTER;
 import static com.nivasafinance.features.master.codemaster.SystemControlledMasterCodes.LEAD_PRIORITY_MASTER;
 
 @Service
@@ -171,6 +172,10 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         if (request.getPriority() != null) {
             codeValueMasterService.getCodeValueByKeyAndCodeKey(request.getPriority(), LEAD_PRIORITY_MASTER);
             otherDetails.setPriority(request.getPriority());
+        }
+        if (request.getIntent() != null) {
+            codeValueMasterService.getCodeValueByKeyAndCodeKey(request.getIntent(), LEAD_INTENT_MASTER);
+            otherDetails.setIntent(request.getIntent());
         }
         lead.setOtherDetails(otherDetails);
 

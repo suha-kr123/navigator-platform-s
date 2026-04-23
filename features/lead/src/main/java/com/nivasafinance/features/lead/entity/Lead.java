@@ -352,6 +352,7 @@ public class Lead extends AuditableEntity {
         private Long lastCallId;
         private PropertyDetails propertyDetails;
         private String priority;
+        private String intent;
         private LocalTime preferredCallStartTime;
         private LocalTime preferredCallEndTime;
         private Long noOfCampaignCalls;

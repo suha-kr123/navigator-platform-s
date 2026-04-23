@@ -1628,7 +1628,7 @@ CREATE TABLE whatsapp_logs (
 --       "documentChecklist": { "ekhataType": "String", "ekhataStatus": "String", "saleDeed": "String",
 --                              "propertyTax": "String", "statementOfAccounts": "String", "otherDocs": "String" }
 --     },
---     "priority": "String", "preferredCallStartTime": "LocalTime", "preferredCallEndTime": "LocalTime",
+--     "priority": "String", "intent": "String", "preferredCallStartTime": "LocalTime", "preferredCallEndTime": "LocalTime",
 --     "noOfCampaignCalls": "Long", "currentCustomerFormStep": "String"
 --   }
 
