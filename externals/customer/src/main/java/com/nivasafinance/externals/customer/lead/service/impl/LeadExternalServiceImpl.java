@@ -72,12 +72,6 @@ public class LeadExternalServiceImpl implements LeadExternalService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<LeadContactResponse> getContacts(UUID leadIdentifier) {
-        return leadContactReadService.getContacts(leadIdentifier);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
     public PropertyDetailsResponse getPropertyDetails(UUID leadIdentifier) {
         return leadReadService.getPropertyDetails(leadIdentifier);
     }

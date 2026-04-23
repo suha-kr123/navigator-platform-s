@@ -65,12 +65,6 @@ public class LeadExternalController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/{leadIdentifier}/contacts")
-    public ResponseEntity<List<LeadContactResponse>> getContacts(@PathVariable UUID leadIdentifier) {
-        List<LeadContactResponse> contacts = leadExternalService.getContacts(leadIdentifier);
-        return ResponseEntity.ok(contacts);
-    }
-
     @GetMapping("/{leadIdentifier}/property-details")
     public ResponseEntity<PropertyDetailsResponse> getPropertyDetails(@PathVariable UUID leadIdentifier) {
         PropertyDetailsResponse response = leadExternalService.getPropertyDetails(leadIdentifier);

@@ -3,6 +3,7 @@ package com.nivasafinance.externals.customer.lead.service.impl;
 import com.nivasafinance.common.dto.IdentifierData;
 import com.nivasafinance.common.dto.IdentifierRequest;
 import com.nivasafinance.common.enums.IdentifierType;
+import com.nivasafinance.features.lead.dto.LeadContactResponse;
 import com.nivasafinance.features.lead.service.LeadContactReadService;
 import com.nivasafinance.features.lead.service.LeadContactWriteService;
 import org.junit.jupiter.api.Test;
@@ -151,6 +152,22 @@ class LeadContactExternalServiceImplTest {
         // Assert
         assertEquals(existingPanId, result.getId(), "Should update the existing PAN identifier");
         verify(leadContactWriteService).updateIdentifier(eq(LEAD_ID), eq(CONTACT_IDENTIFIER), eq(existingPanId), any(IdentifierRequest.class));
+    }
+
+    // --- getContacts tests ---
+
+    @Test
+    void getContacts_delegatesToLeadContactReadService() {
+        // Arrange
+        List<LeadContactResponse> expected = List.of(new LeadContactResponse());
+        when(leadContactReadService.getContacts(LEAD_ID)).thenReturn(expected);
+
+        // Act
+        List<LeadContactResponse> result = leadContactExternalService.getContacts(LEAD_ID);
+
+        // Assert
+        assertSame(expected, result, "Should return the response from leadContactReadService");
+        verify(leadContactReadService).getContacts(LEAD_ID);
     }
 
     // --- getPan tests ---

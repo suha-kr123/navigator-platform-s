@@ -8,7 +8,6 @@ import com.nivasafinance.externals.customer.lead.service.LeadContactExternalServ
 import com.nivasafinance.features.lead.dto.LeadContactResponse;
 import com.nivasafinance.features.lead.dto.RecordCbConsentResponse;
 import com.nivasafinance.features.lead.dto.UpdateContactNameRequest;
-import com.nivasafinance.features.lead.service.LeadContactReadService;
 import com.nivasafinance.features.lead.service.LeadContactWriteService;
 import com.nivasafinance.features.lead.service.LeadCreditBureauWriteService;
 import jakarta.validation.Valid;
@@ -17,6 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -24,16 +24,14 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class LeadContactExternalController {
 
-    private final LeadContactReadService leadContactReadService;
     private final LeadContactWriteService leadContactWriteService;
     private final LeadContactExternalService leadContactExternalService;
     private final LeadCreditBureauWriteService leadCreditBureauWriteService;
 
     @GetMapping
-    public ResponseEntity<LeadContactResponse> getContact(
-            @PathVariable UUID leadId,
-            @PathVariable UUID contactIdentifier) {
-        return ResponseEntity.ok(leadContactReadService.getContactById(leadId, contactIdentifier));
+    public ResponseEntity<List<LeadContactResponse>> getContacts(@PathVariable UUID leadId) {
+        List<LeadContactResponse> contacts = leadContactExternalService.getContacts(leadId);
+        return ResponseEntity.ok(contacts);
     }
 
     @GetMapping("/{contactIdentifier}/pan")

@@ -7,7 +7,6 @@ import com.nivasafinance.externals.customer.lead.dto.LeadSearchMinimalResponse;
 import com.nivasafinance.features.lead.dto.*;
 import com.nivasafinance.features.lead.enums.LeadStatus;
 import com.nivasafinance.features.lead.enums.LeadSubStatus;
-import com.nivasafinance.features.lead.service.LeadContactReadService;
 import com.nivasafinance.features.lead.service.LeadEligibilityReadService;
 import com.nivasafinance.features.lead.service.LeadEligibilityWriteService;
 import com.nivasafinance.features.lead.service.LeadReadService;
@@ -40,8 +39,6 @@ class LeadExternalServiceImplTest {
     private LeadWriteService leadWriteService;
     @Mock
     private LeadReadService leadReadService;
-    @Mock
-    private LeadContactReadService leadContactReadService;
     @Mock
     private LeadEligibilityWriteService leadEligibilityWriteService;
     @Mock
@@ -88,6 +85,40 @@ class LeadExternalServiceImplTest {
     }
 
     @Test
+    void createLead_whenPhoneNumberIsNull_skipsLookupAndCreatesLead() {
+        // Arrange
+        CreateLeadRequest request = new CreateLeadRequest();
+        // phoneNumber is null
+        CreateLeadResponse expected = CreateLeadResponse.builder().leadIdentifier(LEAD_IDENTIFIER).build();
+        when(leadWriteService.createLead(request)).thenReturn(expected);
+
+        // Act
+        CreateLeadResponse result = leadExternalService.createLead(request);
+
+        // Assert
+        assertSame(expected, result, "Should delegate to leadWriteService without a lookup");
+        verify(leadReadService, never()).findLeadByPhoneNumber(any());
+        verify(leadWriteService).createLead(request);
+    }
+
+    @Test
+    void createLead_whenMobileNumberIsNull_skipsLookupAndCreatesLead() {
+        // Arrange
+        CreateLeadRequest request = new CreateLeadRequest();
+        request.setPhoneNumber(new CreateLeadRequest.MobileNumberDetails(null, false));
+        CreateLeadResponse expected = CreateLeadResponse.builder().leadIdentifier(LEAD_IDENTIFIER).build();
+        when(leadWriteService.createLead(request)).thenReturn(expected);
+
+        // Act
+        CreateLeadResponse result = leadExternalService.createLead(request);
+
+        // Assert
+        assertSame(expected, result, "Should delegate to leadWriteService without a lookup");
+        verify(leadReadService, never()).findLeadByPhoneNumber(any());
+        verify(leadWriteService).createLead(request);
+    }
+
+    @Test
     void patchLead_delegatesToLeadWriteService() {
         // Arrange
         PatchLeadRequest request = new PatchLeadRequest();
@@ -126,20 +157,6 @@ class LeadExternalServiceImplTest {
         // Assert
         assertSame(expected, result, "Should return the response from leadReadService");
         verify(leadReadService).getCurrentCustomerFormStep(LEAD_IDENTIFIER);
-    }
-
-    @Test
-    void getContacts_delegatesToLeadContactReadService() {
-        // Arrange
-        List<LeadContactResponse> expected = List.of(new LeadContactResponse());
-        when(leadContactReadService.getContacts(LEAD_IDENTIFIER)).thenReturn(expected);
-
-        // Act
-        List<LeadContactResponse> result = leadExternalService.getContacts(LEAD_IDENTIFIER);
-
-        // Assert
-        assertSame(expected, result, "Should return the response from leadContactReadService");
-        verify(leadContactReadService).getContacts(LEAD_IDENTIFIER);
     }
 
     @Test

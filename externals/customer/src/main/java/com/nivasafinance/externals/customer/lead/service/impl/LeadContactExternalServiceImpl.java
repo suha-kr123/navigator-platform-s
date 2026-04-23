@@ -4,6 +4,7 @@ import com.nivasafinance.common.dto.IdentifierData;
 import com.nivasafinance.common.dto.IdentifierRequest;
 import com.nivasafinance.common.enums.IdentifierType;
 import com.nivasafinance.externals.customer.lead.service.LeadContactExternalService;
+import com.nivasafinance.features.lead.dto.LeadContactResponse;
 import com.nivasafinance.features.lead.service.LeadContactReadService;
 import com.nivasafinance.features.lead.service.LeadContactWriteService;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +37,12 @@ public class LeadContactExternalServiceImpl implements LeadContactExternalServic
             return leadContactReadService.getIdentifier(leadId, contactIdentifier, existingPan.get().getId());
         }
         return leadContactWriteService.addIdentifier(leadId, contactIdentifier, request);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<LeadContactResponse> getContacts(UUID leadIdentifier) {
+        return leadContactReadService.getContacts(leadIdentifier);
     }
 
     @Override

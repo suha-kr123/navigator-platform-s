@@ -20,8 +20,6 @@ public interface LeadExternalService {
 
     CurrentCustomerFormStepResponse getCurrentCustomerFormStep(UUID leadIdentifier);
 
-    List<LeadContactResponse> getContacts(UUID leadIdentifier);
-
     PropertyDetailsResponse getPropertyDetails(UUID leadIdentifier);
 
     IncomeObligationDetailsResponse getIncomeObligationDetails(UUID leadIdentifier);
