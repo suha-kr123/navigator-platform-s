@@ -33,5 +33,7 @@ public class UpdateLeadRequest {
     private LocalTime preferredCallEndTime;
 
     private String priority;
+
+    private String intent;
 }
 

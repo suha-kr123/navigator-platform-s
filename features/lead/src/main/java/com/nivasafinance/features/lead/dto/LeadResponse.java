@@ -45,6 +45,7 @@ public class LeadResponse {
     private LocalTime preferredCallStartTime;
     private LocalTime preferredCallEndTime;
     private CodeValueResponse priority;
+    private CodeValueResponse intent;
     private BigDecimal proposedAmount;
     private BigDecimal proposedRoi;
     private CodeValueResponse bureauRating;

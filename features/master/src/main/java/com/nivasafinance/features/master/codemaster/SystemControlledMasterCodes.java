@@ -30,6 +30,7 @@ public final class SystemControlledMasterCodes {
     public static final String MARKETING_SOURCE_MASTER = "MARKETING_SOURCE_MASTER";
     public static final String MARKETING_CHANNEL_MASTER = "MARKETING_CHANNEL_MASTER";
     public static final String LEAD_PRIORITY_MASTER = "LEAD_PRIORITY_MASTER";
+    public static final String LEAD_INTENT_MASTER = "LEAD_INTENT_MASTER";
     // Advisor specific masters
     public static final String ADVISOR_REJECTION_REASON_MASTER = "ADVISOR_REJECTION_REASON_MASTER";
     public static final String ADVISOR_DORMANT_REASON_MASTER = "ADVISOR_DORMANT_REASON_MASTER";

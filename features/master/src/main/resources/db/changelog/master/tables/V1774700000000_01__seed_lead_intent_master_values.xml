@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1774700000000_01_master_values" author="system" context="default">
+        <comment>Lead Intent master values (high, mid, low)</comment>
+
+        <insert tableName="n_master_code_value">
+            <column name="key" value="high"/>
+            <column name="code_key" value="LEAD_INTENT_MASTER"/>
+            <column name="value" value='{"default": "High"}'/>
+            <column name="description" value='{"default": "High intent"}'/>
+            <column name="is_active" valueBoolean="true"/>
+            <column name="display_order" valueNumeric="1"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="n_master_code_value">
+            <column name="key" value="mid"/>
+            <column name="code_key" value="LEAD_INTENT_MASTER"/>
+            <column name="value" value='{"default": "Mid"}'/>
+            <column name="description" value='{"default": "Mid intent"}'/>
+            <column name="is_active" valueBoolean="true"/>
+            <column name="display_order" valueNumeric="2"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+
+        <insert tableName="n_master_code_value">
+            <column name="key" value="low"/>
+            <column name="code_key" value="LEAD_INTENT_MASTER"/>
+            <column name="value" value='{"default": "Low"}'/>
+            <column name="description" value='{"default": "Low intent"}'/>
+            <column name="is_active" valueBoolean="true"/>
+            <column name="display_order" valueNumeric="3"/>
+            <column name="created_by" value="system"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>

@@ -147,6 +147,7 @@ public class LeadRepositoryWrapper {
                     (l.other_details->>'preferredCallStartTime')::time as preferred_call_start_time,
                     (l.other_details->>'preferredCallEndTime')::time as preferred_call_end_time,
                     l.other_details->>'priority' as priority_key,
+                    l.other_details->>'intent' as intent_key,
                     (l.other_details->>'noOfCampaignCalls')::bigint as no_of_campaign_calls,
                     (l.proposed_details->>'proposedLoanAmount')::numeric as proposed_amount,
                     (l.proposed_details->>'roi')::numeric as proposed_roi,
@@ -391,6 +392,11 @@ public class LeadRepositoryWrapper {
             leadResponse.setPriority(CodeValueResponse.builder().key(priorityKey).build());
         }
 
+        String intentKey = rs.getString("intent_key");
+        if (intentKey != null) {
+            leadResponse.setIntent(CodeValueResponse.builder().key(intentKey).build());
+        }
+
         String customerConvinceStatusKey = rs.getString("customer_convince_status_key");
         if (customerConvinceStatusKey != null) {
             leadResponse.setCustomerConvinceStatus(CodeValueResponse.builder().key(customerConvinceStatusKey).build());
@@ -465,6 +471,15 @@ public class LeadRepositoryWrapper {
                         SystemControlledMasterCodes.LEAD_PRIORITY_MASTER
                 );
                 leadResponse.setPriority(priority);
+            }
+
+            // Enrich intent
+            if (leadResponse.getIntent() != null && leadResponse.getIntent().getKey() != null) {
+                CodeValueResponse intent = codeValueMasterService.getCodeValueByKeyAndCodeKey(
+                        leadResponse.getIntent().getKey(),
+                        SystemControlledMasterCodes.LEAD_INTENT_MASTER
+                );
+                leadResponse.setIntent(intent);
             }
 
             if (leadResponse.getCustomerConvinceStatus() != null && leadResponse.getCustomerConvinceStatus().getKey() != null) {
