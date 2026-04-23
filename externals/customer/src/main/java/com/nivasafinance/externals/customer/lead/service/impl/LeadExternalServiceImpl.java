@@ -2,6 +2,8 @@ package com.nivasafinance.externals.customer.lead.service.impl;
 
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
+import com.nivasafinance.common.dto.AddressData;
+import com.nivasafinance.externals.customer.lead.dto.LeadEligibilityEvaluateResponse;
 import com.nivasafinance.externals.customer.lead.dto.LeadSearchMinimalResponse;
 import com.nivasafinance.externals.customer.lead.service.LeadExternalService;
 import com.nivasafinance.features.lead.dto.*;
@@ -10,6 +12,7 @@ import com.nivasafinance.features.lead.service.LeadEligibilityReadService;
 import com.nivasafinance.features.lead.service.LeadEligibilityWriteService;
 import com.nivasafinance.features.lead.service.LeadReadService;
 import com.nivasafinance.features.lead.service.LeadWriteService;
+import com.nivasafinance.features.master.location.service.LocationMasterService;
 import com.nivasafinance.features.leadstages.dto.LeadStageHistoryResponse;
 import com.nivasafinance.features.leadstages.dto.StageTransitionRequest;
 import com.nivasafinance.features.leadstages.service.LeadStageHistoryWriteService;
@@ -30,6 +33,7 @@ import java.util.UUID;
 public class LeadExternalServiceImpl implements LeadExternalService {
 
     private static final String EXPERT_SCREENING_STAGE_KEY = "Expert Screening";
+    private static final String NOT_IN_SERVICABLE_LOCATION_REASON_CODE = "NOT_IN_SERVICABLE_LOCATION";
 
     private final LeadWriteService leadWriteService;
     private final LeadReadService leadReadService;
@@ -37,6 +41,7 @@ public class LeadExternalServiceImpl implements LeadExternalService {
     private final LeadEligibilityWriteService leadEligibilityWriteService;
     private final LeadEligibilityReadService leadEligibilityReadService;
     private final LeadStageHistoryWriteService leadStageHistoryWriteService;
+    private final LocationMasterService locationMasterService;
 
     @Override
     public CreateLeadResponse createLead(CreateLeadRequest request) {
@@ -106,6 +111,25 @@ public class LeadExternalServiceImpl implements LeadExternalService {
     }
 
     @Override
+    public LeadEligibilityEvaluateResponse evaluateEligibility(UUID leadIdentifier) {
+        PropertyDetailsResponse propertyDetails = leadReadService.getPropertyDetails(leadIdentifier);
+        AddressData address = propertyDetails != null ? propertyDetails.getAddress() : null;
+
+        if (shouldRejectForDistrictServiceability(address)) {
+            RejectLeadRequest rejectLeadRequest = RejectLeadRequest.builder()
+                    .reasonCode(NOT_IN_SERVICABLE_LOCATION_REASON_CODE)
+                    .build();
+            leadWriteService.rejectLead(leadIdentifier, rejectLeadRequest);
+        }
+
+        LeadBasicResponse lead = leadReadService.getLeadBasicByIdentifier(leadIdentifier);
+        return LeadEligibilityEvaluateResponse.builder()
+                .leadIdentifier(lead.getLeadIdentifier())
+                .leadStatus(lead.getStatus())
+                .build();
+    }
+
+    @Override
     public LeadStageHistoryResponse transitionToExpertScreening(UUID leadIdentifier) {
         StageTransitionRequest request = StageTransitionRequest.builder()
                 .stageKey(EXPERT_SCREENING_STAGE_KEY)
@@ -132,5 +156,17 @@ public class LeadExternalServiceImpl implements LeadExternalService {
                 .content(minimalResults)
                 .pagination(result.getPagination())
                 .build();
+    }
+
+    private boolean shouldRejectForDistrictServiceability(AddressData address) {
+        if (address == null || isBlank(address.getDistrictCode())) {
+            return true;
+        }
+
+        return !locationMasterService.isDistrictServiceable(address.getDistrictCode());
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 }

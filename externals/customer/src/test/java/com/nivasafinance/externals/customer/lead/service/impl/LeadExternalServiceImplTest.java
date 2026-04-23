@@ -7,10 +7,14 @@ import com.nivasafinance.externals.customer.lead.dto.LeadSearchMinimalResponse;
 import com.nivasafinance.features.lead.dto.*;
 import com.nivasafinance.features.lead.enums.LeadStatus;
 import com.nivasafinance.features.lead.enums.LeadSubStatus;
+import com.nivasafinance.common.dto.AddressData;
+import com.nivasafinance.externals.customer.lead.dto.LeadEligibilityEvaluateResponse;
+import com.nivasafinance.features.lead.service.LeadContactReadService;
 import com.nivasafinance.features.lead.service.LeadEligibilityReadService;
 import com.nivasafinance.features.lead.service.LeadEligibilityWriteService;
 import com.nivasafinance.features.lead.service.LeadReadService;
 import com.nivasafinance.features.lead.service.LeadWriteService;
+import com.nivasafinance.features.master.location.service.LocationMasterService;
 import com.nivasafinance.features.leadstages.dto.LeadStageHistoryResponse;
 import com.nivasafinance.features.leadstages.dto.StageTransitionRequest;
 import com.nivasafinance.features.leadstages.entity.LeadStageHistory;
@@ -40,11 +44,15 @@ class LeadExternalServiceImplTest {
     @Mock
     private LeadReadService leadReadService;
     @Mock
+    private LeadContactReadService leadContactReadService;
+    @Mock
     private LeadEligibilityWriteService leadEligibilityWriteService;
     @Mock
     private LeadEligibilityReadService leadEligibilityReadService;
     @Mock
     private LeadStageHistoryWriteService leadStageHistoryWriteService;
+    @Mock
+    private LocationMasterService locationMasterService;
 
     @InjectMocks
     private LeadExternalServiceImpl leadExternalService;
@@ -277,6 +285,99 @@ class LeadExternalServiceImplTest {
         assertEquals("Expert Screening", result.getStageKey(), "Stage key should be Expert Screening");
         verify(leadStageHistoryWriteService).createStageEntry(eq(LEAD_IDENTIFIER),
                 argThat(req -> "Expert Screening".equals(req.getStageKey())));
+    }
+
+    // ==================== evaluateEligibility() Tests ====================
+
+    @Test
+    void evaluateEligibility_whenPropertyDetailsIsNull_rejectsLeadAndReturnsStatus() {
+        // Arrange
+        when(leadReadService.getPropertyDetails(LEAD_IDENTIFIER)).thenReturn(null);
+        LeadBasicResponse lead = LeadBasicResponse.builder()
+                .leadIdentifier(LEAD_IDENTIFIER).status(LeadStatus.REJECTED).build();
+        when(leadReadService.getLeadBasicByIdentifier(LEAD_IDENTIFIER)).thenReturn(lead);
+
+        // Act
+        LeadEligibilityEvaluateResponse result = leadExternalService.evaluateEligibility(LEAD_IDENTIFIER);
+
+        // Assert
+        verify(leadWriteService).rejectLead(eq(LEAD_IDENTIFIER),
+                argThat(r -> "NOT_IN_SERVICABLE_LOCATION".equals(r.getReasonCode())));
+        assertEquals(LEAD_IDENTIFIER, result.getLeadIdentifier());
+        assertEquals(LeadStatus.REJECTED, result.getLeadStatus());
+    }
+
+    @Test
+    void evaluateEligibility_whenAddressIsNull_rejectsLead() {
+        // Arrange
+        PropertyDetailsResponse propertyDetails = PropertyDetailsResponse.builder().address(null).build();
+        when(leadReadService.getPropertyDetails(LEAD_IDENTIFIER)).thenReturn(propertyDetails);
+        LeadBasicResponse lead = LeadBasicResponse.builder()
+                .leadIdentifier(LEAD_IDENTIFIER).status(LeadStatus.REJECTED).build();
+        when(leadReadService.getLeadBasicByIdentifier(LEAD_IDENTIFIER)).thenReturn(lead);
+
+        // Act
+        leadExternalService.evaluateEligibility(LEAD_IDENTIFIER);
+
+        // Assert
+        verify(leadWriteService).rejectLead(eq(LEAD_IDENTIFIER), any());
+    }
+
+    @Test
+    void evaluateEligibility_whenDistrictCodeIsBlank_rejectsLead() {
+        // Arrange
+        AddressData address = AddressData.builder().districtCode("  ").build();
+        PropertyDetailsResponse propertyDetails = PropertyDetailsResponse.builder().address(address).build();
+        when(leadReadService.getPropertyDetails(LEAD_IDENTIFIER)).thenReturn(propertyDetails);
+        LeadBasicResponse lead = LeadBasicResponse.builder()
+                .leadIdentifier(LEAD_IDENTIFIER).status(LeadStatus.REJECTED).build();
+        when(leadReadService.getLeadBasicByIdentifier(LEAD_IDENTIFIER)).thenReturn(lead);
+
+        // Act
+        leadExternalService.evaluateEligibility(LEAD_IDENTIFIER);
+
+        // Assert
+        verify(leadWriteService).rejectLead(eq(LEAD_IDENTIFIER), any());
+        verify(locationMasterService, never()).isDistrictServiceable(any());
+    }
+
+    @Test
+    void evaluateEligibility_whenDistrictNotServiceable_rejectsLead() {
+        // Arrange
+        AddressData address = AddressData.builder().districtCode("BLR").build();
+        PropertyDetailsResponse propertyDetails = PropertyDetailsResponse.builder().address(address).build();
+        when(leadReadService.getPropertyDetails(LEAD_IDENTIFIER)).thenReturn(propertyDetails);
+        when(locationMasterService.isDistrictServiceable("BLR")).thenReturn(false);
+        LeadBasicResponse lead = LeadBasicResponse.builder()
+                .leadIdentifier(LEAD_IDENTIFIER).status(LeadStatus.REJECTED).build();
+        when(leadReadService.getLeadBasicByIdentifier(LEAD_IDENTIFIER)).thenReturn(lead);
+
+        // Act
+        leadExternalService.evaluateEligibility(LEAD_IDENTIFIER);
+
+        // Assert
+        verify(leadWriteService).rejectLead(eq(LEAD_IDENTIFIER),
+                argThat(r -> "NOT_IN_SERVICABLE_LOCATION".equals(r.getReasonCode())));
+    }
+
+    @Test
+    void evaluateEligibility_whenDistrictIsServiceable_doesNotRejectAndReturnsStatus() {
+        // Arrange
+        AddressData address = AddressData.builder().districtCode("BLR").build();
+        PropertyDetailsResponse propertyDetails = PropertyDetailsResponse.builder().address(address).build();
+        when(leadReadService.getPropertyDetails(LEAD_IDENTIFIER)).thenReturn(propertyDetails);
+        when(locationMasterService.isDistrictServiceable("BLR")).thenReturn(true);
+        LeadBasicResponse lead = LeadBasicResponse.builder()
+                .leadIdentifier(LEAD_IDENTIFIER).status(LeadStatus.ACTIVE).build();
+        when(leadReadService.getLeadBasicByIdentifier(LEAD_IDENTIFIER)).thenReturn(lead);
+
+        // Act
+        LeadEligibilityEvaluateResponse result = leadExternalService.evaluateEligibility(LEAD_IDENTIFIER);
+
+        // Assert
+        verify(leadWriteService, never()).rejectLead(any(), any());
+        assertEquals(LEAD_IDENTIFIER, result.getLeadIdentifier());
+        assertEquals(LeadStatus.ACTIVE, result.getLeadStatus());
     }
 
     @Test

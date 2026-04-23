@@ -2,6 +2,7 @@ package com.nivasafinance.externals.customer.lead.service;
 
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
+import com.nivasafinance.externals.customer.lead.dto.LeadEligibilityEvaluateResponse;
 import com.nivasafinance.externals.customer.lead.dto.LeadSearchMinimalResponse;
 import com.nivasafinance.features.lead.dto.*;
 import com.nivasafinance.features.leadstages.dto.LeadStageHistoryResponse;
@@ -31,6 +32,8 @@ public interface LeadExternalService {
     LeadBREResultExecuteResponse executeEligibility(UUID leadIdentifier);
 
     Optional<LeadEligibilityResponse> getLatestEligibility(UUID leadIdentifier);
+
+    LeadEligibilityEvaluateResponse evaluateEligibility(UUID leadIdentifier);
 
     LeadStageHistoryResponse transitionToExpertScreening(UUID leadIdentifier);
 

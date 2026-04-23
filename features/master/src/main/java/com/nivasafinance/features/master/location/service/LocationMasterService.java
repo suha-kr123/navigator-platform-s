@@ -14,6 +14,7 @@ public interface LocationMasterService {
     List<TalukaResponse> getTalukasByDistrictId(Long districtId);
     List<VillageResponse> getVillagesByTalukaId(Long talukaId);
     List<DistrictResponse> getServiceableDistrictsByStateId(Long stateId);
+    boolean isDistrictServiceable(String districtCode);
     List<TalukaResponse> getServiceableTalukasByDistrictId(Long districtId);
 }
 

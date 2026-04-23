@@ -3,25 +3,12 @@ package com.nivasafinance.externals.customer.lead.controller;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.common.constants.ApiConstants;
+import com.nivasafinance.externals.customer.lead.dto.LeadEligibilityEvaluateResponse;
 import com.nivasafinance.externals.customer.lead.dto.LeadSearchMinimalResponse;
 import com.nivasafinance.externals.customer.lead.service.LeadExternalService;
-import com.nivasafinance.features.lead.dto.CreateLeadRequest;
-import com.nivasafinance.features.lead.dto.CreateLeadResponse;
-import com.nivasafinance.features.lead.dto.CurrentCustomerFormStepResponse;
-import com.nivasafinance.features.lead.dto.LeadBREResultExecuteResponse;
-import com.nivasafinance.features.lead.dto.LeadContactResponse;
-import com.nivasafinance.features.lead.dto.LeadEligibilityResponse;
-import com.nivasafinance.features.lead.dto.LeadResponse;
-import com.nivasafinance.features.lead.dto.LeadSearchRequest;
-import com.nivasafinance.features.lead.dto.PatchLeadRequest;
-import com.nivasafinance.features.lead.dto.DocumentChecklistResponse;
-import com.nivasafinance.features.lead.dto.IncomeObligationDetailsResponse;
-import com.nivasafinance.features.lead.dto.PreliminaryDetailsResponse;
-import com.nivasafinance.features.lead.dto.PropertyDetailsResponse;
+import com.nivasafinance.features.lead.dto.*;
 import com.nivasafinance.features.leadstages.dto.LeadStageHistoryResponse;
 import jakarta.validation.Valid;
-
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -101,6 +88,12 @@ public class LeadExternalController {
         return leadExternalService.getLatestEligibility(leadIdentifier)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.noContent().build());
+    }
+
+    @PostMapping("/{leadIdentifier}/eligibility/evaluate")
+    public ResponseEntity<LeadEligibilityEvaluateResponse> evaluateEligibility(@PathVariable UUID leadIdentifier) {
+        LeadEligibilityEvaluateResponse response = leadExternalService.evaluateEligibility(leadIdentifier);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/{leadIdentifier}/stages/transition/expert-screening")

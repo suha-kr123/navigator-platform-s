@@ -13,11 +13,18 @@ public interface DistrictRepository extends JpaRepository<District, Long> {
     List<District> findAllByIsActiveTrue();
     List<District> findByStateIdAndIsActiveTrue(Long stateId);
     java.util.Optional<District> findByCodeAndStateIdAndIsActiveTrue(String code, Long stateId);
+    boolean existsByCodeAndIsActiveTrue(String code);
 
     @Query("SELECT DISTINCT d FROM District d WHERE d.stateId = :stateId AND d.isActive = true "
             + "AND EXISTS (SELECT 1 FROM com.nivasafinance.features.master.pincode.entity.Pincode p "
             + "WHERE p.districtId = d.id AND p.isServicable = true)")
     List<District> findServiceableDistrictsByStateId(@Param("stateId") Long stateId);
+
+    @Query("SELECT COUNT(d) > 0 FROM District d WHERE d.code = :districtCode AND d.isActive = true "
+            + "AND EXISTS (SELECT 1 FROM com.nivasafinance.features.master.pincode.entity.Pincode p "
+            + "WHERE p.districtId = d.id AND p.isServicable = true)")
+    boolean existsServiceableDistrictByCode(@Param("districtCode") String districtCode);
+
     List<District> findByRegionIdAndIsActiveTrue(Long regionId);
 }
 

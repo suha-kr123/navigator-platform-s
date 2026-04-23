@@ -8,6 +8,7 @@ import com.nivasafinance.externals.customer.lead.service.LeadContactExternalServ
 import com.nivasafinance.features.lead.dto.LeadContactResponse;
 import com.nivasafinance.features.lead.dto.RecordCbConsentResponse;
 import com.nivasafinance.features.lead.dto.UpdateContactNameRequest;
+import com.nivasafinance.features.lead.service.LeadContactReadService;
 import com.nivasafinance.features.lead.service.LeadContactWriteService;
 import com.nivasafinance.features.lead.service.LeadCreditBureauWriteService;
 import jakarta.validation.Valid;
@@ -24,6 +25,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class LeadContactExternalController {
 
+    private final LeadContactReadService leadContactReadService;
     private final LeadContactWriteService leadContactWriteService;
     private final LeadContactExternalService leadContactExternalService;
     private final LeadCreditBureauWriteService leadCreditBureauWriteService;
@@ -32,6 +34,13 @@ public class LeadContactExternalController {
     public ResponseEntity<List<LeadContactResponse>> getContacts(@PathVariable UUID leadId) {
         List<LeadContactResponse> contacts = leadContactExternalService.getContacts(leadId);
         return ResponseEntity.ok(contacts);
+    }
+
+    @GetMapping("/{contactIdentifier}")
+    public ResponseEntity<LeadContactResponse> getContact(
+            @PathVariable UUID leadId,
+            @PathVariable UUID contactIdentifier) {
+        return ResponseEntity.ok(leadContactReadService.getContactById(leadId, contactIdentifier));
     }
 
     @GetMapping("/{contactIdentifier}/pan")

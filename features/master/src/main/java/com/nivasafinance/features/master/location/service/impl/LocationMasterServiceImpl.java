@@ -117,6 +117,14 @@ public class LocationMasterServiceImpl implements LocationMasterService {
     }
 
     @Override
+    public boolean isDistrictServiceable(String districtCode) {
+        if (districtCode == null || districtCode.isBlank()) {
+            return false;
+        }
+        return districtRepository.existsServiceableDistrictByCode(districtCode);
+    }
+
+    @Override
     public List<TalukaResponse> getServiceableTalukasByDistrictId(Long districtId) {
         districtRepository.findById(districtId)
                 .orElseThrow(() -> new LocationNotFoundException("District", districtId, messageSource));

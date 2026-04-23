@@ -435,4 +435,35 @@ class LocationMasterServiceImplTest {
         assertEquals(1, result.get(0).getDisplayOrder(),
                 "Taluka display order should be mapped from entity");
     }
+
+    // ── isDistrictServiceable ────────────────────────────────────────
+
+    @Test
+    void isDistrictServiceable_whenDistrictCodeIsNull_returnsFalse() {
+        boolean result = locationMasterService.isDistrictServiceable(null);
+
+        assertFalse(result, "Null district code should not be serviceable");
+        verifyNoInteractions(districtRepository);
+    }
+
+    @Test
+    void isDistrictServiceable_whenDistrictCodeIsBlank_returnsFalse() {
+        boolean result = locationMasterService.isDistrictServiceable("   ");
+
+        assertFalse(result, "Blank district code should not be serviceable");
+        verifyNoInteractions(districtRepository);
+    }
+
+    @Test
+    void isDistrictServiceable_whenDistrictNotServiceable_returnsFalse() {
+        when(districtRepository.existsServiceableDistrictByCode("BLR")).thenReturn(false);
+        boolean result = locationMasterService.isDistrictServiceable("BLR");
+        assertFalse(result, "Non-serviceable district should return false");
+    }
+    @Test
+    void isDistrictServiceable_whenDistrictServiceable_returnsTrue() {
+        when(districtRepository.existsServiceableDistrictByCode("BLR")).thenReturn(true);
+        boolean result = locationMasterService.isDistrictServiceable("BLR");
+        assertTrue(result, "Serviceable district should return true");
+    }
 }
