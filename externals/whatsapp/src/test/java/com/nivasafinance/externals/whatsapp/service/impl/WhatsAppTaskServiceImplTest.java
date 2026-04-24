@@ -6,7 +6,6 @@ import com.nivasafinance.externals.whatsapp.dto.WhatsAppTaskResponse;
 import com.nivasafinance.externals.whatsapp.dto.WhatsAppUpdateTaskRequest;
 import com.nivasafinance.features.lead.dto.LeadResponse;
 import com.nivasafinance.features.lead.entity.Lead;
-import com.nivasafinance.features.lead.enums.LeadSubStatus;
 import com.nivasafinance.features.lead.repository.ContactRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.person.entity.Person;
@@ -27,9 +26,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -161,51 +158,12 @@ class WhatsAppTaskServiceImplTest {
     // ── createTask: dueAt resolution ──
 
     @Test
-    void createTask_whenDueAtNotProvided_usesDefaultFallback() {
+    void createTask_whenDueAtNotProvided_passesNullDueAtToTaskModule() {
         UUID leadIdentifier = UUID.randomUUID();
         UUID taskIdentifier = UUID.randomUUID();
 
         when(taskRepositoryWrapper.findOpenTasksByLeadIdentifier(leadIdentifier))
                 .thenReturn(List.of());
-
-        Lead lead = new Lead();
-        lead.setSubstatus(null);
-        when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
-
-        TaskResponse taskResponse = TaskResponse.builder().taskIdentifier(taskIdentifier).build();
-        when(taskWriteService.createAdhocTask(any(CreateAdhocTaskRequest.class))).thenReturn(taskResponse);
-
-        WhatsAppTaskRequest request = buildCreateTaskRequest(leadIdentifier, "CALLBACK");
-
-        LocalDateTime beforeCall = LocalDateTime.now().plusHours(23);
-        service.createTask(request);
-        LocalDateTime afterCall = LocalDateTime.now().plusHours(25);
-
-        ArgumentCaptor<CreateAdhocTaskRequest> captor = ArgumentCaptor.forClass(CreateAdhocTaskRequest.class);
-        verify(taskWriteService).createAdhocTask(captor.capture());
-        LocalDateTime dueAt = captor.getValue().getDueAt();
-        assertTrue(dueAt.isAfter(beforeCall) && dueAt.isBefore(afterCall),
-                "Default due date should be approximately 24 hours from now");
-    }
-
-    @Test
-    void createTask_whenOnholdLeadWithFutureFollowUpDate_usesFollowUpDateEndOfDay() {
-        UUID leadIdentifier = UUID.randomUUID();
-        UUID taskIdentifier = UUID.randomUUID();
-
-        when(taskRepositoryWrapper.findOpenTasksByLeadIdentifier(leadIdentifier))
-                .thenReturn(List.of());
-
-        Lead lead = new Lead();
-        lead.setSubstatus(LeadSubStatus.ONHOLD);
-        when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
-
-        LocalDate futureDate = LocalDate.now().plusDays(5);
-        LeadResponse leadResponse = LeadResponse.builder()
-                .holdFollowUpDate(futureDate)
-                .build();
-        when(leadRepositoryWrapper.findLeadResponseByIdentifierWithException(leadIdentifier))
-                .thenReturn(leadResponse);
 
         TaskResponse taskResponse = TaskResponse.builder().taskIdentifier(taskIdentifier).build();
         when(taskWriteService.createAdhocTask(any(CreateAdhocTaskRequest.class))).thenReturn(taskResponse);
@@ -216,42 +174,8 @@ class WhatsAppTaskServiceImplTest {
 
         ArgumentCaptor<CreateAdhocTaskRequest> captor = ArgumentCaptor.forClass(CreateAdhocTaskRequest.class);
         verify(taskWriteService).createAdhocTask(captor.capture());
-        LocalDateTime expectedDueAt = LocalDateTime.of(futureDate, LocalTime.of(23, 59, 59));
-        assertEquals(expectedDueAt, captor.getValue().getDueAt(),
-                "ONHOLD lead with future follow-up date should use end-of-day as due date");
-    }
-
-    @Test
-    void createTask_whenOnholdLeadWithPastFollowUpDate_usesDefaultDueDate() {
-        UUID leadIdentifier = UUID.randomUUID();
-        UUID taskIdentifier = UUID.randomUUID();
-
-        when(taskRepositoryWrapper.findOpenTasksByLeadIdentifier(leadIdentifier))
-                .thenReturn(List.of());
-
-        Lead lead = new Lead();
-        lead.setSubstatus(LeadSubStatus.ONHOLD);
-        when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
-
-        LocalDate pastDate = LocalDate.now().minusDays(5);
-        LeadResponse leadResponse = LeadResponse.builder()
-                .holdFollowUpDate(pastDate)
-                .build();
-        when(leadRepositoryWrapper.findLeadResponseByIdentifierWithException(leadIdentifier))
-                .thenReturn(leadResponse);
-
-        TaskResponse taskResponse = TaskResponse.builder().taskIdentifier(taskIdentifier).build();
-        when(taskWriteService.createAdhocTask(any(CreateAdhocTaskRequest.class))).thenReturn(taskResponse);
-
-        WhatsAppTaskRequest request = buildCreateTaskRequest(leadIdentifier, "CALLBACK");
-
-        LocalDateTime beforeCall = LocalDateTime.now().plusHours(23);
-        service.createTask(request);
-
-        ArgumentCaptor<CreateAdhocTaskRequest> captor = ArgumentCaptor.forClass(CreateAdhocTaskRequest.class);
-        verify(taskWriteService).createAdhocTask(captor.capture());
-        assertTrue(captor.getValue().getDueAt().isAfter(beforeCall),
-                "Past follow-up date should fall back to default 24h due date");
+        assertNull(captor.getValue().getDueAt(),
+                "Omitted dueAt should be null so the task module applies task-config due date logic");
     }
 
     // ── createTask: assignedTo resolution ──
@@ -416,10 +340,6 @@ class WhatsAppTaskServiceImplTest {
         when(taskRepositoryWrapper.findOpenTasksByLeadIdentifier(leadIdentifier))
                 .thenReturn(List.of());
 
-        Lead lead = new Lead();
-        lead.setSubstatus(null);
-        when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
-
         TaskResponse taskResponse = TaskResponse.builder().taskIdentifier(taskIdentifier).build();
         when(taskWriteService.createAdhocTask(any(CreateAdhocTaskRequest.class))).thenReturn(taskResponse);
 
@@ -459,6 +379,57 @@ class WhatsAppTaskServiceImplTest {
 
         verify(taskRepositoryWrapper).findOpenTasksByLeadIdentifier(leadIdentifier);
         verifyNoInteractions(personRepositoryWrapper, jdbcTemplate);
+    }
+
+    @Test
+    void createTask_withMobileNumber_resolvesLeadIdentifier() {
+        Long personId = 1L;
+        Long leadId = 10L;
+        UUID leadIdentifier = UUID.randomUUID();
+        UUID taskIdentifier = UUID.randomUUID();
+
+        Person person = new Person();
+        person.setId(personId);
+        when(personRepositoryWrapper.findByPrimaryMobileNumber("9876543210"))
+                .thenReturn(Optional.of(person));
+
+        when(jdbcTemplate.queryForObject(anyString(), eq(Long.class), eq(personId)))
+                .thenReturn(leadId);
+
+        Lead lead = new Lead();
+        lead.setLeadIdentifier(leadIdentifier);
+        when(leadRepositoryWrapper.findByIdWithException(leadId)).thenReturn(lead);
+
+        when(taskRepositoryWrapper.findOpenTasksByLeadIdentifier(leadIdentifier))
+                .thenReturn(List.of());
+
+        TaskResponse taskResponse = TaskResponse.builder().taskIdentifier(taskIdentifier).build();
+        when(taskWriteService.createAdhocTask(any(CreateAdhocTaskRequest.class))).thenReturn(taskResponse);
+
+        WhatsAppTaskRequest request = new WhatsAppTaskRequest();
+        request.setMobileNumber("9876543210");
+        WhatsAppTaskRequest.TaskDetails taskDetails = new WhatsAppTaskRequest.TaskDetails();
+        taskDetails.setTaskConfigKey("CALLBACK");
+        request.setTaskDetails(taskDetails);
+
+        WhatsAppTaskResponse result = service.createTask(request);
+
+        assertEquals(taskIdentifier, result.getTaskIdentifier(),
+                "Should resolve lead via mobile number and create task");
+        verify(taskRepositoryWrapper).findOpenTasksByLeadIdentifier(leadIdentifier);
+        verify(taskWriteService).createAdhocTask(any(CreateAdhocTaskRequest.class));
+    }
+
+    @Test
+    void createTask_withNullLeadIdentifierAndNullMobileNumber_throwsIllegalArgumentException() {
+        WhatsAppTaskRequest request = new WhatsAppTaskRequest();
+        WhatsAppTaskRequest.TaskDetails taskDetails = new WhatsAppTaskRequest.TaskDetails();
+        taskDetails.setTaskConfigKey("CALLBACK");
+        request.setTaskDetails(taskDetails);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> service.createTask(request),
+                "Should throw when neither leadIdentifier nor mobileNumber is provided");
     }
 
     @Test
