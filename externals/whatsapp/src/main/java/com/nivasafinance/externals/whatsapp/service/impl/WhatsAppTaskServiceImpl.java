@@ -8,7 +8,6 @@ import com.nivasafinance.externals.whatsapp.dto.WhatsAppUpdateTaskRequest;
 import com.nivasafinance.externals.whatsapp.service.WhatsAppTaskService;
 import com.nivasafinance.features.lead.entity.Contact;
 import com.nivasafinance.features.lead.entity.Lead;
-import com.nivasafinance.features.lead.enums.LeadSubStatus;
 import com.nivasafinance.features.lead.dto.LeadResponse;
 import com.nivasafinance.features.lead.repository.ContactRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
@@ -44,8 +43,6 @@ import java.util.UUID;
 @AllArgsConstructor
 public class WhatsAppTaskServiceImpl implements WhatsAppTaskService {
 
-    private static final int DEFAULT_DUE_DATE_HOURS = 24;
-
     private final TaskWriteService taskWriteService;
     private final TaskRepositoryWrapper taskRepositoryWrapper;
     private final MessageSource messageSource;
@@ -57,7 +54,7 @@ public class WhatsAppTaskServiceImpl implements WhatsAppTaskService {
     @Override
     @Transactional
     public WhatsAppTaskResponse createTask(WhatsAppTaskRequest request) {
-        UUID leadIdentifier = request.getLeadIdentifier();
+        UUID leadIdentifier = resolveLeadIdentifier(request.getLeadIdentifier(), request.getMobileNumber());
         WhatsAppTaskRequest.TaskDetails taskDetails = request.getTaskDetails();
         String taskConfigKey = taskDetails.getTaskConfigKey();
 
@@ -74,8 +71,6 @@ public class WhatsAppTaskServiceImpl implements WhatsAppTaskService {
                     .taskIdentifier(existingTask.getTaskIdentifier())
                     .build();
         }
-
-        LocalDateTime dueAt = resolveDueAt(taskDetails.getDueAt(), leadIdentifier, openTasks);
 
         String assignedTo = resolveAssignedTo(taskDetails.getAssignedTo(), leadIdentifier, openTasks);
 
@@ -98,7 +93,7 @@ public class WhatsAppTaskServiceImpl implements WhatsAppTaskService {
         CreateAdhocTaskRequest createAdhocTaskRequest = CreateAdhocTaskRequest.builder()
                 .taskConfigKey(taskConfigKey)
                 .assignedTo(assignedTo)
-                .dueAt(dueAt)
+                .dueAt(taskDetails.getDueAt())
                 .taskDetails(taskDetailsRequest)
                 .build();
 
@@ -112,7 +107,7 @@ public class WhatsAppTaskServiceImpl implements WhatsAppTaskService {
     @Override
     @Transactional
     public WhatsAppTaskResponse updateTask(WhatsAppUpdateTaskRequest request) {
-        UUID leadIdentifier = resolveLeadIdentifier(request);
+        UUID leadIdentifier = resolveLeadIdentifier(request.getLeadIdentifier(), request.getMobileNumber());
         String taskConfigKey = request.getTaskConfigKey();
 
         List<Task> openTasks = taskRepositoryWrapper.findOpenTasksByLeadIdentifier(leadIdentifier);
@@ -199,35 +194,6 @@ public class WhatsAppTaskServiceImpl implements WhatsAppTaskService {
         return createTask(createRequest);
     }
 
-    private LocalDateTime resolveDueAt(LocalDateTime requestDueAt, UUID leadIdentifier, List<Task> openTasks) {
-        if (requestDueAt != null) {
-            return requestDueAt;
-        }
-
-        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
-        if (LeadSubStatus.ONHOLD.equals(lead.getSubstatus())) {
-            try {
-                LeadResponse leadResponse = leadRepositoryWrapper.findLeadResponseByIdentifierWithException(leadIdentifier);
-                if (leadResponse != null && leadResponse.getHoldFollowUpDate() != null) {
-                    LocalDate holdFollowUpDate = leadResponse.getHoldFollowUpDate();
-                    LocalDateTime dueAtEndOfDay = LocalDateTime.of(holdFollowUpDate, LocalTime.of(23, 59, 59));
-                    if (dueAtEndOfDay.isAfter(LocalDateTime.now())) {
-                        log.debug("ONHOLD lead: using holdFollowUpDate end-of-day as dueAt: {}", dueAtEndOfDay);
-                        return dueAtEndOfDay;
-                    } else {
-                        log.debug("ONHOLD lead: holdFollowUpDate EOD is in the past ({}). Falling back to now+24h.", dueAtEndOfDay);
-                    }
-                }
-            } catch (RuntimeException ex) {
-                log.warn("Failed to read holdFollowUpDate for ONHOLD lead {}: {}", leadIdentifier, ex.getMessage());
-            }
-        }
-
-        LocalDateTime fallbackDueAt = LocalDateTime.now().plusHours(DEFAULT_DUE_DATE_HOURS);
-        log.debug("Due date not provided, setting default to 24 hours from now: {}", fallbackDueAt);
-        return fallbackDueAt;
-    }
-
     private String resolveAssignedTo(String requestAssignedTo, UUID leadIdentifier, List<Task> openTasks) {
         if (!ValidationUtils.isNullOrEmpty(requestAssignedTo)) {
             return requestAssignedTo;
@@ -285,23 +251,23 @@ public class WhatsAppTaskServiceImpl implements WhatsAppTaskService {
                 ". Expected formats: HH:mm:ss.SSS, HH:mm:ss, or HH:mm (with or without 'T' prefix)");
     }
 
-    private UUID resolveLeadIdentifier(WhatsAppUpdateTaskRequest request) {
-        if (ValidationUtils.isNonNull(request.getLeadIdentifier())) {
-            return request.getLeadIdentifier();
+    private UUID resolveLeadIdentifier(UUID leadIdentifier, String mobileNumber) {
+        if (ValidationUtils.isNonNull(leadIdentifier)) {
+            return leadIdentifier;
         }
 
-        if (ValidationUtils.isNullOrEmpty(request.getMobileNumber())) {
+        if (ValidationUtils.isNullOrEmpty(mobileNumber)) {
             throw new IllegalArgumentException("Either leadIdentifier or mobileNumber (10 digits) must be provided");
         }
 
-        Optional<Person> person = personRepositoryWrapper.findByPrimaryMobileNumber(request.getMobileNumber());
+        Optional<Person> person = personRepositoryWrapper.findByPrimaryMobileNumber(mobileNumber);
         if (person.isEmpty()) {
-            throw new IllegalArgumentException("No person found with mobile number: " + request.getMobileNumber());
+            throw new IllegalArgumentException("No person found with mobile number: " + mobileNumber);
         }
 
         Optional<Lead> lead = findLeadByContactPersonId(person.get().getId());
         if (lead.isEmpty()) {
-            throw new IllegalArgumentException("No lead found for mobile number: " + request.getMobileNumber());
+            throw new IllegalArgumentException("No lead found for mobile number: " + mobileNumber);
         }
 
         return lead.get().getLeadIdentifier();
