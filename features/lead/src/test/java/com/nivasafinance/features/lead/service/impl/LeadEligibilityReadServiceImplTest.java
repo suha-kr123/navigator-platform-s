@@ -48,9 +48,12 @@ class LeadEligibilityReadServiceImplTest {
 
     @Test
     void getLatestEligibility_withFullOutput_returnsPopulatedResponse() {
-        // Arrange
         String output = """
                 {
+                  "profile_match": {
+                    "roi_min": 8.5,
+                    "roi_max": 12.0
+                  },
                   "loan_calculation": {
                     "eligible_emi": 25000.50,
                     "income_max_loan": 3000000,
@@ -69,23 +72,23 @@ class LeadEligibilityReadServiceImplTest {
 
         when(leadBREResultReadService.getResults(leadId, "eligibility")).thenReturn(List.of(breResult));
 
-        // Act
         Optional<LeadEligibilityResponse> result = leadEligibilityReadService.getLatestEligibility(leadId);
 
-        // Assert
-        assertTrue(result.isPresent(), "Should return a response when BRE result exists");
+        assertTrue(result.isPresent());
         LeadEligibilityResponse response = result.get();
-        assertEquals(resultIdentifier, response.getIdentifier(), "Identifier should match the BRE result");
-        assertEquals(LeadBREResultStatus.SUCCESS, response.getStatus(), "Status should match the BRE result");
-        assertEquals(new BigDecimal("25000.5"), response.getEligibleEmi(), "Eligible EMI should be parsed from output");
-        assertEquals(new BigDecimal("3000000"), response.getIncomeMaxLoan(), "Income max loan should be parsed from output");
-        assertEquals(new BigDecimal("2500000"), response.getEligibleLoanAmount(), "Eligible loan amount should be parsed from output");
-        assertEquals(60, response.getMinTenureMonths(), "Min tenure months should be parsed from output");
-        assertEquals("5-20 years", response.getTenureDisplayRange(), "Tenure display range should be parsed from output");
-        assertEquals(new BigDecimal("15000"), response.getEmiRangeMin(), "EMI range min should be parsed from output");
-        assertEquals(new BigDecimal("35000"), response.getEmiRangeMax(), "EMI range max should be parsed from output");
-        assertEquals(true, response.getSoftOfferEligible(), "Soft offer eligible should be parsed from output");
-        assertEquals(false, response.getConsumerVisible(), "Consumer visible should be parsed from output");
+        assertEquals(resultIdentifier, response.getIdentifier());
+        assertEquals(LeadBREResultStatus.SUCCESS, response.getStatus());
+        assertEquals(new BigDecimal("25000.5"), response.getEligibleEmi());
+        assertEquals(new BigDecimal("3000000"), response.getIncomeMaxLoan());
+        assertEquals(new BigDecimal("2500000"), response.getEligibleLoanAmount());
+        assertEquals(60, response.getMinTenureMonths());
+        assertEquals("5-20 years", response.getTenureDisplayRange());
+        assertEquals(new BigDecimal("15000"), response.getEmiRangeMin());
+        assertEquals(new BigDecimal("35000"), response.getEmiRangeMax());
+        assertEquals(new BigDecimal("8.5"), response.getRoiMin());
+        assertEquals(new BigDecimal("12.0"), response.getRoiMax());
+        assertEquals(true, response.getSoftOfferEligible());
+        assertEquals(false, response.getConsumerVisible());
         verify(leadBREResultReadService).getResults(leadId, "eligibility");
     }
 
@@ -163,9 +166,15 @@ class LeadEligibilityReadServiceImplTest {
 
     @Test
     void getLatestEligibilityDetail_withFullOutput_returnsPopulatedResponse() {
-        // Arrange
         String output = """
                 {
+                  "location_tier": "Tier 1",
+                  "bureau_track_score": 750,
+                  "Crif_Credit_Score": 720.5,
+                  "deed_ok": true,
+                  "property_khata_group": "A",
+                  "roof_type": "RCC",
+                  "Crif_obligation": 5000,
                   "profile_match": {
                     "profile_name": "Salaried Premium",
                     "roi_min": 8.5,
@@ -197,38 +206,44 @@ class LeadEligibilityReadServiceImplTest {
 
         when(leadBREResultReadService.getResults(leadId, "eligibility")).thenReturn(List.of(breResult));
 
-        // Act
         Optional<LeadBREEligibilityDetailResponse> result =
                 leadEligibilityReadService.getLatestEligibilityDetail(leadId);
 
-        // Assert
-        assertTrue(result.isPresent(), "Should return a response when BRE result exists");
+        assertTrue(result.isPresent());
         LeadBREEligibilityDetailResponse response = result.get();
-        assertEquals(resultIdentifier, response.getIdentifier(), "Identifier should match the BRE result");
-        assertEquals(LeadBREResultStatus.SUCCESS, response.getStatus(), "Status should match the BRE result");
-        assertEquals(true, response.getSoftOfferEligible(), "Soft offer eligible should be parsed from root");
-        assertEquals(false, response.getConsumerVisible(), "Consumer visible should be parsed from root");
+        assertEquals(resultIdentifier, response.getIdentifier());
+        assertEquals(LeadBREResultStatus.SUCCESS, response.getStatus());
 
-        // Profile match assertions
-        assertNotNull(response.getProfileMatch(), "Profile match should be populated");
-        assertEquals("Salaried Premium", response.getProfileMatch().getProfileName(), "Profile name should be parsed");
-        assertEquals(new BigDecimal("8.5"), response.getProfileMatch().getRoiMin(), "ROI min should be parsed");
-        assertEquals(new BigDecimal("12.0"), response.getProfileMatch().getRoiMax(), "ROI max should be parsed");
-        assertEquals("MATCHED", response.getProfileMatch().getProfileMatchStatus(), "Profile match status should be parsed");
-        assertEquals(List.of("Salaried Premium", "Salaried Standard"), response.getProfileMatch().getMatchingProfiles(),
-                "Matching profiles should be parsed as string list");
-        assertEquals(true, response.getProfileMatch().getConsumerVisible(), "Profile match consumer visible should be parsed");
+        // Root-level fields
+        assertEquals("Tier 1", response.getLocationTier());
+        assertEquals(750, response.getBureauTrackScore());
+        assertEquals(new BigDecimal("720.5"), response.getCrifCreditScore());
+        assertEquals(true, response.getDeedOk());
+        assertEquals("A", response.getPropertyKhataGroup());
+        assertEquals("RCC", response.getRoofType());
+        assertEquals(new BigDecimal("5000"), response.getCrifObligation());
+        assertEquals(true, response.getSoftOfferEligible());
+        assertEquals(false, response.getConsumerVisible());
 
-        // Loan calculation assertions
-        assertNotNull(response.getLoanCalculation(), "Loan calculation should be populated");
-        assertEquals(new BigDecimal("5000000"), response.getLoanCalculation().getPropertyValue(), "Property value should be parsed");
-        assertEquals(new BigDecimal("4000000"), response.getLoanCalculation().getLtvMaxLoan(), "LTV max loan should be parsed");
-        assertEquals(new BigDecimal("150000"), response.getLoanCalculation().getTotalApplicableIncome(), "Total applicable income should be parsed");
-        assertEquals(new BigDecimal("20000"), response.getLoanCalculation().getTotalObligations(), "Total obligations should be parsed");
-        assertEquals(new BigDecimal("2500000"), response.getLoanCalculation().getEligibleLoanAmount(), "Eligible loan amount should be parsed");
-        assertEquals(60, response.getLoanCalculation().getMinTenureMonths(), "Min tenure months should be parsed");
-        assertEquals("5-20 years", response.getLoanCalculation().getTenureDisplayRange(), "Tenure display range should be parsed");
-        assertEquals("income", response.getLoanCalculation().getBindingConstraint(), "Binding constraint should be parsed");
+        // Profile match
+        assertNotNull(response.getProfileMatch());
+        assertEquals("Salaried Premium", response.getProfileMatch().getProfileName());
+        assertEquals(new BigDecimal("8.5"), response.getProfileMatch().getRoiMin());
+        assertEquals(new BigDecimal("12.0"), response.getProfileMatch().getRoiMax());
+        assertEquals("MATCHED", response.getProfileMatch().getProfileMatchStatus());
+        assertEquals(List.of("Salaried Premium", "Salaried Standard"), response.getProfileMatch().getMatchingProfiles());
+        assertEquals(true, response.getProfileMatch().getConsumerVisible());
+
+        // Loan calculation
+        assertNotNull(response.getLoanCalculation());
+        assertEquals(new BigDecimal("5000000"), response.getLoanCalculation().getPropertyValue());
+        assertEquals(new BigDecimal("4000000"), response.getLoanCalculation().getLtvMaxLoan());
+        assertEquals(new BigDecimal("150000"), response.getLoanCalculation().getTotalApplicableIncome());
+        assertEquals(new BigDecimal("20000"), response.getLoanCalculation().getTotalObligations());
+        assertEquals(new BigDecimal("2500000"), response.getLoanCalculation().getEligibleLoanAmount());
+        assertEquals(60, response.getLoanCalculation().getMinTenureMonths());
+        assertEquals("5-20 years", response.getLoanCalculation().getTenureDisplayRange());
+        assertEquals("income", response.getLoanCalculation().getBindingConstraint());
         verify(leadBREResultReadService).getResults(leadId, "eligibility");
     }
 
@@ -258,12 +273,18 @@ class LeadEligibilityReadServiceImplTest {
         Optional<LeadBREEligibilityDetailResponse> result =
                 leadEligibilityReadService.getLatestEligibilityDetail(leadId);
 
-        // Assert
-        assertTrue(result.isPresent(), "Should return a response even with null output");
+        assertTrue(result.isPresent());
         LeadBREEligibilityDetailResponse response = result.get();
-        assertEquals(resultIdentifier, response.getIdentifier(), "Identifier should still be set");
-        assertNull(response.getProfileMatch(), "Profile match should be null when output is null");
-        assertNull(response.getLoanCalculation(), "Loan calculation should be null when output is null");
+        assertEquals(resultIdentifier, response.getIdentifier());
+        assertNull(response.getLocationTier());
+        assertNull(response.getBureauTrackScore());
+        assertNull(response.getCrifCreditScore());
+        assertNull(response.getDeedOk());
+        assertNull(response.getPropertyKhataGroup());
+        assertNull(response.getRoofType());
+        assertNull(response.getCrifObligation());
+        assertNull(response.getProfileMatch());
+        assertNull(response.getLoanCalculation());
     }
 
     @Test
@@ -317,7 +338,6 @@ class LeadEligibilityReadServiceImplTest {
 
     @Test
     void getLatestEligibility_withMissingLoanCalculation_returnsNullFields() {
-        // Arrange
         String output = """
                 {
                   "soft_offer_eligible": false,
@@ -329,17 +349,17 @@ class LeadEligibilityReadServiceImplTest {
 
         when(leadBREResultReadService.getResults(leadId, "eligibility")).thenReturn(List.of(breResult));
 
-        // Act
         Optional<LeadEligibilityResponse> result = leadEligibilityReadService.getLatestEligibility(leadId);
 
-        // Assert
         assertTrue(result.isPresent());
         LeadEligibilityResponse response = result.get();
-        assertNull(response.getEligibleEmi(), "EMI should be null when loan_calculation is missing");
-        assertNull(response.getEligibleLoanAmount(), "Loan amount should be null when loan_calculation is missing");
-        assertNull(response.getMinTenureMonths(), "Min tenure should be null when loan_calculation is missing");
-        assertEquals(false, response.getSoftOfferEligible(), "Root soft_offer_eligible should be parsed");
-        assertEquals(true, response.getConsumerVisible(), "Root consumer_visible should be parsed");
+        assertNull(response.getEligibleEmi());
+        assertNull(response.getEligibleLoanAmount());
+        assertNull(response.getMinTenureMonths());
+        assertNull(response.getRoiMin(), "roi_min should be null when profile_match is missing");
+        assertNull(response.getRoiMax(), "roi_max should be null when profile_match is missing");
+        assertEquals(false, response.getSoftOfferEligible());
+        assertEquals(true, response.getConsumerVisible());
     }
 
     @Test

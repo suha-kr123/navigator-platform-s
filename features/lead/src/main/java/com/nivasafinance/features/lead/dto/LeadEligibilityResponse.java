@@ -24,6 +24,8 @@ public class LeadEligibilityResponse {
     private String tenureDisplayRange;
     private BigDecimal emiRangeMin;
     private BigDecimal emiRangeMax;
+    private BigDecimal roiMin;
+    private BigDecimal roiMax;
     private Boolean softOfferEligible;
     private Boolean consumerVisible;
 }

@@ -18,6 +18,13 @@ public class LeadBREEligibilityDetailResponse {
 
     private UUID identifier;
     private LeadBREResultStatus status;
+    private String locationTier;
+    private Integer bureauTrackScore;
+    private BigDecimal crifCreditScore;
+    private Boolean deedOk;
+    private String propertyKhataGroup;
+    private String roofType;
+    private BigDecimal crifObligation;
     private ProfileMatch profileMatch;
     private LoanCalculation loanCalculation;
     private Boolean softOfferEligible;
