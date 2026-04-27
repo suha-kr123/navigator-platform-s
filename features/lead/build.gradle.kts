@@ -21,6 +21,7 @@ dependencies {
     implementation(project(":features:workflow"))
     implementation(project(":features:task"))
     implementation(project(":features:call"))
+    implementation(project(":features:notifications"))
     implementation(project(":features:staff"))
     implementation(project(":features:offices"))
     implementation(project(":features:usermanagement"))

@@ -1,6 +1,8 @@
 package com.nivasafinance.notification.orchestrator.repository;
 
 import com.nivasafinance.notification.orchestrator.entity.AdvisorWhatsAppNotification;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -9,6 +11,8 @@ import java.util.UUID;
 
 @Repository
 public interface AdvisorWhatsAppNotificationRepository extends JpaRepository<AdvisorWhatsAppNotification, Long> {
+
+    Page<AdvisorWhatsAppNotification> findByAdvisorIdentifierOrderByIdDesc(UUID advisorIdentifier, Pageable pageable);
     
     Optional<AdvisorWhatsAppNotification> findByLocalMessageId(String localMessageId);
     
