@@ -26,6 +26,7 @@ dependencies {
     implementation(project(":features:offices"))
     implementation(project(":features:usermanagement"))
     implementation(project(":features:referral"))
+    implementation(project(":features:transaction"))
     implementation(project(":integrations"))
     implementation(project(":features:bre"))
     implementation(project(":features:creditbureau"))

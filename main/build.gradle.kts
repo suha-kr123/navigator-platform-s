@@ -44,6 +44,7 @@ dependencies {
     implementation(project(":externals:atlas"))
     implementation(project(":analytics"))
     implementation(project(":features:admin"))
+    implementation(project(":features:transaction"))
 }
 
 springBoot {

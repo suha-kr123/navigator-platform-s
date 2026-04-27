@@ -32,6 +32,7 @@
     <include file="db/changelog/integrations/db.changelog-integrations.xml"/>
     <include file="db/changelog/bre/db.changelog-bre.xml"/>
     <include file="db/changelog/displayconfig/db.changelog-displayconfig.xml"/>
+    <include file="db/changelog/transaction/db.changelog-transaction.xml"/>
 
     <!-- Permission group mappings - must run after all permissions and groups are inserted -->
     <include file="db/changelog/rolemanagement/db.changelog-rolemanagement-mappings.xml"/>
