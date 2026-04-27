@@ -1079,7 +1079,7 @@ class LeadReadServiceImplTest {
     void findLeadByPhoneNumber_whenFound_returnsOptionalWithResponse() {
         // Arrange
         LeadBasicResponse expected = LeadBasicResponse.builder().leadIdentifier(leadIdentifier).build();
-        when(leadRepositoryWrapper.findLeadByPhoneNumber("9876543210")).thenReturn(Optional.of(expected));
+        when(leadRepositoryWrapper.findReusableLeadByPhoneNumber("9876543210")).thenReturn(Optional.of(expected));
 
         // Act
         Optional<LeadBasicResponse> result = leadReadService.findLeadByPhoneNumber("9876543210");
@@ -1087,7 +1087,7 @@ class LeadReadServiceImplTest {
         // Assert
         assertTrue(result.isPresent(), "Should return non-empty Optional");
         assertSame(expected, result.get(), "Should return the response from repository wrapper");
-        verify(leadRepositoryWrapper).findLeadByPhoneNumber("9876543210");
+        verify(leadRepositoryWrapper).findReusableLeadByPhoneNumber("9876543210");
     }
 
     // ==================== adminSearchLeads() Tests ====================

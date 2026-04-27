@@ -50,6 +50,7 @@ public class LeadEligibilityReadServiceImpl implements LeadEligibilityReadServic
         if (result.getOutput() != null) {
             try {
                 JsonNode root = objectMapper.readTree(result.getOutput());
+                JsonNode profileMatch = root.path("profile_match");
                 JsonNode loanCalc = root.path("loan_calculation");
 
                 builder.eligibleEmi(toBigDecimal(loanCalc.get("eligible_emi")))
@@ -59,6 +60,8 @@ public class LeadEligibilityReadServiceImpl implements LeadEligibilityReadServic
                         .tenureDisplayRange(toText(loanCalc.get("tenure_display_range")))
                         .emiRangeMin(toBigDecimal(loanCalc.get("emi_range_min")))
                         .emiRangeMax(toBigDecimal(loanCalc.get("emi_range_max")))
+                        .roiMin(toBigDecimal(profileMatch.get("roi_min")))
+                        .roiMax(toBigDecimal(profileMatch.get("roi_max")))
                         .softOfferEligible(toBoolean(root.get("soft_offer_eligible")))
                         .consumerVisible(toBoolean(root.get("consumer_visible")));
             } catch (JsonProcessingException e) {
@@ -78,6 +81,13 @@ public class LeadEligibilityReadServiceImpl implements LeadEligibilityReadServic
         if (result.getOutput() != null) {
             try {
                 JsonNode root = objectMapper.readTree(result.getOutput());
+                builder.locationTier(toText(root.get("location_tier")))
+                        .bureauTrackScore(toInteger(root.get("bureau_track_score")))
+                        .crifCreditScore(toBigDecimal(root.get("Crif_Credit_Score")))
+                        .deedOk(toBoolean(root.get("deed_ok")))
+                        .propertyKhataGroup(toText(root.get("property_khata_group")))
+                        .roofType(toText(root.get("roof_type")))
+                        .crifObligation(toBigDecimal(root.get("Crif_obligation")));
 
                 JsonNode pm = root.path("profile_match");
                 if (!pm.isMissingNode()) {
