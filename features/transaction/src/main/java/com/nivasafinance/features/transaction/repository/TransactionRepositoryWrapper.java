@@ -60,10 +60,6 @@ public class TransactionRepositoryWrapper {
                 .orElseThrow(() -> TransactionExceptionFactory.notFound(identifier, messageSource));
     }
 
-    public Optional<Transaction> findByIdempotencyKey(String idempotencyKey) {
-        return transactionRepository.findByIdempotencyKey(idempotencyKey);
-    }
-
     public boolean existsByIdempotencyKey(String idempotencyKey) {
         return transactionRepository.existsByIdempotencyKey(idempotencyKey);
     }
