@@ -1,6 +1,7 @@
 package com.nivasafinance.features.transaction.dto;
 
 import com.nivasafinance.features.transaction.enums.PaymentMode;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -17,7 +18,7 @@ public class PayTransactionRequest {
     @NotNull(message = "{error.transaction.payment.mode.required}")
     private PaymentMode paymentMode;
 
-    @NotNull(message = "{error.transaction.external.reference.required}")
+    @NotBlank(message = "{error.transaction.external.reference.required}")
     private String externalReference;
 
     private LocalDate paymentDate;
