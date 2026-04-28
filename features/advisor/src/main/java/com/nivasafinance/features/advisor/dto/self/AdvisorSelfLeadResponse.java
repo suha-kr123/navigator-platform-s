@@ -22,6 +22,8 @@ public class AdvisorSelfLeadResponse {
     private String loanType;
     private LeadStatus leadStatus;
     private LeadSubStatus leadSubStatus;
+    private String reasonCode;
+    private String reason;
     private BigDecimal requestedAmount;
     private LocalDateTime createdAt;
     private String leadStageDisplayName;

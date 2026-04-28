@@ -442,6 +442,8 @@ public class AdvisorSelfServiceImpl implements AdvisorSelfService {
                 .loanType(resolveProductName(lead.getProductCode()))
                 .leadStatus(lead.getStatus())
                 .leadSubStatus(lead.getSubStatus())
+                .reasonCode(lead.getReasonCode())
+                .reason(lead.getReason())
                 .requestedAmount(lead.getRequestedAmount())
                 .createdAt(lead.getLeadCreatedAt())
                 .leadStageDisplayName(resolveCurrentStageDisplayName(leadIdentifier))
