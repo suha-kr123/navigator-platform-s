@@ -4,7 +4,9 @@ import com.nivasafinance.common.base.model.MasterLanguageResolver;
 import com.nivasafinance.features.master.location.dto.*;
 import com.nivasafinance.features.master.location.entity.*;
 import com.nivasafinance.features.master.location.exception.LocationNotFoundException;
+import com.nivasafinance.features.master.location.entity.OperatingArea;
 import com.nivasafinance.features.master.location.repository.*;
+import com.nivasafinance.features.master.location.dto.OperatingAreaResponse;
 import com.nivasafinance.features.master.location.service.LocationMasterService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
@@ -22,6 +24,7 @@ public class LocationMasterServiceImpl implements LocationMasterService {
     private final CountryRepository countryRepository;
     private final StateRepository stateRepository;
     private final RegionRepository regionRepository;
+    private final OperatingAreaRepository operatingAreaRepository;
     private final DistrictRepository districtRepository;
     private final TalukaRepository talukaRepository;
     private final VillageRepository villageRepository;
@@ -134,6 +137,16 @@ public class LocationMasterServiceImpl implements LocationMasterService {
                 .collect(Collectors.toList());
     }
 
+    private OperatingAreaResponse mapToOperatingAreaResponse(OperatingArea operatingArea) {
+        return OperatingAreaResponse.builder()
+                .id(operatingArea.getId())
+                .name(MasterLanguageResolver.getDisplayValue(operatingArea.getName()))
+                .code(operatingArea.getCode())
+                .isActive(operatingArea.getIsActive())
+                .displayOrder(operatingArea.getDisplayOrder())
+                .build();
+    }
+
     private CountryResponse mapToCountryResponse(Country country) {
         return CountryResponse.builder()
                 .id(country.getId())
@@ -180,6 +193,16 @@ public class LocationMasterServiceImpl implements LocationMasterService {
                 .isActive(taluka.getIsActive())
                 .displayOrder(taluka.getDisplayOrder())
                 .build();
+    }
+
+    @Override
+    public List<OperatingAreaResponse> getOperatingAreasByRegionId(Long regionId) {
+        regionRepository.findById(regionId)
+                .orElseThrow(() -> new LocationNotFoundException("Region", regionId, messageSource));
+        List<OperatingArea> operatingAreas = operatingAreaRepository.findByRegionIdAndIsActiveTrue(regionId);
+        return operatingAreas.stream()
+                .map(this::mapToOperatingAreaResponse)
+                .collect(Collectors.toList());
     }
 
     private VillageResponse mapToVillageResponse(Village village) {

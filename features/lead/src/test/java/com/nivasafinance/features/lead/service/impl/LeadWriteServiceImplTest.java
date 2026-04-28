@@ -1708,6 +1708,64 @@ class LeadWriteServiceImplTest {
     }
 
     @Test
+    void patchPropertyDetails_withOperatingAreaFields_setsOperatingAreaData() {
+        // Arrange
+        PatchAddressData patchAddr = PatchAddressData.builder()
+                .operatingAreaName(Optional.of("North Zone"))
+                .operatingAreaCode(Optional.of("OA01"))
+                .operatingAreaId(Optional.of(200L))
+                .build();
+
+        PatchPropertyDetailsRequest request = PatchPropertyDetailsRequest.builder()
+                .address(Optional.of(patchAddr))
+                .build();
+
+        when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
+        when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
+
+        // Act
+        leadWriteService.patchPropertyDetails(leadIdentifier, request);
+
+        // Assert
+        AddressData addr = lead.getOtherDetails().getPropertyDetails().getAddress();
+        assertEquals("North Zone", addr.getOperatingAreaName(), "Operating area name should be set from patch");
+        assertEquals("OA01", addr.getOperatingAreaCode(), "Operating area code should be set from patch");
+        assertEquals(200L, addr.getOperatingAreaId(), "Operating area id should be set from patch");
+    }
+
+    @Test
+    void patchPropertyDetails_withNullOperatingAreaFields_doesNotOverwrite() {
+        // Arrange
+        AddressData existingAddr = new AddressData();
+        existingAddr.setOperatingAreaName("Existing Zone");
+        existingAddr.setOperatingAreaCode("EX_OA");
+        existingAddr.setOperatingAreaId(99L);
+        Lead.PropertyDetails existing = new Lead.PropertyDetails();
+        existing.setAddress(existingAddr);
+        lead.setOtherDetails(Lead.OtherDetails.builder().propertyDetails(existing).build());
+
+        PatchAddressData patchAddr = PatchAddressData.builder()
+                .pincode(Optional.of("560001"))
+                .build();
+
+        PatchPropertyDetailsRequest request = PatchPropertyDetailsRequest.builder()
+                .address(Optional.of(patchAddr))
+                .build();
+
+        when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
+        when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
+
+        // Act
+        leadWriteService.patchPropertyDetails(leadIdentifier, request);
+
+        // Assert
+        AddressData addr = lead.getOtherDetails().getPropertyDetails().getAddress();
+        assertEquals("Existing Zone", addr.getOperatingAreaName(), "Operating area name should not be overwritten when not patched");
+        assertEquals("EX_OA", addr.getOperatingAreaCode(), "Operating area code should not be overwritten when not patched");
+        assertEquals(99L, addr.getOperatingAreaId(), "Operating area id should not be overwritten when not patched");
+    }
+
+    @Test
     void patchPropertyDetails_withInvalidPropertyTax_throwsBadRequestException() {
         // Arrange
         PatchDocumentChecklistRequest checklist = PatchDocumentChecklistRequest.builder()

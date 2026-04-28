@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1777000000001_00" author="system" context="default">
+        <addColumn tableName="n_master_pincode">
+            <column name="operating_area_id" type="bigint"/>
+        </addColumn>
+
+        <addForeignKeyConstraint baseTableName="n_master_pincode"
+                                 baseColumnNames="operating_area_id"
+                                 constraintName="fk_pincode_operating_area"
+                                 referencedTableName="n_master_operating_area"
+                                 referencedColumnNames="id"/>
+
+        <createIndex indexName="idx_pincode_operating_area_id" tableName="n_master_pincode">
+            <column name="operating_area_id"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

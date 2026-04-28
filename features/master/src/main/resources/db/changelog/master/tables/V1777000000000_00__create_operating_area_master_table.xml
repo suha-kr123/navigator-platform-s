@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1777000000000_00" author="system" context="default">
+        <createTable tableName="n_master_operating_area">
+            <column name="id" type="bigserial" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="region_id" type="bigint"/>
+            <column name="code" type="varchar(50)"/>
+            <column name="name" type="jsonb"/>
+            <column name="is_active" type="boolean" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="display_order" type="integer" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="varchar(255)"/>
+            <column name="created_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="updated_by" type="varchar(255)"/>
+            <column name="updated_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="version" type="bigint" defaultValueNumeric="0"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="n_master_operating_area"
+                                 baseColumnNames="region_id"
+                                 constraintName="fk_operating_area_region"
+                                 referencedTableName="n_master_region"
+                                 referencedColumnNames="id"/>
+
+        <createIndex indexName="idx_operating_area_region_id" tableName="n_master_operating_area">
+            <column name="region_id"/>
+        </createIndex>
+        <createIndex indexName="idx_operating_area_code" tableName="n_master_operating_area">
+            <column name="code"/>
+        </createIndex>
+        <createIndex indexName="idx_operating_area_is_active" tableName="n_master_operating_area">
+            <column name="is_active"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

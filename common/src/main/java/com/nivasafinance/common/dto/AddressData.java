@@ -32,5 +32,8 @@ public class AddressData {
     private String villageCode;
     private Long villageId;
     private String villageName;
+    private String operatingAreaName;
+    private String operatingAreaCode;
+    private Long operatingAreaId;
     private Boolean isServiceable;
 }

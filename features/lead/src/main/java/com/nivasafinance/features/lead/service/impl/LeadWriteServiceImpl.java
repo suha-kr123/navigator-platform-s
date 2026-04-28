@@ -951,6 +951,15 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         if (patch.getVillageName() != null && patch.getVillageName().isPresent()) {
             existing.setVillageName(patch.getVillageName().get());
         }
+        if (patch.getOperatingAreaName() != null && patch.getOperatingAreaName().isPresent()) {
+            existing.setOperatingAreaName(patch.getOperatingAreaName().get());
+        }
+        if (patch.getOperatingAreaCode() != null && patch.getOperatingAreaCode().isPresent()) {
+            existing.setOperatingAreaCode(patch.getOperatingAreaCode().get());
+        }
+        if (patch.getOperatingAreaId() != null && patch.getOperatingAreaId().isPresent()) {
+            existing.setOperatingAreaId(patch.getOperatingAreaId().get());
+        }
         if (patch.getIsServiceable() != null && patch.getIsServiceable().isPresent()) {
             existing.setIsServiceable(patch.getIsServiceable().get());
         }

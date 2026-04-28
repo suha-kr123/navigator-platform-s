@@ -36,5 +36,8 @@ public class PatchAddressData {
     private Optional<String> villageCode;
     private Optional<Long> villageId;
     private Optional<String> villageName;
+    private Optional<String> operatingAreaName;
+    private Optional<String> operatingAreaCode;
+    private Optional<Long> operatingAreaId;
     private Optional<Boolean> isServiceable;
 }

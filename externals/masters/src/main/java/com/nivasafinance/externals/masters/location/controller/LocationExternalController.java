@@ -75,4 +75,10 @@ public class LocationExternalController {
         PincodeResponse response = pincodeService.getPincodeDetails(pincode);
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/regions/{regionId}/operating-areas")
+    public ResponseEntity<List<OperatingAreaResponse>> getOperatingAreas(@PathVariable Long regionId) {
+        List<OperatingAreaResponse> operatingAreas = locationMasterService.getOperatingAreasByRegionId(regionId);
+        return ResponseEntity.ok(operatingAreas);
+    }
 }

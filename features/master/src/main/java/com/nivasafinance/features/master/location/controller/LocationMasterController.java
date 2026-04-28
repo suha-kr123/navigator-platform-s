@@ -67,5 +67,12 @@ public class LocationMasterController {
         List<VillageResponse> villages = locationMasterService.getVillagesByTalukaId(talukaId);
         return ResponseEntity.ok(villages);
     }
+
+    @GetMapping("/regions/{regionId}/operating-areas")
+    @RequirePermission(permissionName = "READ_MASTER_LOCATION")
+    public ResponseEntity<List<OperatingAreaResponse>> getOperatingAreasByRegionId(@PathVariable Long regionId) {
+        List<OperatingAreaResponse> operatingAreas = locationMasterService.getOperatingAreasByRegionId(regionId);
+        return ResponseEntity.ok(operatingAreas);
+    }
 }
 

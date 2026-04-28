@@ -36,7 +36,10 @@ public class Pincode extends AuditableEntity {
 
     @Column(name = "region_id", nullable = true)
     private Long regionId;
-    
+
+    @Column(name = "operating_area_id", nullable = true)
+    private Long operatingAreaId;
+
     @Column(name = "district_id", nullable = true)
     private Long districtId;
     

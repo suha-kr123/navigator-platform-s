@@ -42,6 +42,9 @@ class LocationMasterServiceImplTest {
     private VillageRepository villageRepository;
 
     @Mock
+    private OperatingAreaRepository operatingAreaRepository;
+
+    @Mock
     private MessageSource messageSource;
 
     @InjectMocks
@@ -53,6 +56,7 @@ class LocationMasterServiceImplTest {
     private District district;
     private Taluka taluka;
     private Village village;
+    private OperatingArea operatingArea;
 
     @BeforeEach
     void setUp() {
@@ -102,6 +106,14 @@ class LocationMasterServiceImplTest {
         village.setCode("YLK");
         village.setNameValues(MasterLanguageData.builder().defaultValue("Yelahanka").build());
         village.setIsActive(true);
+
+        operatingArea = new OperatingArea();
+        operatingArea.setId(200L);
+        operatingArea.setRegionId(50L);
+        operatingArea.setCode("OA01");
+        operatingArea.setName(MasterLanguageData.builder().defaultValue("North Zone").build());
+        operatingArea.setIsActive(true);
+        operatingArea.setDisplayOrder(1);
     }
 
     // ── getAllCountries ───────────────────────────────────────────────
@@ -434,6 +446,53 @@ class LocationMasterServiceImplTest {
 
         assertEquals(1, result.get(0).getDisplayOrder(),
                 "Taluka display order should be mapped from entity");
+    }
+
+    // ── getOperatingAreasByRegionId ──────────────────────────────────
+
+    @Test
+    void getOperatingAreasByRegionId_validRegion_returnsOperatingAreaList() {
+        when(regionRepository.findById(50L)).thenReturn(Optional.of(region));
+        when(operatingAreaRepository.findByRegionIdAndIsActiveTrue(50L)).thenReturn(List.of(operatingArea));
+
+        List<OperatingAreaResponse> result = locationMasterService.getOperatingAreasByRegionId(50L);
+
+        assertEquals(1, result.size(), "Should return one operating area for the region");
+        assertEquals("OA01", result.get(0).getCode(), "Operating area code should match");
+    }
+
+    @Test
+    void getOperatingAreasByRegionId_regionNotFound_throwsLocationNotFound() {
+        when(regionRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThrows(LocationNotFoundException.class,
+                () -> locationMasterService.getOperatingAreasByRegionId(999L),
+                "Non-existent region ID should throw LocationNotFoundException");
+    }
+
+    @Test
+    void getOperatingAreasByRegionId_noOperatingAreas_returnsEmptyList() {
+        when(regionRepository.findById(50L)).thenReturn(Optional.of(region));
+        when(operatingAreaRepository.findByRegionIdAndIsActiveTrue(50L)).thenReturn(Collections.emptyList());
+
+        List<OperatingAreaResponse> result = locationMasterService.getOperatingAreasByRegionId(50L);
+
+        assertTrue(result.isEmpty(), "Should return empty list when region has no active operating areas");
+    }
+
+    @Test
+    void getOperatingAreasByRegionId_responseFieldsCorrectlyMapped() {
+        when(regionRepository.findById(50L)).thenReturn(Optional.of(region));
+        when(operatingAreaRepository.findByRegionIdAndIsActiveTrue(50L)).thenReturn(List.of(operatingArea));
+
+        List<OperatingAreaResponse> result = locationMasterService.getOperatingAreasByRegionId(50L);
+
+        OperatingAreaResponse response = result.get(0);
+        assertEquals(200L, response.getId(), "Operating area ID should be mapped correctly");
+        assertEquals("North Zone", response.getName(), "Operating area name should be resolved from MasterLanguageData");
+        assertEquals("OA01", response.getCode(), "Operating area code should be mapped correctly");
+        assertTrue(response.getIsActive(), "Operating area isActive should be mapped correctly");
+        assertEquals(1, response.getDisplayOrder(), "Operating area displayOrder should be mapped correctly");
     }
 
     // ── isDistrictServiceable ────────────────────────────────────────

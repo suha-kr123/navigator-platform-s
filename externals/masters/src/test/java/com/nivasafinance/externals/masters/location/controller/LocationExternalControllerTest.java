@@ -2,6 +2,7 @@ package com.nivasafinance.externals.masters.location.controller;
 
 import com.nivasafinance.features.master.location.dto.CountryResponse;
 import com.nivasafinance.features.master.location.dto.DistrictResponse;
+import com.nivasafinance.features.master.location.dto.OperatingAreaResponse;
 import com.nivasafinance.features.master.location.dto.StateResponse;
 import com.nivasafinance.features.master.location.dto.TalukaResponse;
 import com.nivasafinance.features.master.location.service.LocationMasterService;
@@ -121,6 +122,30 @@ class LocationExternalControllerTest {
         when(locationMasterService.getAllCountries()).thenReturn(List.of());
 
         ResponseEntity<List<CountryResponse>> result = controller.getCountries();
+
+        assertEquals(HttpStatus.OK, result.getStatusCode());
+        assertTrue(result.getBody().isEmpty());
+    }
+
+    @Test
+    void getOperatingAreas_success_returnsOk() {
+        OperatingAreaResponse area = OperatingAreaResponse.builder()
+                .id(200L).name("North Zone").code("OA01").isActive(true).displayOrder(1).build();
+        when(locationMasterService.getOperatingAreasByRegionId(50L)).thenReturn(List.of(area));
+
+        ResponseEntity<List<OperatingAreaResponse>> result = controller.getOperatingAreas(50L);
+
+        assertEquals(HttpStatus.OK, result.getStatusCode());
+        assertEquals(1, result.getBody().size());
+        assertEquals("OA01", result.getBody().get(0).getCode());
+        verify(locationMasterService).getOperatingAreasByRegionId(50L);
+    }
+
+    @Test
+    void getOperatingAreas_emptyList_returnsOkWithEmptyBody() {
+        when(locationMasterService.getOperatingAreasByRegionId(50L)).thenReturn(List.of());
+
+        ResponseEntity<List<OperatingAreaResponse>> result = controller.getOperatingAreas(50L);
 
         assertEquals(HttpStatus.OK, result.getStatusCode());
         assertTrue(result.getBody().isEmpty());
