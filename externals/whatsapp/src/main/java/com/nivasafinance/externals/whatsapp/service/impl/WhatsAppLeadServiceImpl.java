@@ -232,6 +232,7 @@ public class WhatsAppLeadServiceImpl implements WhatsAppLeadService {
                 }
             }
         } catch (Exception e) {
+            log.warn("Failed to enrich product fields from lead read service, leadIdentifier: {}", leadIdentifier, e);
             productName = "empty";
         }
         return new String[] {productCode, productName};
