@@ -17,4 +17,5 @@ public class LocationDisplayNames {
     private MasterLanguageData districtValue;
     private MasterLanguageData talukaValue;
     private MasterLanguageData villageValue;
+    private MasterLanguageData operatingAreaValue;
 }

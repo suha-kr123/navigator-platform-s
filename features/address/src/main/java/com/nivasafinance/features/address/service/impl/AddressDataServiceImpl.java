@@ -90,18 +90,24 @@ public class AddressDataServiceImpl implements AddressDataService {
                 .district(address.getDistrict())
                 .country(address.getCountry())
                 .state(address.getState())
+                .region(address.getRegion())
                 .taluka(address.getTaluka())
                 .districtCode(address.getDistrictCode())
+                .regionCode(address.getRegionCode())
                 .stateCode(address.getStateCode())
                 .countryCode(address.getCountryCode())
                 .talukaCode(address.getTalukaCode())
                 .districtId(address.getDistrictId())
+                .regionId(address.getRegionId())
                 .stateId(address.getStateId())
                 .countryId(address.getCountryId())
                 .talukaId(address.getTalukaId())
                 .villageCode(address.getVillageCode())
                 .villageId(address.getVillageId())
                 .villageName(address.getVillageName())
+                .operatingAreaName(address.getOperatingAreaName())
+                .operatingAreaCode(address.getOperatingAreaCode())
+                .operatingAreaId(address.getOperatingAreaId())
                 .isServiceable(address.getIsServiceable())
                 .build();
         enrichNamesFromLocationMasters(copy);
@@ -113,19 +119,22 @@ public class AddressDataServiceImpl implements AddressDataService {
             return;
         }
         locationRepository.findDisplayNamesByCodes(
-                a.getCountryCode(), a.getStateCode(), a.getRegionCode(), a.getDistrictCode(), a.getTalukaCode(), a.getVillageCode()
+                a.getCountryCode(), a.getStateCode(), a.getRegionCode(), a.getDistrictCode(), a.getTalukaCode(), a.getVillageCode(), a.getOperatingAreaCode()
         ).ifPresent(names -> {
             if (names.getCountryName() != null) a.setCountry(names.getCountryName());
             if (names.getStateName() != null) a.setState(names.getStateName());
+            if (names.getRegionValue() != null) a.setRegion(MasterLanguageResolver.getDisplayValue(names.getRegionValue()));
             if (names.getDistrictValue() != null) a.setDistrict(MasterLanguageResolver.getDisplayValue(names.getDistrictValue()));
             if (names.getTalukaValue() != null) a.setTaluka(MasterLanguageResolver.getDisplayValue(names.getTalukaValue()));
             if (names.getVillageValue() != null) a.setVillageName(MasterLanguageResolver.getDisplayValue(names.getVillageValue()));
+            if (names.getOperatingAreaValue() != null) a.setOperatingAreaName(MasterLanguageResolver.getDisplayValue(names.getOperatingAreaValue()));
         });
     }
 
     private static boolean hasAnyLocationCode(AddressData a) {
-        return isNotBlank(a.getCountryCode()) || isNotBlank(a.getStateCode()) || isNotBlank(a.getDistrictCode())
-                || isNotBlank(a.getTalukaCode()) || isNotBlank(a.getVillageCode());
+        return isNotBlank(a.getCountryCode()) || isNotBlank(a.getStateCode()) || isNotBlank(a.getRegionCode())
+                || isNotBlank(a.getDistrictCode()) || isNotBlank(a.getTalukaCode()) || isNotBlank(a.getVillageCode())
+                || isNotBlank(a.getOperatingAreaCode());
     }
 
     private static boolean isNotBlank(String s) {

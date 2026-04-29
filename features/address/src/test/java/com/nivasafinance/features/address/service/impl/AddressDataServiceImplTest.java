@@ -643,12 +643,12 @@ class AddressDataServiceImplTest {
                 .stateCode("KA")
                 .build();
 
-        when(locationRepository.findDisplayNamesByCodes(null, "KA", null, null, null, null))
+        when(locationRepository.findDisplayNamesByCodes(null, "KA", null, null, null, null, null))
                 .thenReturn(Optional.empty());
 
         addressDataService.enrichAddressWithDisplayNames(input);
 
-        verify(locationRepository).findDisplayNamesByCodes(null, "KA", null, null, null, null);
+        verify(locationRepository).findDisplayNamesByCodes(null, "KA", null, null, null, null, null);
     }
 
     @Test
@@ -657,12 +657,12 @@ class AddressDataServiceImplTest {
                 .districtCode("DIST01")
                 .build();
 
-        when(locationRepository.findDisplayNamesByCodes(null, null, null, "DIST01", null, null))
+        when(locationRepository.findDisplayNamesByCodes(null, null, null, "DIST01", null, null, null))
                 .thenReturn(Optional.empty());
 
         addressDataService.enrichAddressWithDisplayNames(input);
 
-        verify(locationRepository).findDisplayNamesByCodes(null, null, null, "DIST01", null, null);
+        verify(locationRepository).findDisplayNamesByCodes(null, null, null, "DIST01", null, null, null);
     }
 
     @Test
@@ -671,12 +671,12 @@ class AddressDataServiceImplTest {
                 .talukaCode("TAL01")
                 .build();
 
-        when(locationRepository.findDisplayNamesByCodes(null, null, null, null, "TAL01", null))
+        when(locationRepository.findDisplayNamesByCodes(null, null, null, null, "TAL01", null, null))
                 .thenReturn(Optional.empty());
 
         addressDataService.enrichAddressWithDisplayNames(input);
 
-        verify(locationRepository).findDisplayNamesByCodes(null, null, null, null, "TAL01", null);
+        verify(locationRepository).findDisplayNamesByCodes(null, null, null, null, "TAL01", null, null);
     }
 
     @Test
@@ -685,12 +685,82 @@ class AddressDataServiceImplTest {
                 .villageCode("VIL01")
                 .build();
 
-        when(locationRepository.findDisplayNamesByCodes(null, null, null, null, null, "VIL01"))
+        when(locationRepository.findDisplayNamesByCodes(null, null, null, null, null, "VIL01", null))
                 .thenReturn(Optional.empty());
 
         addressDataService.enrichAddressWithDisplayNames(input);
 
-        verify(locationRepository).findDisplayNamesByCodes(null, null, null, null, null, "VIL01");
+        verify(locationRepository).findDisplayNamesByCodes(null, null, null, null, null, "VIL01", null);
+    }
+
+    @Test
+    void enrichAddressWithDisplayNames_onlyRegionCode_triggersLookup() {
+        AddressData input = AddressData.builder()
+                .regionCode("REG01")
+                .build();
+
+        when(locationRepository.findDisplayNamesByCodes(null, null, "REG01", null, null, null, null))
+                .thenReturn(Optional.empty());
+
+        addressDataService.enrichAddressWithDisplayNames(input);
+
+        verify(locationRepository).findDisplayNamesByCodes(null, null, "REG01", null, null, null, null);
+    }
+
+    @Test
+    void enrichAddressWithDisplayNames_onlyOperatingAreaCode_triggersLookup() {
+        AddressData input = AddressData.builder()
+                .operatingAreaCode("OA01")
+                .build();
+
+        when(locationRepository.findDisplayNamesByCodes(null, null, null, null, null, null, "OA01"))
+                .thenReturn(Optional.empty());
+
+        addressDataService.enrichAddressWithDisplayNames(input);
+
+        verify(locationRepository).findDisplayNamesByCodes(null, null, null, null, null, null, "OA01");
+    }
+
+    @Test
+    void enrichAddressWithDisplayNames_withRegionAndOperatingArea_enrichesNames() {
+        AddressData input = AddressData.builder()
+                .regionCode("REG01")
+                .operatingAreaCode("OA01")
+                .build();
+
+        LocationDisplayNames displayNames = LocationDisplayNames.builder()
+                .regionValue(new MasterLanguageData("North Karnataka", null))
+                .operatingAreaValue(new MasterLanguageData("North Zone", null))
+                .build();
+
+        when(locationRepository.findDisplayNamesByCodes(null, null, "REG01", null, null, null, "OA01"))
+                .thenReturn(Optional.of(displayNames));
+
+        AddressData result = addressDataService.enrichAddressWithDisplayNames(input);
+
+        assertEquals("North Karnataka", result.getRegion(), "Region name should be resolved from regionValue");
+        assertEquals("North Zone", result.getOperatingAreaName(), "Operating area name should be resolved from operatingAreaValue");
+    }
+
+    @Test
+    void enrichAddressWithDisplayNames_nullOperatingAreaValue_doesNotOverwrite() {
+        AddressData input = AddressData.builder()
+                .regionCode("REG01")
+                .operatingAreaCode("OA01")
+                .operatingAreaName("Existing Zone")
+                .build();
+
+        LocationDisplayNames displayNames = LocationDisplayNames.builder()
+                .regionValue(new MasterLanguageData("North Karnataka", null))
+                .operatingAreaValue(null)
+                .build();
+
+        when(locationRepository.findDisplayNamesByCodes(null, null, "REG01", null, null, null, "OA01"))
+                .thenReturn(Optional.of(displayNames));
+
+        AddressData result = addressDataService.enrichAddressWithDisplayNames(input);
+
+        assertEquals("Existing Zone", result.getOperatingAreaName(), "Operating area name should not be overwritten when value is null");
     }
 
     @Test
@@ -837,6 +907,7 @@ class AddressDataServiceImplTest {
                 .id("addr-1")
                 .countryCode("IN")
                 .stateCode("KA")
+                .regionCode("REG01")
                 .districtCode("DIST01")
                 .talukaCode("TAL01")
                 .villageCode("VIL01")
@@ -846,12 +917,13 @@ class AddressDataServiceImplTest {
         LocationDisplayNames displayNames = LocationDisplayNames.builder()
                 .countryName("India")
                 .stateName("Karnataka")
+                .regionValue(new MasterLanguageData("North Karnataka", null))
                 .districtValue(new MasterLanguageData("Bangalore Urban", null))
                 .talukaValue(new MasterLanguageData("Bangalore South", null))
                 .villageValue(new MasterLanguageData("Test Village", null))
                 .build();
 
-        when(locationRepository.findDisplayNamesByCodes("IN", "KA", null, "DIST01", "TAL01", "VIL01"))
+        when(locationRepository.findDisplayNamesByCodes("IN", "KA", "REG01", "DIST01", "TAL01", "VIL01", null))
                 .thenReturn(Optional.of(displayNames));
 
         AddressData result = addressDataService.enrichAddressWithDisplayNames(input);
@@ -859,10 +931,12 @@ class AddressDataServiceImplTest {
         assertNotNull(result);
         assertEquals("India", result.getCountry());
         assertEquals("Karnataka", result.getState());
+        assertEquals("North Karnataka", result.getRegion());
         assertNotNull(result.getDistrict());
         assertNotNull(result.getTaluka());
         assertNotNull(result.getVillageName());
         assertEquals("IN", result.getCountryCode());
+        assertEquals("REG01", result.getRegionCode());
     }
 
     @Test
@@ -873,7 +947,7 @@ class AddressDataServiceImplTest {
                 .state("Original State")
                 .build();
 
-        when(locationRepository.findDisplayNamesByCodes(eq("IN"), any(), any(), any(), any(), any()))
+        when(locationRepository.findDisplayNamesByCodes(eq("IN"), any(), any(), any(), any(), any(), any()))
                 .thenReturn(Optional.empty());
 
         AddressData result = addressDataService.enrichAddressWithDisplayNames(input);
@@ -900,7 +974,7 @@ class AddressDataServiceImplTest {
                 .villageValue(null)
                 .build();
 
-        when(locationRepository.findDisplayNamesByCodes("IN", "KA", null, null, null, null))
+        when(locationRepository.findDisplayNamesByCodes("IN", "KA", null, null, null, null, null))
                 .thenReturn(Optional.of(displayNames));
 
         AddressData result = addressDataService.enrichAddressWithDisplayNames(input);
@@ -922,7 +996,7 @@ class AddressDataServiceImplTest {
                 .countryName("India")
                 .build();
 
-        when(locationRepository.findDisplayNamesByCodes(eq("IN"), any(), any(), any(), any(), any()))
+        when(locationRepository.findDisplayNamesByCodes(eq("IN"), any(), any(), any(), any(), any(), any()))
                 .thenReturn(Optional.of(displayNames));
 
         AddressData result = addressDataService.enrichAddressWithDisplayNames(input);
@@ -942,22 +1016,28 @@ class AddressDataServiceImplTest {
                 .district("Dist")
                 .country("Country")
                 .state("State")
+                .region("North Karnataka")
                 .taluka("Taluka")
                 .districtCode("DC")
+                .regionCode("RC")
                 .stateCode("SC")
                 .countryCode("CC")
                 .talukaCode("TC")
                 .districtId(10L)
+                .regionId(50L)
                 .stateId(5L)
                 .countryId(1L)
                 .talukaId(20L)
                 .villageCode("VC")
                 .villageId(100L)
                 .villageName("Village")
+                .operatingAreaName("North Zone")
+                .operatingAreaCode("OA01")
+                .operatingAreaId(200L)
                 .isServiceable(true)
                 .build();
 
-        when(locationRepository.findDisplayNamesByCodes("CC", "SC", null, "DC", "TC", "VC"))
+        when(locationRepository.findDisplayNamesByCodes("CC", "SC", "RC", "DC", "TC", "VC", "OA01"))
                 .thenReturn(Optional.empty());
 
         AddressData result = addressDataService.enrichAddressWithDisplayNames(input);
@@ -966,6 +1046,9 @@ class AddressDataServiceImplTest {
         assertEquals(AddressType.CURRENT, result.getAddressType());
         assertEquals("123 Street", result.getAddress());
         assertEquals("560001", result.getPincode());
+        assertEquals("North Karnataka", result.getRegion());
+        assertEquals("RC", result.getRegionCode());
+        assertEquals(50L, result.getRegionId());
         assertEquals(10L, result.getDistrictId());
         assertEquals(5L, result.getStateId());
         assertEquals(1L, result.getCountryId());
@@ -973,6 +1056,9 @@ class AddressDataServiceImplTest {
         assertEquals("VC", result.getVillageCode());
         assertEquals(100L, result.getVillageId());
         assertEquals("Village", result.getVillageName());
+        assertEquals("North Zone", result.getOperatingAreaName());
+        assertEquals("OA01", result.getOperatingAreaCode());
+        assertEquals(200L, result.getOperatingAreaId());
         assertTrue(result.getIsServiceable());
     }
 }

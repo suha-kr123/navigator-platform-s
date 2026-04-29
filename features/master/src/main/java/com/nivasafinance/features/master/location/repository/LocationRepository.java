@@ -25,14 +25,16 @@ public class LocationRepository {
                    r.name AS region_name,
                    d.value AS district_value,
                    t.value AS taluka_value,
-                   v.value AS village_value
+                   v.value AS village_value,
+                   oa.name AS operating_area_name
             FROM (SELECT 1) x
-            LEFT JOIN n_master_country c   ON c.code = :countryCode   AND c.is_active = true
-            LEFT JOIN n_master_state s     ON s.code = :stateCode     AND s.country_id = c.id  AND s.is_active = true
-            LEFT JOIN n_master_region r     ON r.code = :regionCode    AND r.state_id = s.id    AND r.is_active = true
-            LEFT JOIN n_master_district d  ON d.code = :districtCode  AND d.state_id = s.id    AND d.is_active = true
-            LEFT JOIN n_master_taluka t    ON t.code = :talukaCode    AND t.district_id = d.id AND t.is_active = true
-            LEFT JOIN n_master_village v   ON v.code = :villageCode   AND v.taluka_id = t.id   AND v.is_active = true
+            LEFT JOIN n_master_country c          ON c.code = :countryCode          AND c.is_active = true
+            LEFT JOIN n_master_state s             ON s.code = :stateCode             AND s.country_id = c.id  AND s.is_active = true
+            LEFT JOIN n_master_region r            ON r.code = :regionCode            AND r.is_active = true
+            LEFT JOIN n_master_district d          ON d.code = :districtCode          AND d.state_id = s.id    AND d.is_active = true
+            LEFT JOIN n_master_taluka t            ON t.code = :talukaCode            AND t.district_id = d.id AND t.is_active = true
+            LEFT JOIN n_master_village v           ON v.code = :villageCode           AND v.taluka_id = t.id   AND v.is_active = true
+            LEFT JOIN n_master_operating_area oa   ON oa.code = :operatingAreaCode    AND oa.is_active = true
             """;
 
     private static final RowMapper<LocationDisplayNames> ROW_MAPPER = new RowMapper<>() {
@@ -47,6 +49,7 @@ public class LocationRepository {
                     .districtValue(parseJsonbToMasterLanguageData(rs, "district_value"))
                     .talukaValue(parseJsonbToMasterLanguageData(rs, "taluka_value"))
                     .villageValue(parseJsonbToMasterLanguageData(rs, "village_value"))
+                    .operatingAreaValue(parseJsonbToMasterLanguageData(rs, "operating_area_name"))
                     .build();
         }
 
@@ -67,14 +70,15 @@ public class LocationRepository {
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
     public Optional<LocationDisplayNames> findDisplayNamesByCodes(
-            String countryCode, String stateCode, String regionCode, String districtCode, String talukaCode, String villageCode) {
+            String countryCode, String stateCode, String regionCode, String districtCode, String talukaCode, String villageCode, String operatingAreaCode) {
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue("countryCode", countryCode)
                 .addValue("stateCode", stateCode)
                 .addValue("regionCode", regionCode)
                 .addValue("districtCode", districtCode)
                 .addValue("talukaCode", talukaCode)
-                .addValue("villageCode", villageCode);
+                .addValue("villageCode", villageCode)
+                .addValue("operatingAreaCode", operatingAreaCode);
         var list = jdbcTemplate.query(FIND_DISPLAY_NAMES_BY_CODES, params, ROW_MAPPER);
         return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
     }

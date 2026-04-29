@@ -6,6 +6,7 @@ import lombok.Getter;
 public enum CustomerFormStep {
 
     BASIC_INFO("basicInfo"),
+    LOCATION_DETAILS("locationDetails"),
     PROPERTY_DETAILS("propertyDetails"),
     INCOME_DETAILS("incomeDetails"),
     PROPERTY_DOCUMENTS("propertyDocuments"),
