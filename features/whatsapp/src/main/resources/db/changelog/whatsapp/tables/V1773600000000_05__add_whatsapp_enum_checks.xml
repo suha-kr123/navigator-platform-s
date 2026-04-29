@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1773600000000_05a" author="navigator" context="default">
+        <comment>Guardrail: enforce n_whatsapp_log.status at DB level</comment>
+        <sql>ALTER TABLE n_whatsapp_log ADD CONSTRAINT chk_n_whatsapp_log_status CHECK (status IS NULL OR status IN ('SENT', 'RECEIVED'))</sql>
+    </changeSet>
+    <changeSet id="V1773600000000_05c" author="navigator" context="default">
+        <comment>Guardrail: enforce n_whatsapp_log.message_type at DB level</comment>
+        <sql>ALTER TABLE n_whatsapp_log ADD CONSTRAINT chk_n_whatsapp_log_message_type CHECK (message_type IS NULL OR message_type IN ('TEMPLATE', 'TEXT', 'INTERACTIVE', 'UNSUPPORTED', 'IMAGE', 'BUTTON', 'STICKER', 'AUDIO', 'CONTACTS', 'REACTION', 'DOCUMENT', 'VIDEO'))</sql>
+    </changeSet>
+    <changeSet id="V1773600000000_05d" author="navigator" context="default">
+        <comment>Guardrail: enforce n_whatsapp_log.created_source at DB level</comment>
+        <sql>ALTER TABLE n_whatsapp_log ADD CONSTRAINT chk_n_whatsapp_log_created_source CHECK (created_source IS NULL OR created_source IN ('API', 'BOT', 'SEQUENCE', 'BROADCAST'))</sql>
+    </changeSet>
+    <changeSet id="V1773600000000_05e" author="navigator" context="default">
+        <comment>Guardrail: enforce n_whatsapp_channel.entity at DB level</comment>
+        <sql>ALTER TABLE n_whatsapp_channel ADD CONSTRAINT chk_n_whatsapp_channel_entity CHECK (entity IN ('LEAD', 'ADVISOR'))</sql>
+    </changeSet>
+    <changeSet id="V1773600000000_05f" author="navigator" context="default">
+        <comment>Guardrail: enforce n_whatsapp_log.sent_by at DB level</comment>
+        <sql>ALTER TABLE n_whatsapp_log ADD CONSTRAINT chk_n_whatsapp_log_sent_by CHECK (sent_by IS NULL OR sent_by IN ('API', 'SEQUENCE'))</sql>
+    </changeSet>
+    <changeSet id="V1773600000000_05g" author="navigator" context="default">
+        <comment>Guardrail: enforce n_whatsapp_channel.status at DB level</comment>
+        <sql>ALTER TABLE n_whatsapp_channel ADD CONSTRAINT chk_n_whatsapp_channel_status CHECK (status IN ('ACTIVE', 'INACTIVE'))</sql>
+    </changeSet>
+
+</databaseChangeLog>

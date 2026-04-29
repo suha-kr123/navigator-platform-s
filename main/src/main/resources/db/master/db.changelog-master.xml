@@ -24,6 +24,7 @@
     <include file="db/changelog/task/db.changelog-task.xml"/>
     <include file="db/changelog/staff/db.changelog-staff.xml"/>
     <include file="db/changelog/call/db.changelog-call.xml"/>
+    <include file="db/changelog/whatsapp/db.changelog-whatsapp.xml"/>
     <include file="db/changelog/campaign/db.changelog-campaign.xml"/>
     <include file="db/changelog/referral/db.changelog-referral.xml"/>
     <include file="db/changelog/bulkoperations/db.changelog-bulkoperations.xml"/>
