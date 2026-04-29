@@ -6,6 +6,7 @@ import com.nivasafinance.externals.whatsapp.dto.WhatsAppLeadRequest;
 import com.nivasafinance.externals.whatsapp.dto.WhatsAppLeadResponse;
 import com.nivasafinance.features.lead.dto.CreateLeadRequest;
 import com.nivasafinance.features.lead.dto.CreateLeadResponse;
+import com.nivasafinance.features.lead.dto.LeadResponse;
 import com.nivasafinance.features.lead.dto.PreliminaryDetailsResponse;
 import com.nivasafinance.features.lead.dto.UpdateSourcingDetailsRequest;
 import com.nivasafinance.features.lead.entity.Contact;
@@ -91,6 +92,7 @@ class WhatsAppLeadServiceImplTest {
                 .thenReturn(leadId);
 
         Lead lead = buildLeadWithFullDetails(leadIdentifier, contactId);
+        lead.setProductCode("HOME_LOAN");
         when(leadRepositoryWrapper.findByIdWithException(leadId)).thenReturn(lead);
 
         Contact contact = buildContact(contactIdentifier, personId);
@@ -103,6 +105,12 @@ class WhatsAppLeadServiceImplTest {
                 .monthlyFamilyIncome(BigDecimal.valueOf(50000))
                 .build();
         when(leadReadService.getPreliminaryDetails(leadIdentifier)).thenReturn(prelimResponse);
+
+        LeadResponse leadResponse = LeadResponse.builder()
+                .productCode("HOME_LOAN")
+                .productName("Home Loan")
+                .build();
+        when(leadReadService.getLeadByIdentifier(leadIdentifier)).thenReturn(leadResponse);
 
         Person contactPerson = new Person();
         contactPerson.setDisplayName("Jane Doe");
@@ -120,6 +128,52 @@ class WhatsAppLeadServiceImplTest {
                 "Should return lead substatus as string");
         assertEquals("Jane Doe", result.getName(),
                 "Should return contact person display name");
+        assertEquals("HOME_LOAN", result.getProductCode(),
+                "Should return product code from lead read API");
+        assertEquals("Home Loan", result.getProductName(),
+                "Should return product display name from lead read API");
+    }
+
+    @Test
+    void createOrGetLead_whenExistingLeadHasBlankProductCode_returnsEmptyProductWithoutLeadRead() {
+        Long personId = 1L;
+        Long leadId = 10L;
+        Long contactId = 20L;
+        UUID leadIdentifier = UUID.randomUUID();
+        UUID contactIdentifier = UUID.randomUUID();
+
+        WhatsAppLeadRequest request = new WhatsAppLeadRequest();
+        request.setMobileNumber("9876543210");
+
+        Person person = new Person();
+        person.setId(personId);
+        when(personRepositoryWrapper.findByPrimaryMobileNumber("9876543210"))
+                .thenReturn(Optional.of(person));
+
+        when(jdbcTemplate.queryForObject(anyString(), eq(Long.class), eq(personId)))
+                .thenReturn(leadId);
+
+        Lead lead = buildLeadWithFullDetails(leadIdentifier, contactId);
+        lead.setProductCode("   ");
+        when(leadRepositoryWrapper.findByIdWithException(leadId)).thenReturn(lead);
+
+        Contact contact = buildContact(contactIdentifier, personId);
+        when(contactRepositoryWrapper.findByIdWithException(contactId)).thenReturn(contact);
+        when(contactRepositoryWrapper.findByIdentifierWithException(contactIdentifier)).thenReturn(contact);
+        when(leadContactReadService.getAddresses(contactIdentifier)).thenReturn(List.of());
+        when(leadReadService.getPreliminaryDetails(leadIdentifier)).thenReturn(null);
+
+        Person contactPerson = new Person();
+        contactPerson.setDisplayName("Jane");
+        when(personRepositoryWrapper.findByIdWithException(personId)).thenReturn(contactPerson);
+
+        WhatsAppLeadResponse result = service.createOrGetLead(request);
+
+        assertEquals("empty", result.getProductCode(),
+                "Blank product code on lead should be exposed as 'empty' without calling lead read enrichment");
+        assertEquals("empty", result.getProductName(),
+                "Product name should be 'empty' when product code is blank");
+        verify(leadReadService, never()).getLeadByIdentifier(any(UUID.class));
     }
 
     @Test

@@ -23,4 +23,6 @@ public class WhatsAppLeadResponse {
     private String reasons;  // Changed to String to support "empty" value
     private String stage;
     private String name;
+    private String productCode;
+    private String productName;
 }

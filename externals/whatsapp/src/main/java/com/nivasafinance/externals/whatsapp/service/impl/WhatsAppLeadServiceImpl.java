@@ -6,6 +6,7 @@ import com.nivasafinance.externals.whatsapp.dto.WhatsAppLeadResponse;
 import com.nivasafinance.externals.whatsapp.service.WhatsAppLeadService;
 import com.nivasafinance.features.lead.dto.CreateLeadRequest;
 import com.nivasafinance.features.lead.dto.CreateLeadResponse;
+import com.nivasafinance.features.lead.dto.LeadResponse;
 import com.nivasafinance.features.lead.dto.PreliminaryDetailsResponse;
 import com.nivasafinance.features.lead.dto.UpdateSourcingDetailsRequest;
 import com.nivasafinance.features.lead.entity.Contact;
@@ -161,7 +162,9 @@ public class WhatsAppLeadServiceImpl implements WhatsAppLeadService {
                         name = displayName;
                     }
                 }
-                
+
+                String[] productFields = resolveProductFields(lead, leadIdentifier);
+
                 return WhatsAppLeadResponse.builder()
                         .leadIdentifier(leadIdentifier)
                         .contactIdentifier(contactIdentifier)
@@ -172,6 +175,8 @@ public class WhatsAppLeadServiceImpl implements WhatsAppLeadService {
                         .reasons(reasons)
                         .stage(stage)
                         .name(name)
+                        .productCode(productFields[0])
+                        .productName(productFields[1])
                         .build();
             }
         }
@@ -185,12 +190,50 @@ public class WhatsAppLeadServiceImpl implements WhatsAppLeadService {
         if (request.getSourcing_channel_name() != null) {
             updateSourcingDetails(leadIdentifier, request);
         }
-        
-        // Return simple response for newly created lead
+
+        String[] productFields = resolveProductFields(null, leadIdentifier);
+
         return WhatsAppLeadResponse.builder()
                 .leadIdentifier(leadIdentifier)
                 .contactIdentifier(contactIdentifier)
+                .productCode(productFields[0])
+                .productName(productFields[1])
                 .build();
+    }
+
+    private String[] resolveProductFields(Lead leadOrNull, UUID leadIdentifier) {
+        Lead lead = leadOrNull;
+        if (lead == null) {
+            try {
+                lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+            } catch (Exception e) {
+                return new String[] {"empty", "empty"};
+            }
+        }
+        if (lead == null) {
+            return new String[] {"empty", "empty"};
+        }
+        String rawCode = lead.getProductCode();
+        if (rawCode == null || rawCode.isBlank()) {
+            return new String[] {"empty", "empty"};
+        }
+
+        String productCode = rawCode.trim();
+        String productName = "empty";
+        try {
+            LeadResponse lr = leadReadService.getLeadByIdentifier(leadIdentifier);
+            if (lr != null) {
+                if (lr.getProductCode() != null && !lr.getProductCode().isBlank()) {
+                    productCode = lr.getProductCode();
+                }
+                if (lr.getProductName() != null && !lr.getProductName().isBlank()) {
+                    productName = lr.getProductName();
+                }
+            }
+        } catch (Exception e) {
+            productName = "empty";
+        }
+        return new String[] {productCode, productName};
     }
 
     private void updateSourcingDetails(UUID leadIdentifier, WhatsAppLeadRequest request) {
