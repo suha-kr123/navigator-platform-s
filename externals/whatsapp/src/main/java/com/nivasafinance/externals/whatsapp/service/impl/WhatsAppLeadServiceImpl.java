@@ -207,6 +207,7 @@ public class WhatsAppLeadServiceImpl implements WhatsAppLeadService {
             try {
                 lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
             } catch (Exception e) {
+                log.warn("Failed to fetch lead for product fields, leadIdentifier: {}", leadIdentifier, e);
                 return new String[] {"empty", "empty"};
             }
         }
