@@ -400,7 +400,7 @@ public class AdvisorSelfServiceImpl implements AdvisorSelfService {
     @Override
     public PaginatedResponse<AdvisorSelfLeadResponse> getSelfAdvisorLeadsWithSearch(
             PaginationRequest paginationRequest, String mobileNumber, String name,
-            String status, String subStatus) {
+            String status, String subStatus, String stageKey, Boolean pendingPayout) {
         UUID meId = resolveMeIdentifier();
         com.nivasafinance.features.advisor.entity.Advisor advisor =
                 advisorRepositoryWrapper.findByIdentifierWithException(meId);
@@ -409,7 +409,7 @@ public class AdvisorSelfServiceImpl implements AdvisorSelfService {
             throw AdvisorExceptionFactory.advisorReferralCodeNotAvailable(messageSource);
         }
         PaginatedResponse<AdvisorSelfLeadResponse> response = advisorRepositoryWrapper.findLeadsByReferralCodeWithSearch(
-                referralCode, paginationRequest, mobileNumber, name, status, subStatus);
+                referralCode, paginationRequest, mobileNumber, name, status, subStatus, stageKey, pendingPayout);
         for (AdvisorSelfLeadResponse item : response.getContent()) {
             item.setLoanType(resolveProductName(item.getLoanType()));
             item.setLeadStageDisplayName(resolveCurrentStageDisplayName(item.getLeadIdentifier()));
@@ -450,16 +450,71 @@ public class AdvisorSelfServiceImpl implements AdvisorSelfService {
 
     @Override
     public SelfAdvisorDashboardResponse getMyDashboard() {
-        UUID meId = resolveMeIdentifier();
+        com.nivasafinance.features.advisor.entity.Advisor advisor = resolveMyAdvisor();
+        UUID meId = advisor.getIdentifier();
+
         SelfAdvisorDashboard dashboard = advisorDashboardWrapper.getSelfDashboard(meId)
                 .orElseThrow(() -> AdvisorExceptionFactory.notFoundForCurrentUser(messageSource));
+
+        String referralCode = advisor.getReferralCode();
+        BigDecimal totalPayout = (referralCode != null && !referralCode.isBlank())
+                ? advisorRepositoryWrapper.getTotalPaidByReferralCode(referralCode)
+                : BigDecimal.ZERO;
 
         return SelfAdvisorDashboardResponse.builder()
                 .advisorName(dashboard.getName())
                 .salesOwner(dashboard.getSalesOwner())
                 .salesOwnerMobile(dashboard.getSalesOwnerMobile())
                 .leadCounts(advisorDashboardWrapper.getLeadCountsByStatusForAdvisor(meId))
+                .totalPayout(totalPayout)
                 .build();
+    }
+
+    @Override
+    public PaginatedResponse<SelfPayoutResponse> getMyPayouts(PaginationRequest paginationRequest) {
+        String referralCode = resolveMyReferralCode();
+
+        List<SelfPayoutResponse> content = advisorRepositoryWrapper.getPayoutsByReferralCode(referralCode, paginationRequest);
+        long totalElements = advisorRepositoryWrapper.countPayoutsByReferralCode(referralCode);
+
+        int limit = paginationRequest.getLimit();
+        int offset = paginationRequest.getOffset();
+        int totalPages = limit > 0 ? (int) Math.ceil((double) totalElements / limit) : 0;
+        int currentPage = limit > 0 ? (offset / limit) : 0;
+
+        com.nivasafinance.common.base.model.PaginationInfo paginationInfo =
+                com.nivasafinance.common.base.model.PaginationInfo.builder()
+                        .offset(offset)
+                        .limit(limit)
+                        .totalElements(totalElements)
+                        .totalPages(totalPages)
+                        .currentPage(currentPage)
+                        .hasNext(offset + limit < totalElements)
+                        .hasPrevious(offset > 0)
+                        .build();
+
+        return new PaginatedResponse<>(content, paginationInfo);
+    }
+
+    @Override
+    public SelfPayoutDetailResponse getMyPayoutDetail(UUID transactionIdentifier) {
+        String referralCode = resolveMyReferralCode();
+        return advisorRepositoryWrapper.getPayoutDetailByIdentifierAndReferralCode(transactionIdentifier, referralCode)
+                .orElseThrow(() -> AdvisorExceptionFactory.notFoundForCurrentUser(messageSource));
+    }
+
+    private com.nivasafinance.features.advisor.entity.Advisor resolveMyAdvisor() {
+        UUID meId = resolveMeIdentifier();
+        return advisorRepositoryWrapper.findByIdentifierWithException(meId);
+    }
+
+    private String resolveMyReferralCode() {
+        com.nivasafinance.features.advisor.entity.Advisor advisor = resolveMyAdvisor();
+        String referralCode = advisor.getReferralCode();
+        if (referralCode == null || referralCode.isBlank()) {
+            throw AdvisorExceptionFactory.advisorReferralCodeNotAvailable(messageSource);
+        }
+        return referralCode;
     }
 
     @Override

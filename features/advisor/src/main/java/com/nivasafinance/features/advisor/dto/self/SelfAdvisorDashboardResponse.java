@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Data
@@ -16,4 +17,5 @@ public class SelfAdvisorDashboardResponse {
     private String salesOwner;
     private String salesOwnerMobile;
     private List<LeadStatusCount> leadCounts;
+    private BigDecimal totalPayout;
 }

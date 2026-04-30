@@ -125,9 +125,12 @@ public class AdvisorSelfController {
             @RequestParam(required = false) String mobileNumber,
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String status,
-            @RequestParam(required = false) String subStatus) {
+            @RequestParam(required = false) String subStatus,
+            @RequestParam(required = false) String stageKey,
+            @RequestParam(required = false) Boolean pendingPayout) {
         return ResponseEntity.ok(
-                advisorSelfService.getSelfAdvisorLeadsWithSearch(paginationRequest, mobileNumber, name, status, subStatus));
+                advisorSelfService.getSelfAdvisorLeadsWithSearch(
+                        paginationRequest, mobileNumber, name, status, subStatus, stageKey, pendingPayout));
     }
 
     @GetMapping("/lead/{leadIdentifier}")
@@ -141,6 +144,18 @@ public class AdvisorSelfController {
     public ResponseEntity<List<AdvisorSelfLeadStageHistoryResponse>> getLeadStageHistory(
             @PathVariable UUID leadIdentifier) {
         return ResponseEntity.ok(advisorSelfService.getSelfAdvisorLeadStageHistory(leadIdentifier));
+    }
+
+    @GetMapping("/payouts")
+    @RequireRole({ROLE_ADVISOR_SELF})
+    public ResponseEntity<PaginatedResponse<SelfPayoutResponse>> getMyPayouts(@Valid PaginationRequest paginationRequest) {
+        return ResponseEntity.ok(advisorSelfService.getMyPayouts(paginationRequest));
+    }
+
+    @GetMapping("/payouts/{transactionIdentifier}")
+    @RequireRole({ROLE_ADVISOR_SELF})
+    public ResponseEntity<SelfPayoutDetailResponse> getMyPayoutDetail(@PathVariable UUID transactionIdentifier) {
+        return ResponseEntity.ok(advisorSelfService.getMyPayoutDetail(transactionIdentifier));
     }
 
 }

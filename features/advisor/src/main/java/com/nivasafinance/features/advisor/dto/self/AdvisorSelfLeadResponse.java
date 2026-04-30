@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -25,4 +26,6 @@ public class AdvisorSelfLeadResponse {
     private BigDecimal requestedAmount;
     private LocalDateTime createdAt;
     private String leadStageDisplayName;
+    private BigDecimal disbursedAmount;
+    private LocalDate disbursedDate;
 }

@@ -21,6 +21,7 @@ dependencies {
     implementation(project(":features:usermanagement"))
     implementation(project(":features:referral"))
     implementation(project(":features:lead"))
+    implementation(project(":features:transaction"))
     implementation(project(":features:rolemanagement"))
 }
 
