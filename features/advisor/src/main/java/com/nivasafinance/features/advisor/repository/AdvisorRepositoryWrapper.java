@@ -3,11 +3,16 @@ package com.nivasafinance.features.advisor.repository;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationInfo;
 import com.nivasafinance.common.base.model.PaginationRequest;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nivasafinance.features.advisor.dto.AdminAdvisorBasicResponse;
 import com.nivasafinance.features.advisor.dto.AdminAdvisorSearchRequest;
 import com.nivasafinance.features.advisor.dto.AdvisorSearchRequest;
 import com.nivasafinance.features.advisor.dto.AdvisorBasicResponse;
 import com.nivasafinance.features.advisor.dto.self.AdvisorSelfLeadResponse;
+import com.nivasafinance.features.advisor.dto.self.SelfPaymentDetails;
+import com.nivasafinance.features.advisor.dto.self.SelfPayoutDetailResponse;
+import com.nivasafinance.features.advisor.dto.self.SelfPayoutResponse;
 import com.nivasafinance.features.lead.enums.LeadStatus;
 import com.nivasafinance.features.lead.enums.LeadSubStatus;
 import com.nivasafinance.features.referral.enums.EntityType;
@@ -29,11 +34,14 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -667,7 +675,9 @@ public class AdvisorRepositoryWrapper {
             String mobileNumber,
             String name,
             String status,
-            String subStatus) {
+            String subStatus,
+            String stageKey,
+            Boolean pendingPayout) {
         if (!StringUtils.hasText(referralCode)) {
             return new PaginatedResponse<>(Collections.emptyList(),
                     buildPaginationInfo(paginationRequest, 0));
@@ -676,24 +686,33 @@ public class AdvisorRepositoryWrapper {
         boolean hasName = StringUtils.hasText(name);
         boolean hasStatusFilter = StringUtils.hasText(status);
         boolean hasSubStatusFilter = StringUtils.hasText(subStatus);
+        boolean hasStageKey = StringUtils.hasText(stageKey);
+        boolean hasPendingPayout = Boolean.TRUE.equals(pendingPayout);
         String namePattern = hasName ? "%" + name.trim().replace("%", "\\%").replace("_", "\\_") + "%" : null;
         String mobilePattern = hasMobile ? "%" + mobileNumber.trim().replace("%", "\\%").replace("_", "\\_") + "%" : null;
 
-        StringBuilder statusClause = new StringBuilder();
-        List<Object> statusParams = new ArrayList<>();
+        StringBuilder extraClause = new StringBuilder();
+        List<Object> extraParams = new ArrayList<>();
         if (hasStatusFilter) {
-            statusClause.append(" AND l.status::text = ? ");
-            statusParams.add(status.trim().toUpperCase());
+            extraClause.append(" AND l.status::text = ? ");
+            extraParams.add(status.trim().toUpperCase());
         }
         if (hasSubStatusFilter) {
             if ("NONE".equalsIgnoreCase(subStatus.trim())) {
-                statusClause.append(" AND l.substatus IS NULL ");
+                extraClause.append(" AND l.substatus IS NULL ");
             } else {
-                statusClause.append(" AND l.substatus::text = ? ");
-                statusParams.add(subStatus.trim().toUpperCase());
+                extraClause.append(" AND l.substatus::text = ? ");
+                extraParams.add(subStatus.trim().toUpperCase());
             }
         }
-        String statusFilter = statusClause.toString();
+        if (hasStageKey) {
+            extraClause.append(" AND l.workflow_details->'currentStageDetails'->>'stageKey' = ? ");
+            extraParams.add(stageKey.trim().toUpperCase());
+        }
+        if (hasPendingPayout) {
+            extraClause.append(" AND NOT EXISTS (SELECT 1 FROM n_lead_transaction lt WHERE lt.lead_id = l.id) ");
+        }
+        String extraFilter = extraClause.toString();
 
         List<Object> params = new ArrayList<>();
         if (hasName) params.add(namePattern);
@@ -713,17 +732,17 @@ public class AdvisorRepositoryWrapper {
             sql.append(" WHERE sc.marketing_details->>'referredByCode' = ? ");
             sql.append(" AND (EXISTS (SELECT 1 FROM jsonb_array_elements_text(COALESCE(l.contacts, '[]'::jsonb)) AS e WHERE (e)::bigint IN (SELECT id FROM matching_contacts)) ");
             sql.append(" OR EXISTS (SELECT 1 FROM jsonb_array_elements_text(COALESCE(l.co_applicants, '[]'::jsonb)) AS e WHERE (e)::bigint IN (SELECT id FROM matching_contacts))) ");
-            sql.append(statusFilter);
+            sql.append(extraFilter);
             countSql = sql.toString();
         } else {
             countSql = " SELECT COUNT(*) FROM n_lead l " +
                     " JOIN n_sourcing_channel_details sc ON sc.id = l.sourcing_channel_id " +
                     " WHERE sc.marketing_details->>'referredByCode' = ? " +
-                    statusFilter;
+                    extraFilter;
         }
 
         String dataSql = (hasMobile || hasName)
-                ? buildSelfLeadSearchDataSql(hasName, hasMobile, statusFilter)
+                ? buildSelfLeadSearchDataSql(hasName, hasMobile, extraFilter)
                 : """
                 SELECT l.lead_identifier AS lead_identifier,
                        primary_person.display_name AS primary_contact_name,
@@ -733,22 +752,24 @@ public class AdvisorRepositoryWrapper {
                        l.status::text AS status,
                        l.substatus::text AS substatus,
                        l.requested_amount AS requested_amount,
-                       l.created_at AS created_at
+                       l.created_at AS created_at,
+                       CAST(l.disbursement_details->>'disbursedAmount' AS NUMERIC) AS disbursed_amount,
+                       CAST(l.disbursement_details->>'disbursedDate' AS DATE) AS disbursed_date
                 FROM n_lead l
                 JOIN n_sourcing_channel_details sc ON sc.id = l.sourcing_channel_id
                 LEFT JOIN n_contact primary_contact ON primary_contact.id = (l.other_details->>'primaryContactId')::bigint
                 LEFT JOIN n_person primary_person ON primary_person.id = primary_contact.person_id
                 WHERE sc.marketing_details->>'referredByCode' = ?
-                """ + statusFilter + """
+                """ + extraFilter + """
                 ORDER BY l.created_at DESC
                 LIMIT ? OFFSET ?
                 """;
 
         try {
             List<Object> countParams = new ArrayList<>(params);
-            countParams.addAll(statusParams);
+            countParams.addAll(extraParams);
             List<Object> dataParams = new ArrayList<>(params);
-            dataParams.addAll(statusParams);
+            dataParams.addAll(extraParams);
             dataParams.add(paginationRequest.getLimit());
             dataParams.add(paginationRequest.getOffset());
 
@@ -764,7 +785,7 @@ public class AdvisorRepositoryWrapper {
         }
     }
 
-    private String buildSelfLeadSearchDataSql(boolean hasName, boolean hasMobile, String statusFilter) {
+    private String buildSelfLeadSearchDataSql(boolean hasName, boolean hasMobile, String extraFilter) {
         StringBuilder sql = new StringBuilder();
         sql.append(" WITH matching_contacts AS ( SELECT c.id FROM n_contact c ");
         sql.append(" INNER JOIN n_person p ON p.id = c.person_id WHERE ");
@@ -775,7 +796,9 @@ public class AdvisorRepositoryWrapper {
         sql.append(" primary_person.display_name AS primary_contact_name, ");
         sql.append(" (SELECT m->>'number' FROM jsonb_array_elements(COALESCE(primary_person.mobile_numbers, '[]'::jsonb)) m ");
         sql.append(" WHERE (m->>'isPrimary')::boolean = true LIMIT 1) AS primary_contact_phone, ");
-        sql.append(" l.product_code AS product_code, l.status::text AS status, l.substatus::text AS substatus, l.requested_amount AS requested_amount, l.created_at AS created_at ");
+        sql.append(" l.product_code AS product_code, l.status::text AS status, l.substatus::text AS substatus, l.requested_amount AS requested_amount, l.created_at AS created_at, ");
+        sql.append(" CAST(l.disbursement_details->>'disbursedAmount' AS NUMERIC) AS disbursed_amount, ");
+        sql.append(" CAST(l.disbursement_details->>'disbursedDate' AS DATE) AS disbursed_date ");
         sql.append(" FROM n_lead l ");
         sql.append(" JOIN n_sourcing_channel_details sc ON sc.id = l.sourcing_channel_id ");
         sql.append(" LEFT JOIN n_contact primary_contact ON primary_contact.id = (l.other_details->>'primaryContactId')::bigint ");
@@ -783,7 +806,7 @@ public class AdvisorRepositoryWrapper {
         sql.append(" WHERE sc.marketing_details->>'referredByCode' = ? ");
         sql.append(" AND (EXISTS (SELECT 1 FROM jsonb_array_elements_text(COALESCE(l.contacts, '[]'::jsonb)) AS e WHERE (e)::bigint IN (SELECT id FROM matching_contacts)) ");
         sql.append(" OR EXISTS (SELECT 1 FROM jsonb_array_elements_text(COALESCE(l.co_applicants, '[]'::jsonb)) AS e WHERE (e)::bigint IN (SELECT id FROM matching_contacts))) ");
-        sql.append(statusFilter);
+        sql.append(extraFilter);
         sql.append(" ORDER BY l.created_at DESC LIMIT ? OFFSET ? ");
         return sql.toString();
     }
@@ -899,6 +922,82 @@ public class AdvisorRepositoryWrapper {
         }
     }
 
+    public List<SelfPayoutResponse> getPayoutsByReferralCode(String referralCode, PaginationRequest paginationRequest) {
+        String sql = """
+                SELECT t.identifier AS transaction_identifier,
+                       l.lead_identifier,
+                       p.display_name AS lead_name,
+                       prod.name->>'default' AS loan_type,
+                       CAST(l.disbursement_details->>'disbursedAmount' AS NUMERIC) AS loan_disbursed,
+                       t.amount, t.status, t.created_at
+                FROM n_transaction t
+                JOIN n_lead_transaction lt ON lt.transaction_id = t.id
+                JOIN n_lead l ON l.id = lt.lead_id
+                LEFT JOIN n_contact c ON c.id = (l.other_details->>'primaryContactId')::bigint
+                LEFT JOIN n_person p ON p.id = c.person_id
+                LEFT JOIN n_product prod ON prod.code = l.product_code
+                WHERE lt.referral_code = ?
+                ORDER BY t.created_at DESC
+                LIMIT ? OFFSET ?
+                """;
+        try {
+            return jdbcTemplate.query(sql, new SelfPayoutRowMapper(),
+                    referralCode, paginationRequest.getLimit(), paginationRequest.getOffset());
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Failed to query advisor payouts", e);
+        }
+    }
+
+    public long countPayoutsByReferralCode(String referralCode) {
+        String sql = """
+                SELECT COUNT(*) FROM n_transaction t
+                JOIN n_lead_transaction lt ON lt.transaction_id = t.id
+                WHERE lt.referral_code = ?
+                """;
+        Long count = jdbcTemplate.queryForObject(sql, Long.class, referralCode);
+        return count != null ? count : 0L;
+    }
+
+    public BigDecimal getTotalPaidByReferralCode(String referralCode) {
+        String sql = """
+                SELECT COALESCE(SUM(t.amount), 0)
+                FROM n_transaction t
+                JOIN n_lead_transaction lt ON lt.transaction_id = t.id
+                WHERE lt.referral_code = ?
+                  AND t.status = 'PAID'
+                """;
+        BigDecimal total = jdbcTemplate.queryForObject(sql, BigDecimal.class, referralCode);
+        return total != null ? total : BigDecimal.ZERO;
+    }
+
+    public Optional<SelfPayoutDetailResponse> getPayoutDetailByIdentifierAndReferralCode(
+            UUID transactionIdentifier, String referralCode) {
+        String sql = """
+                SELECT t.identifier AS transaction_identifier,
+                       t.amount, t.status, t.created_at, t.remarks,
+                       latest_pmt.payment_mode, latest_pmt.external_reference,
+                       latest_pmt.payment_status, latest_pmt.payment_date, latest_pmt.payment_data
+                FROM n_transaction t
+                JOIN n_lead_transaction lt ON lt.transaction_id = t.id
+                LEFT JOIN LATERAL (
+                    SELECT pmnt.payment_mode, pmnt.external_reference, pmnt.payment_status,
+                           pmnt.payment_date, pmnt.payment_data
+                    FROM n_transaction_payment pmnt WHERE pmnt.transaction_id = t.id
+                    ORDER BY pmnt.id DESC LIMIT 1
+                ) latest_pmt ON true
+                WHERE t.identifier = ?::uuid
+                  AND lt.referral_code = ?
+                """;
+        try {
+            List<SelfPayoutDetailResponse> results = jdbcTemplate.query(sql,
+                    new SelfPayoutDetailRowMapper(),
+                    transactionIdentifier.toString(), referralCode);
+            return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Failed to query advisor payout detail", e);
+        }
+    }
+
     private static String buildPhoneNumberJsonb(String mobileNumber) {
         String escaped = mobileNumber.replace("\\", "\\\\").replace("\"", "\\\"");
         return "[{\"number\":\"" + escaped + "\"}]";
@@ -930,6 +1029,7 @@ public class AdvisorRepositoryWrapper {
             String statusStr = rs.getString("status");
             String subStatusStr = rs.getString("substatus");
             java.sql.Timestamp createdAtTs = rs.getTimestamp("created_at");
+            java.sql.Date disbursedDateSql = rs.getDate("disbursed_date");
             return AdvisorSelfLeadResponse.builder()
                     .leadIdentifier(leadIdStr != null ? UUID.fromString(leadIdStr) : null)
                     .leadName(rs.getString("primary_contact_name"))
@@ -939,7 +1039,90 @@ public class AdvisorRepositoryWrapper {
                     .leadSubStatus(subStatusStr != null ? LeadSubStatus.valueOf(subStatusStr) : null)
                     .requestedAmount(rs.getBigDecimal("requested_amount"))
                     .createdAt(createdAtTs != null ? createdAtTs.toLocalDateTime() : null)
+                    .disbursedAmount(rs.getBigDecimal("disbursed_amount"))
+                    .disbursedDate(disbursedDateSql != null ? disbursedDateSql.toLocalDate() : null)
                     .build();
+        }
+    }
+
+    private static class SelfPayoutRowMapper implements RowMapper<SelfPayoutResponse> {
+        @Override
+        public SelfPayoutResponse mapRow(ResultSet rs, int rowNum) throws SQLException {
+            String txnIdStr = rs.getString("transaction_identifier");
+            String leadIdStr = rs.getString("lead_identifier");
+            java.sql.Timestamp createdAtTs = rs.getTimestamp("created_at");
+            return SelfPayoutResponse.builder()
+                    .transactionIdentifier(txnIdStr != null ? UUID.fromString(txnIdStr) : null)
+                    .leadIdentifier(leadIdStr != null ? UUID.fromString(leadIdStr) : null)
+                    .leadName(rs.getString("lead_name"))
+                    .loanType(rs.getString("loan_type"))
+                    .loanDisbursed(rs.getBigDecimal("loan_disbursed"))
+                    .amount(rs.getBigDecimal("amount"))
+                    .status(rs.getString("status"))
+                    .createdAt(createdAtTs != null ? createdAtTs.toLocalDateTime() : null)
+                    .build();
+        }
+    }
+
+    private static class SelfPayoutDetailRowMapper implements RowMapper<SelfPayoutDetailResponse> {
+        private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+        @Override
+        public SelfPayoutDetailResponse mapRow(ResultSet rs, int rowNum) throws SQLException {
+            String txnIdStr = rs.getString("transaction_identifier");
+            java.sql.Timestamp createdAtTs = rs.getTimestamp("created_at");
+            java.sql.Date paymentDateSql = rs.getDate("payment_date");
+
+            SelfPaymentDetails paymentDetails = null;
+            String paymentMode = rs.getString("payment_mode");
+            if (paymentMode != null) {
+                Map<String, Object> paymentData = null;
+                String paymentDataJson = rs.getString("payment_data");
+                if (paymentDataJson != null) {
+                    try {
+                        paymentData = OBJECT_MAPPER.readValue(paymentDataJson,
+                                new TypeReference<Map<String, Object>>() {});
+                    } catch (Exception ignored) {
+                        // skip malformed JSON
+                    }
+                }
+                paymentDetails = SelfPaymentDetails.builder()
+                        .paymentMode(paymentMode)
+                        .externalReference(rs.getString("external_reference"))
+                        .paymentStatus(rs.getString("payment_status"))
+                        .paymentDate(paymentDateSql != null ? paymentDateSql.toLocalDate() : null)
+                        .paymentData(paymentData)
+                        .build();
+            }
+
+            String remarksStr = extractLatestRemarkText(rs.getString("remarks"));
+
+            return SelfPayoutDetailResponse.builder()
+                    .transactionIdentifier(txnIdStr != null ? UUID.fromString(txnIdStr) : null)
+                    .amount(rs.getBigDecimal("amount"))
+                    .status(rs.getString("status"))
+                    .createdAt(createdAtTs != null ? createdAtTs.toLocalDateTime() : null)
+                    .paymentDetails(paymentDetails)
+                    .remarks(remarksStr)
+                    .build();
+        }
+
+        private static String extractLatestRemarkText(String remarksJson) {
+            if (remarksJson == null || remarksJson.isBlank()) {
+                return null;
+            }
+            try {
+                List<Map<String, Object>> remarksList = OBJECT_MAPPER.readValue(remarksJson,
+                        new TypeReference<List<Map<String, Object>>>() {});
+                if (remarksList.isEmpty()) {
+                    return null;
+                }
+                Map<String, Object> latest = remarksList.get(remarksList.size() - 1);
+                Object text = latest.get("text");
+                return text != null ? text.toString() : null;
+            } catch (Exception e) {
+                return null;
+            }
         }
     }
 

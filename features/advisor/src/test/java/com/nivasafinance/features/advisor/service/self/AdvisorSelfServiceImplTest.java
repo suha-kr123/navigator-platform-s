@@ -489,11 +489,13 @@ class AdvisorSelfServiceImplTest {
             stubLoggedInAdvisor();
             when(advisorDashboardWrapper.getSelfDashboard(meId)).thenReturn(Optional.of(dash));
             when(advisorDashboardWrapper.getLeadCountsByStatusForAdvisor(meId)).thenReturn(Collections.emptyList());
+            when(advisorRepositoryWrapper.getTotalPaidByReferralCode("REF001")).thenReturn(BigDecimal.valueOf(5000));
 
             SelfAdvisorDashboardResponse result = advisorSelfService.getMyDashboard();
 
             assertEquals("Adv", result.getAdvisorName());
             assertEquals("Owner", result.getSalesOwner());
+            assertEquals(BigDecimal.valueOf(5000), result.getTotalPayout());
         }
     }
 
@@ -742,12 +744,12 @@ class AdvisorSelfServiceImplTest {
             uc.when(UserContext::getUsername).thenReturn(SELF_USER);
             stubLoggedInAdvisor();
             when(advisorRepositoryWrapper.findLeadsByReferralCodeWithSearch(
-                    eq("REF001"), eq(p), eq("99"), eq("n"), eq("ACTIVE"), eq("SUB")))
+                    eq("REF001"), eq(p), eq("99"), eq("n"), eq("ACTIVE"), eq("SUB"), isNull(), isNull()))
                     .thenReturn(page);
             when(productReadService.getProductByCode("HL")).thenReturn(new ProductResponse(1L, "HL", "Home Loan"));
 
             PaginatedResponse<AdvisorSelfLeadResponse> result = advisorSelfService.getSelfAdvisorLeadsWithSearch(
-                    p, "99", "n", "ACTIVE", "SUB");
+                    p, "99", "n", "ACTIVE", "SUB", null, null);
 
             assertEquals("Home Loan", result.getContent().get(0).getLoanType());
         }
@@ -763,7 +765,7 @@ class AdvisorSelfServiceImplTest {
             stubLoggedInAdvisor();
 
             assertThrows(BadRequestException.class,
-                    () -> advisorSelfService.getSelfAdvisorLeadsWithSearch(p, null, null, null, null));
+                    () -> advisorSelfService.getSelfAdvisorLeadsWithSearch(p, null, null, null, null, null, null));
         }
     }
 

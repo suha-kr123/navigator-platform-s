@@ -15,6 +15,8 @@ import com.nivasafinance.features.advisor.dto.self.AdvisorSelfLeadCreateRequest;
 import com.nivasafinance.features.advisor.dto.self.AdvisorSelfLeadCreateResponse;
 import com.nivasafinance.features.advisor.dto.self.AdvisorSelfLeadResponse;
 import com.nivasafinance.features.advisor.dto.self.AdvisorSelfLeadStageHistoryResponse;
+import com.nivasafinance.features.advisor.dto.self.SelfPayoutDetailResponse;
+import com.nivasafinance.features.advisor.dto.self.SelfPayoutResponse;
 import com.nivasafinance.features.advisor.dto.self.SelfSendOtpRequest;
 import com.nivasafinance.features.advisor.dto.self.SelfAdvisorDashboardResponse;
 import com.nivasafinance.features.advisor.dto.self.SelfVerifyOtpRequest;
@@ -61,11 +63,15 @@ public interface AdvisorSelfService {
 
     PaginatedResponse<AdvisorSelfLeadResponse> getSelfAdvisorLeadsWithSearch(
             PaginationRequest paginationRequest, String mobileNumber, String name,
-            String status, String subStatus);
+            String status, String subStatus, String stageKey, Boolean pendingPayout);
 
     AdvisorSelfLeadResponse getSelfAdvisorLeadByLeadId(UUID leadIdentifier);
 
     List<AdvisorSelfLeadStageHistoryResponse> getSelfAdvisorLeadStageHistory(UUID leadIdentifier);
 
     SelfAdvisorDashboardResponse getMyDashboard();
+
+    PaginatedResponse<SelfPayoutResponse> getMyPayouts(PaginationRequest paginationRequest);
+
+    SelfPayoutDetailResponse getMyPayoutDetail(UUID transactionIdentifier);
 }
