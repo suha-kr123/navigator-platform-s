@@ -207,7 +207,7 @@ public class WhatsAppLeadServiceImpl implements WhatsAppLeadService {
             try {
                 lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
             } catch (Exception e) {
-                log.warn("Failed to fetch lead for product fields, leadIdentifier: {}", leadIdentifier, e);
+           //     log.warn("Failed to fetch lead for product fields, leadIdentifier: {}", leadIdentifier, e);
                 return new String[] {"empty", "empty"};
             }
         }
@@ -232,7 +232,7 @@ public class WhatsAppLeadServiceImpl implements WhatsAppLeadService {
                 }
             }
         } catch (Exception e) {
-            log.warn("Failed to enrich product fields from lead read service, leadIdentifier: {}", leadIdentifier, e);
+        //    log.warn("Failed to enrich product fields from lead read service, leadIdentifier: {}", leadIdentifier, e);
             productName = "empty";
         }
         return new String[] {productCode, productName};
