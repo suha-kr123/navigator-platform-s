@@ -27,11 +27,12 @@ import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-
+@Slf4j
 @Service
 @AllArgsConstructor
 public class WhatsAppLeadServiceImpl implements WhatsAppLeadService {
@@ -207,7 +208,7 @@ public class WhatsAppLeadServiceImpl implements WhatsAppLeadService {
             try {
                 lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
             } catch (Exception e) {
-           //     log.warn("Failed to fetch lead for product fields, leadIdentifier: {}", leadIdentifier, e);
+                log.warn("Failed to fetch lead for product fields, leadIdentifier: {}", leadIdentifier, e);
                 return new String[] {"empty", "empty"};
             }
         }
@@ -232,7 +233,7 @@ public class WhatsAppLeadServiceImpl implements WhatsAppLeadService {
                 }
             }
         } catch (Exception e) {
-        //    log.warn("Failed to enrich product fields from lead read service, leadIdentifier: {}", leadIdentifier, e);
+            log.warn("Failed to enrich product fields from lead read service, leadIdentifier: {}", leadIdentifier, e);
             productName = "empty";
         }
         return new String[] {productCode, productName};
