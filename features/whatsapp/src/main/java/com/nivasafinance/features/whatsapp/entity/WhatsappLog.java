@@ -53,7 +53,8 @@ public class WhatsappLog extends AuditableEntity {
     private String providerConversationId;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "sent_by", length = 50)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "sent_by", columnDefinition = "n_whatsapp_log_sent_by_enum")
     private WhatsappSentBy sentBy;
 
     @Column(name = "phone", nullable = false, length = 50)
@@ -63,11 +64,13 @@ public class WhatsappLog extends AuditableEntity {
     private String fromChannelId;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", length = 50)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "status", columnDefinition = "n_whatsapp_log_status_enum")
     private WhatsappStatus status;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "message_type", length = 50)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "message_type", columnDefinition = "n_whatsapp_log_message_type_enum")
     private WhatsappMessageType messageType;
 
     @Type(JsonType.class)
@@ -81,7 +84,8 @@ public class WhatsappLog extends AuditableEntity {
     private TemplateDetails templateDetails;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "created_source", length = 50)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "created_source", columnDefinition = "n_whatsapp_log_created_source_enum")
     private WhatsappCreatedSource createdSource;
 
     @Column(name = "message_time")
