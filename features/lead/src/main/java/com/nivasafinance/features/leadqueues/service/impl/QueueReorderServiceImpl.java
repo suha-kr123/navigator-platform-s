@@ -20,9 +20,12 @@ public class QueueReorderServiceImpl implements QueueReorderService {
 
     @Override
     public void reorderQueue(String queueConfigName) {
-        QueueConfig queueConfig = queueConfigRepositoryWrapper
-                .findByQueueName(queueConfigName);
+        QueueConfig queueConfig = queueConfigRepositoryWrapper.findByQueueName(queueConfigName);
+        reorderQueue(queueConfig);
+    }
 
+    @Override
+    public void reorderQueue(QueueConfig queueConfig) {
         LocalDateTime lastReorderTime = queueConfig.getLastReorderTime();
         // reorder_time in n_queue_config is in seconds (freshness window after last_reorder_time)
         int reorderTimeSeconds = queueConfig.getReorderTime() != null && queueConfig.getReorderTime() > 0
@@ -33,7 +36,7 @@ public class QueueReorderServiceImpl implements QueueReorderService {
                 || lastReorderTime.plusSeconds(reorderTimeSeconds).isBefore(LocalDateTime.now());
 
         if (!isStale) {
-            log.debug("Queue {} is fresh, skipping reorder", queueConfigName);
+            log.debug("Queue {} is fresh, skipping reorder", queueConfig.getQueueName());
             return;
         }
 

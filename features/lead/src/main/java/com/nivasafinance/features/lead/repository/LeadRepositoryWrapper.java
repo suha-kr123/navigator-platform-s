@@ -269,7 +269,19 @@ public class LeadRepositoryWrapper {
         }
     }
 
-
+    public LeadResponse findLeadResponseByIdWithException(Long id) {
+        try {
+            UUID identifier = jdbcTemplate.queryForObject(
+                    "SELECT lead_identifier FROM n_lead WHERE id = ? AND is_deleted = false",
+                    UUID.class, id);
+            if (identifier == null) {
+                throw new LeadNotFoundException(id, messageSource);
+            }
+            return findLeadResponseByIdentifierWithException(identifier);
+        } catch (EmptyResultDataAccessException e) {
+            throw new LeadNotFoundException(id, messageSource);
+        }
+    }
 
     /**
      * Find active or onhold lead where the given person is a contact.
@@ -537,10 +549,9 @@ public class LeadRepositoryWrapper {
                     // Ignore if sub-stage not found - leave name as null
                 }
             }
-        } catch (DataAccessException e) {
-            // Log error but don't fail the entire operation
-            // The lead response will be returned with partial data
-            throw new RuntimeException("Failed to enrich lead response with service data", e);
+        } catch (Exception e) {
+            log.warn("Lead response enrichment failed for lead {} — returning partial data",
+                    leadResponse.getLeadIdentifier(), e);
         }
     }
 

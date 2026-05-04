@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
 public class QueueServiceImpl implements QueueService {
 
     /** How many listable rows to scan when picking “next” after the active claim. */
-    private static final int WORKBENCH_LIST_SCAN = 200;
+    private static final int WORKBENCH_LIST_SCAN = 2;
 
     private final LeadQueueRepositoryWrapper leadQueueRepositoryWrapper;
     private final QueueConfigRepositoryWrapper queueConfigRepositoryWrapper;
@@ -74,7 +74,7 @@ public class QueueServiceImpl implements QueueService {
 
         try {
             // Refresh positions if past reorder window: last_reorder_time + reorder_time (seconds)
-            queueReorderService.reorderQueue(queueConfigName);
+            queueReorderService.reorderQueue(config);
         } catch (Exception e) {
             log.warn("Queue reorder on list failed for {} — returning last known order", queueConfigName, e);
         }
@@ -109,7 +109,7 @@ public class QueueServiceImpl implements QueueService {
         QueueConfig config = queueConfigRepositoryWrapper.findByQueueName(queueConfigName);
         assertUserHasQueueAccess(config, userId);
         try {
-            queueReorderService.reorderQueue(queueConfigName);
+            queueReorderService.reorderQueue(config);
         } catch (Exception e) {
             log.warn("Queue reorder on workbench failed for {} — continuing with last order", queueConfigName, e);
         }
@@ -236,8 +236,7 @@ public class QueueServiceImpl implements QueueService {
     }
 
     private LeadResponse loadLeadResponse(Long leadId) {
-        Lead lead = leadRepositoryWrapper.findByIdWithException(leadId);
-        return leadReadService.getLeadByIdentifier(lead.getLeadIdentifier());
+        return leadRepositoryWrapper.findLeadResponseByIdWithException(leadId);
     }
 
     private static boolean isActivelyLockedByThisUser(LeadQueue lq, LocalDateTime now, String username) {
