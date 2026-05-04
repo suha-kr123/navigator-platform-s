@@ -11,10 +11,13 @@
                 <tableExists tableName="n_whatsapp_log_advisor"/>
             </not>
         </preConditions>
-        <comment>Mapping table: one advisor per whatsapp log (PK whatsapp_log_id); AuditableEntity columns. No FK constraints.</comment>
+        <comment>Mapping table: one advisor per whatsapp log. Surrogate id PK; whatsapp_log_id unique. AuditableEntity columns. No FK constraints.</comment>
         <createTable tableName="n_whatsapp_log_advisor">
-            <column name="whatsapp_log_id" type="BIGINT">
+            <column name="id" type="BIGINT" autoIncrement="true">
                 <constraints nullable="false" primaryKey="true" primaryKeyName="pk_n_whatsapp_log_advisor"/>
+            </column>
+            <column name="whatsapp_log_id" type="BIGINT">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uq_n_whatsapp_log_advisor_whatsapp_log_id"/>
             </column>
             <column name="advisor_id" type="BIGINT">
                 <constraints nullable="false"/>

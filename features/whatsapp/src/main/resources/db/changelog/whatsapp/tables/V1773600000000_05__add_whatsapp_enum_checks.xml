@@ -6,28 +6,41 @@
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
     <changeSet id="V1773600000000_05a" author="navigator" context="default">
-        <comment>Guardrail: enforce n_whatsapp_log.status at DB level</comment>
-        <sql>ALTER TABLE n_whatsapp_log ADD CONSTRAINT chk_n_whatsapp_log_status CHECK (status IS NULL OR status IN ('SENT', 'RECEIVED'))</sql>
+        <comment>Create PostgreSQL enum type for n_whatsapp_log.status and convert column</comment>
+        <sql>CREATE TYPE n_whatsapp_log_status_enum AS ENUM ('SENT', 'RECEIVED')</sql>
+        <sql>ALTER TABLE n_whatsapp_log ALTER COLUMN status TYPE n_whatsapp_log_status_enum USING status::n_whatsapp_log_status_enum</sql>
     </changeSet>
+
     <changeSet id="V1773600000000_05c" author="navigator" context="default">
-        <comment>Guardrail: enforce n_whatsapp_log.message_type at DB level</comment>
-        <sql>ALTER TABLE n_whatsapp_log ADD CONSTRAINT chk_n_whatsapp_log_message_type CHECK (message_type IS NULL OR message_type IN ('TEMPLATE', 'TEXT', 'INTERACTIVE', 'UNSUPPORTED', 'IMAGE', 'BUTTON', 'STICKER', 'AUDIO', 'CONTACTS', 'REACTION', 'DOCUMENT', 'VIDEO'))</sql>
+        <comment>Create PostgreSQL enum type for n_whatsapp_log.message_type and convert column</comment>
+        <sql>CREATE TYPE n_whatsapp_log_message_type_enum AS ENUM ('TEMPLATE', 'TEXT', 'INTERACTIVE', 'UNSUPPORTED', 'IMAGE', 'BUTTON', 'STICKER', 'AUDIO', 'CONTACTS', 'REACTION', 'DOCUMENT', 'VIDEO')</sql>
+        <sql>ALTER TABLE n_whatsapp_log ALTER COLUMN message_type TYPE n_whatsapp_log_message_type_enum USING message_type::n_whatsapp_log_message_type_enum</sql>
     </changeSet>
+
     <changeSet id="V1773600000000_05d" author="navigator" context="default">
-        <comment>Guardrail: enforce n_whatsapp_log.created_source at DB level</comment>
-        <sql>ALTER TABLE n_whatsapp_log ADD CONSTRAINT chk_n_whatsapp_log_created_source CHECK (created_source IS NULL OR created_source IN ('API', 'BOT', 'SEQUENCE', 'BROADCAST'))</sql>
+        <comment>Create PostgreSQL enum type for n_whatsapp_log.created_source and convert column</comment>
+        <sql>CREATE TYPE n_whatsapp_log_created_source_enum AS ENUM ('API', 'BOT', 'SEQUENCE', 'BROADCAST')</sql>
+        <sql>ALTER TABLE n_whatsapp_log ALTER COLUMN created_source TYPE n_whatsapp_log_created_source_enum USING created_source::n_whatsapp_log_created_source_enum</sql>
     </changeSet>
+
     <changeSet id="V1773600000000_05e" author="navigator" context="default">
-        <comment>Guardrail: enforce n_whatsapp_channel.entity at DB level</comment>
-        <sql>ALTER TABLE n_whatsapp_channel ADD CONSTRAINT chk_n_whatsapp_channel_entity CHECK (entity IN ('LEAD', 'ADVISOR'))</sql>
+        <comment>Create PostgreSQL enum type for n_whatsapp_channel.entity and convert column</comment>
+        <sql>CREATE TYPE n_whatsapp_channel_entity_enum AS ENUM ('LEAD', 'ADVISOR')</sql>
+        <sql>ALTER TABLE n_whatsapp_channel ALTER COLUMN entity TYPE n_whatsapp_channel_entity_enum USING entity::n_whatsapp_channel_entity_enum</sql>
     </changeSet>
+
     <changeSet id="V1773600000000_05f" author="navigator" context="default">
-        <comment>Guardrail: enforce n_whatsapp_log.sent_by at DB level</comment>
-        <sql>ALTER TABLE n_whatsapp_log ADD CONSTRAINT chk_n_whatsapp_log_sent_by CHECK (sent_by IS NULL OR sent_by IN ('API', 'SEQUENCE'))</sql>
+        <comment>Create PostgreSQL enum type for n_whatsapp_log.sent_by and convert column</comment>
+        <sql>CREATE TYPE n_whatsapp_log_sent_by_enum AS ENUM ('API', 'SEQUENCE')</sql>
+        <sql>ALTER TABLE n_whatsapp_log ALTER COLUMN sent_by TYPE n_whatsapp_log_sent_by_enum USING sent_by::n_whatsapp_log_sent_by_enum</sql>
     </changeSet>
+
     <changeSet id="V1773600000000_05g" author="navigator" context="default">
-        <comment>Guardrail: enforce n_whatsapp_channel.status at DB level</comment>
-        <sql>ALTER TABLE n_whatsapp_channel ADD CONSTRAINT chk_n_whatsapp_channel_status CHECK (status IN ('ACTIVE', 'INACTIVE'))</sql>
+        <comment>Create PostgreSQL enum type for n_whatsapp_channel.status and convert column (preserve ACTIVE default)</comment>
+        <sql>CREATE TYPE n_whatsapp_channel_status_enum AS ENUM ('ACTIVE', 'INACTIVE')</sql>
+        <sql>ALTER TABLE n_whatsapp_channel ALTER COLUMN status DROP DEFAULT</sql>
+        <sql>ALTER TABLE n_whatsapp_channel ALTER COLUMN status TYPE n_whatsapp_channel_status_enum USING status::n_whatsapp_channel_status_enum</sql>
+        <sql>ALTER TABLE n_whatsapp_channel ALTER COLUMN status SET DEFAULT 'ACTIVE'::n_whatsapp_channel_status_enum</sql>
     </changeSet>
 
 </databaseChangeLog>
