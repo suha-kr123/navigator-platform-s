@@ -18,6 +18,7 @@ import com.nivasafinance.features.leadstages.dto.StageTransitionRequest;
 import com.nivasafinance.features.leadstages.service.LeadStageHistoryWriteService;
 import lombok.RequiredArgsConstructor;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +35,9 @@ public class LeadExternalServiceImpl implements LeadExternalService {
 
     private static final String EXPERT_SCREENING_STAGE_KEY = "Expert Screening";
     private static final String NOT_IN_SERVICABLE_LOCATION_REASON_CODE = "NOT_IN_SERVICABLE_LOCATION";
+    private static final String PERSONAL_LOAN_REASON_CODE = "PERSONAL_LOAN";
+    private static final String PERSONAL_LOAN_PRODUCT_CODE = "PL";
+    private static final BigDecimal PERSONAL_LOAN_MIN_REQUESTED_AMOUNT = BigDecimal.valueOf(500000);
 
     private final LeadWriteService leadWriteService;
     private final LeadReadService leadReadService;
@@ -112,17 +116,24 @@ public class LeadExternalServiceImpl implements LeadExternalService {
 
     @Override
     public LeadEligibilityEvaluateResponse evaluateEligibility(UUID leadIdentifier) {
+        LeadResponse initialLead = leadReadService.getLeadByIdentifier(leadIdentifier);
         PropertyDetailsResponse propertyDetails = leadReadService.getPropertyDetails(leadIdentifier);
         AddressData address = propertyDetails != null ? propertyDetails.getAddress() : null;
 
-        if (shouldRejectForDistrictServiceability(address)) {
+        String rejectionReasonCode = getEligibilityRejectionReasonCode(initialLead, address);
+        if (rejectionReasonCode != null) {
             RejectLeadRequest rejectLeadRequest = RejectLeadRequest.builder()
-                    .reasonCode(NOT_IN_SERVICABLE_LOCATION_REASON_CODE)
+                    .reasonCode(rejectionReasonCode)
                     .build();
             leadWriteService.rejectLead(leadIdentifier, rejectLeadRequest);
         }
 
-        LeadBasicResponse lead = leadReadService.getLeadBasicByIdentifier(leadIdentifier);
+        LeadBasicResponse lead = rejectionReasonCode != null
+                ? leadReadService.getLeadBasicByIdentifier(leadIdentifier)
+                : LeadBasicResponse.builder()
+                        .leadIdentifier(initialLead.getLeadIdentifier())
+                        .status(initialLead.getStatus())
+                        .build();
         return LeadEligibilityEvaluateResponse.builder()
                 .leadIdentifier(lead.getLeadIdentifier())
                 .leadStatus(lead.getStatus())
@@ -164,6 +175,25 @@ public class LeadExternalServiceImpl implements LeadExternalService {
         }
 
         return !locationMasterService.isDistrictServiceable(address.getDistrictCode());
+    }
+
+    private String getEligibilityRejectionReasonCode(LeadResponse lead, AddressData address) {
+        if (shouldRejectForPersonalLoanAmount(lead)) {
+            return PERSONAL_LOAN_REASON_CODE;
+        }
+
+        if (shouldRejectForDistrictServiceability(address)) {
+            return NOT_IN_SERVICABLE_LOCATION_REASON_CODE;
+        }
+
+        return null;
+    }
+
+    private boolean shouldRejectForPersonalLoanAmount(LeadResponse lead) {
+        return lead != null
+                && PERSONAL_LOAN_PRODUCT_CODE.equalsIgnoreCase(lead.getProductCode())
+                && lead.getRequestedAmount() != null
+                && lead.getRequestedAmount().compareTo(PERSONAL_LOAN_MIN_REQUESTED_AMOUNT) < 0;
     }
 
     private boolean isBlank(String value) {

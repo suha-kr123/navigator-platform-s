@@ -25,6 +25,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -293,9 +294,14 @@ class LeadExternalServiceImplTest {
     void evaluateEligibility_whenPropertyDetailsIsNull_rejectsLeadAndReturnsStatus() {
         // Arrange
         when(leadReadService.getPropertyDetails(LEAD_IDENTIFIER)).thenReturn(null);
-        LeadBasicResponse lead = LeadBasicResponse.builder()
+        LeadResponse eligibilityLead = LeadResponse.builder()
+                .leadIdentifier(LEAD_IDENTIFIER)
+                .status(LeadStatus.ACTIVE)
+                .build();
+        LeadBasicResponse rejectedLead = LeadBasicResponse.builder()
                 .leadIdentifier(LEAD_IDENTIFIER).status(LeadStatus.REJECTED).build();
-        when(leadReadService.getLeadBasicByIdentifier(LEAD_IDENTIFIER)).thenReturn(lead);
+        when(leadReadService.getLeadByIdentifier(LEAD_IDENTIFIER)).thenReturn(eligibilityLead);
+        when(leadReadService.getLeadBasicByIdentifier(LEAD_IDENTIFIER)).thenReturn(rejectedLead);
 
         // Act
         LeadEligibilityEvaluateResponse result = leadExternalService.evaluateEligibility(LEAD_IDENTIFIER);
@@ -312,8 +318,13 @@ class LeadExternalServiceImplTest {
         // Arrange
         PropertyDetailsResponse propertyDetails = PropertyDetailsResponse.builder().address(null).build();
         when(leadReadService.getPropertyDetails(LEAD_IDENTIFIER)).thenReturn(propertyDetails);
+        LeadResponse eligibilityLead = LeadResponse.builder()
+                .leadIdentifier(LEAD_IDENTIFIER)
+                .status(LeadStatus.ACTIVE)
+                .build();
         LeadBasicResponse lead = LeadBasicResponse.builder()
                 .leadIdentifier(LEAD_IDENTIFIER).status(LeadStatus.REJECTED).build();
+        when(leadReadService.getLeadByIdentifier(LEAD_IDENTIFIER)).thenReturn(eligibilityLead);
         when(leadReadService.getLeadBasicByIdentifier(LEAD_IDENTIFIER)).thenReturn(lead);
 
         // Act
@@ -329,8 +340,13 @@ class LeadExternalServiceImplTest {
         AddressData address = AddressData.builder().districtCode("  ").build();
         PropertyDetailsResponse propertyDetails = PropertyDetailsResponse.builder().address(address).build();
         when(leadReadService.getPropertyDetails(LEAD_IDENTIFIER)).thenReturn(propertyDetails);
+        LeadResponse eligibilityLead = LeadResponse.builder()
+                .leadIdentifier(LEAD_IDENTIFIER)
+                .status(LeadStatus.ACTIVE)
+                .build();
         LeadBasicResponse lead = LeadBasicResponse.builder()
                 .leadIdentifier(LEAD_IDENTIFIER).status(LeadStatus.REJECTED).build();
+        when(leadReadService.getLeadByIdentifier(LEAD_IDENTIFIER)).thenReturn(eligibilityLead);
         when(leadReadService.getLeadBasicByIdentifier(LEAD_IDENTIFIER)).thenReturn(lead);
 
         // Act
@@ -348,8 +364,13 @@ class LeadExternalServiceImplTest {
         PropertyDetailsResponse propertyDetails = PropertyDetailsResponse.builder().address(address).build();
         when(leadReadService.getPropertyDetails(LEAD_IDENTIFIER)).thenReturn(propertyDetails);
         when(locationMasterService.isDistrictServiceable("BLR")).thenReturn(false);
+        LeadResponse eligibilityLead = LeadResponse.builder()
+                .leadIdentifier(LEAD_IDENTIFIER)
+                .status(LeadStatus.ACTIVE)
+                .build();
         LeadBasicResponse lead = LeadBasicResponse.builder()
                 .leadIdentifier(LEAD_IDENTIFIER).status(LeadStatus.REJECTED).build();
+        when(leadReadService.getLeadByIdentifier(LEAD_IDENTIFIER)).thenReturn(eligibilityLead);
         when(leadReadService.getLeadBasicByIdentifier(LEAD_IDENTIFIER)).thenReturn(lead);
 
         // Act
@@ -361,15 +382,73 @@ class LeadExternalServiceImplTest {
     }
 
     @Test
+    void evaluateEligibility_whenPersonalLoanAmountIsBelowThreshold_rejectsLeadForPersonalLoan() {
+        // Arrange
+        AddressData address = AddressData.builder().districtCode("BLR").build();
+        PropertyDetailsResponse propertyDetails = PropertyDetailsResponse.builder().address(address).build();
+        when(leadReadService.getPropertyDetails(LEAD_IDENTIFIER)).thenReturn(propertyDetails);
+        LeadResponse eligibilityLead = LeadResponse.builder()
+                .leadIdentifier(LEAD_IDENTIFIER)
+                .productCode("PL")
+                .requestedAmount(BigDecimal.valueOf(499999))
+                .status(LeadStatus.ACTIVE)
+                .build();
+        LeadBasicResponse rejectedLead = LeadBasicResponse.builder()
+                .leadIdentifier(LEAD_IDENTIFIER)
+                .productCode("PL")
+                .requestedAmount(BigDecimal.valueOf(499999))
+                .status(LeadStatus.REJECTED)
+                .build();
+        when(leadReadService.getLeadByIdentifier(LEAD_IDENTIFIER)).thenReturn(eligibilityLead);
+        when(leadReadService.getLeadBasicByIdentifier(LEAD_IDENTIFIER)).thenReturn(rejectedLead);
+
+        // Act
+        LeadEligibilityEvaluateResponse result = leadExternalService.evaluateEligibility(LEAD_IDENTIFIER);
+
+        // Assert
+        verify(leadWriteService).rejectLead(eq(LEAD_IDENTIFIER),
+                argThat(r -> "PERSONAL_LOAN".equals(r.getReasonCode())));
+        verify(locationMasterService, never()).isDistrictServiceable(any());
+        assertEquals(LeadStatus.REJECTED, result.getLeadStatus());
+    }
+
+    @Test
+    void evaluateEligibility_whenPersonalLoanAmountIsAtThreshold_doesNotRejectForPersonalLoan() {
+        // Arrange
+        AddressData address = AddressData.builder().districtCode("BLR").build();
+        PropertyDetailsResponse propertyDetails = PropertyDetailsResponse.builder().address(address).build();
+        when(leadReadService.getPropertyDetails(LEAD_IDENTIFIER)).thenReturn(propertyDetails);
+        when(locationMasterService.isDistrictServiceable("BLR")).thenReturn(true);
+        LeadResponse lead = LeadResponse.builder()
+                .leadIdentifier(LEAD_IDENTIFIER)
+                .productCode("PL")
+                .requestedAmount(BigDecimal.valueOf(500000))
+                .status(LeadStatus.ACTIVE)
+                .build();
+        when(leadReadService.getLeadByIdentifier(LEAD_IDENTIFIER)).thenReturn(lead);
+
+        // Act
+        LeadEligibilityEvaluateResponse result = leadExternalService.evaluateEligibility(LEAD_IDENTIFIER);
+
+        // Assert
+        verify(leadWriteService, never()).rejectLead(any(), any());
+        verify(locationMasterService).isDistrictServiceable("BLR");
+        assertEquals(LEAD_IDENTIFIER, result.getLeadIdentifier());
+        assertEquals(LeadStatus.ACTIVE, result.getLeadStatus());
+    }
+
+    @Test
     void evaluateEligibility_whenDistrictIsServiceable_doesNotRejectAndReturnsStatus() {
         // Arrange
         AddressData address = AddressData.builder().districtCode("BLR").build();
         PropertyDetailsResponse propertyDetails = PropertyDetailsResponse.builder().address(address).build();
         when(leadReadService.getPropertyDetails(LEAD_IDENTIFIER)).thenReturn(propertyDetails);
         when(locationMasterService.isDistrictServiceable("BLR")).thenReturn(true);
-        LeadBasicResponse lead = LeadBasicResponse.builder()
-                .leadIdentifier(LEAD_IDENTIFIER).status(LeadStatus.ACTIVE).build();
-        when(leadReadService.getLeadBasicByIdentifier(LEAD_IDENTIFIER)).thenReturn(lead);
+        LeadResponse leadResponse = LeadResponse.builder()
+                .leadIdentifier(LEAD_IDENTIFIER)
+                .status(LeadStatus.ACTIVE)
+                .build();
+        when(leadReadService.getLeadByIdentifier(LEAD_IDENTIFIER)).thenReturn(leadResponse);
 
         // Act
         LeadEligibilityEvaluateResponse result = leadExternalService.evaluateEligibility(LEAD_IDENTIFIER);
