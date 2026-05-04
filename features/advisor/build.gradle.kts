@@ -23,6 +23,7 @@ dependencies {
     implementation(project(":features:lead"))
     implementation(project(":features:transaction"))
     implementation(project(":features:rolemanagement"))
+    implementation(project(":features:whatsapp"))
 }
 
 springBoot {

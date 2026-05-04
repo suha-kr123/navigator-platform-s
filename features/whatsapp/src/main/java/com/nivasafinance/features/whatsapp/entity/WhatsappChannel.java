@@ -16,6 +16,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "n_whatsapp_channel")
@@ -34,10 +36,12 @@ public class WhatsappChannel extends AuditableEntity {
     private String channelId;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "entity", nullable = false, length = 50)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "entity", nullable = false, columnDefinition = "n_whatsapp_channel_entity_enum")
     private WhatsappEntity entity;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 50)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "status", nullable = false, columnDefinition = "n_whatsapp_channel_status_enum")
     private WhatsappChannelStatus status;
 }

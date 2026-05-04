@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1773700000000_06a" author="navigator" context="default">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="n_whatsapp_log_lead" columnName="id"/>
+            </not>
+        </preConditions>
+        <comment>Refactor n_whatsapp_log_lead PK: surrogate id PK, whatsapp_log_id unique</comment>
+        <dropPrimaryKey tableName="n_whatsapp_log_lead" constraintName="pk_n_whatsapp_log_lead"/>
+        <addColumn tableName="n_whatsapp_log_lead">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_n_whatsapp_log_lead"/>
+            </column>
+        </addColumn>
+        <addUniqueConstraint tableName="n_whatsapp_log_lead"
+                             columnNames="whatsapp_log_id"
+                             constraintName="uq_n_whatsapp_log_lead_whatsapp_log_id"/>
+    </changeSet>
+
+    <changeSet id="V1773700000000_06b" author="navigator" context="default">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="n_whatsapp_log_advisor" columnName="id"/>
+            </not>
+        </preConditions>
+        <comment>Refactor n_whatsapp_log_advisor PK: surrogate id PK, whatsapp_log_id unique</comment>
+        <dropPrimaryKey tableName="n_whatsapp_log_advisor" constraintName="pk_n_whatsapp_log_advisor"/>
+        <addColumn tableName="n_whatsapp_log_advisor">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_n_whatsapp_log_advisor"/>
+            </column>
+        </addColumn>
+        <addUniqueConstraint tableName="n_whatsapp_log_advisor"
+                             columnNames="whatsapp_log_id"
+                             constraintName="uq_n_whatsapp_log_advisor_whatsapp_log_id"/>
+    </changeSet>
+
+</databaseChangeLog>

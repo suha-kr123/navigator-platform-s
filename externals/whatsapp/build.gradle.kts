@@ -16,6 +16,8 @@ dependencies {
     implementation(project(":features:advisor"))
     implementation(project(":features:lead"))
     implementation(project(":features:task"))
+    implementation(project(":features:whatsapp"))
+    implementation(project(":features:notifications"))
 }
 
 springBoot {
