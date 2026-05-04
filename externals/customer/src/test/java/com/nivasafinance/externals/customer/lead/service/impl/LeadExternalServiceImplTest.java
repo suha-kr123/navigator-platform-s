@@ -389,14 +389,14 @@ class LeadExternalServiceImplTest {
         when(leadReadService.getPropertyDetails(LEAD_IDENTIFIER)).thenReturn(propertyDetails);
         LeadResponse eligibilityLead = LeadResponse.builder()
                 .leadIdentifier(LEAD_IDENTIFIER)
-                .productCode("PL")
-                .requestedAmount(BigDecimal.valueOf(499999))
+                .productCode("PERSONAL_LOAN")
+                .requestedAmount(BigDecimal.valueOf(399999))
                 .status(LeadStatus.ACTIVE)
                 .build();
         LeadBasicResponse rejectedLead = LeadBasicResponse.builder()
                 .leadIdentifier(LEAD_IDENTIFIER)
-                .productCode("PL")
-                .requestedAmount(BigDecimal.valueOf(499999))
+                .productCode("PERSONAL_LOAN")
+                .requestedAmount(BigDecimal.valueOf(399999))
                 .status(LeadStatus.REJECTED)
                 .build();
         when(leadReadService.getLeadByIdentifier(LEAD_IDENTIFIER)).thenReturn(eligibilityLead);

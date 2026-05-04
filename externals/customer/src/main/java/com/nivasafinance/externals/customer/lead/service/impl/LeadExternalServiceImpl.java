@@ -36,8 +36,8 @@ public class LeadExternalServiceImpl implements LeadExternalService {
     private static final String EXPERT_SCREENING_STAGE_KEY = "Expert Screening";
     private static final String NOT_IN_SERVICABLE_LOCATION_REASON_CODE = "NOT_IN_SERVICABLE_LOCATION";
     private static final String PERSONAL_LOAN_REASON_CODE = "PERSONAL_LOAN";
-    private static final String PERSONAL_LOAN_PRODUCT_CODE = "PL";
-    private static final BigDecimal PERSONAL_LOAN_MIN_REQUESTED_AMOUNT = BigDecimal.valueOf(500000);
+    private static final String PERSONAL_LOAN_PRODUCT_CODE = "PERSONAL_LOAN";
+    private static final BigDecimal PERSONAL_LOAN_MIN_REQUESTED_AMOUNT = BigDecimal.valueOf(400000);
 
     private final LeadWriteService leadWriteService;
     private final LeadReadService leadReadService;
