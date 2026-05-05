@@ -975,10 +975,18 @@ public class AdvisorRepositoryWrapper {
         String sql = """
                 SELECT t.identifier AS transaction_identifier,
                        t.amount, t.status, t.created_at, t.remarks,
+                       l.lead_identifier,
+                       p.display_name AS lead_name,
+                       (jsonb_path_query_first(COALESCE(p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number') AS phone_number,
+                       prod.name->>'default' AS loan_type,
                        latest_pmt.payment_mode, latest_pmt.external_reference,
                        latest_pmt.payment_status, latest_pmt.payment_date, latest_pmt.payment_data
                 FROM n_transaction t
                 JOIN n_lead_transaction lt ON lt.transaction_id = t.id
+                JOIN n_lead l ON l.id = lt.lead_id
+                LEFT JOIN n_contact c ON c.id = (l.other_details->>'primaryContactId')::bigint
+                LEFT JOIN n_person p ON p.id = c.person_id
+                LEFT JOIN n_product prod ON prod.code = l.product_code
                 LEFT JOIN LATERAL (
                     SELECT pmnt.payment_mode, pmnt.external_reference, pmnt.payment_status,
                            pmnt.payment_date, pmnt.payment_data
@@ -1097,11 +1105,20 @@ public class AdvisorRepositoryWrapper {
 
             String remarksStr = extractLatestRemarkText(rs.getString("remarks"));
 
+            String leadIdStr = rs.getString("lead_identifier");
+            AdvisorSelfLeadResponse leadDetails = AdvisorSelfLeadResponse.builder()
+                    .leadIdentifier(leadIdStr != null ? UUID.fromString(leadIdStr) : null)
+                    .leadName(rs.getString("lead_name"))
+                    .leadNumber(rs.getString("phone_number"))
+                    .loanType(rs.getString("loan_type"))
+                    .build();
+
             return SelfPayoutDetailResponse.builder()
                     .transactionIdentifier(txnIdStr != null ? UUID.fromString(txnIdStr) : null)
                     .amount(rs.getBigDecimal("amount"))
                     .status(rs.getString("status"))
                     .createdAt(createdAtTs != null ? createdAtTs.toLocalDateTime() : null)
+                    .leadDetails(leadDetails)
                     .paymentDetails(paymentDetails)
                     .remarks(remarksStr)
                     .build();
