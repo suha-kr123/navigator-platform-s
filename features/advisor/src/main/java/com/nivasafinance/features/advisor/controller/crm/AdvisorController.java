@@ -138,6 +138,27 @@ public class AdvisorController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/{identifier}/undo-reject")
+    @RequirePermission(permissionName = "UPDATE_ADVISOR_STATUS")
+    public ResponseEntity<Void> undoRejectAdvisor(@PathVariable UUID identifier) {
+        advisorWriteService.undoRejectAdvisor(identifier);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{identifier}/undo-dormant")
+    @RequirePermission(permissionName = "UPDATE_ADVISOR_STATUS")
+    public ResponseEntity<Void> undoDormantAdvisor(@PathVariable UUID identifier) {
+        advisorWriteService.undoDormantAdvisor(identifier);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{identifier}/undo-out-of-geo")
+    @RequirePermission(permissionName = "UPDATE_ADVISOR_STATUS")
+    public ResponseEntity<Void> undoOutOfGeoAdvisor(@PathVariable UUID identifier) {
+        advisorWriteService.undoOutOfGeoAdvisor(identifier);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/dashboard")
     @RequirePermission(permissionName = "READ_ADVISOR_DASHBOARD")
     public ResponseEntity<PaginatedResponse<AdvisorDashboardResponse>> getAdvisorDashboard(
