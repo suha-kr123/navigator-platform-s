@@ -6,7 +6,8 @@ import com.nivasafinance.common.exception.BadRequestException;
 import com.nivasafinance.features.lead.service.LeadCreditBureauWriteService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.event.EventListener;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
@@ -20,7 +21,10 @@ public class CbConsentRecordedListener {
 
     private final LeadCreditBureauWriteService leadCreditBureauWriteService;
 
-    @EventListener(condition = "#event.eventType == 'LEAD_CB_CONSENT_RECORDED'")
+    @TransactionalEventListener(
+            phase = TransactionPhase.AFTER_COMMIT,
+            condition = "#event.eventType == 'LEAD_CB_CONSENT_RECORDED'"
+    )
     @Async("eventTaskExecutor")
     @Retryable(
             retryFor = Exception.class,
