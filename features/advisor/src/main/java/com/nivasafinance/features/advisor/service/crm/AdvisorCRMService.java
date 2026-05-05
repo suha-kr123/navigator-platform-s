@@ -34,6 +34,12 @@ public interface AdvisorCRMService {
 
     void outOfGeoAdvisor(UUID identifier, OutOfGeoAdvisorRequest request);
 
+    void undoRejectAdvisor(UUID identifier);
+
+    void undoDormantAdvisor(UUID identifier);
+
+    void undoOutOfGeoAdvisor(UUID identifier);
+
     PaginatedResponse<AdvisorDashboardResponse> getAdvisorDashboard(
             PaginationRequest paginationRequest,
             AdvisorDashboardFilters filters);

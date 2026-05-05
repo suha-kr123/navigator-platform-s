@@ -463,6 +463,46 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
         advisorRepositoryWrapper.saveWithException(advisor);
     }
 
+    @Override
+    public void undoRejectAdvisor(UUID identifier) {
+        Advisor advisor = advisorRepositoryWrapper.findByIdentifierWithException(identifier);
+        if (!AdvisorStatus.REJECTED.equals(advisor.getStatus())) {
+            throw AdvisorExceptionFactory.advisorNotRejected(identifier, messageSource);
+        }
+        advisor.setStatus(AdvisorStatus.ACTIVE);
+        if (advisor.getRemarks() != null) {
+            advisor.getRemarks().setRejected(null);
+        }
+        advisor.setRejectionDetails(null);
+        advisorRepositoryWrapper.saveWithException(advisor);
+    }
+
+    @Override
+    public void undoDormantAdvisor(UUID identifier) {
+        Advisor advisor = advisorRepositoryWrapper.findByIdentifierWithException(identifier);
+        if (!AdvisorStatus.DORMANT.equals(advisor.getStatus())) {
+            throw AdvisorExceptionFactory.advisorNotDormant(identifier, messageSource);
+        }
+        advisor.setStatus(AdvisorStatus.ACTIVE);
+        if (advisor.getRemarks() != null) {
+            advisor.getRemarks().setDormant(null);
+        }
+        advisorRepositoryWrapper.saveWithException(advisor);
+    }
+
+    @Override
+    public void undoOutOfGeoAdvisor(UUID identifier) {
+        Advisor advisor = advisorRepositoryWrapper.findByIdentifierWithException(identifier);
+        if (!AdvisorStatus.OUT_OF_GEO.equals(advisor.getStatus())) {
+            throw AdvisorExceptionFactory.advisorNotOutOfGeo(identifier, messageSource);
+        }
+        advisor.setStatus(AdvisorStatus.ACTIVE);
+        if (advisor.getRemarks() != null) {
+            advisor.getRemarks().setOutOfGeo(null);
+        }
+        advisorRepositoryWrapper.saveWithException(advisor);
+    }
+
     private void publishAdvisorStatusChangeEvent(Advisor advisor, BusinessEvent event, String reason) {
         AdvisorStatusChangeEventPayload payload = AdvisorStatusChangeEventPayload.builder()
                 .id(advisor.getId())
