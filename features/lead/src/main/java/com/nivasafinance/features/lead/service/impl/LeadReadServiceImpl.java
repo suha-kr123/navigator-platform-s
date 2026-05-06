@@ -18,6 +18,7 @@ import com.nivasafinance.features.master.codemaster.service.CodeMasterService;
 import com.nivasafinance.features.master.codemaster.service.CodeValueMasterService;
 import com.nivasafinance.features.sourcechannel.dto.SourcingChannelResponse;
 import com.nivasafinance.features.sourcechannel.service.SourcingChannelReadService;
+import com.nivasafinance.features.workflow.service.WorkflowConfigReadService;
 import com.nivasafinance.features.offices.dto.OfficeResponse;
 import com.nivasafinance.features.offices.service.OfficeReadService;
 import com.nivasafinance.features.referral.enums.EntityType;
@@ -51,6 +52,7 @@ public class LeadReadServiceImpl implements LeadReadService {
     private final OfficeReadService officeReadService;
     private final StaffReadService staffReadService;
     private final AnalyticsHelper analyticsHelper;
+    private final WorkflowConfigReadService workflowConfigReadService;
 
     @Override
     @Transactional(readOnly = true)
@@ -506,6 +508,26 @@ public class LeadReadServiceImpl implements LeadReadService {
                 )));
         return CurrentCustomerFormStepResponse.builder()
                 .currentCustomerFormStep(step)
+                .build();
+    }
+
+    @Override
+    public StageIdentifierResponse getStageIdentifier(UUID leadIdentifier) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
+        Lead.WorkflowDetails workflowDetails = lead.getWorkflowDetails();
+
+        String identifier = null;
+        if (workflowDetails != null
+                && workflowDetails.getWorkflowConfigKey() != null
+                && workflowDetails.getCurrentStageDetails() != null
+                && workflowDetails.getCurrentStageDetails().getStageKey() != null) {
+            identifier = workflowConfigReadService.getStageIdentifier(
+                    workflowDetails.getWorkflowConfigKey(),
+                    workflowDetails.getCurrentStageDetails().getStageKey());
+        }
+
+        return StageIdentifierResponse.builder()
+                .identifier(identifier)
                 .build();
     }
 }

@@ -51,5 +51,7 @@ public interface LeadReadService {
 
     PaginatedResponse<AdminLeadSearchResponse> getDeletedLeads(PaginationRequest paginationRequest);
 
+    StageIdentifierResponse getStageIdentifier(UUID leadIdentifier);
+
     Long findPrimaryPersonIdForLead(UUID leadIdentifier);
 }

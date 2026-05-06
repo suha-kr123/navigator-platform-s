@@ -77,5 +77,25 @@ public class WorkflowConfigReadServiceImpl implements WorkflowConfigReadService 
         return allowedAdhocTaskKeys;
     }
 
+    @Override
+    public String getStageIdentifier(String workflowConfigKey, String stageKey) {
+        ValidationUtils.requireNonNullOrEmpty(workflowConfigKey, WorkflowValidationException::nullOrEmptyWorkflowConfigKey);
+        ValidationUtils.requireNonNullOrEmpty(stageKey, WorkflowValidationException::nullOrEmptyStageKey);
+
+        WorkflowConfig workflowConfig = getWorkflowConfigByKey(workflowConfigKey);
+
+        if (!ValidationUtils.isNonNull(workflowConfig)
+                || !ValidationUtils.isNonNull(workflowConfig.getWorkflowConfigDetails())
+                || !ValidationUtils.isNonNull(workflowConfig.getWorkflowConfigDetails().getStages())) {
+            return null;
+        }
+
+        return workflowConfig.getWorkflowConfigDetails().getStages().stream()
+                .filter(stage -> stageKey.equals(stage.getStageKey()))
+                .findFirst()
+                .map(WorkflowStageConfig::getIdentifier)
+                .orElse(null);
+    }
+
 }
 
