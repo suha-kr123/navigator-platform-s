@@ -17,5 +17,6 @@ public interface LocationMasterService {
     boolean isDistrictServiceable(String districtCode);
     List<TalukaResponse> getServiceableTalukasByDistrictId(Long districtId);
     List<OperatingAreaResponse> getOperatingAreasByRegionId(Long regionId);
+    boolean isTalukaServiceable(String districtCode, String talukaCode);
 }
 

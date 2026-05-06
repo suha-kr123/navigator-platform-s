@@ -205,6 +205,17 @@ public class LocationMasterServiceImpl implements LocationMasterService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public boolean isTalukaServiceable(String districtCode, String talukaCode) {
+        if (districtCode == null || districtCode.isBlank()
+                || talukaCode == null || talukaCode.isBlank()) {
+            return false;
+        }
+        return talukaRepository
+                .findServiceabilityByDistrictCodeAndTalukaCode(districtCode, talukaCode)
+                .orElse(false);
+    }
+
     private VillageResponse mapToVillageResponse(Village village) {
         return VillageResponse.builder()
                 .id(village.getId())
