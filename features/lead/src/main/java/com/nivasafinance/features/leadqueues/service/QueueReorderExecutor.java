@@ -7,6 +7,7 @@ import com.nivasafinance.features.leadqueues.repository.QueueConfigRepositoryWra
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
@@ -24,7 +25,7 @@ public class QueueReorderExecutor {
     private final LeadQueueRepositoryWrapper leadQueueRepositoryWrapper;
     private final QueueConfigRepositoryWrapper queueConfigRepositoryWrapper;
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void doReorder(QueueConfig queueConfig) {
 
         Long queueConfigId = queueConfig.getId();
