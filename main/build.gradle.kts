@@ -32,7 +32,7 @@ dependencies {
     implementation(project(":redash"))
     implementation(project(":features:bulk-operations"))
     implementation(project(":externals:exotel"))
-    implementation(project(":externals:whatsapp"))
+    implementation(project(":externals:gallabox"))
     implementation(project(":externals:creditbureau"))
     implementation(project(":externals:customer"))
     implementation(project(":externals:masters"))
