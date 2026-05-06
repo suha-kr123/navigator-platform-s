@@ -18,6 +18,7 @@ public class SelfPayoutDetailResponse {
     private BigDecimal amount;
     private String status;
     private LocalDateTime createdAt;
+    private AdvisorSelfLeadResponse leadDetails;
     private SelfPaymentDetails paymentDetails;
     private String remarks;
 }

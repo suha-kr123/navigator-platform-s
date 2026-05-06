@@ -29,5 +29,11 @@ public interface AdvisorWriteService {
     void deleteAdvisor(UUID identifier);
 
     void undoDeleteAdvisor(UUID identifier);
+
+    void undoRejectAdvisor(UUID identifier);
+
+    void undoDormantAdvisor(UUID identifier);
+
+    void undoOutOfGeoAdvisor(UUID identifier);
 }
 

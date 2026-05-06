@@ -16,6 +16,7 @@ import com.nivasafinance.features.lead.entity.Contact;
 import com.nivasafinance.features.lead.repository.ContactRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadDocumentWriteService;
+import com.nivasafinance.features.lead.service.LeadEligibilityWriteService;
 import com.nivasafinance.features.master.codemaster.SystemLeadDocumentsMaster;
 import com.nivasafinance.features.person.service.PersonWriteService;
 import com.nivasafinance.redash.dto.RedashExcelReportRequest;
@@ -65,6 +66,7 @@ public class CbPullSuccessListener {
     private final ContactRepositoryWrapper contactRepositoryWrapper;
     private final PersonWriteService personWriteService;
     private final ObjectMapper objectMapper;
+    private final LeadEligibilityWriteService leadEligibilityWriteService;
 
     @EventListener(condition = "#event.eventType == 'LEAD_CB_PULL_SUCCESS'")
     @Async("eventTaskExecutor")
@@ -92,6 +94,15 @@ public class CbPullSuccessListener {
             cbDerivedAttributeWriteService.saveDerivedAttributesForEnquiry(enquiryId, leadDbId);
         } catch (Exception e) {
             log.error("Failed to persist CB derived attributes for enquiry ID: {}", enquiryId, e);
+        }
+
+        try {
+            UUID leadIdentifier = leadRepositoryWrapper.findLeadIdentifierByCbEnquiryId(enquiryId).orElse(null);
+            if (leadIdentifier != null) {
+                leadEligibilityWriteService.executeEligibility(leadIdentifier);
+            }
+        } catch (Exception e) {
+            log.error("Failed to execute eligibility BRE after CB pull for enquiry ID: {}", enquiryId, e);
         }
 
         try {

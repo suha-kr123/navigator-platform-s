@@ -1,0 +1,14 @@
+package com.nivasafinance.features.master.location.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class ServiceabilityCheckResponse {
+    private Boolean isServiceable;
+}

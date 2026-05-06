@@ -83,6 +83,21 @@ public class AdvisorCRMServiceImpl implements AdvisorCRMService {
     }
 
     @Override
+    public void undoRejectAdvisor(UUID identifier) {
+        advisorWriteService.undoRejectAdvisor(identifier);
+    }
+
+    @Override
+    public void undoDormantAdvisor(UUID identifier) {
+        advisorWriteService.undoDormantAdvisor(identifier);
+    }
+
+    @Override
+    public void undoOutOfGeoAdvisor(UUID identifier) {
+        advisorWriteService.undoOutOfGeoAdvisor(identifier);
+    }
+
+    @Override
     public PaginatedResponse<AdvisorDashboardResponse> getAdvisorDashboard(
             PaginationRequest paginationRequest,
             AdvisorDashboardFilters filters) {

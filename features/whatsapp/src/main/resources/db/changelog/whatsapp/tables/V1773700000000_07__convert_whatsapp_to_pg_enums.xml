@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1773700000000_07a_drop_whatsapp_check_constraints" author="navigator" context="default" dbms="postgresql">
+        <comment>Drop CHECK constraints superseded by PostgreSQL enum types</comment>
+        <sql>ALTER TABLE n_whatsapp_log DROP CONSTRAINT IF EXISTS chk_n_whatsapp_log_status</sql>
+        <sql>ALTER TABLE n_whatsapp_log DROP CONSTRAINT IF EXISTS chk_n_whatsapp_log_message_type</sql>
+        <sql>ALTER TABLE n_whatsapp_log DROP CONSTRAINT IF EXISTS chk_n_whatsapp_log_created_source</sql>
+        <sql>ALTER TABLE n_whatsapp_log DROP CONSTRAINT IF EXISTS chk_n_whatsapp_log_sent_by</sql>
+        <sql>ALTER TABLE n_whatsapp_channel DROP CONSTRAINT IF EXISTS chk_n_whatsapp_channel_entity</sql>
+        <sql>ALTER TABLE n_whatsapp_channel DROP CONSTRAINT IF EXISTS chk_n_whatsapp_channel_status</sql>
+    </changeSet>
+
+    <changeSet id="V1773700000000_07b_create_whatsapp_log_status_enum" author="navigator" context="default" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">SELECT COUNT(*) FROM pg_type WHERE typname = 'n_whatsapp_log_status_enum'</sqlCheck>
+        </preConditions>
+        <comment>Create enum type for n_whatsapp_log.status</comment>
+        <sql>CREATE TYPE n_whatsapp_log_status_enum AS ENUM ('SENT', 'RECEIVED')</sql>
+        <rollback>
+            <sql>DROP TYPE IF EXISTS n_whatsapp_log_status_enum</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="V1773700000000_07c_alter_whatsapp_log_status_to_enum" author="navigator" context="default" dbms="postgresql">
+        <comment>Convert n_whatsapp_log.status to enum type</comment>
+        <sql>ALTER TABLE n_whatsapp_log ALTER COLUMN status TYPE n_whatsapp_log_status_enum USING status::n_whatsapp_log_status_enum</sql>
+        <rollback>
+            <sql>ALTER TABLE n_whatsapp_log ALTER COLUMN status TYPE VARCHAR(50) USING status::text</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="V1773700000000_07d_create_whatsapp_log_message_type_enum" author="navigator" context="default" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">SELECT COUNT(*) FROM pg_type WHERE typname = 'n_whatsapp_log_message_type_enum'</sqlCheck>
+        </preConditions>
+        <comment>Create enum type for n_whatsapp_log.message_type</comment>
+        <sql>CREATE TYPE n_whatsapp_log_message_type_enum AS ENUM ('TEMPLATE', 'TEXT', 'INTERACTIVE', 'UNSUPPORTED', 'IMAGE', 'BUTTON', 'STICKER', 'AUDIO', 'CONTACTS', 'REACTION', 'DOCUMENT', 'VIDEO')</sql>
+        <rollback>
+            <sql>DROP TYPE IF EXISTS n_whatsapp_log_message_type_enum</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="V1773700000000_07e_alter_whatsapp_log_message_type_to_enum" author="navigator" context="default" dbms="postgresql">
+        <comment>Convert n_whatsapp_log.message_type to enum type</comment>
+        <sql>ALTER TABLE n_whatsapp_log ALTER COLUMN message_type TYPE n_whatsapp_log_message_type_enum USING message_type::n_whatsapp_log_message_type_enum</sql>
+        <rollback>
+            <sql>ALTER TABLE n_whatsapp_log ALTER COLUMN message_type TYPE VARCHAR(50) USING message_type::text</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="V1773700000000_07f_create_whatsapp_log_created_source_enum" author="navigator" context="default" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">SELECT COUNT(*) FROM pg_type WHERE typname = 'n_whatsapp_log_created_source_enum'</sqlCheck>
+        </preConditions>
+        <comment>Create enum type for n_whatsapp_log.created_source</comment>
+        <sql>CREATE TYPE n_whatsapp_log_created_source_enum AS ENUM ('API', 'BOT', 'SEQUENCE', 'BROADCAST')</sql>
+        <rollback>
+            <sql>DROP TYPE IF EXISTS n_whatsapp_log_created_source_enum</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="V1773700000000_07g_alter_whatsapp_log_created_source_to_enum" author="navigator" context="default" dbms="postgresql">
+        <comment>Convert n_whatsapp_log.created_source to enum type</comment>
+        <sql>ALTER TABLE n_whatsapp_log ALTER COLUMN created_source TYPE n_whatsapp_log_created_source_enum USING created_source::n_whatsapp_log_created_source_enum</sql>
+        <rollback>
+            <sql>ALTER TABLE n_whatsapp_log ALTER COLUMN created_source TYPE VARCHAR(50) USING created_source::text</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="V1773700000000_07h_create_whatsapp_log_sent_by_enum" author="navigator" context="default" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">SELECT COUNT(*) FROM pg_type WHERE typname = 'n_whatsapp_log_sent_by_enum'</sqlCheck>
+        </preConditions>
+        <comment>Create enum type for n_whatsapp_log.sent_by</comment>
+        <sql>CREATE TYPE n_whatsapp_log_sent_by_enum AS ENUM ('API', 'SEQUENCE')</sql>
+        <rollback>
+            <sql>DROP TYPE IF EXISTS n_whatsapp_log_sent_by_enum</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="V1773700000000_07i_alter_whatsapp_log_sent_by_to_enum" author="navigator" context="default" dbms="postgresql">
+        <comment>Convert n_whatsapp_log.sent_by to enum type</comment>
+        <sql>ALTER TABLE n_whatsapp_log ALTER COLUMN sent_by TYPE n_whatsapp_log_sent_by_enum USING sent_by::n_whatsapp_log_sent_by_enum</sql>
+        <rollback>
+            <sql>ALTER TABLE n_whatsapp_log ALTER COLUMN sent_by TYPE VARCHAR(50) USING sent_by::text</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="V1773700000000_07j_create_whatsapp_channel_entity_enum" author="navigator" context="default" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">SELECT COUNT(*) FROM pg_type WHERE typname = 'n_whatsapp_channel_entity_enum'</sqlCheck>
+        </preConditions>
+        <comment>Create enum type for n_whatsapp_channel.entity</comment>
+        <sql>CREATE TYPE n_whatsapp_channel_entity_enum AS ENUM ('LEAD', 'ADVISOR')</sql>
+        <rollback>
+            <sql>DROP TYPE IF EXISTS n_whatsapp_channel_entity_enum</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="V1773700000000_07k_alter_whatsapp_channel_entity_to_enum" author="navigator" context="default" dbms="postgresql">
+        <comment>Convert n_whatsapp_channel.entity to enum type</comment>
+        <sql>ALTER TABLE n_whatsapp_channel ALTER COLUMN entity TYPE n_whatsapp_channel_entity_enum USING entity::n_whatsapp_channel_entity_enum</sql>
+        <rollback>
+            <sql>ALTER TABLE n_whatsapp_channel ALTER COLUMN entity TYPE VARCHAR(50) USING entity::text</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="V1773700000000_07l_create_whatsapp_channel_status_enum" author="navigator" context="default" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">SELECT COUNT(*) FROM pg_type WHERE typname = 'n_whatsapp_channel_status_enum'</sqlCheck>
+        </preConditions>
+        <comment>Create enum type for n_whatsapp_channel.status</comment>
+        <sql>CREATE TYPE n_whatsapp_channel_status_enum AS ENUM ('ACTIVE', 'INACTIVE')</sql>
+        <rollback>
+            <sql>DROP TYPE IF EXISTS n_whatsapp_channel_status_enum</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="V1773700000000_07m_alter_whatsapp_channel_status_to_enum" author="navigator" context="default" dbms="postgresql">
+        <comment>Convert n_whatsapp_channel.status to enum type (preserve ACTIVE default)</comment>
+        <sql>ALTER TABLE n_whatsapp_channel ALTER COLUMN status DROP DEFAULT</sql>
+        <sql>ALTER TABLE n_whatsapp_channel ALTER COLUMN status TYPE n_whatsapp_channel_status_enum USING status::n_whatsapp_channel_status_enum</sql>
+        <sql>ALTER TABLE n_whatsapp_channel ALTER COLUMN status SET DEFAULT 'ACTIVE'::n_whatsapp_channel_status_enum</sql>
+        <rollback>
+            <sql>ALTER TABLE n_whatsapp_channel ALTER COLUMN status DROP DEFAULT</sql>
+            <sql>ALTER TABLE n_whatsapp_channel ALTER COLUMN status TYPE VARCHAR(50) USING status::text</sql>
+            <sql>ALTER TABLE n_whatsapp_channel ALTER COLUMN status SET DEFAULT 'ACTIVE'</sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

@@ -18,5 +18,6 @@ public enum ModuleEnum {
     BULK_OPERATION,
     ROLE_MANAGEMENT,
     BRE,
-    DISPLAY_CONFIG
+    DISPLAY_CONFIG,
+    TRANSACTION
 }

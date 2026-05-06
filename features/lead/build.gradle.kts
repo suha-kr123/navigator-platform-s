@@ -40,6 +40,7 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     implementation(project(":features:campaign"))
     implementation(project(":features:bre"))
+    implementation(project(":features:whatsapp"))
     testImplementation(libs.mockk)
     implementation(project(":analytics"))
 }

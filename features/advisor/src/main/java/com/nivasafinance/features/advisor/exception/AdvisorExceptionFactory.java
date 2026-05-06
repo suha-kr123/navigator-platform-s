@@ -65,6 +65,21 @@ public final class AdvisorExceptionFactory {
                 "error.advisor.not.deleted", new Object[]{identifier}, messageSource));
     }
 
+    public static BadRequestException advisorNotRejected(Object identifier, MessageSource messageSource) {
+        return new BadRequestException(ExceptionUtils.createLocalizedMessage(
+                "error.advisor.not.rejected", new Object[]{identifier}, messageSource));
+    }
+
+    public static BadRequestException advisorNotDormant(Object identifier, MessageSource messageSource) {
+        return new BadRequestException(ExceptionUtils.createLocalizedMessage(
+                "error.advisor.not.dormant", new Object[]{identifier}, messageSource));
+    }
+
+    public static BadRequestException advisorNotOutOfGeo(Object identifier, MessageSource messageSource) {
+        return new BadRequestException(ExceptionUtils.createLocalizedMessage(
+                "error.advisor.not.out.of.geo", new Object[]{identifier}, messageSource));
+    }
+
     public static BadRequestException notFoundByReferralTrackingCode(String referralTrackingCode, MessageSource messageSource) {
         return new BadRequestException(ExceptionUtils.createLocalizedMessage(
                 "error.advisor.not.found.by.referral.tracking.code",
