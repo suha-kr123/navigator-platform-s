@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -66,6 +67,16 @@ public class LocationMasterController {
     public ResponseEntity<List<VillageResponse>> getVillagesByTalukaId(@PathVariable Long talukaId) {
         List<VillageResponse> villages = locationMasterService.getVillagesByTalukaId(talukaId);
         return ResponseEntity.ok(villages);
+    }
+
+    @GetMapping("/masters/serviceable/check")
+    @RequirePermission(permissionName = "READ_MASTER_LOCATION")
+    public ResponseEntity<ServiceabilityCheckResponse> checkTalukaServiceability(
+            @RequestParam String districtCode,
+            @RequestParam String talukaCode) {
+        boolean serviceable = locationMasterService.isTalukaServiceable(districtCode, talukaCode);
+        return ResponseEntity.ok(
+                ServiceabilityCheckResponse.builder().isServiceable(serviceable).build());
     }
 
     @GetMapping("/regions/{regionId}/operating-areas")
