@@ -5,6 +5,8 @@ import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.common.constants.ApiConstants;
 import com.nivasafinance.common.annotations.RequirePermission;
 import com.nivasafinance.features.staff.dto.StaffResponse;
+import com.nivasafinance.features.staff.dto.StaffTodayActivityResponse;
+import com.nivasafinance.features.staff.service.StaffActivityService;
 import com.nivasafinance.features.staff.service.StaffReadService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 public class StaffController {
 
     private final StaffReadService staffReadService;
+    private final StaffActivityService staffActivityService;
 
     @GetMapping
     @RequirePermission(permissionName = "READ_STAFF")
@@ -28,6 +31,7 @@ public class StaffController {
         PaginatedResponse<StaffResponse> staff = staffReadService.getStaff(officeKey, name, paginationRequest);
         return ResponseEntity.ok(staff);
     }
+
     @GetMapping("/me")
     @RequirePermission(permissionName = "READ_STAFF")
     public ResponseEntity<StaffResponse> getCurrentStaff() {
@@ -35,5 +39,10 @@ public class StaffController {
         return ResponseEntity.ok(staff);
     }
 
+    @GetMapping("/me/activity/today")
+    @RequirePermission(permissionName = "READ_STAFF")
+    public ResponseEntity<StaffTodayActivityResponse> getTodayActivity() {
+        return ResponseEntity.ok(staffActivityService.getTodayActivity());
+    }
 
 }
