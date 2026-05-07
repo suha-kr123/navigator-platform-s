@@ -12,5 +12,7 @@ public interface WorkflowConfigReadService {
 
     List<String> getAdhocTaskKeysForStage(String workflowConfigKey, String stageKey);
 
+    String getStageIdentifier(String workflowConfigKey, String stageKey);
+
 }
 

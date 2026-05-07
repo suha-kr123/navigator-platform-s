@@ -65,6 +65,13 @@ public class LeadController {
         return ResponseEntity.status(HttpStatus.OK).body(leadReadService.getLeadByIdentifier(leadId));
     }
 
+    @GetMapping("/{leadId}/stage-identifier")
+    @RequirePermission(permissionName = "READ_LEAD")
+    public ResponseEntity<StageIdentifierResponse> getStageIdentifier(@PathVariable UUID leadId) {
+        StageIdentifierResponse response = leadReadService.getStageIdentifier(leadId);
+        return ResponseEntity.ok(response);
+    }
+
     @PutMapping("/{leadId}")
     @RequirePermission(permissionName = "UPDATE_LEAD")
     public ResponseEntity<Void> updateLead(

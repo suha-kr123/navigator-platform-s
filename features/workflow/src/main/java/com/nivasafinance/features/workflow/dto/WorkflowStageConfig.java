@@ -21,5 +21,6 @@ public class WorkflowStageConfig {
      */
     private String defaultSubStage;
     private List<TaskCompletionRule> taskCompletionRules;
+    private String identifier;
 }
 
