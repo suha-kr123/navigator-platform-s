@@ -9,8 +9,10 @@ import com.nivasafinance.common.dto.IdentifierRequest;
 import com.nivasafinance.features.lead.dto.AddressIdentifierResponse;
 import com.nivasafinance.features.lead.dto.BulkContactsUpdateRequest;
 import com.nivasafinance.features.lead.dto.BulkContactsUpdateResponse;
+import com.nivasafinance.features.lead.dto.CreateRelatedLeadContactRequest;
 import com.nivasafinance.features.lead.dto.LeadContactResponse;
 import com.nivasafinance.features.lead.dto.CreateLeadContactRequest;
+import com.nivasafinance.features.lead.dto.RelatedContactResponse;
 import com.nivasafinance.features.lead.dto.UpdateLeadContactRequest;
 import com.nivasafinance.features.lead.dto.UpdateContactNameRequest;
 import com.nivasafinance.features.lead.service.LeadContactReadService;
@@ -84,6 +86,24 @@ public class LeadContactController {
             @PathVariable UUID contactIdentifier) {
         LeadContactResponse contact = leadContactReadService.getContactById(leadId, contactIdentifier);
         return ResponseEntity.ok(contact);
+    }
+
+    @PostMapping("/{contactIdentifier}/related-contacts")
+    @RequirePermission(permissionName = "CREATE_LEAD_CONTACTS")
+    public ResponseEntity<Void> createRelatedContact(
+            @PathVariable UUID leadId,
+            @PathVariable UUID contactIdentifier,
+            @Valid @RequestBody CreateRelatedLeadContactRequest request) {
+        leadContactWriteService.createRelatedContact(leadId, contactIdentifier, request);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @GetMapping("/{contactIdentifier}/related-contacts")
+    @RequirePermission(permissionName = "READ_LEAD_CONTACTS")
+    public ResponseEntity<List<RelatedContactResponse>> getRelatedContacts(
+            @PathVariable UUID leadId,
+            @PathVariable UUID contactIdentifier) {
+        return ResponseEntity.ok(leadContactReadService.getRelatedContacts(leadId, contactIdentifier));
     }
 
     @PostMapping("/bulk-update")

@@ -22,6 +22,8 @@ public interface LeadContactWriteService {
     
     BulkContactsUpdateResponse bulkUpdateContacts(UUID leadId, BulkContactsUpdateRequest request);
 
+    CreateLeadContactResponse createRelatedContact(UUID leadId, UUID parentContactIdentifier, CreateRelatedLeadContactRequest request);
+
     String addAddress(UUID contactIdentifier, @Valid AddressRequest request);
 
     void updateAddress(UUID contactIdentifier, String addressId, @Valid AddressRequest request);

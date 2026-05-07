@@ -5,7 +5,11 @@ import com.nivasafinance.common.dto.IdentifierData;
 import com.nivasafinance.externals.customer.lead.dto.PanRequest;
 import com.nivasafinance.externals.customer.lead.dto.PhoneNumberRequest;
 import com.nivasafinance.externals.customer.lead.service.LeadContactExternalService;
+import com.nivasafinance.features.lead.dto.CreateLeadContactRequest;
+import com.nivasafinance.features.lead.dto.CreateLeadContactResponse;
+import com.nivasafinance.features.lead.dto.CreateRelatedLeadContactRequest;
 import com.nivasafinance.features.lead.dto.LeadContactResponse;
+import com.nivasafinance.features.lead.dto.RelatedContactResponse;
 import com.nivasafinance.features.lead.dto.RecordCbConsentResponse;
 import com.nivasafinance.features.lead.dto.UpdateContactNameRequest;
 import com.nivasafinance.features.lead.service.LeadContactReadService;
@@ -29,6 +33,30 @@ public class LeadContactExternalController {
     private final LeadContactWriteService leadContactWriteService;
     private final LeadContactExternalService leadContactExternalService;
     private final LeadCreditBureauWriteService leadCreditBureauWriteService;
+
+    @PostMapping
+    public ResponseEntity<CreateLeadContactResponse> createContact(
+            @PathVariable UUID leadId,
+            @Valid @RequestBody CreateLeadContactRequest request) {
+        CreateLeadContactResponse response = leadContactWriteService.createContact(leadId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping("/{contactIdentifier}/related-contacts")
+    public ResponseEntity<List<RelatedContactResponse>> getRelatedContacts(
+            @PathVariable UUID leadId,
+            @PathVariable UUID contactIdentifier) {
+        return ResponseEntity.ok(leadContactReadService.getRelatedContacts(leadId, contactIdentifier));
+    }
+
+    @PostMapping("/{contactIdentifier}/related-contacts")
+    public ResponseEntity<CreateLeadContactResponse> createRelatedContact(
+            @PathVariable UUID leadId,
+            @PathVariable UUID contactIdentifier,
+            @Valid @RequestBody CreateRelatedLeadContactRequest request) {
+        CreateLeadContactResponse response = leadContactWriteService.createRelatedContact(leadId, contactIdentifier, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
 
     @GetMapping
     public ResponseEntity<List<LeadContactResponse>> getContacts(@PathVariable UUID leadId) {

@@ -16,9 +16,11 @@ import com.nivasafinance.features.lead.exception.LeadContactValidationException;
 import com.nivasafinance.features.lead.service.LeadContactReadService;
 import com.nivasafinance.features.lead.entity.Applicant;
 import com.nivasafinance.features.lead.entity.Contact;
+import com.nivasafinance.features.lead.entity.ContactRelation;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.enums.LeadContactPersonType;
 import com.nivasafinance.features.lead.repository.ApplicantRepositoryWrapper;
+import com.nivasafinance.features.lead.repository.ContactRelationRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.ContactRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadContactWriteService;
@@ -52,6 +54,7 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
     private final LeadRepositoryWrapper leadRepositoryWrapper;
     private final ContactRepositoryWrapper contactRepositoryWrapper;
     private final ApplicantRepositoryWrapper applicantRepositoryWrapper;
+    private final ContactRelationRepositoryWrapper contactRelationRepositoryWrapper;
     private final PersonWriteService personWriteService;
     private final PersonReadService personReadService;
     private final PersonRepositoryWrapper personRepositoryWrapper;
@@ -264,6 +267,44 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
         // For now, we'll keep the person entity as it might be used elsewhere
 
         leadRepositoryWrapper.saveWithException(lead);
+    }
+
+    @Override
+    @Transactional
+    public CreateLeadContactResponse createRelatedContact(
+            UUID leadId,
+            UUID parentContactIdentifier,
+            CreateRelatedLeadContactRequest request
+    ) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadId);
+        Contact parentContact = findContactByIdentifier(lead, parentContactIdentifier);
+
+        CreateLeadContactResponse createdContactResponse = createContact(leadId, request.getContact());
+
+        Contact createdContact = contactRepositoryWrapper.findByIdentifierWithException(
+                createdContactResponse.getIdentifier()
+        );
+
+        if (parentContact.getId().equals(createdContact.getId())) {
+            throw LeadContactValidationException.invalidContactIdentifier("Self relation is not allowed");
+        }
+
+        boolean relationExists = contactRelationRepositoryWrapper.exists(
+                parentContact.getId(),
+                createdContact.getId(),
+                request.getRelation()
+        );
+        if (relationExists) {
+            throw LeadContactValidationException.duplicateContactPerson();
+        }
+
+        ContactRelation relation = new ContactRelation();
+        relation.setContactId(parentContact.getId());
+        relation.setRelatedContactId(createdContact.getId());
+        relation.setRelation(request.getRelation());
+        contactRelationRepositoryWrapper.saveWithException(relation);
+
+        return createdContactResponse;
     }
 
     private void handleApplicantType(Lead lead, Contact contact, LeadContactPersonType type) {

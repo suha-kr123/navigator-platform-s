@@ -4,12 +4,15 @@ import com.nivasafinance.common.dto.AddressData;
 import com.nivasafinance.common.dto.IdentifierData;
 import com.nivasafinance.features.lead.dto.LeadContactPersonDetails;
 import com.nivasafinance.features.lead.dto.LeadContactResponse;
+import com.nivasafinance.features.lead.dto.RelatedContactResponse;
+import com.nivasafinance.features.lead.entity.ContactRelation;
 import com.nivasafinance.features.lead.entity.Applicant;
 import com.nivasafinance.features.lead.entity.Contact;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.enums.LeadContactPersonType;
 import com.nivasafinance.features.lead.exception.ContactNotFoundException;
 import com.nivasafinance.features.lead.repository.ApplicantRepositoryWrapper;
+import com.nivasafinance.features.lead.repository.ContactRelationRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.ContactRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadContactReadService;
@@ -34,6 +37,7 @@ public class LeadContactReadServiceImpl implements LeadContactReadService {
     private final LeadRepositoryWrapper leadRepositoryWrapper;
     private final ContactRepositoryWrapper contactRepositoryWrapper;
     private final ApplicantRepositoryWrapper applicantRepositoryWrapper;
+    private final ContactRelationRepositoryWrapper contactRelationRepositoryWrapper;
     private final MessageSource messageSource;
     private final PersonReadService personReadService;
 
@@ -61,6 +65,30 @@ public class LeadContactReadServiceImpl implements LeadContactReadService {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadId);
         Contact contact = findContactByIdentifier(lead, contactId);
         return mapToContactResponse(lead, contact);
+    }
+
+    @Override
+    public List<RelatedContactResponse> getRelatedContacts(UUID leadId, UUID contactIdentifier) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadId);
+        Contact contact = findContactByIdentifier(lead, contactIdentifier);
+
+        List<ContactRelation> relations = contactRelationRepositoryWrapper.findAllByContactId(contact.getId());
+        List<RelatedContactResponse> responses = new ArrayList<>();
+
+        for (ContactRelation relation : relations) {
+            Contact relatedContact = contactRepositoryWrapper.findByIdWithException(relation.getRelatedContactId());
+            LeadContactResponse contactResponse = mapToContactResponse(lead, relatedContact);
+            responses.add(RelatedContactResponse.builder()
+                    .identifier(contactResponse.getIdentifier())
+                    .contactPersonDetails(contactResponse.getContactPersonDetails())
+                    .applicantType(contactResponse.getApplicantType())
+                    .isDecisionMaker(contactResponse.getIsDecisionMaker())
+                    .isPropertyOwner(contactResponse.getIsPropertyOwner())
+                    .relation(relation.getRelation())
+                    .build());
+        }
+
+        return responses;
     }
 
     private LeadContactResponse mapToContactResponse(Lead lead, Contact contact) {

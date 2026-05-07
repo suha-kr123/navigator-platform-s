@@ -3,12 +3,16 @@ package com.nivasafinance.features.lead.service.impl;
 import com.nivasafinance.common.dto.AddressData;
 import com.nivasafinance.common.dto.IdentifierData;
 import com.nivasafinance.features.lead.dto.LeadContactResponse;
+import com.nivasafinance.features.lead.dto.RelatedContactResponse;
 import com.nivasafinance.features.lead.entity.Applicant;
 import com.nivasafinance.features.lead.entity.Contact;
+import com.nivasafinance.features.lead.entity.ContactRelation;
 import com.nivasafinance.features.lead.entity.Lead;
+import com.nivasafinance.features.lead.enums.ContactRelationType;
 import com.nivasafinance.features.lead.enums.LeadContactPersonType;
 import com.nivasafinance.features.lead.exception.ContactNotFoundException;
 import com.nivasafinance.features.lead.repository.ApplicantRepositoryWrapper;
+import com.nivasafinance.features.lead.repository.ContactRelationRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.ContactRepositoryWrapper;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.person.dto.PersonResponse;
@@ -42,6 +46,9 @@ class LeadContactReadServiceImplTest {
 
     @Mock
     private ApplicantRepositoryWrapper applicantRepositoryWrapper;
+
+    @Mock
+    private ContactRelationRepositoryWrapper contactRelationRepositoryWrapper;
 
     @Mock
     private MessageSource messageSource;
@@ -378,6 +385,121 @@ class LeadContactReadServiceImplTest {
         assertThrows(ContactNotFoundException.class,
                 () -> leadContactReadService.getIdentifier(leadIdentifier, contactIdentifier, identifierId),
                 "Should throw ContactNotFoundException when lead has no contacts");
+    }
+
+    // ==================== getRelatedContacts() Tests ====================
+
+    @Test
+    void getRelatedContacts_withNoRelations_returnsEmptyList() {
+        lead.setContacts(List.of(contactId));
+        when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
+        when(contactRepositoryWrapper.findByIdWithException(contactId)).thenReturn(contact);
+        when(contactRelationRepositoryWrapper.findAllByContactId(contactId)).thenReturn(List.of());
+
+        List<RelatedContactResponse> result = leadContactReadService.getRelatedContacts(leadIdentifier, contactIdentifier);
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty(), "Should return empty list when no relations exist");
+    }
+
+    @Test
+    void getRelatedContacts_withRelation_returnsMappedResponse() {
+        Long relatedContactId = 20L;
+        UUID relatedContactIdentifier = UUID.randomUUID();
+        Long relatedPersonId = 200L;
+
+        Contact relatedContact = new Contact();
+        relatedContact.setId(relatedContactId);
+        relatedContact.setIdentifier(relatedContactIdentifier);
+        relatedContact.setPersonId(relatedPersonId);
+        relatedContact.setIsDecisionMaker(false);
+        relatedContact.setIsPropertyOwner(false);
+
+        PersonResponse relatedPersonResponse = PersonResponse.builder()
+                .id(relatedPersonId)
+                .firstName("Jane")
+                .lastName("Doe")
+                .build();
+
+        ContactRelation relation = new ContactRelation();
+        relation.setContactId(contactId);
+        relation.setRelatedContactId(relatedContactId);
+        relation.setRelation(ContactRelationType.SPOUSE);
+
+        lead.setContacts(List.of(contactId));
+        lead.setApplicant(null);
+        lead.setCoApplicants(null);
+
+        when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
+        when(contactRepositoryWrapper.findByIdWithException(contactId)).thenReturn(contact);
+        when(contactRelationRepositoryWrapper.findAllByContactId(contactId)).thenReturn(List.of(relation));
+        when(contactRepositoryWrapper.findByIdWithException(relatedContactId)).thenReturn(relatedContact);
+        when(personReadService.getPersonById(relatedPersonId)).thenReturn(relatedPersonResponse);
+
+        List<RelatedContactResponse> result = leadContactReadService.getRelatedContacts(leadIdentifier, contactIdentifier);
+
+        assertEquals(1, result.size());
+        assertEquals(relatedContactIdentifier, result.get(0).getIdentifier());
+        assertEquals(ContactRelationType.SPOUSE, result.get(0).getRelation());
+        assertEquals("Jane", result.get(0).getContactPersonDetails().getFirstName());
+    }
+
+    @Test
+    void getRelatedContacts_withMultipleRelations_returnsAllMapped() {
+        Long relatedContactId1 = 20L;
+        Long relatedContactId2 = 30L;
+
+        Contact relatedContact1 = new Contact();
+        relatedContact1.setId(relatedContactId1);
+        relatedContact1.setIdentifier(UUID.randomUUID());
+        relatedContact1.setPersonId(200L);
+        relatedContact1.setIsDecisionMaker(false);
+        relatedContact1.setIsPropertyOwner(false);
+
+        Contact relatedContact2 = new Contact();
+        relatedContact2.setId(relatedContactId2);
+        relatedContact2.setIdentifier(UUID.randomUUID());
+        relatedContact2.setPersonId(300L);
+        relatedContact2.setIsDecisionMaker(false);
+        relatedContact2.setIsPropertyOwner(false);
+
+        ContactRelation relation1 = new ContactRelation();
+        relation1.setContactId(contactId);
+        relation1.setRelatedContactId(relatedContactId1);
+        relation1.setRelation(ContactRelationType.FATHER);
+
+        ContactRelation relation2 = new ContactRelation();
+        relation2.setContactId(contactId);
+        relation2.setRelatedContactId(relatedContactId2);
+        relation2.setRelation(ContactRelationType.MOTHER);
+
+        lead.setContacts(List.of(contactId));
+        lead.setApplicant(null);
+        lead.setCoApplicants(null);
+
+        when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
+        when(contactRepositoryWrapper.findByIdWithException(contactId)).thenReturn(contact);
+        when(contactRelationRepositoryWrapper.findAllByContactId(contactId)).thenReturn(List.of(relation1, relation2));
+        when(contactRepositoryWrapper.findByIdWithException(relatedContactId1)).thenReturn(relatedContact1);
+        when(contactRepositoryWrapper.findByIdWithException(relatedContactId2)).thenReturn(relatedContact2);
+        when(personReadService.getPersonById(200L)).thenReturn(PersonResponse.builder().id(200L).firstName("Father").build());
+        when(personReadService.getPersonById(300L)).thenReturn(PersonResponse.builder().id(300L).firstName("Mother").build());
+
+        List<RelatedContactResponse> result = leadContactReadService.getRelatedContacts(leadIdentifier, contactIdentifier);
+
+        assertEquals(2, result.size());
+        assertEquals(ContactRelationType.FATHER, result.get(0).getRelation());
+        assertEquals(ContactRelationType.MOTHER, result.get(1).getRelation());
+    }
+
+    @Test
+    void getRelatedContacts_withContactNotInLead_throwsContactNotFoundException() {
+        lead.setContacts(null);
+        when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
+
+        assertThrows(ContactNotFoundException.class,
+                () -> leadContactReadService.getRelatedContacts(leadIdentifier, contactIdentifier),
+                "Should throw ContactNotFoundException when contact does not belong to lead");
     }
 
     // ==================== getContacts() - mapToContactResponse mapping Tests ====================
