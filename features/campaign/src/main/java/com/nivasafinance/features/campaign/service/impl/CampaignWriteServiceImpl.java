@@ -31,6 +31,7 @@ import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.UUID;
@@ -292,11 +293,12 @@ public class CampaignWriteServiceImpl implements CampaignWriteService {
 
         try (InputStream inputStream = response.body().asInputStream()) {
             // Get content type from response headers
+            byte[] bytes = inputStream.readAllBytes();
             String contentType = FeignResponseUtils.getContentTypeFromResponse(response);
 
             // Get content length from response headers or calculate
             Long contentLength = FeignResponseUtils.getContentLengthFromResponse(response);
-
+            log.info("Downloaded CSV bytes: {}, header content-length: {}", bytes.length, contentLength);
             // Generate file path
             String fileName = campaign.getName() + "_" + System.currentTimeMillis() + "." + fileType.name().toLowerCase();
             String filePath = CampaignDocumentUtils.generateDocumentPathForContactsFile(campaign.getId(), fileName);
@@ -304,7 +306,7 @@ public class CampaignWriteServiceImpl implements CampaignWriteService {
             // Create DocumentCreateRequestInputStream
             DocumentCreateRequestInputStream documentRequest = DocumentCreateRequestInputStream.builder()
                     .name(fileName)
-                    .file(inputStream)
+                    .file(new ByteArrayInputStream(bytes))
                     .contentType(contentType)
                     .customPath(filePath)
                     .size(contentLength)
