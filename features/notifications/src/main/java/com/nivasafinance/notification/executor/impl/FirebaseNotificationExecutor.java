@@ -19,6 +19,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -78,58 +79,74 @@ public class FirebaseNotificationExecutor implements NotificationExecutor {
         String notificationBucket = getNotificationBucket(template, messagePayload);
         log.debug("Notification bucket for template {}: {}", templateIdentifier, notificationBucket != null ? notificationBucket : "(not set)");
 
-        int successCount = 0;
-        int failureCount = 0;
-        List<String> invalidTokens = new java.util.ArrayList<>();
+        // Phase 1 — FCM I/O only, no DB writes.
+        // Collecting results here before touching any table avoids the deadlock caused by
+        // interleaving n_device writes (deactivation) with n_notification_receipt writes (tracking).
+        List<String> successTokens = new ArrayList<>();
+        Map<String, String> successMessageIds = new HashMap<>();
+        List<String> invalidTokens = new ArrayList<>();
+        Map<String, String[]> failedTokenErrors = new LinkedHashMap<>(); // token → [errorCode, errorMessage]
 
         for (String notificationToken : notificationTokens) {
             try {
                 String providerMessageId = sendToToken(notificationToken, title, body, dataPayload, notificationBucket);
-                successCount++;
-                log.debug("Successfully sent notification to token: {} (app user: {}), messageId: {}", 
-                        notificationToken.substring(0, Math.min(20, notificationToken.length())) + "...", appUser, providerMessageId);
-                trackingService.saveNotificationTracking(receipt, notificationToken, providerMessageId, templateIdentifier);
-                
+                successTokens.add(notificationToken);
+                successMessageIds.put(notificationToken, providerMessageId);
+                log.debug("FCM send succeeded for token: {}... (app user: {}), messageId: {}",
+                        notificationToken.substring(0, Math.min(20, notificationToken.length())), appUser, providerMessageId);
             } catch (FirebaseMessagingException e) {
-                failureCount++;
                 String errorCode = e.getErrorCode() != null ? e.getErrorCode().name() : "UNKNOWN";
-                String errorMessage = e.getMessage();
-                log.error("Failed to send notification to token for app user {}: {}", appUser, errorCode, e);
-                trackingService.saveFailedNotificationTracking(receipt, notificationToken, errorCode, errorMessage, templateIdentifier);
-
+                log.error("FCM send failed for app user {}: {}", appUser, errorCode, e);
+                failedTokenErrors.put(notificationToken, new String[]{errorCode, e.getMessage()});
                 MessagingErrorCode messagingCode = e.getMessagingErrorCode();
                 if (messagingCode == MessagingErrorCode.INVALID_ARGUMENT || messagingCode == MessagingErrorCode.UNREGISTERED) {
                     invalidTokens.add(notificationToken);
-                    log.warn("Invalid token for app user {}: {}; will deactivate", appUser, errorCode);
+                    log.warn("Token flagged as invalid for app user {}: {}", appUser, errorCode);
                 }
             } catch (Exception e) {
-                failureCount++;
-                log.error("Unexpected error sending notification to token for app user {}", appUser, e);
-                trackingService.saveFailedNotificationTracking(receipt, notificationToken, "UNEXPECTED_ERROR", 
-                        e.getMessage() != null ? e.getMessage() : "Unknown error", templateIdentifier);
+                log.error("Unexpected FCM error for app user {}", appUser, e);
+                failedTokenErrors.put(notificationToken, new String[]{"UNEXPECTED_ERROR",
+                        e.getMessage() != null ? e.getMessage() : "Unknown error"});
             }
         }
 
+        // Phase 2 — n_device WRITE (deactivate invalid tokens).
+        // Must happen before Phase 3 so that within this transaction the lock order is
+        // always n_device → n_notification_receipt, preventing circular waits.
         if (!invalidTokens.isEmpty()) {
             log.warn("Deactivating {} invalid token(s) for app user {}", invalidTokens.size(), appUser);
             try {
                 int deactivatedCount = deviceService.deactivateDevicesByTokens(appUser, invalidTokens);
-                log.info("Successfully deactivated {} invalid device(s) for app user {}", deactivatedCount, appUser);
+                log.info("Deactivated {} invalid device(s) for app user {}", deactivatedCount, appUser);
             } catch (Exception e) {
                 log.error("Failed to deactivate invalid tokens for app user {}", appUser, e);
             }
         }
 
+        // Phase 3 — n_notification_receipt WRITE (tracking records).
+        // n_device is always written in Phase 2 before we write n_notification_receipt here,
+        // keeping lock ordering consistent across all transactions.
+        for (String token : successTokens) {
+            trackingService.saveNotificationTracking(receipt, token, successMessageIds.get(token), templateIdentifier);
+        }
+        for (Map.Entry<String, String[]> entry : failedTokenErrors.entrySet()) {
+            trackingService.saveFailedNotificationTracking(receipt, entry.getKey(),
+                    entry.getValue()[0], entry.getValue()[1], templateIdentifier);
+        }
+
+        int successCount = successTokens.size();
+        int failureCount = failedTokenErrors.size();
+
         if (successCount == 0) {
             throw new IllegalStateException(
                     String.format("Failed to send Firebase notification to app user %s. " +
-                            "All %d device(s) failed. Last error: %s", 
-                            appUser, notificationTokens.size(), 
+                            "All %d device(s) failed. Last error: %s",
+                            appUser, notificationTokens.size(),
                             failureCount > 0 ? "See logs" : "No tokens"));
         }
 
         if (failureCount > 0) {
-            log.warn("Partially successful: {} succeeded, {} failed for app user {}", 
+            log.warn("Partially successful: {} succeeded, {} failed for app user {}",
                     successCount, failureCount, appUser);
         }
 
