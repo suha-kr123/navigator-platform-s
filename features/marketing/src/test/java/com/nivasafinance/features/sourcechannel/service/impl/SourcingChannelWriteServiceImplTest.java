@@ -40,6 +40,7 @@ class SourcingChannelWriteServiceImplTest {
                 .sourceUrl("url")
                 .campaignId("cid")
                 .referredByCode("ref")
+                .googleClickId("gcl-123")
                 .build());
 
         SourcingChannel saved = new SourcingChannel();
@@ -62,6 +63,7 @@ class SourcingChannelWriteServiceImplTest {
         assertNotNull(toSave.getSourcingIdentifier());
         assertEquals("sid", toSave.getMarketingDetails().getSourceId());
         assertEquals("ref", toSave.getMarketingDetails().getReferredByCode());
+        assertEquals("gcl-123", toSave.getMarketingDetails().getGoogleClickId());
     }
 
     @Test
@@ -76,6 +78,7 @@ class SourcingChannelWriteServiceImplTest {
         request.setMarketingDetails(SourcingChannelRequest.MarketingDetails.builder()
                 .campaignId("new-cid")
                 .referredByCode("new-ref")
+                .googleClickId("gcl-456")
                 .build());
 
         when(repositoryWrapper.findByIdWithException(5L)).thenReturn(existing);
@@ -94,6 +97,7 @@ class SourcingChannelWriteServiceImplTest {
         assertEquals("MSRC", saved.getMarketingSource());
         assertEquals("new-cid", saved.getMarketingDetails().getCampaignId());
         assertEquals("new-ref", saved.getMarketingDetails().getReferredByCode());
+        assertEquals("gcl-456", saved.getMarketingDetails().getGoogleClickId());
     }
 
     @Test

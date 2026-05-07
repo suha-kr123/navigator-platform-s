@@ -426,6 +426,11 @@ class LeadWriteServiceImplTest {
         UpdateSourcingDetailsRequest request = new UpdateSourcingDetailsRequest();
         request.setSourcingChannel("ONLINE");
         request.setMarketingSource("GOOGLE");
+        request.setSourceId("sid");
+        request.setSourceUrl("url");
+        request.setCampaignId("cid");
+        request.setReferredByCode("ref");
+        request.setGoogleClickId("gcl-123");
 
         SourcingChannelResponse channelResponse = new SourcingChannelResponse();
         channelResponse.setId(100L);
@@ -439,7 +444,9 @@ class LeadWriteServiceImplTest {
 
         // Assert
         assertEquals(100L, lead.getSourcingChannelId(), "Sourcing channel ID should be set from created channel");
-        verify(sourcingChannelWriteService).create(any(SourcingChannelRequest.class));
+        ArgumentCaptor<SourcingChannelRequest> captor = ArgumentCaptor.forClass(SourcingChannelRequest.class);
+        verify(sourcingChannelWriteService).create(captor.capture());
+        assertEquals("gcl-123", captor.getValue().getMarketingDetails().getGoogleClickId());
     }
 
     @Test
@@ -448,6 +455,7 @@ class LeadWriteServiceImplTest {
         lead.setSourcingChannelId(50L);
         UpdateSourcingDetailsRequest request = new UpdateSourcingDetailsRequest();
         request.setSourcingChannel("OFFLINE");
+        request.setGoogleClickId("gcl-456");
 
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
@@ -456,7 +464,9 @@ class LeadWriteServiceImplTest {
         leadWriteService.updateSourcingDetails(leadIdentifier, request);
 
         // Assert
-        verify(sourcingChannelWriteService).update(eq(50L), any(SourcingChannelRequest.class));
+        ArgumentCaptor<SourcingChannelRequest> captor = ArgumentCaptor.forClass(SourcingChannelRequest.class);
+        verify(sourcingChannelWriteService).update(eq(50L), captor.capture());
+        assertEquals("gcl-456", captor.getValue().getMarketingDetails().getGoogleClickId());
     }
 
     // ==================== updateCallDetails() Tests ====================

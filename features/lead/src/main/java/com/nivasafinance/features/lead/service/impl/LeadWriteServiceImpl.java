@@ -355,6 +355,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
                         .sourceUrl(request.getSourceUrl())
                         .campaignId(request.getCampaignId())
                         .referredByCode(request.getReferredByCode())
+                        .googleClickId(request.getGoogleClickId())
                         .build()
         );
 

@@ -22,6 +22,7 @@ public class SourcingChannelRequest {
         private String sourceUrl;
         private String campaignId;
         private String referredByCode; // referral code
+        private String googleClickId;
     }
 }
 
