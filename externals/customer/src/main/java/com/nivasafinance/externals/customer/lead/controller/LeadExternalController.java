@@ -5,7 +5,9 @@ import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.common.constants.ApiConstants;
 import com.nivasafinance.externals.customer.lead.dto.LeadEligibilityEvaluateResponse;
 import com.nivasafinance.externals.customer.lead.dto.LeadSearchMinimalResponse;
+import com.nivasafinance.externals.customer.lead.dto.ScheduleVisitRequest;
 import com.nivasafinance.externals.customer.lead.service.LeadExternalService;
+import com.nivasafinance.features.task.dto.TaskResponse;
 import com.nivasafinance.features.lead.dto.*;
 import com.nivasafinance.features.leadstages.dto.LeadStageHistoryResponse;
 import jakarta.validation.Valid;
@@ -15,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -101,6 +104,19 @@ public class LeadExternalController {
             @PathVariable UUID leadIdentifier) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(leadExternalService.transitionToExpertScreening(leadIdentifier));
+    }
+
+    @GetMapping("/{leadIdentifier}/tasks/visit")
+    public ResponseEntity<List<TaskResponse>> getVisitTasks(@PathVariable UUID leadIdentifier) {
+        return ResponseEntity.ok(leadExternalService.getVisitTasks(leadIdentifier));
+    }
+
+    @PostMapping("/{leadIdentifier}/tasks/schedule-visit")
+    public ResponseEntity<Void> scheduleVisit(
+            @PathVariable UUID leadIdentifier,
+            @Valid @RequestBody ScheduleVisitRequest request) {
+        leadExternalService.scheduleVisit(leadIdentifier, request);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     @PostMapping("/search")

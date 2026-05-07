@@ -11,6 +11,7 @@ dependencies {
     implementation(project(":features:lead"))
     implementation(project(":features:master"))
     implementation(project(":features:person"))
+    implementation(project(":features:task"))
     implementation(project(":integrations"))
     implementation(project(":analytics"))
     testImplementation("org.springframework.boot:spring-boot-starter-test")

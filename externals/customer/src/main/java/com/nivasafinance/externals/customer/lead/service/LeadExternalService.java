@@ -4,8 +4,10 @@ import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.externals.customer.lead.dto.LeadEligibilityEvaluateResponse;
 import com.nivasafinance.externals.customer.lead.dto.LeadSearchMinimalResponse;
+import com.nivasafinance.externals.customer.lead.dto.ScheduleVisitRequest;
 import com.nivasafinance.features.lead.dto.*;
 import com.nivasafinance.features.leadstages.dto.LeadStageHistoryResponse;
+import com.nivasafinance.features.task.dto.TaskResponse;
 
 import java.util.List;
 import java.util.Optional;
@@ -38,4 +40,8 @@ public interface LeadExternalService {
     LeadStageHistoryResponse transitionToExpertScreening(UUID leadIdentifier);
 
     PaginatedResponse<LeadSearchMinimalResponse> searchLeads(PaginationRequest paginationRequest, LeadSearchRequest request);
+
+    void scheduleVisit(UUID leadIdentifier, ScheduleVisitRequest request);
+
+    List<TaskResponse> getVisitTasks(UUID leadIdentifier);
 }
