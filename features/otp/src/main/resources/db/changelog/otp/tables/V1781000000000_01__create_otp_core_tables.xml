@@ -51,17 +51,7 @@
                 '{
                   "otp_validity_in_mins": 10,
                   "otp_generation_method": "simple_otp_generation",
-                  "max_resend_attempts": 3,
-                  "otp_channels": [
-                    {
-                      "channel_name": "whatsapp",
-                      "channel_config": [
-                        {
-                          "template_name": "VERIFY_LEAD_FOR_CB"
-                        }
-                      ]
-                    }
-                  ]
+                  "max_resend_attempts": 5
                 }'::jsonb,
                 'system',
                 'system'

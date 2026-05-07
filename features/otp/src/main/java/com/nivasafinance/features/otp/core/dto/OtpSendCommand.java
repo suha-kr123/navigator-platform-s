@@ -6,9 +6,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Data
 @Builder
 @NoArgsConstructor
@@ -16,9 +13,5 @@ import java.util.List;
 public class OtpSendCommand {
     private OtpReference reference;
     private String relatesTo;
-
-    @Builder.Default
-    private List<OtpRecipient> recipients = new ArrayList<>();
-
     private OtpScope scope;
 }

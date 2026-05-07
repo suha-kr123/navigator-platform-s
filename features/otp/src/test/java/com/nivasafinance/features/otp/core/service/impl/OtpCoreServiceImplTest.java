@@ -1,10 +1,7 @@
 package com.nivasafinance.features.otp.core.service.impl;
 
 import com.nivasafinance.common.exception.BadRequestException;
-import com.nivasafinance.features.otp.core.config.OtpChannelConfig;
-import com.nivasafinance.features.otp.core.config.OtpChannelRuntimeConfig;
 import com.nivasafinance.features.otp.core.config.OtpRuntimeConfig;
-import com.nivasafinance.features.otp.core.dto.OtpRecipient;
 import com.nivasafinance.features.otp.core.dto.OtpScope;
 import com.nivasafinance.features.otp.core.dto.OtpSubject;
 import com.nivasafinance.features.otp.core.dto.OtpSendCommand;
@@ -12,13 +9,11 @@ import com.nivasafinance.features.otp.core.dto.OtpTrackedToken;
 import com.nivasafinance.features.otp.core.dto.OtpVerifyCommand;
 import com.nivasafinance.features.otp.core.entity.OneTimeToken;
 import com.nivasafinance.features.otp.core.entity.OtpConfiguration;
-import com.nivasafinance.features.otp.core.enums.OtpChannel;
 import com.nivasafinance.features.otp.core.enums.OtpReference;
 import com.nivasafinance.features.otp.core.enums.OtpStatus;
 import com.nivasafinance.features.otp.core.enums.OtpSubjectType;
 import com.nivasafinance.features.otp.core.repository.OneTimeTokenRepositoryWrapper;
 import com.nivasafinance.features.otp.core.service.OtpConfigurationService;
-import com.nivasafinance.features.otp.core.service.OtpDeliveryService;
 import com.nivasafinance.features.otp.core.service.OtpGenerator;
 import com.nivasafinance.features.otp.core.service.OtpTrackingStore;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,8 +43,6 @@ class OtpCoreServiceImplTest {
     @Mock
     private OneTimeTokenRepositoryWrapper oneTimeTokenRepositoryWrapper;
     @Mock
-    private OtpDeliveryService otpDeliveryService;
-    @Mock
     private OtpTrackingStore otpTrackingStore;
     @Mock
     private OtpGenerator otpGenerator;
@@ -60,12 +53,10 @@ class OtpCoreServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        when(otpDeliveryService.getChannel()).thenReturn(OtpChannel.WHATSAPP);
         otpCoreService = new OtpCoreServiceImpl(
                 otpConfigurationService,
                 otpGeneratorFactory,
-                oneTimeTokenRepositoryWrapper,
-                List.of(otpDeliveryService));
+                oneTimeTokenRepositoryWrapper);
 
         configuration = OtpConfiguration.builder()
                 .uname(OtpReference.VERIFY_LEAD_FOR_CB.name())
@@ -73,12 +64,6 @@ class OtpCoreServiceImplTest {
                         .otpValidityInMins(10)
                         .otpGenerationMethod("simple_otp_generation")
                         .maxResendAttempts(3)
-                        .otpChannels(List.of(OtpChannelConfig.builder()
-                                .channelName(OtpChannel.WHATSAPP)
-                                .channelConfig(List.of(OtpChannelRuntimeConfig.builder()
-                                        .templateName("lead_cb_otp")
-                                        .build()))
-                                .build()))
                         .build())
                 .build();
         scope = OtpScope.builder()
@@ -88,14 +73,10 @@ class OtpCoreServiceImplTest {
     }
 
     @Test
-    void sendOtp_successfullyPersistsAndDelivers() {
+    void sendOtp_successfullyPersistsAndQueues() {
         OtpSendCommand command = OtpSendCommand.builder()
                 .reference(OtpReference.VERIFY_LEAD_FOR_CB)
                 .relatesTo("9876543210")
-                .recipients(List.of(OtpRecipient.builder()
-                        .channel(OtpChannel.WHATSAPP)
-                        .destination("9876543210")
-                        .build()))
                 .scope(scope)
                 .build();
 
@@ -106,7 +87,7 @@ class OtpCoreServiceImplTest {
         when(otpGenerator.generate(any())).thenReturn("2244");
         when(oneTimeTokenRepositoryWrapper.saveWithException(any(OneTimeToken.class)))
                 .thenReturn(OneTimeToken.builder().id(11L).otp("2244").relatesTo("9876543210").build());
-        when(otpTrackingStore.createTrackingRecord(11L, OtpReference.VERIFY_LEAD_FOR_CB, scope, OtpStatus.SENT))
+        when(otpTrackingStore.createTrackingRecord(11L, OtpReference.VERIFY_LEAD_FOR_CB, scope, OtpStatus.QUEUED))
                 .thenReturn(21L);
 
         var result = otpCoreService.sendOtp(command, otpTrackingStore);
@@ -114,13 +95,7 @@ class OtpCoreServiceImplTest {
         assertEquals(21L, result.getRequestId());
         assertEquals(2, result.getResendAttemptsRemaining());
         verify(otpTrackingStore).invalidateActiveTokens(OtpReference.VERIFY_LEAD_FOR_CB, scope);
-        verify(otpDeliveryService).send(
-                OtpRecipient.builder().channel(OtpChannel.WHATSAPP).destination("9876543210").build(),
-                "2244",
-                10,
-                OtpReference.VERIFY_LEAD_FOR_CB,
-                "lead_cb_otp");
-        verify(otpTrackingStore).updateStatus(21L, OtpStatus.SENT);
+        verify(otpTrackingStore).createTrackingRecord(11L, OtpReference.VERIFY_LEAD_FOR_CB, scope, OtpStatus.QUEUED);
     }
 
     @Test
@@ -128,10 +103,6 @@ class OtpCoreServiceImplTest {
         OtpSendCommand command = OtpSendCommand.builder()
                 .reference(OtpReference.VERIFY_LEAD_FOR_CB)
                 .relatesTo("9876543210")
-                .recipients(List.of(OtpRecipient.builder()
-                        .channel(OtpChannel.WHATSAPP)
-                        .destination("9876543210")
-                        .build()))
                 .scope(scope)
                 .build();
 
@@ -140,43 +111,6 @@ class OtpCoreServiceImplTest {
                 .thenReturn(3L);
 
         assertThrows(BadRequestException.class, () -> otpCoreService.sendOtp(command, otpTrackingStore));
-    }
-
-    @Test
-    void sendOtp_marksDeliveryFailedWhenChannelSendFails() {
-        OtpSendCommand command = OtpSendCommand.builder()
-                .reference(OtpReference.VERIFY_LEAD_FOR_CB)
-                .relatesTo("9876543210")
-                .recipients(List.of(OtpRecipient.builder()
-                        .channel(OtpChannel.WHATSAPP)
-                        .destination("9876543210")
-                        .build()))
-                .scope(scope)
-                .build();
-
-        when(otpConfigurationService.getByReference(OtpReference.VERIFY_LEAD_FOR_CB)).thenReturn(configuration);
-        when(otpTrackingStore.countAttemptsSince(eq(OtpReference.VERIFY_LEAD_FOR_CB), eq(scope), any(LocalDateTime.class)))
-                .thenReturn(0L);
-        when(otpGeneratorFactory.getGenerator("simple_otp_generation")).thenReturn(otpGenerator);
-        when(otpGenerator.generate(any())).thenReturn("2244");
-        when(oneTimeTokenRepositoryWrapper.saveWithException(any(OneTimeToken.class)))
-                .thenReturn(OneTimeToken.builder().id(11L).otp("2244").relatesTo("9876543210").build());
-        when(otpTrackingStore.createTrackingRecord(11L, OtpReference.VERIFY_LEAD_FOR_CB, scope, OtpStatus.SENT))
-                .thenReturn(21L);
-
-        RuntimeException sendFailure = new RuntimeException("send failed");
-        org.mockito.Mockito.doThrow(sendFailure).when(otpDeliveryService)
-                .send(
-                        OtpRecipient.builder().channel(OtpChannel.WHATSAPP).destination("9876543210").build(),
-                        "2244",
-                        10,
-                        OtpReference.VERIFY_LEAD_FOR_CB,
-                        "lead_cb_otp");
-
-        RuntimeException thrown = assertThrows(RuntimeException.class, () -> otpCoreService.sendOtp(command, otpTrackingStore));
-
-        assertEquals("send failed", thrown.getMessage());
-        verify(otpTrackingStore).updateStatus(21L, OtpStatus.DELIVERY_FAILED);
     }
 
     @Test
@@ -193,7 +127,7 @@ class OtpCoreServiceImplTest {
                         .trackingId(21L)
                         .otp("2244")
                         .createdAt(LocalDateTime.now().minusMinutes(2))
-                        .status(OtpStatus.SENT)
+                        .status(OtpStatus.QUEUED)
                         .build()));
 
         var result = otpCoreService.verifyOtp(command, otpTrackingStore);
