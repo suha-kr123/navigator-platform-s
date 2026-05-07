@@ -43,6 +43,7 @@ public class SourcingChannelWriteServiceImpl implements SourcingChannelWriteServ
                     .sourceUrl(request.getMarketingDetails().getSourceUrl())
                     .campaignId(request.getMarketingDetails().getCampaignId())
                     .referredByCode(request.getMarketingDetails().getReferredByCode())
+                    .googleClickId(request.getMarketingDetails().getGoogleClickId())
                     .build());
         }
         SourcingChannel sourcingChannel = builder.build();
@@ -81,6 +82,9 @@ public class SourcingChannelWriteServiceImpl implements SourcingChannelWriteServ
             }
             if (incoming.getReferredByCode() != null) {
                 existing.setReferredByCode(incoming.getReferredByCode());
+            }
+            if (incoming.getGoogleClickId() != null) {
+                existing.setGoogleClickId(incoming.getGoogleClickId());
             }
             existingEntity.setMarketingDetails(existing);
         }

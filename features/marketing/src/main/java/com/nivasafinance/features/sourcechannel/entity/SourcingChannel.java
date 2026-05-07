@@ -46,6 +46,7 @@ public class SourcingChannel extends AuditableEntity {
         private String campaignId;
         private String sourceUrl;
         private String referredByCode;
+        private String googleClickId;
     }
 
 

@@ -14,4 +14,5 @@ public class UpdateSourcingDetailsRequest {
     private String sourceUrl;
     private String campaignId;
     private String referredByCode;
+    private String googleClickId;
 }
