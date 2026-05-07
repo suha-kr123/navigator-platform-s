@@ -3,9 +3,16 @@ package com.nivasafinance.externals.customer.lead.service.impl;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.common.dto.AddressData;
+import com.nivasafinance.common.enums.EntityType;
 import com.nivasafinance.externals.customer.lead.dto.LeadEligibilityEvaluateResponse;
 import com.nivasafinance.externals.customer.lead.dto.LeadSearchMinimalResponse;
+import com.nivasafinance.externals.customer.lead.dto.ScheduleVisitRequest;
 import com.nivasafinance.externals.customer.lead.service.LeadExternalService;
+import com.nivasafinance.features.task.dto.CreateAdhocTaskRequest;
+import com.nivasafinance.features.task.dto.TaskDetailsRequest;
+import com.nivasafinance.features.task.dto.TaskResponse;
+import com.nivasafinance.features.task.service.TaskReadService;
+import com.nivasafinance.features.task.service.TaskWriteService;
 import com.nivasafinance.features.lead.dto.*;
 import com.nivasafinance.features.lead.service.LeadContactReadService;
 import com.nivasafinance.features.lead.service.LeadEligibilityReadService;
@@ -39,6 +46,8 @@ public class LeadExternalServiceImpl implements LeadExternalService {
     private static final String PERSONAL_LOAN_PRODUCT_CODE = "PERSONAL_LOAN";
     private static final BigDecimal PERSONAL_LOAN_MIN_REQUESTED_AMOUNT = BigDecimal.valueOf(400000);
 
+    private static final String VISIT_CUSTOMER_TASK_CONFIG_KEY = "VISIT_CUSTOMER";
+
     private final LeadWriteService leadWriteService;
     private final LeadReadService leadReadService;
     private final LeadContactReadService leadContactReadService;
@@ -46,6 +55,8 @@ public class LeadExternalServiceImpl implements LeadExternalService {
     private final LeadEligibilityReadService leadEligibilityReadService;
     private final LeadStageHistoryWriteService leadStageHistoryWriteService;
     private final LocationMasterService locationMasterService;
+    private final TaskWriteService taskWriteService;
+    private final TaskReadService taskReadService;
 
     @Override
     public CreateLeadResponse createLead(CreateLeadRequest request) {
@@ -194,6 +205,27 @@ public class LeadExternalServiceImpl implements LeadExternalService {
                 && PERSONAL_LOAN_PRODUCT_CODE.equalsIgnoreCase(lead.getProductCode())
                 && lead.getRequestedAmount() != null
                 && lead.getRequestedAmount().compareTo(PERSONAL_LOAN_MIN_REQUESTED_AMOUNT) < 0;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TaskResponse> getVisitTasks(UUID leadIdentifier) {
+        return taskReadService.findAllTasksForLead(leadIdentifier, true).stream()
+                .filter(task -> VISIT_CUSTOMER_TASK_CONFIG_KEY.equals(task.getTaskConfigKey()))
+                .toList();
+    }
+
+    @Override
+    public void scheduleVisit(UUID leadIdentifier, ScheduleVisitRequest request) {
+        CreateAdhocTaskRequest taskRequest = CreateAdhocTaskRequest.builder()
+                .taskConfigKey(VISIT_CUSTOMER_TASK_CONFIG_KEY)
+                .dueAt(request.getVisitDate().atTime(request.getVisitTime()))
+                .taskDetails(TaskDetailsRequest.builder()
+                        .entityId(leadIdentifier)
+                        .entityType(EntityType.LEAD)
+                        .build())
+                .build();
+        taskWriteService.createAdhocTask(taskRequest);
     }
 
     private boolean isBlank(String value) {

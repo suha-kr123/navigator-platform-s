@@ -3,7 +3,9 @@ package com.nivasafinance.externals.customer.lead.service.impl;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationInfo;
 import com.nivasafinance.common.base.model.PaginationRequest;
+import com.nivasafinance.common.enums.EntityType;
 import com.nivasafinance.externals.customer.lead.dto.LeadSearchMinimalResponse;
+import com.nivasafinance.externals.customer.lead.dto.ScheduleVisitRequest;
 import com.nivasafinance.features.lead.dto.*;
 import com.nivasafinance.features.lead.enums.LeadStatus;
 import com.nivasafinance.features.lead.enums.LeadSubStatus;
@@ -19,6 +21,10 @@ import com.nivasafinance.features.leadstages.dto.LeadStageHistoryResponse;
 import com.nivasafinance.features.leadstages.dto.StageTransitionRequest;
 import com.nivasafinance.features.leadstages.entity.LeadStageHistory;
 import com.nivasafinance.features.leadstages.service.LeadStageHistoryWriteService;
+import com.nivasafinance.features.task.dto.CreateAdhocTaskRequest;
+import com.nivasafinance.features.task.dto.TaskResponse;
+import com.nivasafinance.features.task.service.TaskReadService;
+import com.nivasafinance.features.task.service.TaskWriteService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -26,7 +32,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -54,6 +62,10 @@ class LeadExternalServiceImplTest {
     private LeadStageHistoryWriteService leadStageHistoryWriteService;
     @Mock
     private LocationMasterService locationMasterService;
+    @Mock
+    private TaskWriteService taskWriteService;
+    @Mock
+    private TaskReadService taskReadService;
 
     @InjectMocks
     private LeadExternalServiceImpl leadExternalService;
@@ -457,6 +469,65 @@ class LeadExternalServiceImplTest {
         verify(leadWriteService, never()).rejectLead(any(), any());
         assertEquals(LEAD_IDENTIFIER, result.getLeadIdentifier());
         assertEquals(LeadStatus.ACTIVE, result.getLeadStatus());
+    }
+
+    @Test
+    void getVisitTasks_returnsOnlyVisitCustomerTasks() {
+        // Arrange
+        TaskResponse visitTask = TaskResponse.builder()
+                .taskIdentifier(UUID.randomUUID())
+                .taskConfigKey("VISIT_CUSTOMER")
+                .dueAt(LocalDateTime.of(2026, 4, 10, 9, 0))
+                .build();
+        TaskResponse otherTask = TaskResponse.builder()
+                .taskIdentifier(UUID.randomUUID())
+                .taskConfigKey("SOME_OTHER_TASK")
+                .build();
+        when(taskReadService.findAllTasksForLead(LEAD_IDENTIFIER, true))
+                .thenReturn(List.of(visitTask, otherTask));
+
+        // Act
+        List<TaskResponse> result = leadExternalService.getVisitTasks(LEAD_IDENTIFIER);
+
+        // Assert
+        assertEquals(1, result.size(), "Should return only VISIT_CUSTOMER tasks");
+        assertEquals("VISIT_CUSTOMER", result.get(0).getTaskConfigKey());
+        verify(taskReadService).findAllTasksForLead(LEAD_IDENTIFIER, true);
+    }
+
+    @Test
+    void getVisitTasks_whenNoVisitTasksExist_returnsEmptyList() {
+        // Arrange
+        when(taskReadService.findAllTasksForLead(LEAD_IDENTIFIER, true)).thenReturn(List.of());
+
+        // Act
+        List<TaskResponse> result = leadExternalService.getVisitTasks(LEAD_IDENTIFIER);
+
+        // Assert
+        assertTrue(result.isEmpty(), "Should return an empty list when no tasks exist");
+    }
+
+    @Test
+    void scheduleVisit_createsAdhocTaskWithCorrectDetails() {
+        // Arrange
+        LocalDate visitDate = LocalDate.of(2026, 4, 10);
+        LocalTime visitTime = LocalTime.of(9, 0);
+        ScheduleVisitRequest request = ScheduleVisitRequest.builder()
+                .visitDate(visitDate)
+                .visitTime(visitTime)
+                .build();
+
+        // Act
+        leadExternalService.scheduleVisit(LEAD_IDENTIFIER, request);
+
+        // Assert
+        verify(taskWriteService).createAdhocTask(argThat(task ->
+                "VISIT_CUSTOMER".equals(task.getTaskConfigKey())
+                && task.getAssignedTo() == null
+                && visitDate.atTime(visitTime).equals(task.getDueAt())
+                && LEAD_IDENTIFIER.equals(task.getTaskDetails().getEntityId())
+                && EntityType.LEAD.equals(task.getTaskDetails().getEntityType())
+        ));
     }
 
     @Test
