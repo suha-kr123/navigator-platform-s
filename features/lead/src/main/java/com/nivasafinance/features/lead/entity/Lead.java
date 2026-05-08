@@ -378,8 +378,8 @@ public class Lead extends AuditableEntity {
         @AllArgsConstructor
         @Builder
         public static class PropertyMeasurementDetails {
-            private String buildUpArea;
-            private String siteArea;
+            private BigDecimal buildUpArea;
+            private BigDecimal siteArea;
         }
     }
 

@@ -1410,7 +1410,7 @@ class LeadWriteServiceImplTest {
                 .ownerRelation(Optional.of("SELF"))
                 .propertyMeasurementDetails(Optional.of(
                         PatchPropertyDetailsRequest.PropertyMeasurementDetailsData.builder()
-                                .buildUpArea("1200").siteArea("1500").build()))
+                                .buildUpArea(new BigDecimal("1200")).siteArea(new BigDecimal("1500")).build()))
                 .build();
 
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
@@ -1474,7 +1474,7 @@ class LeadWriteServiceImplTest {
         Lead.PropertyDetails existing = new Lead.PropertyDetails();
         existing.setPropertyMeasurementDetails(
                 Lead.PropertyDetails.PropertyMeasurementDetails.builder()
-                        .buildUpArea("1000").siteArea("1200").build());
+                        .buildUpArea(new BigDecimal("1000")).siteArea(new BigDecimal("1200")).build());
         Lead.OtherDetails otherDetails = Lead.OtherDetails.builder().propertyDetails(existing).build();
         lead.setOtherDetails(otherDetails);
 
