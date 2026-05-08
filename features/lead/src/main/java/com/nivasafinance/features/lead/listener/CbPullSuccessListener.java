@@ -7,10 +7,13 @@ import com.nivasafinance.common.enums.AddressType;
 import com.nivasafinance.common.events.SystemEvent;
 import com.nivasafinance.common.events.payload.LeadCbSuccessEventPayload;
 import com.nivasafinance.features.creditbureau.dto.DemographicVariationResponse;
+import com.nivasafinance.features.creditbureau.entity.CreditBureauEnquiry;
 import com.nivasafinance.features.creditbureau.repository.CbConfigRepositoryWrapper;
+import com.nivasafinance.features.creditbureau.repository.CreditBureauRepositoryWrapper;
 import com.nivasafinance.features.creditbureau.service.CreditBureauDerivedAttributeWriteService;
 import com.nivasafinance.features.creditbureau.service.CreditBureauReadService;
 import com.nivasafinance.features.lead.dto.LeadDocumentCreateRequest;
+import com.nivasafinance.features.lead.dto.LeadDocumentCreateResponse;
 import com.nivasafinance.features.lead.dto.RedashQuerySheetConfig;
 import com.nivasafinance.features.lead.entity.Contact;
 import com.nivasafinance.features.lead.repository.ContactRepositoryWrapper;
@@ -63,6 +66,7 @@ public class CbPullSuccessListener {
     private final CbConfigRepositoryWrapper cbConfigRepositoryWrapper;
     private final CreditBureauDerivedAttributeWriteService cbDerivedAttributeWriteService;
     private final CreditBureauReadService creditBureauReadService;
+    private final CreditBureauRepositoryWrapper creditBureauRepositoryWrapper;
     private final ContactRepositoryWrapper contactRepositoryWrapper;
     private final PersonWriteService personWriteService;
     private final ObjectMapper objectMapper;
@@ -271,7 +275,11 @@ public class CbPullSuccessListener {
                     .tags(List.of(SystemLeadDocumentsMaster.LEAD_CREDIT_DOCUMENTS_CRIF_REPORT))
                     .build();
 
-            leadDocumentWriteService.createLeadDocument(leadIdentifier, excelBytes, CB_REPORT_FILENAME, EXCEL_CONTENT_TYPE, leadDocRequest);
+            LeadDocumentCreateResponse docResponse = leadDocumentWriteService.createLeadDocument(leadIdentifier, excelBytes, CB_REPORT_FILENAME, EXCEL_CONTENT_TYPE, leadDocRequest);
+
+            CreditBureauEnquiry enquiry = creditBureauRepositoryWrapper.findByIdWithException(enquiryId);
+            enquiry.setReportDocumentIdentifier(docResponse.getDocumentIdentifier());
+            creditBureauRepositoryWrapper.saveWithException(enquiry);
             log.info("Successfully uploaded CB report to lead {} for enquiry ID: {}", leadIdentifier, enquiryId);
         }
     }

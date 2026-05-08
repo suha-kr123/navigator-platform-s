@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="V1746700000000_66" author="system" context="default">
+        <addColumn tableName="n_cb_enquiry">
+            <column name="report_document_identifier" type="UUID"/>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

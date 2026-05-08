@@ -53,6 +53,9 @@ public class CreditBureauEnquiry extends IdentifiableEntity {
     @Column(name = "response_json", columnDefinition = "TEXT")
     private String responseJson;
 
+    @Column(name = "report_document_identifier")
+    private UUID reportDocumentIdentifier;
+
     @Type(JsonType.class)
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "report_details", columnDefinition = "jsonb")
