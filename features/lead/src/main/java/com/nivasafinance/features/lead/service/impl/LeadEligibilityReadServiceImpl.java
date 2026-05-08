@@ -97,7 +97,7 @@ public class LeadEligibilityReadServiceImpl implements LeadEligibilityReadServic
                             .roiMax(toBigDecimal(pm.get("roi_max")))
                             .profileMatchStatus(toText(pm.get("profile_match_status")))
                             .matchingProfiles(toStringList(pm.get("matching_profiles")))
-                            .consumerVisible(toBoolean(pm.get("consumer_visible")))
+                            .consumerVisibleProfile(toBoolean(pm.get("consumer_visible_Profile")))
                             .build());
                 }
 
@@ -120,7 +120,8 @@ public class LeadEligibilityReadServiceImpl implements LeadEligibilityReadServic
                 }
 
                 builder.softOfferEligible(toBoolean(root.get("soft_offer_eligible")))
-                        .consumerVisible(toBoolean(root.get("consumer_visible")));
+                        .consumerVisible(toBoolean(root.get("consumer_visible")))
+                        .bankItrGstIncomePer(toBigDecimal(root.get("Bank_ITR_GST_income_per")));
 
             } catch (JsonProcessingException e) {
                 log.warn("Failed to parse BRE eligibility output for identifier {}", result.getIdentifier(), e);
