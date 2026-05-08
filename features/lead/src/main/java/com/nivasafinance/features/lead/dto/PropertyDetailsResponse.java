@@ -8,6 +8,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -27,8 +29,8 @@ public class PropertyDetailsResponse {
     @AllArgsConstructor
     @Builder
     public static class PropertyMeasurementDetailsData {
-        private String buildUpArea;
-        private String siteArea;
+        private BigDecimal buildUpArea;
+        private BigDecimal siteArea;
     }
 }
 

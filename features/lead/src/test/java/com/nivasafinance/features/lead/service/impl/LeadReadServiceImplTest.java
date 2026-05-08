@@ -275,7 +275,7 @@ class LeadReadServiceImplTest {
         GeoData geoData = new GeoData();
         Lead.PropertyDetails.PropertyMeasurementDetails measurement =
                 Lead.PropertyDetails.PropertyMeasurementDetails.builder()
-                        .buildUpArea("1200").siteArea("1500").build();
+                        .buildUpArea(new BigDecimal("1200")).siteArea(new BigDecimal("1500")).build();
         Lead.DocumentChecklist checklist = Lead.DocumentChecklist.builder()
                 .ekhataType("E-Khata").saleDeed("Available").build();
         Lead.PropertyDetails propertyDetails = Lead.PropertyDetails.builder()
