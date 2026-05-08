@@ -55,7 +55,8 @@ public class LeadCreditBureauReadServiceImpl implements LeadCreditBureauReadServ
 
         EnquiryDetailsResponse.EnquiryDetailsResponseBuilder builder = EnquiryDetailsResponse.builder()
                 .enquiryIdentifier(enquiry.getIdentifier())
-                .enquiryStatus(enquiry.getStatus());
+                .enquiryStatus(enquiry.getStatus())
+                .reportDocumentIdentifier(enquiry.getReportDocumentIdentifier());
 
         if (enquiry.getConsentId() == null) {
             return Optional.of(builder.consentStatus(null).build());

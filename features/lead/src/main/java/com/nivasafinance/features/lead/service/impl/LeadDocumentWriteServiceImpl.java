@@ -83,7 +83,6 @@ public class LeadDocumentWriteServiceImpl implements LeadDocumentWriteService {
         // Publish event
         publishLeadDocumentCreatedEvent(lead, documentResponse);
 
-        // Return response with document identifier
         return LeadDocumentCreateResponse.builder()
                 .documentIdentifier(documentResponse.getIdentifier())
                 .build();

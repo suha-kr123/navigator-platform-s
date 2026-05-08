@@ -26,6 +26,7 @@ public class CreditBureauEnquiryResponse {
     private String error;
     private String requestJson;
     private String responseJson;
+    private UUID reportDocumentIdentifier;
     private ReportDetails reportDetails;
     private LocalDateTime createdAt;
     private String createdBy;
@@ -46,6 +47,7 @@ public class CreditBureauEnquiryResponse {
                 .error(creditBureauEnquiry.getError())
                 .requestJson(creditBureauEnquiry.getRequestJson())
                 .responseJson(creditBureauEnquiry.getResponseJson())
+                .reportDocumentIdentifier(creditBureauEnquiry.getReportDocumentIdentifier())
                 .reportDetails(creditBureauEnquiry.getReportDetails())
                 .createdAt(creditBureauEnquiry.getCreatedAt())
                 .createdBy(creditBureauEnquiry.getCreatedBy())

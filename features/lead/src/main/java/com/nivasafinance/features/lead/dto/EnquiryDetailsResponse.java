@@ -17,4 +17,5 @@ public class EnquiryDetailsResponse {
     private UUID enquiryIdentifier;
     private CreditBureauEnquiryStatus enquiryStatus;
     private ConsentStatus consentStatus;
+    private UUID reportDocumentIdentifier;
 }
