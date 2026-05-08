@@ -29,6 +29,7 @@ public class LeadBREEligibilityDetailResponse {
     private LoanCalculation loanCalculation;
     private Boolean softOfferEligible;
     private Boolean consumerVisible;
+    private BigDecimal bankItrGstIncomePer;
 
     @Data
     @Builder
@@ -40,7 +41,7 @@ public class LeadBREEligibilityDetailResponse {
         private BigDecimal roiMax;
         private String profileMatchStatus;
         private List<String> matchingProfiles;
-        private Boolean consumerVisible;
+        private Boolean consumerVisibleProfile;
     }
 
     @Data

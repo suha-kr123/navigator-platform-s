@@ -181,7 +181,7 @@ class LeadEligibilityReadServiceImplTest {
                     "roi_max": 12.0,
                     "profile_match_status": "MATCHED",
                     "matching_profiles": ["Salaried Premium", "Salaried Standard"],
-                    "consumer_visible": true
+                    "consumer_visible_Profile": true
                   },
                   "loan_calculation": {
                     "property_value": 5000000,
@@ -198,7 +198,8 @@ class LeadEligibilityReadServiceImplTest {
                     "binding_constraint": "income"
                   },
                   "soft_offer_eligible": true,
-                  "consumer_visible": false
+                  "consumer_visible": false,
+                  "Bank_ITR_GST_income_per": 15000
                 }
                 """;
         LeadBREResultResponse breResult = LeadBREResultResponse.builder()
@@ -232,7 +233,8 @@ class LeadEligibilityReadServiceImplTest {
         assertEquals(new BigDecimal("12.0"), response.getProfileMatch().getRoiMax());
         assertEquals("MATCHED", response.getProfileMatch().getProfileMatchStatus());
         assertEquals(List.of("Salaried Premium", "Salaried Standard"), response.getProfileMatch().getMatchingProfiles());
-        assertEquals(true, response.getProfileMatch().getConsumerVisible());
+        assertEquals(true, response.getProfileMatch().getConsumerVisibleProfile());
+        assertEquals(new BigDecimal("15000"), response.getBankItrGstIncomePer());
 
         // Loan calculation
         assertNotNull(response.getLoanCalculation());
@@ -408,7 +410,7 @@ class LeadEligibilityReadServiceImplTest {
                     "profile_name": "Self Employed",
                     "profile_match_status": "NOT_MATCHED",
                     "matching_profiles": null,
-                    "consumer_visible": false
+                    "consumer_visible_Profile": false
                   },
                   "soft_offer_eligible": false
                 }
