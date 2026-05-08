@@ -45,6 +45,10 @@ public class CallNotificationSseController {
         // Gateway/Proxy specific headers to ensure streaming works
         // These help prevent gateways from buffering or closing the connection
         response.setHeader("X-Accel-No-Buffering", "yes"); // Alternative nginx header
+
+        // Disable Envoy route timeout for SSE — ECS Service Connect injects Envoy sidecar
+        // with default 15s route_timeout, which kills long-lived SSE connections
+        response.setHeader("x-envoy-upstream-rq-timeout-ms", "0");
         // Note: Transfer-Encoding is set automatically by Spring/Tomcat for SSE
         
         // Note: Connection header is not used in HTTP/2, removed for better compatibility

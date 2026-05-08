@@ -188,9 +188,8 @@ public class CallNotificationSseService {
                 }
                 
                 try {
-                    // Use comment-based heartbeat - simpler and better for HTTP/2
-                    // Comments don't create event boundaries, reducing HTTP/2 stream overhead
-                    emitter.send(SseEmitter.event().comment("keep-alive"));
+                    // Use named event so frontend can track heartbeat timing for diagnostics
+                    emitter.send(SseEmitter.event().name("heartbeat").data("keep-alive"));
                     log.debug("💓 Sent heartbeat to user: {}", username);
                 } catch (IOException e) {
                     // Only remove connection on IOException (actual connection closed)

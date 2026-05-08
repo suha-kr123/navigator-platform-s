@@ -730,6 +730,7 @@ public class AdvisorRepositoryWrapper {
             sql.append(" ) SELECT COUNT(*) FROM n_lead l ");
             sql.append(" JOIN n_sourcing_channel_details sc ON sc.id = l.sourcing_channel_id ");
             sql.append(" WHERE sc.marketing_details->>'referredByCode' = ? ");
+            sql.append(" AND l.is_deleted = false ");
             sql.append(" AND (EXISTS (SELECT 1 FROM jsonb_array_elements_text(COALESCE(l.contacts, '[]'::jsonb)) AS e WHERE (e)::bigint IN (SELECT id FROM matching_contacts)) ");
             sql.append(" OR EXISTS (SELECT 1 FROM jsonb_array_elements_text(COALESCE(l.co_applicants, '[]'::jsonb)) AS e WHERE (e)::bigint IN (SELECT id FROM matching_contacts))) ");
             sql.append(extraFilter);
@@ -738,6 +739,7 @@ public class AdvisorRepositoryWrapper {
             countSql = " SELECT COUNT(*) FROM n_lead l " +
                     " JOIN n_sourcing_channel_details sc ON sc.id = l.sourcing_channel_id " +
                     " WHERE sc.marketing_details->>'referredByCode' = ? " +
+                    " AND l.is_deleted = false " +
                     extraFilter;
         }
 
@@ -760,6 +762,7 @@ public class AdvisorRepositoryWrapper {
                 LEFT JOIN n_contact primary_contact ON primary_contact.id = (l.other_details->>'primaryContactId')::bigint
                 LEFT JOIN n_person primary_person ON primary_person.id = primary_contact.person_id
                 WHERE sc.marketing_details->>'referredByCode' = ?
+                AND l.is_deleted = false
                 """ + extraFilter + """
                 ORDER BY l.created_at DESC
                 LIMIT ? OFFSET ?
@@ -804,6 +807,7 @@ public class AdvisorRepositoryWrapper {
         sql.append(" LEFT JOIN n_contact primary_contact ON primary_contact.id = (l.other_details->>'primaryContactId')::bigint ");
         sql.append(" LEFT JOIN n_person primary_person ON primary_person.id = primary_contact.person_id ");
         sql.append(" WHERE sc.marketing_details->>'referredByCode' = ? ");
+        sql.append(" AND l.is_deleted = false ");
         sql.append(" AND (EXISTS (SELECT 1 FROM jsonb_array_elements_text(COALESCE(l.contacts, '[]'::jsonb)) AS e WHERE (e)::bigint IN (SELECT id FROM matching_contacts)) ");
         sql.append(" OR EXISTS (SELECT 1 FROM jsonb_array_elements_text(COALESCE(l.co_applicants, '[]'::jsonb)) AS e WHERE (e)::bigint IN (SELECT id FROM matching_contacts))) ");
         sql.append(extraFilter);
