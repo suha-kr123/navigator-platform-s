@@ -7,18 +7,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public class OtpRuntimeConfig {
-    private Integer otpValidityInMins;
-    private String otpGenerationMethod;
-    private Integer maxResendAttempts;
-    @Builder.Default
-    private List<OtpChannelConfig> otpChannels = new ArrayList<>();
+public class OtpChannelRuntimeConfig {
+    private String templateName;
 }
