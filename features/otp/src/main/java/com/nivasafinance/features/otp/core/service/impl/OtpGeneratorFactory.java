@@ -1,6 +1,6 @@
 package com.nivasafinance.features.otp.core.service.impl;
 
-import com.nivasafinance.common.exception.BadRequestException;
+import com.nivasafinance.features.otp.core.exception.OtpExceptionFactory;
 import com.nivasafinance.features.otp.core.service.OtpGenerator;
 import org.springframework.stereotype.Component;
 
@@ -23,7 +23,7 @@ public class OtpGeneratorFactory {
     public OtpGenerator getGenerator(String method) {
         OtpGenerator generator = generators.get(method);
         if (generator == null) {
-            throw new BadRequestException("Unsupported OTP generation method: " + method);
+            throw OtpExceptionFactory.unsupportedGenerationMethod(method);
         }
         return generator;
     }

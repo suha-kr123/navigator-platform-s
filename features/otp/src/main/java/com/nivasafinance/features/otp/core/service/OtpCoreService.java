@@ -6,6 +6,6 @@ import com.nivasafinance.features.otp.core.dto.OtpVerifyCommand;
 import com.nivasafinance.features.otp.core.dto.OtpVerifyResult;
 
 public interface OtpCoreService {
-    OtpSendResult sendOtp(OtpSendCommand command, OtpTrackingStore trackingStore);
-    OtpVerifyResult verifyOtp(OtpVerifyCommand command, OtpTrackingStore trackingStore);
+    OtpSendResult sendOtp(OtpSendCommand command);
+    OtpVerifyResult verifyOtp(OtpVerifyCommand command);
 }

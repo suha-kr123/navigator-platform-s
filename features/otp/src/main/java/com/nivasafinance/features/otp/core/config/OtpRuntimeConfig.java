@@ -18,7 +18,6 @@ import java.util.List;
 public class OtpRuntimeConfig {
     private Integer otpValidityInMins;
     private String otpGenerationMethod;
-    private Integer maxResendAttempts;
     @Builder.Default
     private List<OtpChannelConfig> otpChannels = new ArrayList<>();
 }

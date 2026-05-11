@@ -1,11 +1,9 @@
 package com.nivasafinance.features.otp.core.service;
 
-import com.nivasafinance.features.otp.core.dto.OtpRecipient;
-import com.nivasafinance.features.otp.core.dto.OtpSendCommand;
 import com.nivasafinance.features.otp.core.enums.OtpChannel;
 
 public interface OtpDeliveryService {
     OtpChannel getChannel();
 
-    void send(OtpRecipient recipient, String otp, String templateName, OtpSendCommand command);
+    void send(String recipient, String otp, String templateName, String reference);
 }
