@@ -43,6 +43,7 @@ import org.springframework.util.StringUtils;
 import java.util.Optional;
 import com.nivasafinance.features.sourcechannel.dto.SourcingChannelRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,10 +56,13 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @Transactional
 @RequiredArgsConstructor
 public class AdvisorSelfServiceImpl implements AdvisorSelfService {
+
+    private static final String LEAD_NOT_FOUND_FOR_STAGE_HISTORY = "Lead not found for stage history resolution, leadIdentifier={}";
 
     private final AdvisorReadService advisorReadService;
     private final AdvisorWriteService advisorWriteService;
@@ -588,17 +592,22 @@ public class AdvisorSelfServiceImpl implements AdvisorSelfService {
     }
 
     private String resolveCurrentStageDisplayName(UUID leadIdentifier) {
-        List<LeadStageHistoryDisplayResponse> history =
-                leadStageHistoryReadService.getStageHistoryWithDisplayLabelsByLeadId(leadIdentifier);
-        if (history == null || history.isEmpty()) {
+        try {
+            List<LeadStageHistoryDisplayResponse> history =
+                    leadStageHistoryReadService.getStageHistoryWithDisplayLabelsByLeadId(leadIdentifier);
+            if (history == null || history.isEmpty()) {
+                return null;
+            }
+            LeadStageHistoryDisplayResponse latest = history.stream()
+                    .filter(r -> r.getExitedAt() == null)
+                    .findFirst()
+                    .orElse(history.get(history.size() - 1));
+            String label = latest.getDisplayLabel();
+            return StringUtils.hasText(label) ? label : null;
+        } catch (LeadNotFoundException e) {
+            log.warn(LEAD_NOT_FOUND_FOR_STAGE_HISTORY, leadIdentifier);
             return null;
         }
-        LeadStageHistoryDisplayResponse latest = history.stream()
-                .filter(r -> r.getExitedAt() == null)
-                .findFirst()
-                .orElse(history.get(history.size() - 1));
-        String label = latest.getDisplayLabel();
-        return StringUtils.hasText(label) ? label : null;
     }
 
     private static boolean hasNameRequest(AdvisorSelfLeadCreateRequest request) {

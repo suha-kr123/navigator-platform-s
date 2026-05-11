@@ -8,14 +8,19 @@ import com.nivasafinance.common.dto.CallNotificationResponse;
 import com.nivasafinance.common.dto.EnrichedCallNotificationResponse;
 import com.nivasafinance.common.utils.PhoneNumberUtils;
 import com.nivasafinance.features.call.entity.CallLog;
+import com.nivasafinance.features.call.config.CallNotificationRedisConfig;
+import com.nivasafinance.features.call.dto.CallNotificationBroadcast;
 import com.nivasafinance.features.call.repository.CallNotificationRedisRepository;
+import com.nivasafinance.features.call.service.CallNotificationInstanceId;
 import com.nivasafinance.features.call.service.CallNotificationSseService;
 import com.nivasafinance.features.call.service.CallNotificationService;
 import com.nivasafinance.features.person.service.PersonReadService;
 import com.nivasafinance.features.usermanagement.entity.User;
 import com.nivasafinance.features.usermanagement.service.UserReadService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -33,6 +38,9 @@ public class CallNotificationServiceImpl implements CallNotificationService {
     private final JdbcTemplate jdbcTemplate;
     private final CallNotificationRedisRepository redisRepository;
     private final CallNotificationSseService sseService;
+    private final RedisTemplate<String, String> redisTemplate;
+    private final ObjectMapper objectMapper;
+    private final CallNotificationInstanceId instanceId;
 
     @Override
     public PaginatedResponse<EnrichedCallNotificationResponse> getNotificationsForCurrentUser(PaginationRequest paginationRequest) {
@@ -432,7 +440,7 @@ public class CallNotificationServiceImpl implements CallNotificationService {
                 .orElse(null));
     }
 
-    /* === send notification async to user via SSE === */
+    /* === send notification async to user via SSE (broadcast via Redis Pub/Sub) === */
     @Override
     @Async
     public void sendNotificationAsync(CallNotificationResponse notification, String userPhone) {
@@ -443,39 +451,58 @@ public class CallNotificationServiceImpl implements CallNotificationService {
             } catch (Exception e) {
                 log.warn("Failed to save recent call notification to Redis for user phone: {}", userPhone, e);
             }
-            // normalize phone number to 10 digits
+
             String normalizedUserPhone = extractLast10Digits(userPhone);
             log.info("=== SSE NOTIFICATION FLOW START ===");
             log.info("Looking up users for phone: {}, callSid: {}", userPhone, notification.getCallSid());
-            
+
             List<User> users = userReadService.findUsersByPersonPhoneNumber(normalizedUserPhone);
             log.info("Found {} users for phone: {}, callSid: {}", users.size(), userPhone, notification.getCallSid());
-            
+
             if (users.isEmpty()) {
-                log.warn("⚠️ No users found for phone number: {}, notification will not be sent via SSE. CallSid: {}", 
+                log.warn("No users found for phone number: {}, notification will not be sent via SSE. CallSid: {}",
                         normalizedUserPhone, notification.getCallSid());
                 return;
             }
-            
-            users.stream()
+
+            List<String> usernames = users.stream()
                     .map(user -> {
-                        log.info("✓ Found user: {} (username: {}) for phone: {}, callSid: {}", 
+                        log.info("Found user: {} (username: {}) for phone: {}, callSid: {}",
                                 user.getId(), user.getUsername(), userPhone, notification.getCallSid());
                         return user.getUsername();
                     })
-                    .forEach(username -> {
-                        log.info("→ Attempting to send SSE notification to username: {} for call: {}", 
-                                username, notification.getCallSid());
-                        try {
-                            sseService.sendNotificationToUser(notification, username);
-                            log.info("✓ Successfully sent SSE notification to username: {}", username);
-                        } catch (Exception e) {
-                            log.error("✗ Failed to send SSE notification to user: {}", username, e);
-                        }
-                    });
+                    .collect(Collectors.toList());
+
+            // Deliver to local SSE connections on this instance
+            for (String username : usernames) {
+                try {
+                    sseService.sendNotificationToUser(notification, username);
+                } catch (Exception e) {
+                    log.error("Failed to send local SSE notification to user: {}", username, e);
+                }
+            }
+
+            // Broadcast via Redis Pub/Sub so OTHER instances can deliver to their SSE connections
+            // Subscriber skips messages from own instance (via sourceInstanceId) to prevent duplicates
+            try {
+                CallNotificationBroadcast broadcast = CallNotificationBroadcast.builder()
+                        .notification(notification)
+                        .usernames(usernames)
+                        .sourceInstanceId(instanceId.getId())
+                        .build();
+
+                String broadcastJson = objectMapper.writeValueAsString(broadcast);
+                redisTemplate.convertAndSend(CallNotificationRedisConfig.CALL_NOTIFICATION_CHANNEL, broadcastJson);
+                log.info("Published call notification broadcast to Redis for usernames: {}, callSid: {}",
+                        usernames, notification.getCallSid());
+            } catch (Exception e) {
+                log.warn("Redis Pub/Sub broadcast failed. Local delivery already done. callSid: {}",
+                        notification.getCallSid(), e);
+            }
+
             log.info("=== SSE NOTIFICATION FLOW END ===");
         } catch (Exception e) {
-            log.error("✗ Failed to process async notification for phone: {}, callSid: {}", 
+            log.error("Failed to process async notification for phone: {}, callSid: {}",
                     userPhone, notification.getCallSid(), e);
         }
     }
