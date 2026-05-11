@@ -755,8 +755,8 @@ public class AdvisorRepositoryWrapper {
                        l.substatus::text AS substatus,
                        l.requested_amount AS requested_amount,
                        l.created_at AS created_at,
-                       CAST(l.disbursement_details->>'disbursedAmount' AS NUMERIC) AS disbursed_amount,
-                       CAST(l.disbursement_details->>'disbursedDate' AS DATE) AS disbursed_date
+                       CAST(NULLIF(l.disbursement_details->>'disbursedAmount', '') AS NUMERIC) AS disbursed_amount,
+                       TO_DATE(NULLIF(l.disbursement_details->>'disbursedDate', ''), 'DD-MM-YYYY') AS disbursed_date
                 FROM n_lead l
                 JOIN n_sourcing_channel_details sc ON sc.id = l.sourcing_channel_id
                 LEFT JOIN n_contact primary_contact ON primary_contact.id = (l.other_details->>'primaryContactId')::bigint
@@ -800,8 +800,8 @@ public class AdvisorRepositoryWrapper {
         sql.append(" (SELECT m->>'number' FROM jsonb_array_elements(COALESCE(primary_person.mobile_numbers, '[]'::jsonb)) m ");
         sql.append(" WHERE (m->>'isPrimary')::boolean = true LIMIT 1) AS primary_contact_phone, ");
         sql.append(" l.product_code AS product_code, l.status::text AS status, l.substatus::text AS substatus, l.requested_amount AS requested_amount, l.created_at AS created_at, ");
-        sql.append(" CAST(l.disbursement_details->>'disbursedAmount' AS NUMERIC) AS disbursed_amount, ");
-        sql.append(" CAST(l.disbursement_details->>'disbursedDate' AS DATE) AS disbursed_date ");
+        sql.append(" CAST(NULLIF(l.disbursement_details->>'disbursedAmount', '') AS NUMERIC) AS disbursed_amount, ");
+        sql.append(" TO_DATE(NULLIF(l.disbursement_details->>'disbursedDate', ''), 'DD-MM-YYYY') AS disbursed_date ");
         sql.append(" FROM n_lead l ");
         sql.append(" JOIN n_sourcing_channel_details sc ON sc.id = l.sourcing_channel_id ");
         sql.append(" LEFT JOIN n_contact primary_contact ON primary_contact.id = (l.other_details->>'primaryContactId')::bigint ");
@@ -932,7 +932,7 @@ public class AdvisorRepositoryWrapper {
                        l.lead_identifier,
                        p.display_name AS lead_name,
                        prod.name->>'default' AS loan_type,
-                       CAST(l.disbursement_details->>'disbursedAmount' AS NUMERIC) AS loan_disbursed,
+                       CAST(NULLIF(l.disbursement_details->>'disbursedAmount', '') AS NUMERIC) AS loan_disbursed,
                        t.amount, t.status, t.created_at
                 FROM n_transaction t
                 JOIN n_lead_transaction lt ON lt.transaction_id = t.id

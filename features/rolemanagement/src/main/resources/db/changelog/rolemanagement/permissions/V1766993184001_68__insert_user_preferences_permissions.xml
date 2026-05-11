@@ -6,12 +6,12 @@
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
     <changeSet id="V1766993184001_71" author="system" context="default">
+        <validCheckSum>ANY</validCheckSum>
         <comment>Insert USER_PREFERENCES module permissions</comment>
-        
+
         <!-- User preferences permissions -->
         <insert tableName="n_permissions">
             <column name="name" value="USER_PREFERENCES_FULL_ACCESS"/>
-            <column name="action" value="FULL_ACCESS"/>
             <column name="module" value="USER_PREFERENCES"/>
             <column name="operation" value="FULL_ACCESS_USER_PREFERENCES"/>
             <column name="created_by" value="system"/>
