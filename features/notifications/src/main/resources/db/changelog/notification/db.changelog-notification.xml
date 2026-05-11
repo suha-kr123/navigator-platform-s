@@ -23,5 +23,6 @@
     <include file="classpath:db/changelog/notification/tables/V1764000000015__add_error_json_to_notification_record_and_receipt.xml"/>
     <include file="classpath:db/changelog/notification/tables/V1764000000016__add_buttons_to_notification_template.xml"/>
 
- </databaseChangeLog>
+</databaseChangeLog>
+
 
