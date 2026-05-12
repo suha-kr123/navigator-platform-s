@@ -55,9 +55,10 @@ public class LeadCallController {
     @RequirePermission(permissionName = "READ_LEAD_CALL")
     public ResponseEntity<PaginatedResponse<LeadCallLogResponse>> getCallLogs(
             @PathVariable UUID leadId,
-            @Valid PaginationRequest paginationRequest
+            @Valid PaginationRequest paginationRequest,
+            @RequestParam(defaultValue = "false") boolean hasAiAnalysis
     ) {
-        PaginatedResponse<LeadCallLogResponse> response = leadCallReadService.getCallLogs(leadId, paginationRequest);
+        PaginatedResponse<LeadCallLogResponse> response = leadCallReadService.getCallLogs(leadId, paginationRequest, hasAiAnalysis);
         return ResponseEntity.ok(response);
     }
 

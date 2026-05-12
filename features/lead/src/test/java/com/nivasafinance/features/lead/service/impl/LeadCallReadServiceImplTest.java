@@ -278,7 +278,7 @@ class LeadCallReadServiceImplTest {
         when(callReadService.getCallLogsByIDs(List.of(100L))).thenReturn(List.of(callLogResponse));
 
         // When
-        PaginatedResponse<LeadCallLogResponse> result = leadCallReadService.getCallLogs(leadIdentifier, paginationRequest);
+        PaginatedResponse<LeadCallLogResponse> result = leadCallReadService.getCallLogs(leadIdentifier, paginationRequest, false);
 
         // Then
         assertNotNull(result, "Paginated response should not be null");
@@ -300,7 +300,7 @@ class LeadCallReadServiceImplTest {
         when(callLogLeadRepositoryWrapper.findByLeadId(eq(leadId), any(PageRequest.class))).thenReturn(emptyPage);
 
         // When
-        PaginatedResponse<LeadCallLogResponse> result = leadCallReadService.getCallLogs(leadIdentifier, paginationRequest);
+        PaginatedResponse<LeadCallLogResponse> result = leadCallReadService.getCallLogs(leadIdentifier, paginationRequest, false);
 
         // Then
         assertNotNull(result, "Paginated response should not be null");
@@ -323,7 +323,7 @@ class LeadCallReadServiceImplTest {
         when(callLogLeadRepositoryWrapper.findByLeadId(eq(leadId), eq(PageRequest.of(2, 5)))).thenReturn(emptyPage);
 
         // When
-        leadCallReadService.getCallLogs(leadIdentifier, paginationRequest);
+        leadCallReadService.getCallLogs(leadIdentifier, paginationRequest, false);
 
         // Then
         verify(callLogLeadRepositoryWrapper).findByLeadId(eq(leadId), eq(PageRequest.of(2, 5)));
@@ -338,7 +338,7 @@ class LeadCallReadServiceImplTest {
 
         // When & Then
         assertThrows(RuntimeException.class,
-                () -> leadCallReadService.getCallLogs(leadIdentifier, paginationRequest),
+                () -> leadCallReadService.getCallLogs(leadIdentifier, paginationRequest, false),
                 "Should propagate exception when lead is not found");
         verifyNoInteractions(callLogLeadRepositoryWrapper);
     }

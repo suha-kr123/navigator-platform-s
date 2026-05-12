@@ -73,15 +73,16 @@ public class LeadCallReadServiceImpl implements LeadCallReadService {
     }
 
     @Override
-    public PaginatedResponse<LeadCallLogResponse> getCallLogs(UUID leadIdentifier, PaginationRequest paginationRequest) {
+    public PaginatedResponse<LeadCallLogResponse> getCallLogs(UUID leadIdentifier, PaginationRequest paginationRequest, boolean hasAiAnalysis) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
 
         int limit = paginationRequest.getLimit();
         int offset = paginationRequest.getOffset();
         int page = offset / limit;
 
-        Page<CallLogLead> mappingPage = callLogLeadRepositoryWrapper.findByLeadId(
-                lead.getId(), PageRequest.of(page, limit));
+        Page<CallLogLead> mappingPage = hasAiAnalysis
+                ? callLogLeadRepositoryWrapper.findByLeadIdWithAiAnalysis(lead.getId(), PageRequest.of(page, limit))
+                : callLogLeadRepositoryWrapper.findByLeadId(lead.getId(), PageRequest.of(page, limit));
 
         if (mappingPage.isEmpty()) {
             return new PaginatedResponse<>(
