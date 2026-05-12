@@ -14,5 +14,8 @@
     <!-- Include all permission group inserts -->
     <includeAll path="classpath:db/changelog/rolemanagement/groups"/>
 
+    <!-- Include permission check constraints (must run after permission inserts) -->
+    <includeAll path="classpath:db/changelog/rolemanagement/constraints"/>
+
 </databaseChangeLog>
 

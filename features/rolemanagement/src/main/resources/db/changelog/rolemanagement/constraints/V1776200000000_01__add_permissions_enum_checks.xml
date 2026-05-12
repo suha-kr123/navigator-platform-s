@@ -5,18 +5,23 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
-    <changeSet id="V1769700000100_99a" author="system" context="default">
-        <comment>Guardrail: enforce permissions action at DB level</comment>
+    <changeSet id="V1776200000000_01a" author="system" context="default">
+        <comment>Drop and recreate permissions action check constraint with all valid values</comment>
+        <sql>ALTER TABLE n_permissions DROP CONSTRAINT IF EXISTS chk_n_permissions_action</sql>
         <sql>ALTER TABLE n_permissions ADD CONSTRAINT chk_n_permissions_action CHECK (action IS NULL OR action IN ('CREATE', 'READ', 'UPDATE', 'DELETE'))</sql>
     </changeSet>
-    <changeSet id="V1769700000100_99b" author="system" context="default">
-        <comment>Guardrail: enforce permissions module at DB level</comment>
-        <sql>ALTER TABLE n_permissions ADD CONSTRAINT chk_n_permissions_module CHECK (module IS NULL OR module IN ('LEAD', 'DOCUMENT', 'ADVISOR', 'MASTER', 'OFFICE', 'NOTIFICATION', 'DEVICE', 'STAFF', 'TASK', 'WORKFLOW', 'USER_PREFERENCES', 'STAGE', 'LENDER', 'CAMPAIGN', 'BULK_OPERATION', 'ROLE_MANAGEMENT', 'BRE'))</sql>
+
+    <changeSet id="V1776200000000_01b" author="system" context="default">
+        <comment>Drop and recreate permissions module check constraint with all valid values</comment>
+        <sql>ALTER TABLE n_permissions DROP CONSTRAINT IF EXISTS chk_n_permissions_module</sql>
+        <sql>ALTER TABLE n_permissions ADD CONSTRAINT chk_n_permissions_module CHECK (module IS NULL OR module IN ('LEAD', 'DOCUMENT', 'ADVISOR', 'MASTER', 'OFFICE', 'NOTIFICATION', 'DEVICE', 'STAFF', 'TASK', 'WORKFLOW', 'USER_PREFERENCES', 'STAGE', 'LENDER', 'CAMPAIGN', 'BULK_OPERATION', 'ROLE_MANAGEMENT', 'BRE', 'DISPLAY_CONFIG', 'TRANSACTION'))</sql>
     </changeSet>
-    <changeSet id="V1769700000100_99c" author="system" context="default">
-        <comment>Guardrail: enforce permissions operation at DB level</comment>
+
+    <changeSet id="V1776200000000_01c" author="system" context="default">
+        <comment>Drop and recreate permissions operation check constraint with all valid values</comment>
+        <sql>ALTER TABLE n_permissions DROP CONSTRAINT IF EXISTS chk_n_permissions_operation</sql>
         <sql>ALTER TABLE n_permissions ADD CONSTRAINT chk_n_permissions_operation CHECK (operation IS NULL OR operation IN (
-            'READ_ADVISOR', 'CREATE_ADVISOR', 'UPDATE_ADVISOR', 'DELETE_ADVISOR', 'REJECT_ADVISOR',
+            'READ_ADVISOR', 'READ_ADVISOR_TEMPLATE', 'CREATE_ADVISOR', 'UPDATE_ADVISOR', 'DELETE_ADVISOR', 'REJECT_ADVISOR',
             'READ_MASTER', 'READ_MASTER_CODE', 'READ_MASTER_PRODUCTS', 'READ_MASTER_PINCODES', 'READ_MASTER_LOCATION',
             'READ_LEAD', 'CREATE_LEAD', 'UPDATE_LEAD', 'DELETE_LEAD', 'READ_LEAD_DASHBOARD', 'READ_LEAD_CREDIT_DETAILS',
             'UPDATE_LEAD_CREDIT_DETAILS', 'READ_LEAD_DISBURSEMENT_DETAILS', 'UPDATE_LEAD_DISBURSEMENT_DETAILS',
@@ -38,7 +43,8 @@
             'UPDATE_ADVISOR_NOTES', 'DELETE_ADVISOR_NOTES', 'CREATE_ADVISOR_CALL', 'READ_ADVISOR_CALL', 'UPDATE_ADVISOR_CALL',
             'UPDATE_ADVISOR_STATUS', 'READ_BULK_OPERATION', 'BULK_UPDATE_LEAD', 'CANCEL_BULK_OPERATION', 'VIEW_BULK_OPERATION_TYPES',
             'VIEW_BULK_OPERATION_STATUS', 'PREVIEW_BULK_OPERATION', 'DOWNLOAD_BULK_OPERATION_REPORTS',
-            'READ_BRE_CONFIG', 'CREATE_BRE_CONFIG', 'EXECUTE_BRE'
+            'READ_BRE_CONFIG', 'CREATE_BRE_CONFIG', 'EXECUTE_BRE', 'READ_DISPLAY_CONFIG',
+            'CREATE_TRANSACTION', 'READ_TRANSACTION', 'PAY_TRANSACTION', 'DECLINE_TRANSACTION'
         ))</sql>
     </changeSet>
 
