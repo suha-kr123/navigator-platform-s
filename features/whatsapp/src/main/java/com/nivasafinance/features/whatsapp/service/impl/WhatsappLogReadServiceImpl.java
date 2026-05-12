@@ -1,14 +1,11 @@
 package com.nivasafinance.features.whatsapp.service.impl;
 
+import com.nivasafinance.features.whatsapp.dto.WhatsappLogFilters;
 import com.nivasafinance.features.whatsapp.dto.WhatsappLogResponse;
 import com.nivasafinance.features.whatsapp.entity.WhatsappLog;
-import com.nivasafinance.features.whatsapp.entity.WhatsappLogAdvisor;
-import com.nivasafinance.features.whatsapp.entity.WhatsappLogLead;
-import com.nivasafinance.features.whatsapp.enums.WhatsappCreatedSource;
 import com.nivasafinance.features.whatsapp.enums.WhatsappStatus;
-import com.nivasafinance.features.whatsapp.repository.WhatsappLogAdvisorRepository;
-import com.nivasafinance.features.whatsapp.repository.WhatsappLogLeadRepository;
 import com.nivasafinance.features.whatsapp.repository.WhatsappLogRepository;
+import com.nivasafinance.features.whatsapp.repository.WhatsappLogWrapper;
 import com.nivasafinance.features.whatsapp.service.WhatsappLogReadService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,15 +22,13 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @AllArgsConstructor
-public class
-WhatsappLogReadServiceImpl implements WhatsappLogReadService {
+public class WhatsappLogReadServiceImpl implements WhatsappLogReadService {
 
     private static final String SENDER_CUSTOMER = "Customer";
     private static final String SENDER_NIVASA = "Nivasa Finance";
 
     private final WhatsappLogRepository whatsappLogRepository;
-    private final WhatsappLogLeadRepository whatsappLogLeadRepository;
-    private final WhatsappLogAdvisorRepository whatsappLogAdvisorRepository;
+    private final WhatsappLogWrapper whatsappLogWrapper;
 
     @Override
     public List<WhatsappLogResponse> getWhatsappLogsByIds(List<Long> ids) {
@@ -58,33 +53,15 @@ WhatsappLogReadServiceImpl implements WhatsappLogReadService {
     }
 
     @Override
-    public Page<WhatsappLogLead> findLeadMappingsByLeadId(Long leadId, WhatsappCreatedSource createdSource, Pageable pageable) {
-        log.debug("Fetching whatsapp_log_lead mappings: leadId={}, createdSource={}", leadId, createdSource);
-        try {
-            if (createdSource == null) {
-                return whatsappLogLeadRepository.findByLeadIdOrderByWhatsappLogIdDesc(leadId, pageable);
-            }
-            return whatsappLogLeadRepository.findByLeadIdAndCreatedSource(leadId, createdSource, pageable);
-        } catch (DataAccessException e) {
-            log.error("DB error fetching mappings for leadId={}, createdSource={}: {}",
-                    leadId, createdSource, e.getMessage(), e);
-            throw new RuntimeException("Failed to fetch whatsapp log lead mappings", e);
-        }
+    public Page<Long> findLeadWhatsappLogIds(Long leadId, WhatsappLogFilters filters, Pageable pageable) {
+        log.debug("Fetching whatsapp log ids for leadId={}, filters={}", leadId, filters);
+        return whatsappLogWrapper.findLeadWhatsappLogIds(leadId, filters, pageable);
     }
 
     @Override
-    public Page<WhatsappLogAdvisor> findAdvisorMappingsByAdvisorId(Long advisorId, WhatsappCreatedSource createdSource, Pageable pageable) {
-        log.debug("Fetching whatsapp_log_advisor mappings: advisorId={}, createdSource={}", advisorId, createdSource);
-        try {
-            if (createdSource == null) {
-                return whatsappLogAdvisorRepository.findByAdvisorIdOrderByWhatsappLogIdDesc(advisorId, pageable);
-            }
-            return whatsappLogAdvisorRepository.findByAdvisorIdAndCreatedSource(advisorId, createdSource, pageable);
-        } catch (DataAccessException e) {
-            log.error("DB error fetching mappings for advisorId={}, createdSource={}: {}",
-                    advisorId, createdSource, e.getMessage(), e);
-            throw new RuntimeException("Failed to fetch whatsapp log advisor mappings", e);
-        }
+    public Page<Long> findAdvisorWhatsappLogIds(Long advisorId, WhatsappLogFilters filters, Pageable pageable) {
+        log.debug("Fetching whatsapp log ids for advisorId={}, filters={}", advisorId, filters);
+        return whatsappLogWrapper.findAdvisorWhatsappLogIds(advisorId, filters, pageable);
     }
 
     private WhatsappLogResponse toResponse(WhatsappLog log) {

@@ -3,14 +3,12 @@ package com.nivasafinance.features.advisor.service.impl;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationInfo;
 import com.nivasafinance.common.base.model.PaginationRequest;
-import com.nivasafinance.features.advisor.dto.AdvisorDashboardFilters;
 import com.nivasafinance.features.advisor.dto.AdvisorWhatsappLogResponse;
 import com.nivasafinance.features.advisor.entity.Advisor;
 import com.nivasafinance.features.advisor.repository.AdvisorRepositoryWrapper;
 import com.nivasafinance.features.advisor.service.AdvisorWhatsappLogReadService;
+import com.nivasafinance.features.whatsapp.dto.WhatsappLogFilters;
 import com.nivasafinance.features.whatsapp.dto.WhatsappLogResponse;
-import com.nivasafinance.features.whatsapp.entity.WhatsappLogAdvisor;
-import com.nivasafinance.features.whatsapp.enums.WhatsappCreatedSource;
 import com.nivasafinance.features.whatsapp.service.WhatsappLogReadService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,17 +32,16 @@ public class AdvisorWhatsappLogReadServiceImpl implements AdvisorWhatsappLogRead
     @Override
     public PaginatedResponse<AdvisorWhatsappLogResponse> getWhatsappMessages(
             UUID advisorIdentifier,
-            AdvisorDashboardFilters filters,
+            WhatsappLogFilters filters,
             PaginationRequest paginationRequest
     ) {
-        String filter = extractFilter(filters);
-        log.info("Fetching whatsapp messages for advisorIdentifier={}, filter={}, limit={}, offset={}",
-                advisorIdentifier, filter, paginationRequest.getLimit(), paginationRequest.getOffset());
+        WhatsappLogFilters effectiveFilters = filters != null ? filters : new WhatsappLogFilters();
+        log.info("Fetching whatsapp messages for advisorIdentifier={}, filters={}, limit={}, offset={}",
+                advisorIdentifier, effectiveFilters,
+                paginationRequest.getLimit(), paginationRequest.getOffset());
 
         Advisor advisor = advisorRepositoryWrapper.findByIdentifierWithException(advisorIdentifier);
         Long advisorId = advisor.getId();
-
-        WhatsappCreatedSource sourceFilter = parseFilter(filter);
 
         int limit = paginationRequest.getLimit();
         int offset = paginationRequest.getOffset();
@@ -54,32 +51,29 @@ public class AdvisorWhatsappLogReadServiceImpl implements AdvisorWhatsappLogRead
         int page = offset / limit;
 
         try {
-            Page<WhatsappLogAdvisor> mappingPage = whatsappLogReadService
-                    .findAdvisorMappingsByAdvisorId(advisorId, sourceFilter, PageRequest.of(page, limit));
+            Page<Long> idPage = whatsappLogReadService
+                    .findAdvisorWhatsappLogIds(advisorId, effectiveFilters, PageRequest.of(page, limit));
 
             List<AdvisorWhatsappLogResponse> items = List.of();
-            if (!mappingPage.isEmpty()) {
-                List<Long> logIds = mappingPage.getContent().stream()
-                        .map(WhatsappLogAdvisor::getWhatsappLogId)
-                        .collect(Collectors.toList());
-                items = whatsappLogReadService.getWhatsappLogsByIds(logIds).stream()
+            if (!idPage.isEmpty()) {
+                items = whatsappLogReadService.getWhatsappLogsByIds(idPage.getContent()).stream()
                         .map(this::toAdvisorResponse)
                         .collect(Collectors.toList());
             }
 
             log.info("Returning {} whatsapp messages for advisorIdentifier={} (totalElements={})",
-                    items.size(), advisorIdentifier, mappingPage.getTotalElements());
+                    items.size(), advisorIdentifier, idPage.getTotalElements());
 
             return new PaginatedResponse<>(
                     items,
                     PaginationInfo.builder()
                             .limit(limit)
                             .offset(offset)
-                            .totalElements((int) mappingPage.getTotalElements())
-                            .totalPages(mappingPage.getTotalPages())
+                            .totalElements((int) idPage.getTotalElements())
+                            .totalPages(idPage.getTotalPages())
                             .currentPage(page)
-                            .hasNext(mappingPage.hasNext())
-                            .hasPrevious(mappingPage.hasPrevious())
+                            .hasNext(idPage.hasNext())
+                            .hasPrevious(idPage.hasPrevious())
                             .build()
             );
         } catch (DataAccessException e) {
@@ -101,27 +95,5 @@ public class AdvisorWhatsappLogReadServiceImpl implements AdvisorWhatsappLogRead
                 .createdSourceType(src.getCreatedSourceType())
                 .messageTime(src.getMessageTime())
                 .build();
-    }
-
-    private String extractFilter(AdvisorDashboardFilters filters) {
-        if (filters == null || filters.getStatus() == null || filters.getStatus().isEmpty()) {
-            return null;
-        }
-        return filters.getStatus().get(0);
-    }
-
-    private WhatsappCreatedSource parseFilter(String filter) {
-        if (filter == null || filter.isBlank() || "ALL".equalsIgnoreCase(filter)) {
-            return null;
-        }
-        return switch (filter.toUpperCase()) {
-            case "NOTIFICATION" -> WhatsappCreatedSource.API;
-            case "SEQUENCE" -> WhatsappCreatedSource.SEQUENCE;
-            case "BOT_TRIGGERED" -> WhatsappCreatedSource.BOT;
-            default -> {
-                log.warn("Unknown whatsapp filter '{}', falling back to ALL", filter);
-                yield null;
-            }
-        };
     }
 }

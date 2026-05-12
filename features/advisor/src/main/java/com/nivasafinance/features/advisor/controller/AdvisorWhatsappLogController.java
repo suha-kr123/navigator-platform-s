@@ -4,9 +4,9 @@ import com.nivasafinance.common.annotations.RequirePermission;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.common.constants.ApiConstants;
-import com.nivasafinance.features.advisor.dto.AdvisorDashboardFilters;
 import com.nivasafinance.features.advisor.dto.AdvisorWhatsappLogResponse;
 import com.nivasafinance.features.advisor.service.AdvisorWhatsappLogReadService;
+import com.nivasafinance.features.whatsapp.dto.WhatsappLogFilters;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -29,7 +29,7 @@ public class AdvisorWhatsappLogController {
     @RequirePermission(permissionName = "READ_ADVISOR")
     public ResponseEntity<PaginatedResponse<AdvisorWhatsappLogResponse>> getWhatsappMessages(
             @PathVariable UUID advisorIdentifier,
-            @ModelAttribute AdvisorDashboardFilters filters,
+            @ModelAttribute WhatsappLogFilters filters,
             @Valid PaginationRequest paginationRequest
     ) {
         PaginatedResponse<AdvisorWhatsappLogResponse> response =

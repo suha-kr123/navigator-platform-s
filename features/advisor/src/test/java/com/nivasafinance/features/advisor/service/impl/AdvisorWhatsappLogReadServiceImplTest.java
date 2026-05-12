@@ -2,18 +2,15 @@ package com.nivasafinance.features.advisor.service.impl;
 
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
-import com.nivasafinance.features.advisor.dto.AdvisorDashboardFilters;
 import com.nivasafinance.features.advisor.dto.AdvisorWhatsappLogResponse;
 import com.nivasafinance.features.advisor.entity.Advisor;
 import com.nivasafinance.features.advisor.repository.AdvisorRepositoryWrapper;
+import com.nivasafinance.features.whatsapp.dto.WhatsappLogFilters;
 import com.nivasafinance.features.whatsapp.dto.WhatsappLogResponse;
-import com.nivasafinance.features.whatsapp.entity.WhatsappLogAdvisor;
-import com.nivasafinance.features.whatsapp.enums.WhatsappCreatedSource;
 import com.nivasafinance.features.whatsapp.service.WhatsappLogReadService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -28,12 +25,10 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -54,7 +49,6 @@ class AdvisorWhatsappLogReadServiceImplTest {
     private UUID advisorIdentifier;
     private Advisor advisor;
     private PaginationRequest paginationRequest;
-    private AdvisorDashboardFilters allFilters;
 
     @BeforeEach
     void setUp() {
@@ -63,13 +57,12 @@ class AdvisorWhatsappLogReadServiceImplTest {
         advisor.setId(7L);
         advisor.setIdentifier(advisorIdentifier);
         paginationRequest = new PaginationRequest(0, 10, "createdAt", "DESC");
-        allFilters = new AdvisorDashboardFilters();
     }
 
     @Test
     void getWhatsappMessages_success_returnsPaginatedResponseWithMappedItems() {
-        WhatsappLogAdvisor mapping = new WhatsappLogAdvisor(55L, 7L);
-        Page<WhatsappLogAdvisor> mappingPage = new PageImpl<>(List.of(mapping), PageRequest.of(0, 10), 1);
+        WhatsappLogFilters filters = new WhatsappLogFilters();
+        Page<Long> idPage = new PageImpl<>(List.of(55L), PageRequest.of(0, 10), 1);
 
         UUID logIdentifier = UUID.randomUUID();
         WhatsappLogResponse logResponse = WhatsappLogResponse.builder()
@@ -84,13 +77,13 @@ class AdvisorWhatsappLogReadServiceImplTest {
                 .build();
 
         when(advisorRepositoryWrapper.findByIdentifierWithException(advisorIdentifier)).thenReturn(advisor);
-        when(whatsappLogReadService.findAdvisorMappingsByAdvisorId(eq(7L), isNull(), any(PageRequest.class)))
-                .thenReturn(mappingPage);
+        when(whatsappLogReadService.findAdvisorWhatsappLogIds(eq(7L), eq(filters), any(PageRequest.class)))
+                .thenReturn(idPage);
         when(whatsappLogReadService.getWhatsappLogsByIds(List.of(55L)))
                 .thenReturn(List.of(logResponse));
 
         PaginatedResponse<AdvisorWhatsappLogResponse> result =
-                advisorWhatsappLogReadService.getWhatsappMessages(advisorIdentifier, allFilters, paginationRequest);
+                advisorWhatsappLogReadService.getWhatsappMessages(advisorIdentifier, filters, paginationRequest);
 
         assertNotNull(result);
         assertEquals(1, result.getContent().size());
@@ -104,14 +97,15 @@ class AdvisorWhatsappLogReadServiceImplTest {
 
     @Test
     void getWhatsappMessages_emptyPage_returnsEmptyContentAndDoesNotFetchLogs() {
-        Page<WhatsappLogAdvisor> emptyPage = new PageImpl<>(Collections.emptyList(), PageRequest.of(0, 10), 0);
+        WhatsappLogFilters filters = new WhatsappLogFilters();
+        Page<Long> emptyPage = new PageImpl<>(Collections.emptyList(), PageRequest.of(0, 10), 0);
 
         when(advisorRepositoryWrapper.findByIdentifierWithException(advisorIdentifier)).thenReturn(advisor);
-        when(whatsappLogReadService.findAdvisorMappingsByAdvisorId(eq(7L), isNull(), any(PageRequest.class)))
+        when(whatsappLogReadService.findAdvisorWhatsappLogIds(eq(7L), eq(filters), any(PageRequest.class)))
                 .thenReturn(emptyPage);
 
         PaginatedResponse<AdvisorWhatsappLogResponse> result =
-                advisorWhatsappLogReadService.getWhatsappMessages(advisorIdentifier, allFilters, paginationRequest);
+                advisorWhatsappLogReadService.getWhatsappMessages(advisorIdentifier, filters, paginationRequest);
 
         assertTrue(result.getContent().isEmpty());
         verify(whatsappLogReadService, never()).getWhatsappLogsByIds(any());
@@ -119,69 +113,39 @@ class AdvisorWhatsappLogReadServiceImplTest {
 
     @Test
     void getWhatsappMessages_advisorNotFound_propagatesException() {
+        WhatsappLogFilters filters = new WhatsappLogFilters();
         when(advisorRepositoryWrapper.findByIdentifierWithException(advisorIdentifier))
                 .thenThrow(new RuntimeException("Advisor not found"));
 
         assertThrows(RuntimeException.class,
-                () -> advisorWhatsappLogReadService.getWhatsappMessages(advisorIdentifier, allFilters, paginationRequest));
+                () -> advisorWhatsappLogReadService.getWhatsappMessages(advisorIdentifier, filters, paginationRequest));
         verifyNoInteractions(whatsappLogReadService);
     }
 
     @Test
-    void getWhatsappMessages_filterNotification_passesApiSource() {
-        AdvisorDashboardFilters filters = AdvisorDashboardFilters.builder()
-                .status(List.of("NOTIFICATION"))
+    void getWhatsappMessages_messageTypeFilter_passesFiltersThrough() {
+        WhatsappLogFilters filters = WhatsappLogFilters.builder()
+                .messageType(List.of("TEMPLATE"))
+                .sentBy(List.of("API"))
                 .build();
         when(advisorRepositoryWrapper.findByIdentifierWithException(advisorIdentifier)).thenReturn(advisor);
-        when(whatsappLogReadService.findAdvisorMappingsByAdvisorId(eq(7L), eq(WhatsappCreatedSource.API), any(PageRequest.class)))
+        when(whatsappLogReadService.findAdvisorWhatsappLogIds(eq(7L), eq(filters), any(PageRequest.class)))
                 .thenReturn(new PageImpl<>(Collections.emptyList(), PageRequest.of(0, 10), 0));
 
         advisorWhatsappLogReadService.getWhatsappMessages(advisorIdentifier, filters, paginationRequest);
 
-        verify(whatsappLogReadService).findAdvisorMappingsByAdvisorId(eq(7L), eq(WhatsappCreatedSource.API), any(PageRequest.class));
+        verify(whatsappLogReadService).findAdvisorWhatsappLogIds(eq(7L), eq(filters), any(PageRequest.class));
     }
 
     @Test
-    void getWhatsappMessages_filterSequence_passesSequenceSource() {
-        AdvisorDashboardFilters filters = AdvisorDashboardFilters.builder()
-                .status(List.of("SEQUENCE"))
-                .build();
+    void getWhatsappMessages_nullFilters_defaultsToEmptyFilters() {
+        WhatsappLogFilters expected = new WhatsappLogFilters();
         when(advisorRepositoryWrapper.findByIdentifierWithException(advisorIdentifier)).thenReturn(advisor);
-        when(whatsappLogReadService.findAdvisorMappingsByAdvisorId(eq(7L), eq(WhatsappCreatedSource.SEQUENCE), any(PageRequest.class)))
+        when(whatsappLogReadService.findAdvisorWhatsappLogIds(eq(7L), eq(expected), any(PageRequest.class)))
                 .thenReturn(new PageImpl<>(Collections.emptyList(), PageRequest.of(0, 10), 0));
 
-        advisorWhatsappLogReadService.getWhatsappMessages(advisorIdentifier, filters, paginationRequest);
+        advisorWhatsappLogReadService.getWhatsappMessages(advisorIdentifier, null, paginationRequest);
 
-        verify(whatsappLogReadService).findAdvisorMappingsByAdvisorId(eq(7L), eq(WhatsappCreatedSource.SEQUENCE), any(PageRequest.class));
-    }
-
-    @Test
-    void getWhatsappMessages_filterBotTriggered_passesBotSource() {
-        AdvisorDashboardFilters filters = AdvisorDashboardFilters.builder()
-                .status(List.of("BOT_TRIGGERED"))
-                .build();
-        when(advisorRepositoryWrapper.findByIdentifierWithException(advisorIdentifier)).thenReturn(advisor);
-        when(whatsappLogReadService.findAdvisorMappingsByAdvisorId(eq(7L), eq(WhatsappCreatedSource.BOT), any(PageRequest.class)))
-                .thenReturn(new PageImpl<>(Collections.emptyList(), PageRequest.of(0, 10), 0));
-
-        advisorWhatsappLogReadService.getWhatsappMessages(advisorIdentifier, filters, paginationRequest);
-
-        verify(whatsappLogReadService).findAdvisorMappingsByAdvisorId(eq(7L), eq(WhatsappCreatedSource.BOT), any(PageRequest.class));
-    }
-
-    @Test
-    void getWhatsappMessages_unknownFilter_treatsAsAll() {
-        AdvisorDashboardFilters filters = AdvisorDashboardFilters.builder()
-                .status(List.of("GIBBERISH"))
-                .build();
-        when(advisorRepositoryWrapper.findByIdentifierWithException(advisorIdentifier)).thenReturn(advisor);
-        when(whatsappLogReadService.findAdvisorMappingsByAdvisorId(eq(7L), isNull(), any(PageRequest.class)))
-                .thenReturn(new PageImpl<>(Collections.emptyList(), PageRequest.of(0, 10), 0));
-
-        advisorWhatsappLogReadService.getWhatsappMessages(advisorIdentifier, filters, paginationRequest);
-
-        ArgumentCaptor<WhatsappCreatedSource> captor = ArgumentCaptor.forClass(WhatsappCreatedSource.class);
-        verify(whatsappLogReadService).findAdvisorMappingsByAdvisorId(eq(7L), captor.capture(), any(PageRequest.class));
-        assertNull(captor.getValue());
+        verify(whatsappLogReadService).findAdvisorWhatsappLogIds(eq(7L), eq(expected), any(PageRequest.class));
     }
 }

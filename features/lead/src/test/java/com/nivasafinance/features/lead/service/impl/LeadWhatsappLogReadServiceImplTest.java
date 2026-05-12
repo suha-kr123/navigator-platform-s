@@ -2,18 +2,15 @@ package com.nivasafinance.features.lead.service.impl;
 
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
-import com.nivasafinance.features.lead.dto.LeadDashboardFilters;
 import com.nivasafinance.features.lead.dto.LeadWhatsappLogResponse;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
+import com.nivasafinance.features.whatsapp.dto.WhatsappLogFilters;
 import com.nivasafinance.features.whatsapp.dto.WhatsappLogResponse;
-import com.nivasafinance.features.whatsapp.entity.WhatsappLogLead;
-import com.nivasafinance.features.whatsapp.enums.WhatsappCreatedSource;
 import com.nivasafinance.features.whatsapp.service.WhatsappLogReadService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -28,12 +25,10 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -54,7 +49,6 @@ class LeadWhatsappLogReadServiceImplTest {
     private UUID leadIdentifier;
     private Lead lead;
     private PaginationRequest paginationRequest;
-    private LeadDashboardFilters allFilters;
 
     @BeforeEach
     void setUp() {
@@ -63,13 +57,12 @@ class LeadWhatsappLogReadServiceImplTest {
         lead.setId(11L);
         lead.setLeadIdentifier(leadIdentifier);
         paginationRequest = new PaginationRequest(0, 10, "createdAt", "DESC");
-        allFilters = new LeadDashboardFilters();
     }
 
     @Test
     void getWhatsappMessages_success_returnsPaginatedResponseWithMappedItems() {
-        WhatsappLogLead mapping = new WhatsappLogLead(42L, 11L, 99L);
-        Page<WhatsappLogLead> mappingPage = new PageImpl<>(List.of(mapping), PageRequest.of(0, 10), 1);
+        WhatsappLogFilters filters = new WhatsappLogFilters();
+        Page<Long> idPage = new PageImpl<>(List.of(42L), PageRequest.of(0, 10), 1);
 
         UUID logIdentifier = UUID.randomUUID();
         WhatsappLogResponse logResponse = WhatsappLogResponse.builder()
@@ -83,13 +76,13 @@ class LeadWhatsappLogReadServiceImplTest {
                 .build();
 
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
-        when(whatsappLogReadService.findLeadMappingsByLeadId(eq(11L), isNull(), any(PageRequest.class)))
-                .thenReturn(mappingPage);
+        when(whatsappLogReadService.findLeadWhatsappLogIds(eq(11L), eq(filters), any(PageRequest.class)))
+                .thenReturn(idPage);
         when(whatsappLogReadService.getWhatsappLogsByIds(List.of(42L)))
                 .thenReturn(List.of(logResponse));
 
         PaginatedResponse<LeadWhatsappLogResponse> result =
-                leadWhatsappLogReadService.getWhatsappMessages(leadIdentifier, allFilters, paginationRequest);
+                leadWhatsappLogReadService.getWhatsappMessages(leadIdentifier, filters, paginationRequest);
 
         assertNotNull(result);
         assertEquals(1, result.getContent().size());
@@ -103,14 +96,15 @@ class LeadWhatsappLogReadServiceImplTest {
 
     @Test
     void getWhatsappMessages_emptyPage_returnsEmptyContentAndDoesNotFetchLogs() {
-        Page<WhatsappLogLead> emptyPage = new PageImpl<>(Collections.emptyList(), PageRequest.of(0, 10), 0);
+        WhatsappLogFilters filters = new WhatsappLogFilters();
+        Page<Long> emptyPage = new PageImpl<>(Collections.emptyList(), PageRequest.of(0, 10), 0);
 
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
-        when(whatsappLogReadService.findLeadMappingsByLeadId(eq(11L), isNull(), any(PageRequest.class)))
+        when(whatsappLogReadService.findLeadWhatsappLogIds(eq(11L), eq(filters), any(PageRequest.class)))
                 .thenReturn(emptyPage);
 
         PaginatedResponse<LeadWhatsappLogResponse> result =
-                leadWhatsappLogReadService.getWhatsappMessages(leadIdentifier, allFilters, paginationRequest);
+                leadWhatsappLogReadService.getWhatsappMessages(leadIdentifier, filters, paginationRequest);
 
         assertTrue(result.getContent().isEmpty());
         verify(whatsappLogReadService, never()).getWhatsappLogsByIds(any());
@@ -118,71 +112,39 @@ class LeadWhatsappLogReadServiceImplTest {
 
     @Test
     void getWhatsappMessages_leadNotFound_propagatesException() {
+        WhatsappLogFilters filters = new WhatsappLogFilters();
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier))
                 .thenThrow(new RuntimeException("Lead not found"));
 
         assertThrows(RuntimeException.class,
-                () -> leadWhatsappLogReadService.getWhatsappMessages(leadIdentifier, allFilters, paginationRequest));
+                () -> leadWhatsappLogReadService.getWhatsappMessages(leadIdentifier, filters, paginationRequest));
         verifyNoInteractions(whatsappLogReadService);
     }
 
     @Test
-    void getWhatsappMessages_filterNotification_passesApiSource() {
-        LeadDashboardFilters filters = LeadDashboardFilters.builder()
-                .status(List.of("NOTIFICATION"))
-                .build();
-        Page<WhatsappLogLead> emptyPage = new PageImpl<>(Collections.emptyList(), PageRequest.of(0, 10), 0);
-
-        when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
-        when(whatsappLogReadService.findLeadMappingsByLeadId(eq(11L), eq(WhatsappCreatedSource.API), any(PageRequest.class)))
-                .thenReturn(emptyPage);
-
-        leadWhatsappLogReadService.getWhatsappMessages(leadIdentifier, filters, paginationRequest);
-
-        verify(whatsappLogReadService).findLeadMappingsByLeadId(eq(11L), eq(WhatsappCreatedSource.API), any(PageRequest.class));
-    }
-
-    @Test
-    void getWhatsappMessages_filterSequence_passesSequenceSource() {
-        LeadDashboardFilters filters = LeadDashboardFilters.builder()
-                .status(List.of("SEQUENCE"))
+    void getWhatsappMessages_messageTypeFilter_passesFiltersThrough() {
+        WhatsappLogFilters filters = WhatsappLogFilters.builder()
+                .messageType(List.of("TEMPLATE"))
+                .sentBy(List.of("API"))
                 .build();
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
-        when(whatsappLogReadService.findLeadMappingsByLeadId(eq(11L), eq(WhatsappCreatedSource.SEQUENCE), any(PageRequest.class)))
+        when(whatsappLogReadService.findLeadWhatsappLogIds(eq(11L), eq(filters), any(PageRequest.class)))
                 .thenReturn(new PageImpl<>(Collections.emptyList(), PageRequest.of(0, 10), 0));
 
         leadWhatsappLogReadService.getWhatsappMessages(leadIdentifier, filters, paginationRequest);
 
-        verify(whatsappLogReadService).findLeadMappingsByLeadId(eq(11L), eq(WhatsappCreatedSource.SEQUENCE), any(PageRequest.class));
+        verify(whatsappLogReadService).findLeadWhatsappLogIds(eq(11L), eq(filters), any(PageRequest.class));
     }
 
     @Test
-    void getWhatsappMessages_filterBotTriggered_passesBotSource() {
-        LeadDashboardFilters filters = LeadDashboardFilters.builder()
-                .status(List.of("BOT_TRIGGERED"))
-                .build();
+    void getWhatsappMessages_nullFilters_defaultsToEmptyFilters() {
+        WhatsappLogFilters expected = new WhatsappLogFilters();
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
-        when(whatsappLogReadService.findLeadMappingsByLeadId(eq(11L), eq(WhatsappCreatedSource.BOT), any(PageRequest.class)))
+        when(whatsappLogReadService.findLeadWhatsappLogIds(eq(11L), eq(expected), any(PageRequest.class)))
                 .thenReturn(new PageImpl<>(Collections.emptyList(), PageRequest.of(0, 10), 0));
 
-        leadWhatsappLogReadService.getWhatsappMessages(leadIdentifier, filters, paginationRequest);
+        leadWhatsappLogReadService.getWhatsappMessages(leadIdentifier, null, paginationRequest);
 
-        verify(whatsappLogReadService).findLeadMappingsByLeadId(eq(11L), eq(WhatsappCreatedSource.BOT), any(PageRequest.class));
-    }
-
-    @Test
-    void getWhatsappMessages_unknownFilter_treatsAsAll() {
-        LeadDashboardFilters filters = LeadDashboardFilters.builder()
-                .status(List.of("GIBBERISH"))
-                .build();
-        when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
-        when(whatsappLogReadService.findLeadMappingsByLeadId(eq(11L), isNull(), any(PageRequest.class)))
-                .thenReturn(new PageImpl<>(Collections.emptyList(), PageRequest.of(0, 10), 0));
-
-        leadWhatsappLogReadService.getWhatsappMessages(leadIdentifier, filters, paginationRequest);
-
-        ArgumentCaptor<WhatsappCreatedSource> captor = ArgumentCaptor.forClass(WhatsappCreatedSource.class);
-        verify(whatsappLogReadService).findLeadMappingsByLeadId(eq(11L), captor.capture(), any(PageRequest.class));
-        assertNull(captor.getValue());
+        verify(whatsappLogReadService).findLeadWhatsappLogIds(eq(11L), eq(expected), any(PageRequest.class));
     }
 }

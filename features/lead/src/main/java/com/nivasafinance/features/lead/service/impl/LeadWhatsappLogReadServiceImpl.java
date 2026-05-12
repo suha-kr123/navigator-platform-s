@@ -3,14 +3,12 @@ package com.nivasafinance.features.lead.service.impl;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationInfo;
 import com.nivasafinance.common.base.model.PaginationRequest;
-import com.nivasafinance.features.lead.dto.LeadDashboardFilters;
 import com.nivasafinance.features.lead.dto.LeadWhatsappLogResponse;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadWhatsappLogReadService;
+import com.nivasafinance.features.whatsapp.dto.WhatsappLogFilters;
 import com.nivasafinance.features.whatsapp.dto.WhatsappLogResponse;
-import com.nivasafinance.features.whatsapp.entity.WhatsappLogLead;
-import com.nivasafinance.features.whatsapp.enums.WhatsappCreatedSource;
 import com.nivasafinance.features.whatsapp.service.WhatsappLogReadService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,17 +32,16 @@ public class LeadWhatsappLogReadServiceImpl implements LeadWhatsappLogReadServic
     @Override
     public PaginatedResponse<LeadWhatsappLogResponse> getWhatsappMessages(
             UUID leadIdentifier,
-            LeadDashboardFilters filters,
+            WhatsappLogFilters filters,
             PaginationRequest paginationRequest
     ) {
-        String filter = extractFilter(filters);
-        log.info("Fetching whatsapp messages for leadIdentifier={}, filter={}, limit={}, offset={}",
-                leadIdentifier, filter, paginationRequest.getLimit(), paginationRequest.getOffset());
+        WhatsappLogFilters effectiveFilters = filters != null ? filters : new WhatsappLogFilters();
+        log.info("Fetching whatsapp messages for leadIdentifier={}, filters={}, limit={}, offset={}",
+                leadIdentifier, effectiveFilters,
+                paginationRequest.getLimit(), paginationRequest.getOffset());
 
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
         Long leadId = lead.getId();
-
-        WhatsappCreatedSource sourceFilter = parseFilter(filter);
 
         int limit = paginationRequest.getLimit();
         int offset = paginationRequest.getOffset();
@@ -54,32 +51,29 @@ public class LeadWhatsappLogReadServiceImpl implements LeadWhatsappLogReadServic
         int page = offset / limit;
 
         try {
-            Page<WhatsappLogLead> mappingPage = whatsappLogReadService
-                    .findLeadMappingsByLeadId(leadId, sourceFilter, PageRequest.of(page, limit));
+            Page<Long> idPage = whatsappLogReadService
+                    .findLeadWhatsappLogIds(leadId, effectiveFilters, PageRequest.of(page, limit));
 
             List<LeadWhatsappLogResponse> items = List.of();
-            if (!mappingPage.isEmpty()) {
-                List<Long> logIds = mappingPage.getContent().stream()
-                        .map(WhatsappLogLead::getWhatsappLogId)
-                        .collect(Collectors.toList());
-                items = whatsappLogReadService.getWhatsappLogsByIds(logIds).stream()
+            if (!idPage.isEmpty()) {
+                items = whatsappLogReadService.getWhatsappLogsByIds(idPage.getContent()).stream()
                         .map(this::toLeadResponse)
                         .collect(Collectors.toList());
             }
 
             log.info("Returning {} whatsapp messages for leadIdentifier={} (totalElements={})",
-                    items.size(), leadIdentifier, mappingPage.getTotalElements());
+                    items.size(), leadIdentifier, idPage.getTotalElements());
 
             return new PaginatedResponse<>(
                     items,
                     PaginationInfo.builder()
                             .limit(limit)
                             .offset(offset)
-                            .totalElements((int) mappingPage.getTotalElements())
-                            .totalPages(mappingPage.getTotalPages())
+                            .totalElements((int) idPage.getTotalElements())
+                            .totalPages(idPage.getTotalPages())
                             .currentPage(page)
-                            .hasNext(mappingPage.hasNext())
-                            .hasPrevious(mappingPage.hasPrevious())
+                            .hasNext(idPage.hasNext())
+                            .hasPrevious(idPage.hasPrevious())
                             .build()
             );
         } catch (DataAccessException e) {
@@ -101,27 +95,5 @@ public class LeadWhatsappLogReadServiceImpl implements LeadWhatsappLogReadServic
                 .createdSourceType(src.getCreatedSourceType())
                 .messageTime(src.getMessageTime())
                 .build();
-    }
-
-    private String extractFilter(LeadDashboardFilters filters) {
-        if (filters == null || filters.getStatus() == null || filters.getStatus().isEmpty()) {
-            return null;
-        }
-        return filters.getStatus().get(0);
-    }
-
-    private WhatsappCreatedSource parseFilter(String filter) {
-        if (filter == null || filter.isBlank() || "ALL".equalsIgnoreCase(filter)) {
-            return null;
-        }
-        return switch (filter.toUpperCase()) {
-            case "NOTIFICATION" -> WhatsappCreatedSource.API;
-            case "SEQUENCE" -> WhatsappCreatedSource.SEQUENCE;
-            case "BOT_TRIGGERED" -> WhatsappCreatedSource.BOT;
-            default -> {
-                log.warn("Unknown whatsapp filter '{}', falling back to ALL", filter);
-                yield null;
-            }
-        };
     }
 }
