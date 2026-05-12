@@ -347,9 +347,9 @@ class LeadExternalServiceImplTest {
     }
 
     @Test
-    void evaluateEligibility_whenDistrictCodeIsBlank_rejectsLead() {
+    void evaluateEligibility_whenOperatingAreaCodeIsBlank_rejectsLead() {
         // Arrange
-        AddressData address = AddressData.builder().districtCode("  ").build();
+        AddressData address = AddressData.builder().operatingAreaCode("  ").build();
         PropertyDetailsResponse propertyDetails = PropertyDetailsResponse.builder().address(address).build();
         when(leadReadService.getPropertyDetails(LEAD_IDENTIFIER)).thenReturn(propertyDetails);
         LeadResponse eligibilityLead = LeadResponse.builder()
@@ -366,16 +366,16 @@ class LeadExternalServiceImplTest {
 
         // Assert
         verify(leadWriteService).rejectLead(eq(LEAD_IDENTIFIER), any());
-        verify(locationMasterService, never()).isDistrictServiceable(any());
+        verify(locationMasterService, never()).isOperatingAreaServiceable(any());
     }
 
     @Test
-    void evaluateEligibility_whenDistrictNotServiceable_rejectsLead() {
+    void evaluateEligibility_whenOperatingAreaNotServiceable_rejectsLead() {
         // Arrange
-        AddressData address = AddressData.builder().districtCode("BLR").build();
+        AddressData address = AddressData.builder().operatingAreaCode("OA01").build();
         PropertyDetailsResponse propertyDetails = PropertyDetailsResponse.builder().address(address).build();
         when(leadReadService.getPropertyDetails(LEAD_IDENTIFIER)).thenReturn(propertyDetails);
-        when(locationMasterService.isDistrictServiceable("BLR")).thenReturn(false);
+        when(locationMasterService.isOperatingAreaServiceable("OA01")).thenReturn(false);
         LeadResponse eligibilityLead = LeadResponse.builder()
                 .leadIdentifier(LEAD_IDENTIFIER)
                 .status(LeadStatus.ACTIVE)
@@ -396,7 +396,7 @@ class LeadExternalServiceImplTest {
     @Test
     void evaluateEligibility_whenPersonalLoanAmountIsBelowThreshold_rejectsLeadForPersonalLoan() {
         // Arrange
-        AddressData address = AddressData.builder().districtCode("BLR").build();
+        AddressData address = AddressData.builder().operatingAreaCode("OA01").build();
         PropertyDetailsResponse propertyDetails = PropertyDetailsResponse.builder().address(address).build();
         when(leadReadService.getPropertyDetails(LEAD_IDENTIFIER)).thenReturn(propertyDetails);
         LeadResponse eligibilityLead = LeadResponse.builder()
@@ -420,17 +420,17 @@ class LeadExternalServiceImplTest {
         // Assert
         verify(leadWriteService).rejectLead(eq(LEAD_IDENTIFIER),
                 argThat(r -> "PERSONAL_LOAN".equals(r.getReasonCode())));
-        verify(locationMasterService, never()).isDistrictServiceable(any());
+        verify(locationMasterService, never()).isOperatingAreaServiceable(any());
         assertEquals(LeadStatus.REJECTED, result.getLeadStatus());
     }
 
     @Test
     void evaluateEligibility_whenPersonalLoanAmountIsAtThreshold_doesNotRejectForPersonalLoan() {
         // Arrange
-        AddressData address = AddressData.builder().districtCode("BLR").build();
+        AddressData address = AddressData.builder().operatingAreaCode("OA01").build();
         PropertyDetailsResponse propertyDetails = PropertyDetailsResponse.builder().address(address).build();
         when(leadReadService.getPropertyDetails(LEAD_IDENTIFIER)).thenReturn(propertyDetails);
-        when(locationMasterService.isDistrictServiceable("BLR")).thenReturn(true);
+        when(locationMasterService.isOperatingAreaServiceable("OA01")).thenReturn(true);
         LeadResponse lead = LeadResponse.builder()
                 .leadIdentifier(LEAD_IDENTIFIER)
                 .productCode("PL")
@@ -444,18 +444,18 @@ class LeadExternalServiceImplTest {
 
         // Assert
         verify(leadWriteService, never()).rejectLead(any(), any());
-        verify(locationMasterService).isDistrictServiceable("BLR");
+        verify(locationMasterService).isOperatingAreaServiceable("OA01");
         assertEquals(LEAD_IDENTIFIER, result.getLeadIdentifier());
         assertEquals(LeadStatus.ACTIVE, result.getLeadStatus());
     }
 
     @Test
-    void evaluateEligibility_whenDistrictIsServiceable_doesNotRejectAndReturnsStatus() {
+    void evaluateEligibility_whenOperatingAreaIsServiceable_doesNotRejectAndReturnsStatus() {
         // Arrange
-        AddressData address = AddressData.builder().districtCode("BLR").build();
+        AddressData address = AddressData.builder().operatingAreaCode("OA01").build();
         PropertyDetailsResponse propertyDetails = PropertyDetailsResponse.builder().address(address).build();
         when(leadReadService.getPropertyDetails(LEAD_IDENTIFIER)).thenReturn(propertyDetails);
-        when(locationMasterService.isDistrictServiceable("BLR")).thenReturn(true);
+        when(locationMasterService.isOperatingAreaServiceable("OA01")).thenReturn(true);
         LeadResponse leadResponse = LeadResponse.builder()
                 .leadIdentifier(LEAD_IDENTIFIER)
                 .status(LeadStatus.ACTIVE)

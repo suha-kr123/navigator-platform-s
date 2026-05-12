@@ -180,12 +180,12 @@ public class LeadExternalServiceImpl implements LeadExternalService {
                 .build();
     }
 
-    private boolean shouldRejectForDistrictServiceability(AddressData address) {
-        if (address == null || isBlank(address.getDistrictCode())) {
+    private boolean shouldRejectForOperatingAreaServiceability(AddressData address) {
+        if (address == null || isBlank(address.getOperatingAreaCode())) {
             return true;
         }
 
-        return !locationMasterService.isDistrictServiceable(address.getDistrictCode());
+        return !locationMasterService.isOperatingAreaServiceable(address.getOperatingAreaCode());
     }
 
     private String getEligibilityRejectionReasonCode(LeadResponse lead, AddressData address) {
@@ -193,7 +193,7 @@ public class LeadExternalServiceImpl implements LeadExternalService {
             return PERSONAL_LOAN_REASON_CODE;
         }
 
-        if (shouldRejectForDistrictServiceability(address)) {
+        if (shouldRejectForOperatingAreaServiceability(address)) {
             return NOT_IN_SERVICABLE_LOCATION_REASON_CODE;
         }
 

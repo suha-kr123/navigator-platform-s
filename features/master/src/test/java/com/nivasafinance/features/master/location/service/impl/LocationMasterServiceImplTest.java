@@ -525,4 +525,36 @@ class LocationMasterServiceImplTest {
         boolean result = locationMasterService.isDistrictServiceable("BLR");
         assertTrue(result, "Serviceable district should return true");
     }
+
+    // ── isOperatingAreaServiceable ───────────────────────────────────
+
+    @Test
+    void isOperatingAreaServiceable_whenOperatingAreaCodeIsNull_returnsFalse() {
+        boolean result = locationMasterService.isOperatingAreaServiceable(null);
+
+        assertFalse(result, "Null operating area code should not be serviceable");
+        verifyNoInteractions(operatingAreaRepository);
+    }
+
+    @Test
+    void isOperatingAreaServiceable_whenOperatingAreaCodeIsBlank_returnsFalse() {
+        boolean result = locationMasterService.isOperatingAreaServiceable("   ");
+
+        assertFalse(result, "Blank operating area code should not be serviceable");
+        verifyNoInteractions(operatingAreaRepository);
+    }
+
+    @Test
+    void isOperatingAreaServiceable_whenOperatingAreaNotServiceable_returnsFalse() {
+        when(operatingAreaRepository.existsServiceableOperatingAreaByCode("OA01")).thenReturn(false);
+        boolean result = locationMasterService.isOperatingAreaServiceable("OA01");
+        assertFalse(result, "Non-serviceable operating area should return false");
+    }
+
+    @Test
+    void isOperatingAreaServiceable_whenOperatingAreaServiceable_returnsTrue() {
+        when(operatingAreaRepository.existsServiceableOperatingAreaByCode("OA01")).thenReturn(true);
+        boolean result = locationMasterService.isOperatingAreaServiceable("OA01");
+        assertTrue(result, "Serviceable operating area should return true");
+    }
 }
