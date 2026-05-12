@@ -25,6 +25,10 @@ public class CallLogLeadRepositoryWrapper {
         return callLogLeadRepository.findByLeadIdOrderByCallLogIdDesc(leadId, pageable);
     }
 
+    public Page<CallLogLead> findByLeadIdWithAiAnalysis(Long leadId, Pageable pageable) {
+        return callLogLeadRepository.findByLeadIdWithAiAnalysis(leadId, pageable);
+    }
+
     public List<CallLogLead> findAllByLeadIdOrderByCallLogIdDesc(Long leadId) {
         return callLogLeadRepository.findAllByLeadIdOrderByCallLogIdDesc(leadId);
     }

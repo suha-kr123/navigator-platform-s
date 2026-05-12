@@ -8,7 +8,7 @@ import com.nivasafinance.features.lead.dto.LeadCallSummaryResponse;
 import java.util.UUID;
 
 public interface LeadCallReadService {
-    PaginatedResponse<LeadCallLogResponse> getCallLogs(UUID leadIdentifier, PaginationRequest paginationRequest);
+    PaginatedResponse<LeadCallLogResponse> getCallLogs(UUID leadIdentifier, PaginationRequest paginationRequest, boolean hasAiAnalysis);
 
     LeadCallSummaryResponse getCallSummary(UUID leadIdentifier);
 
