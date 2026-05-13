@@ -63,7 +63,8 @@ public class LeadEligibilityReadServiceImpl implements LeadEligibilityReadServic
                         .roiMin(toBigDecimal(profileMatch.get("roi_min")))
                         .roiMax(toBigDecimal(profileMatch.get("roi_max")))
                         .softOfferEligible(toBoolean(root.get("soft_offer_eligible")))
-                        .consumerVisible(toBoolean(root.get("consumer_visible")));
+                        .consumerVisible(toBoolean(root.get("consumer_visible")))
+                        .profileName(toText(profileMatch.get("profile_name")));
             } catch (JsonProcessingException e) {
                 log.warn("Failed to parse eligibility output for identifier {}", result.getIdentifier(), e);
             }

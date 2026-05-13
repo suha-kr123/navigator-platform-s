@@ -51,6 +51,7 @@ class LeadEligibilityReadServiceImplTest {
         String output = """
                 {
                   "profile_match": {
+                    "profile_name": "Salaried Premium",
                     "roi_min": 8.5,
                     "roi_max": 12.0
                   },
@@ -89,6 +90,7 @@ class LeadEligibilityReadServiceImplTest {
         assertEquals(new BigDecimal("12.0"), response.getRoiMax());
         assertEquals(true, response.getSoftOfferEligible());
         assertEquals(false, response.getConsumerVisible());
+        assertEquals("Salaried Premium", response.getProfileName());
         verify(leadBREResultReadService).getResults(leadId, "eligibility");
     }
 
@@ -360,6 +362,7 @@ class LeadEligibilityReadServiceImplTest {
         assertNull(response.getMinTenureMonths());
         assertNull(response.getRoiMin(), "roi_min should be null when profile_match is missing");
         assertNull(response.getRoiMax(), "roi_max should be null when profile_match is missing");
+        assertNull(response.getProfileName(), "profileName should be null when profile_match is missing");
         assertEquals(false, response.getSoftOfferEligible());
         assertEquals(true, response.getConsumerVisible());
     }

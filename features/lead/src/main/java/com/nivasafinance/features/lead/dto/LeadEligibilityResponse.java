@@ -28,4 +28,5 @@ public class LeadEligibilityResponse {
     private BigDecimal roiMax;
     private Boolean softOfferEligible;
     private Boolean consumerVisible;
+    private String profileName;
 }
