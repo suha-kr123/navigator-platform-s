@@ -28,14 +28,22 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.UUID;
 
 import static com.nivasafinance.common.utils.DocumentUtils.getFileExtension;
 import static com.nivasafinance.features.lead.utils.LeadDocumentUtils.generateDocumentPathForLead;
 
+@Slf4j
 @Service
 @Transactional
 @AllArgsConstructor
@@ -51,12 +59,15 @@ public class LeadDocumentWriteServiceImpl implements LeadDocumentWriteService {
         // Find the lead
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
 
+        String idempotencyKey = generateIdempotencyKey(leadIdentifier, file);
+
         // Create document request with custom path for leads
-        DocumentCreateRequest documentRequest = new DocumentCreateRequest(
-                request.getName(),
-                file,
-                generateDocumentPathForLead(leadIdentifier, request.getName())
-        );
+        DocumentCreateRequest documentRequest = DocumentCreateRequest.builder()
+                .name(request.getName())
+                .file(file)
+                .customPath(generateDocumentPathForLead(leadIdentifier, request.getName()))
+                .idempotencyKey(idempotencyKey)
+                .build();
 
         // Create the document
         DocumentCreateResponse documentResponse = documentWriteService.createDocument(documentRequest);
@@ -92,12 +103,15 @@ public class LeadDocumentWriteServiceImpl implements LeadDocumentWriteService {
     public LeadDocumentCreateResponse createLeadDocument(UUID leadIdentifier, byte[] content, String filename, String contentType, LeadDocumentCreateRequest request) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
 
+        String idempotencyKey = generateIdempotencyKey(leadIdentifier, content);
+
         DocumentCreateRequestInputStream documentRequest = DocumentCreateRequestInputStream.builder()
                 .name(filename)
                 .file(new ByteArrayInputStream(content))
                 .customPath(generateDocumentPathForLead(leadIdentifier, filename))
                 .contentType(contentType)
                 .size((long) content.length)
+                .idempotencyKey(idempotencyKey)
                 .build();
 
         DocumentCreateResponse documentResponse = documentWriteService.createDocument(documentRequest);
@@ -141,12 +155,15 @@ public class LeadDocumentWriteServiceImpl implements LeadDocumentWriteService {
         String fileExtension = getFileExtension(file).orElseThrow(() -> new BadRequestException("Bad File uploaded"));
         String documentName = "house-photo" + fileExtension;
 
+        String idempotencyKey = generateIdempotencyKey(leadIdentifier, file);
+
         // Create document request with custom path for leads
-        DocumentCreateRequest documentRequest = new DocumentCreateRequest(
-                documentName,
-                file,
-                generateDocumentPathForLead(leadIdentifier, documentName)
-        );
+        DocumentCreateRequest documentRequest = DocumentCreateRequest.builder()
+                .name(documentName)
+                .file(file)
+                .customPath(generateDocumentPathForLead(leadIdentifier, documentName))
+                .idempotencyKey(idempotencyKey)
+                .build();
 
         // Create the document
         DocumentCreateResponse documentResponse = documentWriteService.createDocument(documentRequest);
@@ -269,6 +286,35 @@ public class LeadDocumentWriteServiceImpl implements LeadDocumentWriteService {
         applicationEventPublisher.publishEvent(
                 new SystemEvent<>(BusinessEvent.LEAD_DOCUMENT_UPDATED.toString(), payload, username)
         );
+    }
+
+    private static final String SHA_256 = "SHA-256";
+    private static final String LOG_IDEMPOTENCY_KEY_GENERATED = "Generated idempotency key for lead: {}";
+
+    private String generateIdempotencyKey(UUID leadIdentifier, MultipartFile file) {
+        try {
+            return computeSha256(leadIdentifier, file.getBytes());
+        } catch (IOException e) {
+            log.error("Failed to read file bytes for idempotency key generation", e);
+            throw new BadRequestException("Failed to read uploaded file");
+        }
+    }
+
+    private String generateIdempotencyKey(UUID leadIdentifier, byte[] fileBytes) {
+        return computeSha256(leadIdentifier, fileBytes);
+    }
+
+    private String computeSha256(UUID leadIdentifier, byte[] fileBytes) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance(SHA_256);
+            digest.update(leadIdentifier.toString().getBytes(StandardCharsets.UTF_8));
+            digest.update(fileBytes);
+            String idempotencyKey = HexFormat.of().formatHex(digest.digest());
+            log.info(LOG_IDEMPOTENCY_KEY_GENERATED, leadIdentifier);
+            return idempotencyKey;
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 algorithm not available", e);
+        }
     }
 
     private void publishLeadDocumentDeletedEvent(Lead lead, DocumentResponse document, UUID documentIdentifier) {

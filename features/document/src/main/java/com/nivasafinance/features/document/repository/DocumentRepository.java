@@ -12,5 +12,7 @@ import java.util.UUID;
 @JaversSpringDataAuditable
 public interface DocumentRepository extends JpaRepository<Document, Long> {
     Optional<Document> findByIdentifier(UUID identifier);
+
+    boolean existsByIdempotencyKey(String idempotencyKey);
 }
 

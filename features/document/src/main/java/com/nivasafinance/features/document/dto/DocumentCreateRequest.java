@@ -14,5 +14,6 @@ public class DocumentCreateRequest {
     private String name;
     private MultipartFile file;
     private String customPath;
+    private String idempotencyKey;
 }
 

@@ -56,6 +56,9 @@ public class Document extends AuditableEntity {
     @Column(name = "path", nullable = false)
     private String path;
     
+    @Column(name = "idempotency_key", unique = true)
+    private String idempotencyKey;
+
     @Type(JsonType.class)
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "data_ext", columnDefinition = "jsonb")
