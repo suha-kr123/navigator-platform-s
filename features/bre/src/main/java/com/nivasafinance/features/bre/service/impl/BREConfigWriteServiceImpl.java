@@ -47,11 +47,11 @@ public class BREConfigWriteServiceImpl implements BREConfigWriteService {
             documentWriteService.deleteDocumentById(existingDetails.getRuleJsonFileId());
         }
         String fileName = file.getOriginalFilename() != null ? file.getOriginalFilename() : "rule.json";
-        DocumentCreateRequest documentRequest = new DocumentCreateRequest(
-                fileName,
-                file,
-                BREDocumentUtils.generateDocumentPathForRuleFile(config.getId(), fileName)
-        );
+        DocumentCreateRequest documentRequest = DocumentCreateRequest.builder()
+                .name(fileName)
+                .file(file)
+                .customPath(BREDocumentUtils.generateDocumentPathForRuleFile(config.getId(), fileName))
+                .build();
         DocumentCreateResponse documentResponse = documentWriteService.createDocument(documentRequest);
         BREConfigs.GoRulesProviderDetails newDetails = new BREConfigs.GoRulesProviderDetails(documentResponse.getId());
         BREConfigs.Configs updatedConfigs = configs != null

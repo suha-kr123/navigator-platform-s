@@ -1,5 +1,7 @@
 package com.nivasafinance.features.document.exception;
 
+import com.nivasafinance.common.exception.ConflictException;
+import com.nivasafinance.common.exception.ExceptionUtils;
 import org.springframework.context.MessageSource;
 
 import java.util.ArrayList;
@@ -43,6 +45,16 @@ public class DocumentExceptionFactory {
     
     public DocumentOperationException createOperationException(String operation) {
         return createOperationException(operation, null);
+    }
+
+    public ConflictException createDuplicateDocumentException() {
+        return new ConflictException(
+                ExceptionUtils.createLocalizedMessage(
+                        "error.document.duplicate",
+                        new Object[]{},
+                        messageSource
+                )
+        );
     }
     
     public void validateDocumentForCreation(com.nivasafinance.features.document.dto.DocumentCreateRequest createRequest) {

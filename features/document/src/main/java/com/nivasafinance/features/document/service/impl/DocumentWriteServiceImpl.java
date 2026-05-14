@@ -46,13 +46,15 @@ public class DocumentWriteServiceImpl implements DocumentWriteService {
     @Transactional
     public DocumentCreateResponse createDocument(DocumentCreateRequest createRequest) {
         documentExceptionFactory.validateDocumentForCreation(createRequest);
+        checkIdempotencyKey(createRequest.getIdempotencyKey());
         try {
             return createDocumentInternal(
                     createRequest.getName(),
                     createRequest.getFile().getInputStream(),
                     createRequest.getCustomPath(),
                     createRequest.getFile().getContentType(),
-                    createRequest.getFile().getSize()
+                    createRequest.getFile().getSize(),
+                    createRequest.getIdempotencyKey()
             );
         } catch (IOException e) {
             throw documentExceptionFactory.createOperationException("upload", e);
@@ -63,13 +65,21 @@ public class DocumentWriteServiceImpl implements DocumentWriteService {
     @Transactional
     public DocumentCreateResponse createDocument(DocumentCreateRequestInputStream createRequest) {
         documentExceptionFactory.validateDocumentForCreation(createRequest);
+        checkIdempotencyKey(createRequest.getIdempotencyKey());
         return createDocumentInternal(
                 createRequest.getName(),
                 createRequest.getFile(),
                 createRequest.getCustomPath(),
                 createRequest.getContentType(),
-                createRequest.getSize()
+                createRequest.getSize(),
+                createRequest.getIdempotencyKey()
         );
+    }
+
+    private void checkIdempotencyKey(String idempotencyKey) {
+        if (idempotencyKey != null && documentRepositoryWrapper.existsByIdempotencyKey(idempotencyKey)) {
+            throw documentExceptionFactory.createDuplicateDocumentException();
+        }
     }
 
     private DocumentCreateResponse createDocumentInternal(
@@ -77,7 +87,8 @@ public class DocumentWriteServiceImpl implements DocumentWriteService {
             java.io.InputStream inputStream,
             String customPath,
             String contentType,
-            Long size) {
+            Long size,
+            String idempotencyKey) {
         ContentRepository contentRepository =
                 contentRepositoryFactory.getRepository(documentStorageProperties.getProvider());
         String documentPath = customPath != null 
@@ -93,6 +104,7 @@ public class DocumentWriteServiceImpl implements DocumentWriteService {
         document.setSize(size);
         document.setProvider(DocumentStorageProvider.valueOf(documentStorageProperties.getProvider()));
         document.setPath(storageKey);
+        document.setIdempotencyKey(idempotencyKey);
 
         Document savedDocument = documentRepositoryWrapper.saveWithException(document);
         return DocumentCreateResponse.builder()

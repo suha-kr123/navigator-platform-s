@@ -17,5 +17,6 @@ public class DocumentCreateRequestInputStream {
     private String customPath;
     private String contentType;
     private Long size;
+    private String idempotencyKey;
 }
 

@@ -67,5 +67,9 @@ public class DocumentRepositoryWrapper {
         return documentRepository.findByIdentifier(identifier)
                 .orElseThrow(() -> documentExceptionFactory.createNotFoundException(identifier));
     }
+
+    public boolean existsByIdempotencyKey(String idempotencyKey) {
+        return documentRepository.existsByIdempotencyKey(idempotencyKey);
+    }
 }
 
