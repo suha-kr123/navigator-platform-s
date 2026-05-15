@@ -28,23 +28,13 @@ public class LeadOneTimeTokenRepositoryWrapper {
     }
 
     public void invalidateActiveTokens(String reference, Long leadId, Long contactId) {
-        String sql = """
-                UPDATE n_lead_one_time_token
-                SET status = :newStatus,
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE "reference" = :reference
-                  AND lead_id = :leadId
-                  AND contact_id = :contactId
-                  AND status IN (:currentStatuses)
-                """;
-        MapSqlParameterSource params = new MapSqlParameterSource()
-                .addValue("reference", reference)
-                .addValue("leadId", leadId)
-                .addValue("contactId", contactId)
-                .addValue("newStatus", OtpStatus.INVALIDATED.name())
-                .addValue("currentStatuses", List.of(OtpStatus.SENT.name()));
         try {
-            namedParameterJdbcTemplate.update(sql, params);
+            repository.invalidateActiveTokens(
+                    reference,
+                    leadId,
+                    contactId,
+                    OtpStatus.INVALIDATED,
+                    List.of(OtpStatus.SENT));
         } catch (DataAccessException e) {
             throw LeadOtpExceptionFactory.updateTrackingFailed(e);
         }
@@ -133,34 +123,16 @@ public class LeadOneTimeTokenRepositoryWrapper {
     }
 
     public void updateStatus(Long trackingId, OtpStatus status) {
-        String sql = """
-                UPDATE n_lead_one_time_token
-                SET status = :status,
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE id = :id
-                """;
-        MapSqlParameterSource params = new MapSqlParameterSource()
-                .addValue("id", trackingId)
-                .addValue("status", status.name());
         try {
-            namedParameterJdbcTemplate.update(sql, params);
+            repository.updateStatus(trackingId, status);
         } catch (DataAccessException e) {
             throw LeadOtpExceptionFactory.updateTrackingFailed(e);
         }
     }
 
     public void updateLeadId(Long trackingId, Long leadId) {
-        String sql = """
-                UPDATE n_lead_one_time_token
-                SET lead_id = :leadId,
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE id = :id
-                """;
-        MapSqlParameterSource params = new MapSqlParameterSource()
-                .addValue("id", trackingId)
-                .addValue("leadId", leadId);
         try {
-            namedParameterJdbcTemplate.update(sql, params);
+            repository.updateLeadId(trackingId, leadId);
         } catch (DataAccessException e) {
             throw LeadOtpExceptionFactory.updateTrackingFailed(e);
         }
