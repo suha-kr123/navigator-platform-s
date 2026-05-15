@@ -1,10 +1,11 @@
 package com.nivasafinance.features.lead.service;
 
-import com.nivasafinance.features.lead.dto.LeadBREResultExecuteResponse;
+import com.nivasafinance.features.bre.dto.BREExecutionResponse;
 
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 public interface LeadBREResultWriteService {
 
-    LeadBREResultExecuteResponse executeBre(UUID leadId, String config);
+    CompletableFuture<BREExecutionResponse> executeBre(UUID leadId, String config, UUID identifier);
 }

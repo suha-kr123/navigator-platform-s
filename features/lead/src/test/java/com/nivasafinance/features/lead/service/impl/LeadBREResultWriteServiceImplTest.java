@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nivasafinance.features.bre.dto.BREExecutionRequest;
 import com.nivasafinance.features.bre.dto.BREExecutionResponse;
 import com.nivasafinance.features.bre.service.BREExecutionService;
-import com.nivasafinance.features.lead.dto.LeadBREResultExecuteResponse;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.leadbre.entity.LeadBREResult;
@@ -65,7 +64,7 @@ class LeadBREResultWriteServiceImplTest {
     // ==================== executeBre() Tests ====================
 
     @Test
-    void executeBre_success_returnsResponseWithIdentifier() {
+    void executeBre_success_returnsNonNullFuture() {
         // Given
         String config = "eligibility";
         LeadBREResult savedEntity = createPendingEntity(resultIdentifier);
@@ -76,11 +75,10 @@ class LeadBREResultWriteServiceImplTest {
                 .thenReturn(CompletableFuture.completedFuture(null));
 
         // When
-        LeadBREResultExecuteResponse result = leadBREResultWriteService.executeBre(leadIdentifier, config);
+        CompletableFuture<BREExecutionResponse> result = leadBREResultWriteService.executeBre(leadIdentifier, config, resultIdentifier);
 
         // Then
-        assertNotNull(result, "Response should not be null");
-        assertEquals(resultIdentifier, result.getIdentifier(), "Response should contain the identifier of the saved BRE result");
+        assertNotNull(result, "Returned future should not be null");
     }
 
     @Test
@@ -96,11 +94,12 @@ class LeadBREResultWriteServiceImplTest {
                 .thenReturn(CompletableFuture.completedFuture(null));
 
         // When
-        leadBREResultWriteService.executeBre(leadIdentifier, config);
+        leadBREResultWriteService.executeBre(leadIdentifier, config, resultIdentifier);
 
         // Then
-        LeadBREResult captured = captor.getValue();
+        LeadBREResult captured = captor.getAllValues().get(0);
         assertEquals(leadId, captured.getLeadId(), "Pending record should use the lead's DB id");
+        assertEquals(resultIdentifier, captured.getIdentifier(), "Pending record should use the provided identifier");
         assertEquals(config, captured.getConfigName(), "Pending record should use the requested config name");
         assertEquals(LeadBREResultStatus.IN_PROGRESS, captured.getStatus(), "Initial record should have IN_PROGRESS status");
     }
@@ -117,7 +116,7 @@ class LeadBREResultWriteServiceImplTest {
                 .thenReturn(CompletableFuture.completedFuture(null));
 
         // When
-        leadBREResultWriteService.executeBre(leadIdentifier, config);
+        leadBREResultWriteService.executeBre(leadIdentifier, config, resultIdentifier);
 
         // Then
         verify(breExecutionService).execute(eq(config), any(BREExecutionRequest.class));
@@ -131,7 +130,7 @@ class LeadBREResultWriteServiceImplTest {
 
         // When & Then
         assertThrows(RuntimeException.class,
-                () -> leadBREResultWriteService.executeBre(leadIdentifier, "eligibility"),
+                () -> leadBREResultWriteService.executeBre(leadIdentifier, "eligibility", resultIdentifier),
                 "Should propagate exception when lead is not found");
         verifyNoInteractions(leadBREResultRepositoryWrapper);
         verifyNoInteractions(breExecutionService);
@@ -147,7 +146,7 @@ class LeadBREResultWriteServiceImplTest {
 
         // When & Then
         assertThrows(RuntimeException.class,
-                () -> leadBREResultWriteService.executeBre(leadIdentifier, config),
+                () -> leadBREResultWriteService.executeBre(leadIdentifier, config, resultIdentifier),
                 "Should propagate exception when initial save fails");
         verifyNoInteractions(breExecutionService);
     }
@@ -182,7 +181,7 @@ class LeadBREResultWriteServiceImplTest {
         when(leadRepositoryWrapper.findByIdWithException(leadId)).thenReturn(leadForUpdate);
 
         // When
-        leadBREResultWriteService.executeBre(leadIdentifier, config);
+        leadBREResultWriteService.executeBre(leadIdentifier, config, resultIdentifier);
 
         // Then
         assertEquals(LeadBREResultStatus.SUCCESS, toUpdate.getStatus(), "Status should be updated to SUCCESS on successful BRE response");
@@ -216,7 +215,7 @@ class LeadBREResultWriteServiceImplTest {
         when(leadRepositoryWrapper.findByIdWithException(leadId)).thenReturn(leadForUpdate);
 
         // When
-        leadBREResultWriteService.executeBre(leadIdentifier, config);
+        leadBREResultWriteService.executeBre(leadIdentifier, config, resultIdentifier);
 
         // Then
         assertEquals(LeadBREResultStatus.FAILED, toUpdate.getStatus(), "Status should be FAILED when BRE response contains an error");
@@ -247,7 +246,7 @@ class LeadBREResultWriteServiceImplTest {
         when(leadRepositoryWrapper.findByIdWithException(leadId)).thenReturn(leadForUpdate);
 
         // When
-        leadBREResultWriteService.executeBre(leadIdentifier, config);
+        leadBREResultWriteService.executeBre(leadIdentifier, config, resultIdentifier);
 
         // Then
         assertEquals(LeadBREResultStatus.FAILED, toUpdate.getStatus(), "Status should be FAILED when BRE execution throws an exception");
@@ -274,7 +273,7 @@ class LeadBREResultWriteServiceImplTest {
         when(leadRepositoryWrapper.findByIdWithException(leadId)).thenReturn(leadForUpdate);
 
         // When
-        leadBREResultWriteService.executeBre(leadIdentifier, config);
+        leadBREResultWriteService.executeBre(leadIdentifier, config, resultIdentifier);
 
         // Then
         assertEquals(LeadBREResultStatus.FAILED, toUpdate.getStatus(), "Status should be FAILED when BRE response is null");
@@ -306,7 +305,7 @@ class LeadBREResultWriteServiceImplTest {
         when(leadRepositoryWrapper.findByIdWithException(leadId)).thenReturn(leadForUpdate);
 
         // When
-        leadBREResultWriteService.executeBre(leadIdentifier, config);
+        leadBREResultWriteService.executeBre(leadIdentifier, config, resultIdentifier);
 
         // Then
         verify(leadRepositoryWrapper).findByIdWithException(leadId);
@@ -345,7 +344,7 @@ class LeadBREResultWriteServiceImplTest {
         when(leadRepositoryWrapper.findByIdWithException(leadId)).thenReturn(leadForUpdate);
 
         // When
-        leadBREResultWriteService.executeBre(leadIdentifier, config);
+        leadBREResultWriteService.executeBre(leadIdentifier, config, resultIdentifier);
 
         // Then
         assertSame(existingExecutions, leadForUpdate.getBreExecutions(),
@@ -355,7 +354,7 @@ class LeadBREResultWriteServiceImplTest {
     }
 
     @Test
-    void executeBre_callbackPersistFails_doesNotPropagateException() {
+    void executeBre_whenCompleteHandlerFails_doesNotPropagateException() {
         // Given
         String config = "eligibility";
         LeadBREResult savedEntity = createPendingEntity(resultIdentifier);
@@ -369,7 +368,7 @@ class LeadBREResultWriteServiceImplTest {
 
         // When & Then — no exception should propagate from the callback
         assertDoesNotThrow(
-                () -> leadBREResultWriteService.executeBre(leadIdentifier, config),
+                () -> leadBREResultWriteService.executeBre(leadIdentifier, config, resultIdentifier),
                 "Callback persistence failure should be caught internally and not propagate");
     }
 

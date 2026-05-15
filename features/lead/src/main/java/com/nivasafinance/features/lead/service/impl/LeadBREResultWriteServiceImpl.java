@@ -9,7 +9,6 @@ import com.nivasafinance.features.leadbre.entity.LeadBREResult;
 import com.nivasafinance.features.leadbre.enums.LeadBREResultStatus;
 import com.nivasafinance.features.leadbre.repository.LeadBREResultRepositoryWrapper;
 import com.nivasafinance.features.bre.service.BREExecutionService;
-import com.nivasafinance.features.lead.dto.LeadBREResultExecuteResponse;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadBREResultWriteService;
 import lombok.RequiredArgsConstructor;
@@ -36,17 +35,16 @@ public class LeadBREResultWriteServiceImpl implements LeadBREResultWriteService 
 
     @Override
     @Transactional
-    public LeadBREResultExecuteResponse executeBre(UUID leadId, String config) {
+    public CompletableFuture<BREExecutionResponse> executeBre(UUID leadId, String config, UUID identifier) {
         var lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadId);
 
         LeadBREResult pending = LeadBREResult.builder()
                 .leadId(lead.getId())
-                .identifier(UUID.randomUUID())
+                .identifier(identifier)
                 .configName(config)
                 .status(LeadBREResultStatus.IN_PROGRESS)
                 .build();
-        LeadBREResult saved = leadBREResultRepositoryWrapper.saveWithException(pending);
-        UUID resultIdentifier = saved.getIdentifier();
+        leadBREResultRepositoryWrapper.saveWithException(pending);
 
         CompletableFuture<BREExecutionResponse> executionFuture =
                 breExecutionService.execute(config, BREExecutionRequest.builder()
@@ -57,7 +55,7 @@ public class LeadBREResultWriteServiceImpl implements LeadBREResultWriteService 
         executionFuture.whenComplete((breResponse, throwable) -> {
             try {
                 LeadBREResult toUpdate = leadBREResultRepositoryWrapper.findByLeadIdAndIdentifierWithException(
-                        lead.getId(), resultIdentifier);
+                        lead.getId(), identifier);
                 if (throwable != null) {
                     String message = throwable.getCause() != null
                             ? throwable.getCause().getMessage()
@@ -77,15 +75,13 @@ public class LeadBREResultWriteServiceImpl implements LeadBREResultWriteService 
                     toUpdate.setStatus(LeadBREResultStatus.FAILED);
                 }
                 leadBREResultRepositoryWrapper.saveWithException(toUpdate);
-                updateLeadBREExecution(lead.getId(), config, toUpdate.getStatus().name(), resultIdentifier);
+                updateLeadBREExecution(lead.getId(), config, toUpdate.getStatus().name(), identifier);
             } catch (Exception e) {
-                log.error(LOG_PERSIST_FAILED, resultIdentifier, e);
+                log.error(LOG_PERSIST_FAILED, identifier, e);
             }
         });
 
-        return LeadBREResultExecuteResponse.builder()
-                .identifier(resultIdentifier)
-                .build();
+        return executionFuture;
     }
 
     private void updateLeadBREExecution(Long leadDbId, String config, String status, UUID resultIdentifier) {
