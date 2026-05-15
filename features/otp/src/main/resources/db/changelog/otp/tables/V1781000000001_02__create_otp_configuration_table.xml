@@ -22,29 +22,6 @@
             <column name="updated_at" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
             <column name="version" type="BIGINT" defaultValueNumeric="0"/>
         </createTable>
-
-        <sql>
-            INSERT INTO n_otp_configuration (uname, config, created_by, updated_by)
-            VALUES (
-                'VERIFY_LEAD_FOR_CB',
-                '{
-                  "otp_validity_in_mins": 5,
-                  "otp_generation_method": "simple_otp_generation",
-                  "otp_channels": [
-                    {
-                      "channel_name": "whatsapp",
-                      "channel_config": [
-                        {
-                          "template_name": "VERIFY_LEAD_FOR_CB"
-                        }
-                      ]
-                    }
-                  ]
-                }'::jsonb,
-                'system',
-                'system'
-            );
-        </sql>
     </changeSet>
 
 </databaseChangeLog>
