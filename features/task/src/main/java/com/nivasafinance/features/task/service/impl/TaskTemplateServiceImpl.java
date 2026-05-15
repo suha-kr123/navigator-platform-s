@@ -15,6 +15,7 @@ import com.nivasafinance.features.task.service.TaskEntityServiceFactory;
 import com.nivasafinance.features.task.service.TaskTemplateService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
@@ -96,6 +97,7 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
     }
 
     @Override
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public List<UserAssignmentResponse> getAssignableUsersForTask(String taskConfigKey, EntityType entityType, UUID entityId) {
         TaskConfig taskConfig = taskConfigRepositoryWrapper.findActiveByTaskConfigKey(taskConfigKey);
         List<String> allowedRoles = ValidationUtils.isNonNull(taskConfig.getTaskConfigDetails())
