@@ -21,6 +21,7 @@ import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
@@ -134,6 +135,7 @@ public class StageReadServiceImpl implements StageReadService, ApplicationContex
     }
 
     @Override
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public List<UserAssignmentResponse> getAssignableUsersForStages(List<String> stageKeys, String officeKey) {
         try {
             List<String> processedStageKeys = processStageKeys(stageKeys);
@@ -164,6 +166,7 @@ public class StageReadServiceImpl implements StageReadService, ApplicationContex
     }
 
     @Override
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public List<UserAssignmentResponse> getAssignableUsersForStagesByCurrentUser(List<String> stageKeys) {
         try {
             // Get current user's office
