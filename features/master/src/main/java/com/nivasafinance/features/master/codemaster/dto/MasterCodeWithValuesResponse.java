@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -16,6 +17,8 @@ public class MasterCodeWithValuesResponse {
     private String key;
     private String name;
     private String description;
+    private Map<String, String> nameMap;
+    private Map<String, String> descriptionMap;
     private Boolean isSystemDefined;
     private Long parentId;
     private List<CodeValueResponse> values;
