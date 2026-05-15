@@ -29,12 +29,16 @@ public class LeadOneTimeTokenRepositoryWrapper {
 
     public void invalidateActiveTokens(String reference, Long leadId, Long contactId) {
         try {
-            repository.invalidateActiveTokens(
+            List<LeadOneTimeToken> activeTokens = repository.findAllByReferenceAndLeadIdAndContactIdAndStatusIn(
                     reference,
                     leadId,
                     contactId,
-                    OtpStatus.INVALIDATED,
                     List.of(OtpStatus.SENT));
+            if (activeTokens.isEmpty()) {
+                return;
+            }
+            activeTokens.forEach(token -> token.setStatus(OtpStatus.INVALIDATED));
+            repository.saveAllAndFlush(activeTokens);
         } catch (DataAccessException e) {
             throw LeadOtpExceptionFactory.updateTrackingFailed(e);
         }
@@ -124,7 +128,10 @@ public class LeadOneTimeTokenRepositoryWrapper {
 
     public void updateStatus(Long trackingId, OtpStatus status) {
         try {
-            repository.updateStatus(trackingId, status);
+            LeadOneTimeToken token = repository.findById(trackingId)
+                    .orElseThrow(LeadOtpExceptionFactory::activeTokenNotFound);
+            token.setStatus(status);
+            repository.saveAndFlush(token);
         } catch (DataAccessException e) {
             throw LeadOtpExceptionFactory.updateTrackingFailed(e);
         }
@@ -132,7 +139,10 @@ public class LeadOneTimeTokenRepositoryWrapper {
 
     public void updateLeadId(Long trackingId, Long leadId) {
         try {
-            repository.updateLeadId(trackingId, leadId);
+            LeadOneTimeToken token = repository.findById(trackingId)
+                    .orElseThrow(LeadOtpExceptionFactory::activeTokenNotFound);
+            token.setLeadId(leadId);
+            repository.saveAndFlush(token);
         } catch (DataAccessException e) {
             throw LeadOtpExceptionFactory.updateTrackingFailed(e);
         }
