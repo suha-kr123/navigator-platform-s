@@ -8,6 +8,7 @@ plugins {
 
 dependencies {
     implementation(project(":common"))
+    implementation(project(":features:otp"))
     implementation(project(":features:dataprovider"))
     implementation(project(":features:master"))
     implementation(project(":features:notes"))
