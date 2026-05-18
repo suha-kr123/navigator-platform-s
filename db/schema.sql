@@ -185,6 +185,7 @@ CREATE TABLE n_product (
     id         BIGSERIAL       PRIMARY KEY,
     code       VARCHAR(50)     NOT NULL UNIQUE,
     name       JSONB           NOT NULL,
+    status     VARCHAR(20)     NOT NULL DEFAULT 'ACTIVE',
     created_by VARCHAR(255),
     created_at TIMESTAMP,
     updated_by VARCHAR(255),
@@ -810,19 +811,20 @@ CREATE TABLE n_data_provider (
 
 -- Entity: Document
 CREATE TABLE n_document (
-    id         BIGSERIAL       PRIMARY KEY,
-    identifier UUID            NOT NULL UNIQUE,
-    name       VARCHAR(255)    NOT NULL,
-    type       VARCHAR(255),
-    size       BIGINT,
-    provider   VARCHAR(255)    NOT NULL,
-    path       VARCHAR(255)    NOT NULL,
-    data_ext   JSONB,
-    created_by VARCHAR(255),
-    created_at TIMESTAMP,
-    updated_by VARCHAR(255),
-    updated_at TIMESTAMP,
-    version    BIGINT          DEFAULT 0
+    id              BIGSERIAL       PRIMARY KEY,
+    identifier      UUID            NOT NULL UNIQUE,
+    name            VARCHAR(255)    NOT NULL,
+    type            VARCHAR(255),
+    size            BIGINT,
+    provider        VARCHAR(255)    NOT NULL,
+    path            VARCHAR(255)    NOT NULL,
+    idempotency_key VARCHAR(64)     UNIQUE,
+    data_ext        JSONB,
+    created_by      VARCHAR(255),
+    created_at      TIMESTAMP,
+    updated_by      VARCHAR(255),
+    updated_at      TIMESTAMP,
+    version         BIGINT          DEFAULT 0
 );
 
 -- =============================================================================

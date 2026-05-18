@@ -20,7 +20,8 @@ public class ProductExternalController {
 
     @GetMapping
     public ResponseEntity<List<ProductResponse>> getAllProducts() {
-        List<ProductResponse> productResponses = productReadService.getAllProducts();
+        List<ProductResponse> productResponses = productReadService.getAllProducts(null);
         return ResponseEntity.ok(productResponses);
     }
 }
+

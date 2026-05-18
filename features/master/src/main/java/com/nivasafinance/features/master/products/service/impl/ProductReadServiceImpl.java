@@ -4,6 +4,7 @@ import com.nivasafinance.common.base.BaseNavigatorService;
 import com.nivasafinance.common.base.model.MasterLanguageResolver;
 import com.nivasafinance.features.master.products.dto.ProductResponse;
 import com.nivasafinance.features.master.products.entity.Product;
+import com.nivasafinance.features.master.products.enums.ProductStatus;
 import com.nivasafinance.features.master.products.exception.ProductExceptionFactory;
 import com.nivasafinance.features.master.products.repository.ProductRepository;
 import com.nivasafinance.features.master.products.service.ProductReadService;
@@ -25,9 +26,11 @@ public class ProductReadServiceImpl extends BaseNavigatorService implements Prod
 
     @Override
     @Transactional(readOnly = true)
-    public List<ProductResponse> getAllProducts() {
+    public List<ProductResponse> getAllProducts(ProductStatus status) {
         try {
-            List<Product> products = productRepository.findAll();
+            List<Product> products = (status != null)
+                    ? productRepository.findByStatus(status)
+                    : productRepository.findAll();
             return products.stream()
                     .map(this::mapEntityToResponse)
                     .collect(Collectors.toList());
@@ -47,7 +50,8 @@ public class ProductReadServiceImpl extends BaseNavigatorService implements Prod
         return new ProductResponse(
                 product.getId(),
                 product.getCode(),
-                MasterLanguageResolver.getDisplayValue(product.getName())
+                MasterLanguageResolver.getDisplayValue(product.getName()),
+                product.getStatus().name()
         );
     }
 }
