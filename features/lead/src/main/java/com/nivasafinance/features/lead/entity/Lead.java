@@ -413,6 +413,7 @@ public class Lead extends AuditableEntity {
     public static class RejectionDetails {
         private LocalDateTime rejectionDate;
         private String rejectedBy;
+        private String remarks;
     }
 
     @Data

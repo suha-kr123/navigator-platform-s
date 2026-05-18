@@ -19,6 +19,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
+import org.mockito.ArgumentCaptor;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -75,7 +77,10 @@ class LeadEligibilityWriteServiceImplTest {
 
         leadEligibilityWriteService.executeEligibility(leadId);
 
-        verify(leadWriteService).rejectLead(eq(leadId), any(RejectLeadRequest.class));
+        ArgumentCaptor<RejectLeadRequest> captor = ArgumentCaptor.forClass(RejectLeadRequest.class);
+        verify(leadWriteService).rejectLead(eq(leadId), captor.capture());
+        assertEquals("CREDIT_BUREAU_LOW_SCORE", captor.getValue().getReasonCode(), "Reason code should be CREDIT_BUREAU_LOW_SCORE");
+        assertEquals("REJECTED_BY_BRE", captor.getValue().getRemarks(), "Remarks should be REJECTED_BY_BRE for BRE-triggered rejections");
     }
 
     @Test

@@ -647,6 +647,26 @@ class LeadWriteServiceImplTest {
         assertNotNull(lead.getRejectionDetails(), "Rejection details should be set");
         assertEquals("test-user", lead.getRejectionDetails().getRejectedBy(), "Rejected by should be current user");
         assertEquals("LOW_INCOME", lead.getReasons().getReject(), "Reject reason should be stored");
+        assertNull(lead.getRejectionDetails().getRemarks(), "Remarks should be null when not provided");
+    }
+
+    @Test
+    void rejectLead_withRemarks_storesRemarksInRejectionDetails() {
+        // Arrange
+        RejectLeadRequest request = RejectLeadRequest.builder()
+                .reasonCode("LOW_INCOME")
+                .remarks("REJECTED_BY_BRE")
+                .build();
+        when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
+        when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
+        when(codeValueMasterService.getCodeValueByKeyAndCodeKey(anyString(), anyString())).thenReturn(new CodeValueResponse());
+
+        // Act
+        leadWriteService.rejectLead(leadIdentifier, request);
+
+        // Assert
+        assertNotNull(lead.getRejectionDetails(), "Rejection details should be set");
+        assertEquals("REJECTED_BY_BRE", lead.getRejectionDetails().getRemarks(), "Remarks should be stored in rejection details");
     }
 
     // ==================== undoRejectLead() Tests ====================

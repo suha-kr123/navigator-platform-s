@@ -27,6 +27,7 @@ public class LeadEligibilityWriteServiceImpl implements LeadEligibilityWriteServ
     private static final String SHOULD_EXECUTE_FIELD = "should_execute";
     private static final String BUREAU_REJECT_PROFILE_NAME = "bureau_reject";
     private static final String CREDIT_BUREAU_LOW_SCORE_REASON_CODE = "CREDIT_BUREAU_LOW_SCORE";
+    private static final String REJECTED_BY_BRE_REMARKS = "REJECTED_BY_BRE";
 
     private final LeadBREResultWriteService leadBREResultWriteService;
     private final DataProviderExecutor dataProviderExecutor;
@@ -56,6 +57,7 @@ public class LeadEligibilityWriteServiceImpl implements LeadEligibilityWriteServ
             if (BUREAU_REJECT_PROFILE_NAME.equals(profileName)) {
                 leadWriteService.rejectLead(leadIdentifier, RejectLeadRequest.builder()
                         .reasonCode(CREDIT_BUREAU_LOW_SCORE_REASON_CODE)
+                        .remarks(REJECTED_BY_BRE_REMARKS)
                         .build());
             }
         } catch (Exception e) {

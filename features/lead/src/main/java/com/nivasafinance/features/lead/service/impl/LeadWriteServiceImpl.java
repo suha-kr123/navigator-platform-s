@@ -539,6 +539,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
 
         rejectionDetails.setRejectionDate(LocalDateTime.now());
         rejectionDetails.setRejectedBy(UserContext.getUsername());
+        rejectionDetails.setRemarks(request.getRemarks());
 
         lead.setRejectionDetails(rejectionDetails);
 

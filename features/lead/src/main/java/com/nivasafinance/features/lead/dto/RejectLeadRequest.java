@@ -11,5 +11,6 @@ import lombok.NoArgsConstructor;
 @Builder
 public class RejectLeadRequest {
     private String reasonCode;
+    private String remarks;
 }
 
