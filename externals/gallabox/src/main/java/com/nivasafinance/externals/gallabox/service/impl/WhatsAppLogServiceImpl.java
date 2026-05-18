@@ -77,7 +77,7 @@ public class WhatsAppLogServiceImpl implements WhatsAppLogService {
             WhatsappLog.TemplateDetails templateDetails = resolveTemplateDetails(whatsapp, messageType);
             WhatsappLog.MessageData messageData = resolveMessageData(whatsapp, messageType);
 
-            WhatsappCreatedSource createdSource = resolveCreatedSource(status, messageType, request.getLocalMessageId(), entityType);
+            WhatsappCreatedSource createdSource = resolveCreatedSource(status, messageType, request.getId(), entityType);
             WhatsappSentBy sentBy = resolveSentBy(createdSource);
 
             WhatsappLog logEntity = WhatsappLog.builder()
@@ -281,7 +281,7 @@ public class WhatsAppLogServiceImpl implements WhatsAppLogService {
     }
 
     private WhatsappCreatedSource resolveCreatedSource(WhatsappStatus status, WhatsappMessageType messageType,
-                                                       String localMessageId, WhatsappEntity entityType) {
+                                                       String providerMessageId, WhatsappEntity entityType) {
         if (status != WhatsappStatus.SENT) {
             return null;
         }
@@ -291,12 +291,12 @@ public class WhatsAppLogServiceImpl implements WhatsAppLogService {
         if (entityType == null) {
             return null;
         }
-        if (localMessageId == null || localMessageId.isBlank()) {
+        if (providerMessageId == null || providerMessageId.isBlank()) {
             return WhatsappCreatedSource.SEQUENCE;
         }
         boolean foundInApiNotifications = entityType == WhatsappEntity.LEAD
-                ? leadWhatsAppNotificationRepository.findByLocalMessageId(localMessageId).isPresent()
-                : advisorWhatsAppNotificationRepository.findByLocalMessageId(localMessageId).isPresent();
+                ? leadWhatsAppNotificationRepository.findByLocalMessageId(providerMessageId).isPresent()
+                : advisorWhatsAppNotificationRepository.findByLocalMessageId(providerMessageId).isPresent();
         return foundInApiNotifications ? WhatsappCreatedSource.API : WhatsappCreatedSource.SEQUENCE;
     }
 
