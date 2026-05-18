@@ -2,6 +2,7 @@ package com.nivasafinance.features.master.products.entity;
 
 import com.nivasafinance.common.audit.AuditableEntity;
 import com.nivasafinance.common.base.model.MasterLanguageData;
+import com.nivasafinance.features.master.products.enums.ProductStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -28,4 +29,8 @@ public class Product extends AuditableEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "name", columnDefinition = "jsonb", nullable = false)
     private MasterLanguageData name;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 20)
+    private ProductStatus status = ProductStatus.ACTIVE;
 }
