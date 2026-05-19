@@ -6,29 +6,32 @@
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
 
     <changeSet id="migrate_possible_next_stages_to_object_list" author="system">
+        <validCheckSum>9:1ed0c59e8501c08da7f27d59c72f8478</validCheckSum>
         <comment>Migrate possibleNextStages from string array to object list with stageKey and allowedRoles</comment>
-        <sql>
-            UPDATE n_stage_config
-            SET stage_config = jsonb_set(
-                stage_config,
-                '{possibleNextStages}',
-                (
-                    SELECT COALESCE(
-                        jsonb_agg(
-                            jsonb_build_object('stageKey', elem, 'allowedRoles', '[]'::jsonb)
-                        ),
-                        '[]'::jsonb
+        <sql splitStatements="false">DO $$ BEGIN
+            IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'n_stage_config') THEN
+                UPDATE n_stage_config
+                SET stage_config = jsonb_set(
+                    stage_config,
+                    '{possibleNextStages}',
+                    (
+                        SELECT COALESCE(
+                            jsonb_agg(
+                                jsonb_build_object('stageKey', elem, 'allowedRoles', '[]'::jsonb)
+                            ),
+                            '[]'::jsonb
+                        )
+                        FROM jsonb_array_elements_text(stage_config -> 'possibleNextStages') AS elem
                     )
-                    FROM jsonb_array_elements_text(stage_config -> 'possibleNextStages') AS elem
                 )
-            )
-            WHERE stage_config -> 'possibleNextStages' IS NOT NULL
-              AND jsonb_typeof(stage_config -> 'possibleNextStages') = 'array'
-              AND (
-                  jsonb_array_length(stage_config -> 'possibleNextStages') = 0
-                  OR jsonb_typeof((stage_config -> 'possibleNextStages') -> 0) = 'string'
-              );
-        </sql>
+                WHERE stage_config -> 'possibleNextStages' IS NOT NULL
+                  AND jsonb_typeof(stage_config -> 'possibleNextStages') = 'array'
+                  AND (
+                      jsonb_array_length(stage_config -> 'possibleNextStages') = 0
+                      OR jsonb_typeof((stage_config -> 'possibleNextStages') -> 0) = 'string'
+                  );
+            END IF;
+        END $$;</sql>
     </changeSet>
 
 </databaseChangeLog>

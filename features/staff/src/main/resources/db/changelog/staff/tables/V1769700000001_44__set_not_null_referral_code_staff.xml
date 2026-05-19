@@ -6,10 +6,9 @@
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
     <changeSet id="V1769700000001_44__set_not_null_referral_code_staff" author="system">
-        <addNotNullConstraint
-                tableName="n_staff"
-                columnName="referral_code"
-                columnDataType="VARCHAR(255)"/>
+        <validCheckSum>9:9735f671c599edf859604815b57eab42</validCheckSum>
+        <comment>No-op: referral_code allows NULL, app generates code on staff creation</comment>
+        <sql>SELECT 1</sql>
     </changeSet>
 
 </databaseChangeLog>

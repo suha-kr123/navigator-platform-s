@@ -8,6 +8,8 @@
     <!-- Feature modules migrations -->
     <include file="db/changelog/rolemanagement/db.changelog-rolemanagement.xml"/>
     <include file="db/changelog/address/db.changelog-address.xml"/>
+    <include file="db/changelog/person/db.changelog-person.xml"/>
+    <include file="db/changelog/usermanagement/db.changelog-usermanagement.xml"/>
     <include file="db/changelog/advisor/db.changelog-advisor.xml"/>
     <include file="db/changelog/document/db.changelog-document.xml"/>
     <include file="db/changelog/otp/db.changelog-otp.xml"/>
@@ -16,8 +18,6 @@
     <include file="db/changelog/master/db.changelog-master-module.xml"/>
     <include file="db/changelog/notes/db.changelog-notes.xml"/>
     <include file="db/changelog/offices/db.changelog-offices.xml"/>
-    <include file="db/changelog/person/db.changelog-person.xml" />
-    <include file="db/changelog/usermanagement/db.changelog-usermanagement.xml"/>
     <include file="db/changelog/marketing/db.changelog-marketing.xml"/>
     <include file="db/changelog/notification/db.changelog-notification.xml"/>
     <include file="db/changelog/workflow/db.changelog-workflow.xml"/>

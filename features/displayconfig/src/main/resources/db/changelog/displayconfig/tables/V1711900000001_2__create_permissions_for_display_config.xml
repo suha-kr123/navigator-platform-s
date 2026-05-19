@@ -6,10 +6,11 @@
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
     <changeSet id="V1711900000001_2a" author="system" context="default">
+        <validCheckSum>9:04d7f3f4b48b5aaa1befe6e6ec46a12e</validCheckSum>
         <comment>Update DB enum checks to include DISPLAY_CONFIG before inserting permissions</comment>
 
         <sql>ALTER TABLE n_permissions DROP CONSTRAINT IF EXISTS chk_n_permissions_module</sql>
-        <sql>ALTER TABLE n_permissions ADD CONSTRAINT chk_n_permissions_module CHECK (module IS NULL OR module IN ('LEAD', 'DOCUMENT', 'ADVISOR', 'MASTER', 'OFFICE', 'NOTIFICATION', 'DEVICE', 'STAFF', 'TASK', 'WORKFLOW', 'USER_PREFERENCES', 'STAGE', 'LENDER', 'CAMPAIGN', 'BULK_OPERATION', 'ROLE_MANAGEMENT', 'BRE', 'DISPLAY_CONFIG'))</sql>
+        <sql>ALTER TABLE n_permissions ADD CONSTRAINT chk_n_permissions_module CHECK (module IS NULL OR module IN ('LEAD', 'DOCUMENT', 'ADVISOR', 'MASTER', 'OFFICE', 'NOTIFICATION', 'DEVICE', 'STAFF', 'TASK', 'WORKFLOW', 'USER_PREFERENCES', 'STAGE', 'LENDER', 'CAMPAIGN', 'BULK_OPERATION', 'ROLE_MANAGEMENT', 'BRE', 'DISPLAY_CONFIG', 'TRANSACTION'))</sql>
 
         <sql>ALTER TABLE n_permissions DROP CONSTRAINT IF EXISTS chk_n_permissions_operation</sql>
         <sql>ALTER TABLE n_permissions ADD CONSTRAINT chk_n_permissions_operation CHECK (operation IS NULL OR operation IN (
@@ -39,7 +40,8 @@
             'UPDATE_ADVISOR_STATUS', 'READ_BULK_OPERATION', 'BULK_UPDATE_LEAD', 'CANCEL_BULK_OPERATION', 'VIEW_BULK_OPERATION_TYPES',
             'VIEW_BULK_OPERATION_STATUS', 'PREVIEW_BULK_OPERATION', 'DOWNLOAD_BULK_OPERATION_REPORTS',
             'READ_BRE_CONFIG', 'CREATE_BRE_CONFIG', 'EXECUTE_BRE',
-            'READ_DISPLAY_CONFIG'
+            'READ_DISPLAY_CONFIG', 'LEAD_ELIGIBILITY',
+            'CREATE_TRANSACTION', 'READ_TRANSACTION', 'PAY_TRANSACTION', 'DECLINE_TRANSACTION'
         ))</sql>
     </changeSet>
 

@@ -6,6 +6,7 @@
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
     <changeSet id="V1767955001000_11" author="system" context="default">
+        <validCheckSum>9:f50ba957314bd42e62beb7b446a61658</validCheckSum>
         <createTable tableName="n_cb_enquiry">
             <column name="id" type="BIGINT" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
@@ -30,6 +31,8 @@
             <column name="response_json" type="TEXT"/>
 
             <column name="report_details" type="JSONB"/>
+
+            <column name="report_document_identifier" type="UUID"/>
 
             <column name="created_by" type="varchar(255)"/>
             <column name="updated_by" type="varchar(255)"/>

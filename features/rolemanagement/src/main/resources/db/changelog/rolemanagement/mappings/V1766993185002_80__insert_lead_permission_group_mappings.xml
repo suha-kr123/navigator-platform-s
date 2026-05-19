@@ -6,6 +6,7 @@
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
     <changeSet id="V1766993185002_80" author="system" context="default">
+        <validCheckSum>9:49ea92aa883163c2ce86f0a262c852b0</validCheckSum>
         <comment>Map LEAD module permissions to permission groups</comment>
 
         <!-- LEAD_FULL_ACCESS: All LEAD permissions -->
@@ -225,24 +226,7 @@
             <column name="created_by" value="system"/>
             <column name="version" valueNumeric="0"/>
         </insert>
-        <insert tableName="n_permission_group_mapping">
-            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'READ_LEAD_TASKS')"/>
-            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
-            <column name="created_by" value="system"/>
-            <column name="version" valueNumeric="0"/>
-        </insert>
-        <insert tableName="n_permission_group_mapping">
-            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'CREATE_LEAD_TASKS')"/>
-            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
-            <column name="created_by" value="system"/>
-            <column name="version" valueNumeric="0"/>
-        </insert>
-        <insert tableName="n_permission_group_mapping">
-            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'UPDATE_LEAD_TASKS')"/>
-            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
-            <column name="created_by" value="system"/>
-            <column name="version" valueNumeric="0"/>
-        </insert>
+        <!-- READ_LEAD_TASKS, CREATE_LEAD_TASKS, UPDATE_LEAD_TASKS removed — orphaned by _38 -->
         <insert tableName="n_permission_group_mapping">
             <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'CREATE_LEAD_STAGES')"/>
             <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_FULL_ACCESS')"/>
@@ -497,24 +481,7 @@
         </insert>
         
         <!-- LEAD_TASKS_FULL_ACCESS -->
-        <insert tableName="n_permission_group_mapping">
-            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'READ_LEAD_TASKS')"/>
-            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_TASKS_FULL_ACCESS')"/>
-            <column name="created_by" value="system"/>
-            <column name="version" valueNumeric="0"/>
-        </insert>
-        <insert tableName="n_permission_group_mapping">
-            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'CREATE_LEAD_TASKS')"/>
-            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_TASKS_FULL_ACCESS')"/>
-            <column name="created_by" value="system"/>
-            <column name="version" valueNumeric="0"/>
-        </insert>
-        <insert tableName="n_permission_group_mapping">
-            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'UPDATE_LEAD_TASKS')"/>
-            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_TASKS_FULL_ACCESS')"/>
-            <column name="created_by" value="system"/>
-            <column name="version" valueNumeric="0"/>
-        </insert>
+        <!-- READ_LEAD_TASKS, CREATE_LEAD_TASKS, UPDATE_LEAD_TASKS removed — orphaned by _38 -->
         <insert tableName="n_permission_group_mapping">
             <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'READ_TASK')"/>
             <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_TASKS_FULL_ACCESS')"/>
@@ -547,12 +514,7 @@
             <column name="created_by" value="system"/>
             <column name="version" valueNumeric="0"/>
         </insert>
-        <insert tableName="n_permission_group_mapping">
-            <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'READ_WORKFLOW')"/>
-            <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_STAGES_FULL_ACCESS')"/>
-            <column name="created_by" value="system"/>
-            <column name="version" valueNumeric="0"/>
-        </insert>
+        <!-- READ_WORKFLOW removed — orphaned by _38 -->
         <insert tableName="n_permission_group_mapping">
             <column name="permission_id" valueComputed="(SELECT id FROM n_permissions WHERE name = 'READ_STAGE')"/>
             <column name="permission_group_id" valueComputed="(SELECT id FROM n_permission_group WHERE name = 'LEAD_STAGES_FULL_ACCESS')"/>

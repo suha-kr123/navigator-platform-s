@@ -6,6 +6,10 @@
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
     <changeSet id="V1746700000000_66" author="system" context="default">
+        <validCheckSum>9:b45d578a78462d69e507c593b32b36c2</validCheckSum>
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="n_cb_enquiry"/>
+        </preConditions>
         <addColumn tableName="n_cb_enquiry">
             <column name="report_document_identifier" type="UUID"/>
         </addColumn>

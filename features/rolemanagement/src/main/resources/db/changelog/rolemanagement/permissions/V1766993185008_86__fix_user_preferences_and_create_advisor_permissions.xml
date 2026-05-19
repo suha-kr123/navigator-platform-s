@@ -6,60 +6,37 @@
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
     <changeSet id="V1766993185008_86" author="system" context="default">
+        <validCheckSum>9:a2020f9dd30999357903b100d6bcb9bf</validCheckSum>
         <validCheckSum>9:5c7d340504771db7e28b610c71ed66b7</validCheckSum>
         <comment>Fix user preferences permissions and ensure CREATE_ADVISOR permission exists</comment>
-        
-        <!-- Part 1: Fix User Preferences Permissions -->
-        <!-- Delete any mappings that reference the old permission first -->
+
+        <!-- Part 1: Clean up old FULL_ACCESS if it exists (for existing DBs) -->
         <delete tableName="n_permission_group_mapping">
             <where>permission_id IN (SELECT id FROM n_permissions WHERE name = 'USER_PREFERENCES_FULL_ACCESS')</where>
         </delete>
-        
-        <!-- Delete old FULL_ACCESS permission if it exists -->
+
         <delete tableName="n_permissions">
             <where>name = 'USER_PREFERENCES_FULL_ACCESS'</where>
         </delete>
-        
-        <!-- Insert the three granular permissions -->
-        <insert tableName="n_permissions">
-            <column name="name" value="READ_USER_PREFERENCES"/>
-            <column name="action" value="READ"/>
-            <column name="module" value="USER_PREFERENCES"/>
-            <column name="operation" value="READ_USER_PREFERENCES"/>
-            <column name="created_by" value="system"/>
-            <column name="version" valueNumeric="0"/>
-        </insert>
-        
-        <insert tableName="n_permissions">
-            <column name="name" value="CREATE_USER_PREFERENCES"/>
-            <column name="action" value="CREATE"/>
-            <column name="module" value="USER_PREFERENCES"/>
-            <column name="operation" value="CREATE_USER_PREFERENCES"/>
-            <column name="created_by" value="system"/>
-            <column name="version" valueNumeric="0"/>
-        </insert>
-        
-        <insert tableName="n_permissions">
-            <column name="name" value="UPDATE_USER_PREFERENCES"/>
-            <column name="action" value="UPDATE"/>
-            <column name="module" value="USER_PREFERENCES"/>
-            <column name="operation" value="UPDATE_USER_PREFERENCES"/>
-            <column name="created_by" value="system"/>
-            <column name="version" valueNumeric="0"/>
-        </insert>
-        
-       
-        <!-- Insert CREATE_ADVISOR permission -->
-        <insert tableName="n_permissions">
-            <column name="name" value="CREATE_ADVISOR"/>
-            <column name="action" value="CREATE"/>
-            <column name="module" value="ADVISOR"/>
-            <column name="operation" value="CREATE_ADVISOR"/>
-            <column name="created_by" value="system"/>
-            <column name="version" valueNumeric="0"/>
-        </insert>
-        
+
+        <!-- Part 2: Insert granular permissions if not already present -->
+        <sql>INSERT INTO n_permissions (name, action, module, operation, created_by, version)
+            SELECT 'READ_USER_PREFERENCES', 'READ', 'USER_PREFERENCES', 'READ_USER_PREFERENCES', 'system', 0
+            WHERE NOT EXISTS (SELECT 1 FROM n_permissions WHERE name = 'READ_USER_PREFERENCES');</sql>
+
+        <sql>INSERT INTO n_permissions (name, action, module, operation, created_by, version)
+            SELECT 'CREATE_USER_PREFERENCES', 'CREATE', 'USER_PREFERENCES', 'CREATE_USER_PREFERENCES', 'system', 0
+            WHERE NOT EXISTS (SELECT 1 FROM n_permissions WHERE name = 'CREATE_USER_PREFERENCES');</sql>
+
+        <sql>INSERT INTO n_permissions (name, action, module, operation, created_by, version)
+            SELECT 'UPDATE_USER_PREFERENCES', 'UPDATE', 'USER_PREFERENCES', 'UPDATE_USER_PREFERENCES', 'system', 0
+            WHERE NOT EXISTS (SELECT 1 FROM n_permissions WHERE name = 'UPDATE_USER_PREFERENCES');</sql>
+
+        <!-- Part 3: Insert CREATE_ADVISOR permission if not already present -->
+        <sql>INSERT INTO n_permissions (name, action, module, operation, created_by, version)
+            SELECT 'CREATE_ADVISOR', 'CREATE', 'ADVISOR', 'CREATE_ADVISOR', 'system', 0
+            WHERE NOT EXISTS (SELECT 1 FROM n_permissions WHERE name = 'CREATE_ADVISOR');</sql>
+
     </changeSet>
 
 </databaseChangeLog>
-
