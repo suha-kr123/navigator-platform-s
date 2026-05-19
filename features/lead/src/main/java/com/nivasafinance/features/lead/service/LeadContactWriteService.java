@@ -12,6 +12,7 @@ public interface LeadContactWriteService {
     CreateLeadContactResponse createContact(UUID leadId, CreateLeadContactRequest request);
     void updateContact(UUID leadId, UUID contactId, UpdateLeadContactRequest request);
     void updateContactName(UUID leadId, UUID contactId, UpdateContactNameRequest request);
+    void updatePropertyOwner(UUID leadId, UUID contactId);
     void addPhoneNumber(
             UUID leadId,
             UUID contactId,

@@ -80,6 +80,14 @@ public class LeadContactExternalController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @PatchMapping("/{contactIdentifier}/property-owner")
+    public ResponseEntity<Void> updatePropertyOwner(
+            @PathVariable UUID leadId,
+            @PathVariable UUID contactIdentifier) {
+        leadContactWriteService.updatePropertyOwner(leadId, contactIdentifier);
+        return ResponseEntity.noContent().build();
+    }
+
     @PatchMapping("/{contactIdentifier}/name")
     public ResponseEntity<Void> updateName(
             @PathVariable UUID leadId,

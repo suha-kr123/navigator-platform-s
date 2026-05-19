@@ -149,6 +149,17 @@ public class LeadContactWriteServiceImpl implements LeadContactWriteService {
 
     @Override
     @Transactional
+    public void updatePropertyOwner(UUID leadId, UUID contactId) {
+        Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadId);
+        Contact contact = findContactByIdentifier(lead, contactId);
+        contact.setIsPropertyOwner(true);
+        contactRepositoryWrapper.saveWithException(contact);
+        LeadContactPersonType currentType = determineCurrentApplicantType(lead, contact);
+        publishLeadContactUpdatedEvent(lead, contact, currentType);
+    }
+
+    @Override
+    @Transactional
     public void updateContactName(UUID leadId, UUID contactId, UpdateContactNameRequest request) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadId);
         Contact contact = findContactByIdentifier(lead, contactId);
