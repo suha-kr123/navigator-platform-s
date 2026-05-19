@@ -175,6 +175,7 @@ public class LeadRepositoryWrapper {
                              THEN l.reasons ->> 'dropoff'
                          ELSE NULL
                          END as reasonCode,
+                    l.rejection_details->>'rejectedBy' as rejected_by,
                     CASE
                         WHEN l.onhold_details->>'holdFollowUpDate' IS NOT NULL
                         THEN TO_DATE(l.onhold_details->>'holdFollowUpDate', 'DD-MM-YYYY')
@@ -338,6 +339,7 @@ public class LeadRepositoryWrapper {
                 .primaryPersonNumber(rs.getString("primaryPersonNumber"))
                 .officeName(rs.getString("officeName"))
                 .reasonCode(rs.getString("reasonCode"))
+                .rejectedBy(rs.getString("rejected_by"))
                 .proposedAmount(rs.getBigDecimal("proposed_amount"))
                 .proposedRoi(rs.getBigDecimal("proposed_roi"))
                 .eligibleLoanAmount(rs.getBigDecimal("eligible_loan_amount"))

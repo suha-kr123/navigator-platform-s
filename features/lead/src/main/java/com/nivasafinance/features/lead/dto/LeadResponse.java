@@ -40,6 +40,7 @@ public class LeadResponse {
     private LeadSubStatus subStatus;
     private String reasonCode;
     private String reason;
+    private String rejectedBy;
     private LocalDateTime leadCreatedAt;
     private LocalDate holdFollowUpDate;
     private LocalTime preferredCallStartTime;
