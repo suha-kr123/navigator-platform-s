@@ -6,6 +6,7 @@
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
     <changeSet id="V1766993184002_69" author="system" context="default">
+        <validCheckSum>9:a6a4700ac23eb7c569504702a3094e7f</validCheckSum>
         <comment>Insert ADVISOR module permissions</comment>
         
         <!-- Advisor permissions -->
@@ -162,6 +163,18 @@
             <column name="version" valueNumeric="0"/>
         </insert>
         
+    </changeSet>
+
+    <changeSet id="V1766993184002_70" author="system" context="default">
+        <validCheckSum>9:bc6d0a35ffbb974af2c1524e9ca7eff0</validCheckSum>
+        <comment>No-op: previously split changeset, now consolidated into _69</comment>
+        <sql>SELECT 1</sql>
+    </changeSet>
+
+    <changeSet id="V1766993184002_71" author="system" context="default">
+        <validCheckSum>9:a4c263c75aa9bdfbcb62e6fe512cb099</validCheckSum>
+        <comment>No-op: previously split changeset, now consolidated into _69</comment>
+        <sql>SELECT 1</sql>
     </changeSet>
 
 </databaseChangeLog>

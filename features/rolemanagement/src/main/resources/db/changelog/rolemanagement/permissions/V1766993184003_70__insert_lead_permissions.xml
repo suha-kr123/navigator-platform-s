@@ -6,6 +6,7 @@
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
     <changeSet id="V1766993184003_70" author="system" context="default">
+        <validCheckSum>9:b519906a437d7773134d6d0ac5217cb1</validCheckSum>
         <comment>Insert LEAD module permissions</comment>
         
         <!-- Lead permissions -->
@@ -423,6 +424,24 @@
             <column name="version" valueNumeric="0"/>
         </insert>
         
+    </changeSet>
+
+    <changeSet id="V1766993184003_75" author="system" context="default">
+        <validCheckSum>9:afac279fb604e6b38797407eb71373c1</validCheckSum>
+        <comment>No-op: previously split changeset, now consolidated into _70</comment>
+        <sql>SELECT 1</sql>
+    </changeSet>
+
+    <changeSet id="V1766993184003_76" author="system" context="default">
+        <validCheckSum>9:c97820628a567593e03d9bd6838dd02f</validCheckSum>
+        <comment>No-op: previously split changeset, now consolidated into _70</comment>
+        <sql>SELECT 1</sql>
+    </changeSet>
+
+    <changeSet id="V1766993184003_77" author="system" context="default">
+        <validCheckSum>9:85b5b5f82811d8abcfa0591d957526fa</validCheckSum>
+        <comment>No-op: previously split changeset, now consolidated into _70</comment>
+        <sql>SELECT 1</sql>
     </changeSet>
 
 </databaseChangeLog>
