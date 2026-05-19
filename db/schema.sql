@@ -354,6 +354,10 @@ CREATE TABLE n_lead (
     disbursement_details      JSONB,
     reasons                   JSONB,
     sourcing_channel_id       BIGINT,
+    sourcing_history          JSONB           NOT NULL DEFAULT '[]'::jsonb,
+    referred_by_code          VARCHAR(100),
+    referred_by_type          VARCHAR(50),
+    referred_by_identifier    UUID,
     proposed_details          JSONB,
     other_details             JSONB,
     onhold_details            JSONB,
@@ -573,6 +577,10 @@ CREATE TABLE n_advisor (
     other_details          JSONB,
     segmentation_details   JSONB,
     source_channel_id      BIGINT,
+    sourcing_history       JSONB           NOT NULL DEFAULT '[]'::jsonb,
+    referred_by_code       VARCHAR(100),
+    referred_by_type       VARCHAR(50),
+    referred_by_identifier UUID,
     office_key             VARCHAR(100),
     owner                  VARCHAR(255),
     rejection_details      JSONB,
@@ -1652,6 +1660,11 @@ CREATE TABLE whatsapp_logs (
 -- Column: dropoff_details (DropoffDetails)
 --   { "dropoffDate": "LocalDateTime", "dropoffBy": "String" }
 
+-- Column: sourcing_history (List<SourcingEntry>)
+--   [{ "sourcingChannel": "String", "marketingSource": "String", "campaignId": "String",
+--      "sourceId": "String", "sourceUrl": "String", "googleClickId": "String",
+--      "capturedAt": "LocalDateTime" }]
+
 -- Column: income_obligation_details (IncomeObligationDetails)
 --   {
 --     "incomeDetails": [{ "incomeSource": "String", "amount": "BigDecimal",
@@ -1761,6 +1774,11 @@ CREATE TABLE whatsapp_logs (
 -- Column: notes → List<Long>
 -- Column: external_ids → Map<String, String>
 -- Column: call_logs (List<CallLogDetails>) → [{ "callLogId": "Long" }]
+
+-- Column: sourcing_history (List<SourcingEntry>)
+--   [{ "sourcingChannel": "String", "marketingSource": "String", "campaignId": "String",
+--      "sourceId": "String", "sourceUrl": "String", "googleClickId": "String",
+--      "capturedAt": "LocalDateTime" }]
 
 -- =============================================================================
 -- Table: n_tasks

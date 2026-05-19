@@ -1,0 +1,16 @@
+package com.nivasafinance.common.enums;
+
+public enum SourcingChannel {
+    CONNECTOR_SOURCE,
+    DIRECT_WHATSAPP_SOURCE,
+    DIRECT_CALL_SOURCE,
+    NIVASA_EMPLOYEE_REFERRAL,
+    QR_CODE_SOURCE,
+    NUMBER_SEEN_IN_BRANCH,
+    GOOGLE_SEARCH,
+    META_ADS_DM,
+    ON_GROUND_CONVERSION,
+    CUSTOMER_REFERRAL,
+    ADVISOR_WHATSAPP,
+    ADVISOR_APP
+}
