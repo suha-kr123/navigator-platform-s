@@ -1,5 +1,7 @@
 package com.nivasafinance.features.advisor.service.impl;
 
+import com.nivasafinance.common.enums.ReferredByType;
+import com.nivasafinance.common.enums.SourcingChannel;
 import com.nivasafinance.common.context.UserContext;
 import com.nivasafinance.common.events.BusinessEvent;
 import com.nivasafinance.common.events.SystemEvent;
@@ -22,8 +24,6 @@ import com.nivasafinance.features.rolemanagement.role.dto.AddUserRolesRequest;
 import com.nivasafinance.features.person.dto.PersonCreateRequest;
 import com.nivasafinance.features.person.dto.PersonUpdateRequest;
 import com.nivasafinance.features.sourcechannel.dto.SourcingChannelRequest;
-import com.nivasafinance.features.sourcechannel.dto.SourcingChannelResponse;
-import com.nivasafinance.features.sourcechannel.service.SourcingChannelWriteService;
 import com.nivasafinance.features.master.codemaster.SystemControlledMasterCodes;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
 import com.nivasafinance.features.master.codemaster.service.CodeMasterService;
@@ -42,6 +42,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Optional;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -52,7 +53,6 @@ import java.util.UUID;
 public class AdvisorWriteServiceImpl implements AdvisorWriteService {
 
     private final AdvisorRepositoryWrapper advisorRepositoryWrapper;
-    private final SourcingChannelWriteService sourcingChannelWriteService;
     private final CodeMasterService codeMasterService;
     private final OfficeReadService officeReadService;
     private final ApplicationEventPublisher applicationEventPublisher;
@@ -77,10 +77,18 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
                     .map(UserResponse::getUsername)
                     .orElseGet(() -> userWriteService.createUserForMobile(mobile, buildPersonCreateRequest(request)).getUsername());
         } catch (UserAlreadyExistsException e) {
+            // User exists — check if advisor exists and append sourcing
+            Optional<Advisor> existingAdvisor = findExistingAdvisorByMobile(mobile);
+            if (existingAdvisor.isPresent()) {
+                handleSourcingChannel(existingAdvisor.get(), request.getSourcingChannelRequest());
+                return existingAdvisor.get().getIdentifier();
+            }
             throw AdvisorExceptionFactory.advisorAlreadyExistsForMobileNumber(mobile, messageSource);
         }
-        if (advisorRepositoryWrapper.findByUsernameIncludingDeleted(advisorUsername).isPresent()) {
-            throw AdvisorExceptionFactory.advisorAlreadyExistsForMobileNumber(mobile, messageSource);
+        Optional<Advisor> existingAdvisor = advisorRepositoryWrapper.findByUsernameIncludingDeleted(advisorUsername);
+        if (existingAdvisor.isPresent()) {
+            handleSourcingChannel(existingAdvisor.get(), request.getSourcingChannelRequest());
+            return existingAdvisor.get().getIdentifier();
         }
 
         Advisor advisor = new Advisor();
@@ -205,34 +213,34 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
     public void updateSourcingDetails(UUID identifier, UpdateSourcingDetailsRequest request) {
         Advisor advisor = advisorRepositoryWrapper.findByIdentifierWithException(identifier);
 
-        // Build marketing details object
-        SourcingChannelRequest.MarketingDetails marketingDetails =
-                SourcingChannelRequest.MarketingDetails.builder()
-                        .sourceId(request.getSourceId())
-                        .sourceUrl(request.getSourceUrl())
-                        .campaignId(request.getCampaignId())
-                        .referredByCode(request.getReferredByCode())
-                        .build();
-
-        // Build sourcing channel request
-        SourcingChannelRequest sourcingChannelRequest = new SourcingChannelRequest(
-                request.getSourcingChannel(),
-                request.getMarketingSource(),
-                marketingDetails
-        );
-
-        SourcingChannelResponse sourcingChannelResponse;
-        Long sourceChannelId = advisor.getSourceChannelId();
-        if (advisor.getSourceChannelId() != null) {
-            sourcingChannelResponse = sourcingChannelWriteService.update(advisor.getSourceChannelId(), sourcingChannelRequest);
-        } else {
-            sourcingChannelResponse = sourcingChannelWriteService.create(sourcingChannelRequest);
+        // Sourcing edit guard — locked once system has captured entries
+        if (advisor.getSourcingHistory() != null && !advisor.getSourcingHistory().isEmpty()) {
+            throw new BadRequestException("Sourcing details cannot be edited once captured by the system");
         }
 
-        if (sourcingChannelResponse != null && sourcingChannelResponse.getId() != null) {
-            sourceChannelId = sourcingChannelResponse.getId();
-            advisor.setSourceChannelId(sourceChannelId);
+        // Referral edit guard — first referral wins
+        if (advisor.getReferredByCode() != null && ValidationUtils.isNonNullOrEmpty(request.getReferredByCode())) {
+            throw new BadRequestException("Referral cannot be changed once set");
         }
+
+        // Append sourcing entry
+        Advisor.SourcingEntry entry = Advisor.SourcingEntry.builder()
+                .sourcingChannel(ValidationUtils.isNonNullOrEmpty(request.getSourcingChannel()) ? SourcingChannel.valueOf(request.getSourcingChannel()) : null)
+                .marketingSource(request.getMarketingSource())
+                .campaignId(request.getCampaignId())
+                .sourceId(request.getSourceId())
+                .sourceUrl(request.getSourceUrl())
+                .capturedAt(LocalDateTime.now())
+                .build();
+
+        List<Advisor.SourcingEntry> history = advisor.getSourcingHistory() != null
+                ? new ArrayList<>(advisor.getSourcingHistory())
+                : new ArrayList<>();
+        history.add(entry);
+        advisor.setSourcingHistory(history);
+
+        // Resolve referral
+        resolveAndSetReferral(advisor, request.getReferredByCode());
 
         advisorRepositoryWrapper.saveWithException(advisor);
 
@@ -599,15 +607,52 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
         if (ValidationUtils.isNull(sourcingChannelRequest)) {
             return;
         }
-        if (advisor.getSourceChannelId() != null) {
-            sourcingChannelWriteService.update(advisor.getSourceChannelId(), sourcingChannelRequest);
-        } else {
-            SourcingChannelResponse response = sourcingChannelWriteService.create(sourcingChannelRequest);
-            if (response != null && response.getId() != null) {
-                advisor.setSourceChannelId(response.getId());
-                advisorRepositoryWrapper.saveWithException(advisor);
-            }
+
+        // Append sourcing entry
+        SourcingChannelRequest.MarketingDetails details = sourcingChannelRequest.getMarketingDetails();
+        Advisor.SourcingEntry entry = Advisor.SourcingEntry.builder()
+                .sourcingChannel(ValidationUtils.isNonNullOrEmpty(sourcingChannelRequest.getSourcingChannel()) ? SourcingChannel.valueOf(sourcingChannelRequest.getSourcingChannel()) : null)
+                .marketingSource(sourcingChannelRequest.getMarketingSource())
+                .campaignId(details != null ? details.getCampaignId() : null)
+                .sourceId(details != null ? details.getSourceId() : null)
+                .sourceUrl(details != null ? details.getSourceUrl() : null)
+                .googleClickId(details != null ? details.getGoogleClickId() : null)
+                .capturedAt(LocalDateTime.now())
+                .build();
+
+        List<Advisor.SourcingEntry> history = advisor.getSourcingHistory() != null
+                ? new ArrayList<>(advisor.getSourcingHistory())
+                : new ArrayList<>();
+        history.add(entry);
+        advisor.setSourcingHistory(history);
+
+        // Resolve referral — entity-agnostic, set once only
+        if (details != null) {
+            resolveAndSetReferral(advisor, details.getReferredByCode());
         }
+
+        advisorRepositoryWrapper.saveWithException(advisor);
+    }
+
+    private void resolveAndSetReferral(Advisor advisor, String referralCode) {
+        if (!ValidationUtils.isNonNullOrEmpty(referralCode)) return;
+        if (advisor.getReferredByCode() != null) return; // first referral wins, never overwrite
+
+        advisor.setReferredByCode(referralCode);
+
+        ReferralCodeRegistryResponse registry = referralCodeRegistryService.getReferralCodeByCode(referralCode);
+        if (registry != null && registry.getEntityType() != null) {
+            advisor.setReferredByType(ReferredByType.valueOf(registry.getEntityType().name()));
+            advisor.setReferredByIdentifier(registry.getEntityIdentifier());
+        }
+    }
+
+
+
+    private Optional<Advisor> findExistingAdvisorByMobile(String mobile) {
+        return userReadService.findUserByPersonMobile(mobile)
+                .map(UserResponse::getUsername)
+                .flatMap(advisorRepositoryWrapper::findByUsernameIncludingDeleted);
     }
 
     private void generateReferralCode(Advisor advisor) {

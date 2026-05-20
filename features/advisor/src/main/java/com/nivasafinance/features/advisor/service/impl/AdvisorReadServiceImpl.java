@@ -1,5 +1,6 @@
 package com.nivasafinance.features.advisor.service.impl;
 
+import com.nivasafinance.common.enums.ReferredByType;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationRequest;
 import com.nivasafinance.common.context.UserContext;
@@ -85,27 +86,34 @@ public class AdvisorReadServiceImpl implements AdvisorReadService {
         return mapEntityToResponse(advisor);
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public SourcingDetailsResponse getSourcingDetails(UUID identifier) {
         Advisor advisor = advisorRepositoryWrapper.findByIdentifierWithException(identifier);
 
-        if (advisor.getSourceChannelId() == null) {
-            return SourcingDetailsResponse.builder().build();
+        SourcingDetailsResponse.SourcingDetailsResponseBuilder builder = SourcingDetailsResponse.builder()
+                .sourcingHistory(advisor.getSourcingHistory())
+                .referredByCode(advisor.getReferredByCode())
+                .referredByType(advisor.getReferredByType());
+
+        // Backward compat: still populate old field if source_channel_id exists
+        if (advisor.getSourceChannelId() != null) {
+            try {
+                SourcingChannelResponse sourcingChannel = sourcingChannelRepositoryWrapper
+                        .findByIdAsResponseWithException(advisor.getSourceChannelId());
+                SourcingChannelResponse sanitized = new SourcingChannelResponse(
+                        null,
+                        sourcingChannel.getSourcingIdentifier(),
+                        sourcingChannel.getSourcingChannel(),
+                        sourcingChannel.getMarketingSource(),
+                        sourcingChannel.getMarketingDetails());
+                builder.sourcingChannelDetails(sanitized);
+            } catch (Exception e) {
+                // Legacy sourcing channel not found — ignore
+            }
         }
 
-        SourcingChannelResponse sourcingChannel = sourcingChannelRepositoryWrapper
-                .findByIdAsResponseWithException(advisor.getSourceChannelId());
-
-        SourcingChannelResponse sanitized = new SourcingChannelResponse(
-                null,
-                sourcingChannel.getSourcingIdentifier(),
-                sourcingChannel.getSourcingChannel(),
-                sourcingChannel.getMarketingSource(),
-                sourcingChannel.getMarketingDetails());
-
-        return SourcingDetailsResponse.builder()
-                .sourcingChannelDetails(sanitized)
-                .build();
+        return builder.build();
     }
 
     @Override
@@ -157,6 +165,7 @@ public class AdvisorReadServiceImpl implements AdvisorReadService {
     }
 
     // Map Advisor entity to response DTO
+    @SuppressWarnings("deprecation")
     private AdvisorResponse mapEntityToResponse(Advisor advisor) {
         PersonResponse person = userReadService.getPersonForUser(advisor.getUsername());
 
@@ -197,24 +206,43 @@ public class AdvisorReadServiceImpl implements AdvisorReadService {
         }
 
         response.setReferralCode(advisor.getReferralCode());
+        response.setSourcingHistory(advisor.getSourcingHistory());
 
-        if (advisor.getSourceChannelId() != null) {
-            SourcingChannelResponse sourcingChannel = sourcingChannelRepositoryWrapper
-                    .findByIdAsResponseWithException(advisor.getSourceChannelId());
-            response.setSourcingChannelDetails(sourcingChannel);
-            String referredByCode = sourcingChannel.getMarketingDetails() != null
-                    ? sourcingChannel.getMarketingDetails().getReferredByCode() : null;
-            if (referredByCode != null && !referredByCode.isBlank()) {
-                response.setReferredByCode(referredByCode);
-                var registry = referralCodeRegistryService.getReferralCodeByCode(referredByCode);
-                if (registry != null) {
-                    response.setReferredByIdentifier(registry.getEntityIdentifier());
-                    response.setReferredByType(registry.getEntityType());
-                    resolveReferrerNameAndPhone(response, registry.getEntityType(), registry.getEntityIdentifier());
-                }
+        // Populate referral from new fields first
+        if (advisor.getReferredByCode() != null) {
+            response.setReferredByCode(advisor.getReferredByCode());
+            if (advisor.getReferredByIdentifier() != null) {
+                response.setReferredByIdentifier(advisor.getReferredByIdentifier());
             }
-        } else {
-            response.setSourcingChannelDetails(null);
+            var registry = referralCodeRegistryService.getReferralCodeByCode(advisor.getReferredByCode());
+            if (registry != null) {
+                response.setReferredByType(ReferredByType.valueOf(registry.getEntityType().name()));
+                resolveReferrerNameAndPhone(response, registry.getEntityType(), registry.getEntityIdentifier());
+            }
+        }
+
+        // Backward compat: populate from old sourcing channel if new fields are empty
+        if (advisor.getSourceChannelId() != null) {
+            try {
+                SourcingChannelResponse sourcingChannel = sourcingChannelRepositoryWrapper
+                        .findByIdAsResponseWithException(advisor.getSourceChannelId());
+                response.setSourcingChannelDetails(sourcingChannel);
+                if (response.getReferredByCode() == null) {
+                    String referredByCode = sourcingChannel.getMarketingDetails() != null
+                            ? sourcingChannel.getMarketingDetails().getReferredByCode() : null;
+                    if (referredByCode != null && !referredByCode.isBlank()) {
+                        response.setReferredByCode(referredByCode);
+                        var registry = referralCodeRegistryService.getReferralCodeByCode(referredByCode);
+                        if (registry != null) {
+                            response.setReferredByIdentifier(registry.getEntityIdentifier());
+                            response.setReferredByType(ReferredByType.valueOf(registry.getEntityType().name()));
+                            resolveReferrerNameAndPhone(response, registry.getEntityType(), registry.getEntityIdentifier());
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                // Legacy sourcing channel not found — ignore
+            }
         }
 
         return response;

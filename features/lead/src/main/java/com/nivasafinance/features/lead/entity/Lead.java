@@ -3,7 +3,9 @@ package com.nivasafinance.features.lead.entity;
 import com.nivasafinance.common.audit.AuditableEntity;
 import com.nivasafinance.common.dto.AddressData;
 import com.nivasafinance.common.dto.GeoData;
+import com.nivasafinance.common.enums.SourcingChannel;
 import com.nivasafinance.common.enums.TenureType;
+import com.nivasafinance.common.enums.ReferredByType;
 import com.nivasafinance.features.lead.enums.LeadStatus;
 import com.nivasafinance.features.lead.enums.LeadSubStatus;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
@@ -16,6 +18,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -111,6 +114,21 @@ public class Lead extends AuditableEntity {
 
     @Column(name = "sourcing_channel_id")
     private Long sourcingChannelId;
+
+    @Type(JsonType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "sourcing_history", columnDefinition = "jsonb")
+    private List<SourcingEntry> sourcingHistory = new ArrayList<>();
+
+    @Column(name = "referred_by_code", length = 100)
+    private String referredByCode;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "referred_by_type", length = 50)
+    private ReferredByType referredByType;
+
+    @Column(name = "referred_by_identifier")
+    private UUID referredByIdentifier;
 
     @Type(JsonType.class)
     @JdbcTypeCode(SqlTypes.JSON)
@@ -432,6 +450,20 @@ public class Lead extends AuditableEntity {
     public static class DropoffDetails {
         private LocalDateTime dropoffDate;
         private String dropoffBy;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class SourcingEntry {
+        private SourcingChannel sourcingChannel;
+        private String marketingSource;
+        private String campaignId;
+        private String sourceId;
+        private String sourceUrl;
+        private String googleClickId;
+        private LocalDateTime capturedAt;
     }
 
     @Data

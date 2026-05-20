@@ -1,9 +1,10 @@
 package com.nivasafinance.features.lead.dto;
 
+import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.enums.LeadStatus;
 import com.nivasafinance.features.lead.enums.LeadSubStatus;
+import com.nivasafinance.common.enums.ReferredByType;
 import com.nivasafinance.features.master.codemaster.dto.CodeValueResponse;
-import com.nivasafinance.features.referral.enums.EntityType;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,6 +17,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -71,12 +73,14 @@ public class LeadResponse {
     private String assignedTo;
     private LocalDateTime assignedAt;
     private LocalDateTime enteredAt;
+    @Deprecated
     private SourcingChannelResponse sourcingChannelDetails;
+    private List<Lead.SourcingEntry> sourcingHistory;
 
     //referral details
     private String referredByCode;
     private UUID referredByIdentifier;
-    private EntityType referredByType;
+    private ReferredByType referredByType;
     private String referredByName;
     private String referredByNumber;
 

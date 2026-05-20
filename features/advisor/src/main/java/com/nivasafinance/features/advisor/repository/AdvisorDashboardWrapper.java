@@ -126,19 +126,19 @@ public class AdvisorDashboardWrapper {
                     a.status AS status,
                     o.name AS office,
                     a.segmentation_details->>'segmentation' AS segmentation_key,
-                    sourcing_channel.sourcing_channel_name AS sourcing_channel_name,
+                    COALESCE(a.sourcing_history->0->>'sourcingChannel', sourcing_channel.sourcing_channel_name) AS sourcing_channel_name,
                     (SELECT COUNT(*)
                      FROM n_lead l2
-                     JOIN n_sourcing_channel_details sc2 ON sc2.id = l2.sourcing_channel_id
-                     JOIN n_referral_code_registry r2 ON r2.referral_code = sc2.marketing_details->>'referredByCode'
+                     LEFT JOIN n_sourcing_channel_details sc2 ON sc2.id = l2.sourcing_channel_id
+                     LEFT JOIN n_referral_code_registry r2 ON r2.referral_code = COALESCE(l2.referred_by_code, sc2.marketing_details->>'referredByCode')
                      WHERE r2.entity_type::text = 'ADVISOR' AND r2.entity_identifier = a.identifier) AS no_of_leads,
                     0 AS no_of_advisors,
                     a.owner AS sales_owner,
                     (a.other_details->>'preferredCallStartTime')::time AS preferred_call_start_time,
                     (a.other_details->>'preferredCallEndTime')::time AS preferred_call_end_time,
-                    sourcing_channel.marketing_details->>'referredByCode' AS referred_by_code,
-                    r.entity_type::text AS referred_by_type,
-                    r.entity_identifier AS referred_by_identifier,
+                    COALESCE(a.referred_by_code, sourcing_channel.marketing_details->>'referredByCode') AS referred_by_code,
+                    COALESCE(a.referred_by_type::text, r.entity_type::text) AS referred_by_type,
+                    COALESCE(a.referred_by_identifier, r.entity_identifier) AS referred_by_identifier,
                     COALESCE(ref_adv_p.display_name, ref_st_p.display_name, ref_lead_p.display_name, ref_lead_app_p.display_name, ref_app_by_uuid_p.display_name) AS referred_by_name,
                     COALESCE(
                         (jsonb_path_query_first(COALESCE(ref_adv_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
@@ -218,8 +218,8 @@ public class AdvisorDashboardWrapper {
                        l.substatus::text AS sub_status,
                        COUNT(*) AS lead_count
                 FROM n_lead l
-                JOIN n_sourcing_channel_details sc_d ON sc_d.id = l.sourcing_channel_id
-                JOIN n_referral_code_registry r ON r.referral_code = sc_d.marketing_details->>'referredByCode'
+                LEFT JOIN n_sourcing_channel_details sc_d ON sc_d.id = l.sourcing_channel_id
+                LEFT JOIN n_referral_code_registry r ON r.referral_code = COALESCE(l.referred_by_code, sc_d.marketing_details->>'referredByCode')
                 WHERE r.entity_type::text = 'ADVISOR' AND r.entity_identifier = ?
                 GROUP BY l.status, l.substatus
                 ORDER BY l.status, l.substatus NULLS FIRST
@@ -335,7 +335,7 @@ public class AdvisorDashboardWrapper {
                 LEFT JOIN n_person p ON p.id = a_u.person_id
                 LEFT JOIN n_office o ON o.key = a.office_key
                 LEFT JOIN n_sourcing_channel_details sourcing_channel ON sourcing_channel.id = a.source_channel_id
-                LEFT JOIN n_referral_code_registry r ON r.referral_code = sourcing_channel.marketing_details->>'referredByCode'
+                LEFT JOIN n_referral_code_registry r ON r.referral_code = COALESCE(a.referred_by_code, sourcing_channel.marketing_details->>'referredByCode')
                 LEFT JOIN n_advisor ref_adv ON ref_adv.identifier = r.entity_identifier AND r.entity_type::text = 'ADVISOR'
                 LEFT JOIN n_user ref_adv_u ON ref_adv_u.username = ref_adv.username
                 LEFT JOIN n_person ref_adv_p ON ref_adv_p.id = ref_adv_u.person_id

@@ -2,6 +2,8 @@ package com.nivasafinance.features.lead.service.impl;
 
 import com.nivasafinance.analytics.AnalyticsEvent;
 import com.nivasafinance.analytics.AnalyticsHelper;
+import com.nivasafinance.common.enums.ReferredByType;
+import com.nivasafinance.common.enums.SourcingChannel;
 import com.nivasafinance.common.context.UserContext;
 import com.nivasafinance.common.dto.AddressData;
 import com.nivasafinance.common.dto.PatchAddressData;
@@ -19,7 +21,6 @@ import com.nivasafinance.features.lead.annotation.TransactionalOptimisticRetry;
 import com.nivasafinance.features.lead.dto.*;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.enums.*;
-import com.nivasafinance.features.lead.exception.ActiveLeadAlreadyExistsException;
 import com.nivasafinance.features.lead.exception.LeadExceptionFactory;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadContactWriteService;
@@ -31,9 +32,9 @@ import com.nivasafinance.features.master.products.service.ProductReadService;
 import com.nivasafinance.features.person.entity.MobileNumberDetails;
 import com.nivasafinance.features.person.entity.Person;
 import com.nivasafinance.features.person.repository.PersonRepositoryWrapper;
+import com.nivasafinance.features.referral.dto.ReferralCodeRegistryResponse;
+import com.nivasafinance.features.referral.service.ReferralCodeRegistryService;
 import com.nivasafinance.features.sourcechannel.dto.SourcingChannelRequest;
-import com.nivasafinance.features.sourcechannel.dto.SourcingChannelResponse;
-import com.nivasafinance.features.sourcechannel.service.SourcingChannelWriteService;
 import com.nivasafinance.features.workflow.constants.WorkflowConstants;
 import com.nivasafinance.features.workflow.repository.WorkflowConfigRepositoryWrapper;
 import lombok.AllArgsConstructor;
@@ -60,7 +61,6 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     private final PersonRepositoryWrapper personRepositoryWrapper;
     private final MessageSource messageSource;
     private final AddressDataService addressDataService;
-    private final SourcingChannelWriteService sourcingChannelWriteService;
     private final ProductReadService productReadService;
     private final CodeValueMasterService codeValueMasterService;
     private final ApplicationEventPublisher applicationEventPublisher;
@@ -68,6 +68,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     private final WorkflowConfigRepositoryWrapper workflowConfigRepositoryWrapper;
     private final LeadStageHistoryWriteService leadStageHistoryWriteService;
     private final AnalyticsHelper analyticsHelper;
+    private final ReferralCodeRegistryService referralCodeRegistryService;
 
 
     @Override
@@ -78,8 +79,15 @@ public class LeadWriteServiceImpl implements LeadWriteService {
             productReadService.getProductByCode(request.getProduct());
         }
 
-        // Check if active lead already exists with this phone number
-        checkForActiveLead(request);
+        // If active lead exists, append sourcing and return existing lead
+        Optional<Lead> existingLead = findActiveLead(request);
+        if (existingLead.isPresent()) {
+            Lead lead = existingLead.get();
+            handleSourcingChannel(lead, request.getSourcingChannelRequest());
+            return CreateLeadResponse.builder()
+                    .leadIdentifier(lead.getLeadIdentifier())
+                    .build();
+        }
 
         // Create lead
         Lead lead = new Lead();
@@ -347,25 +355,31 @@ public class LeadWriteServiceImpl implements LeadWriteService {
     public void updateSourcingDetails(UUID leadIdentifier, UpdateSourcingDetailsRequest request) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
 
-        SourcingChannelRequest sourcingChannelRequest = new SourcingChannelRequest(
-                request.getSourcingChannel(),
-                request.getMarketingSource(),
-                SourcingChannelRequest.MarketingDetails.builder()
-                        .sourceId(request.getSourceId())
-                        .sourceUrl(request.getSourceUrl())
-                        .campaignId(request.getCampaignId())
-                        .referredByCode(request.getReferredByCode())
-                        .googleClickId(request.getGoogleClickId())
-                        .build()
-        );
-
-        if (lead.getSourcingChannelId() != null) {
-            sourcingChannelWriteService.update(lead.getSourcingChannelId(), sourcingChannelRequest);
-        } else {
-            SourcingChannelResponse sourcingChannelResponse =
-                sourcingChannelWriteService.create(sourcingChannelRequest);
-            lead.setSourcingChannelId(sourcingChannelResponse.getId());
+        // Sourcing edit guard — locked once system has captured entries
+        if (lead.getSourcingHistory() != null && !lead.getSourcingHistory().isEmpty()) {
+            throw new BadRequestException("Sourcing details cannot be edited once captured by the system");
         }
+
+        // Referral edit guard — first referral wins
+        if (lead.getReferredByCode() != null && ValidationUtils.isNonNullOrEmpty(request.getReferredByCode())) {
+            throw new BadRequestException("Referral cannot be changed once set");
+        }
+
+        // Append sourcing entry
+        Lead.SourcingEntry entry = Lead.SourcingEntry.builder()
+                .sourcingChannel(ValidationUtils.isNonNullOrEmpty(request.getSourcingChannel()) ? SourcingChannel.valueOf(request.getSourcingChannel()) : null)
+                .marketingSource(request.getMarketingSource())
+                .campaignId(request.getCampaignId())
+                .sourceId(request.getSourceId())
+                .sourceUrl(request.getSourceUrl())
+                .googleClickId(request.getGoogleClickId())
+                .capturedAt(LocalDateTime.now())
+                .build();
+
+        appendSourcingEntry(lead, entry);
+
+        // Resolve referral
+        resolveAndSetReferral(lead, request.getReferredByCode());
 
         leadRepositoryWrapper.saveWithException(lead);
 
@@ -1204,41 +1218,64 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         );
     }
 
-    private void checkForActiveLead(CreateLeadRequest request) {
-        // If personReadService.getPersonByPrimaryMobile function and catch exception it will throw
-        // silently rolled back exceptions
-        // As a workaround directly calling personRepositoryWrapper
+    private Optional<Lead> findActiveLead(CreateLeadRequest request) {
         Optional<Person> existingPerson = personRepositoryWrapper
                 .findByPrimaryMobileNumber(request.getPhoneNumber().getMobileNumber());
 
         if (existingPerson.isEmpty()) {
-            return;
+            return Optional.empty();
         }
-        // Person exists, check if they are a contact in any active/onhold lead
-        Optional<Lead> existingActiveLead = leadRepositoryWrapper.findActiveLeadByContactPersonId(
+        return leadRepositoryWrapper.findActiveLeadByContactPersonId(
                 existingPerson.get().getId()
         );
-
-        if (existingActiveLead.isPresent()) {
-            throw new ActiveLeadAlreadyExistsException(
-                    request.getPhoneNumber().getMobileNumber(),
-                    messageSource
-            );
-        }
     }
 
     private void handleSourcingChannel(Lead lead, SourcingChannelRequest sourcingChannelRequest) {
         if (ValidationUtils.isNull(sourcingChannelRequest)) {
             return;
         }
-        if (lead.getSourcingChannelId() != null) {
-            sourcingChannelWriteService.update(lead.getSourcingChannelId(), sourcingChannelRequest);
-        } else {
-            SourcingChannelResponse response = sourcingChannelWriteService.create(sourcingChannelRequest);
-            if (response != null && response.getId() != null) {
-                lead.setSourcingChannelId(response.getId());
-                leadRepositoryWrapper.saveWithException(lead);
-            }
+
+        // Append sourcing entry
+        SourcingChannelRequest.MarketingDetails details = sourcingChannelRequest.getMarketingDetails();
+        Lead.SourcingEntry entry = Lead.SourcingEntry.builder()
+                .sourcingChannel(ValidationUtils.isNonNullOrEmpty(sourcingChannelRequest.getSourcingChannel()) ? SourcingChannel.valueOf(sourcingChannelRequest.getSourcingChannel()) : null)
+                .marketingSource(sourcingChannelRequest.getMarketingSource())
+                .campaignId(details != null ? details.getCampaignId() : null)
+                .sourceId(details != null ? details.getSourceId() : null)
+                .sourceUrl(details != null ? details.getSourceUrl() : null)
+                .googleClickId(details != null ? details.getGoogleClickId() : null)
+                .capturedAt(LocalDateTime.now())
+                .build();
+
+        appendSourcingEntry(lead, entry);
+
+        // Resolve referral — entity-agnostic, set once only
+        if (details != null) {
+            resolveAndSetReferral(lead, details.getReferredByCode());
+        }
+
+        leadRepositoryWrapper.saveWithException(lead);
+    }
+
+    private void appendSourcingEntry(Lead lead, Lead.SourcingEntry entry) {
+        List<Lead.SourcingEntry> history = lead.getSourcingHistory() != null
+                ? new ArrayList<>(lead.getSourcingHistory())
+                : new ArrayList<>();
+        history.add(entry);
+        lead.setSourcingHistory(history);
+    }
+
+    private void resolveAndSetReferral(Lead lead, String referralCode) {
+        if (!ValidationUtils.isNonNullOrEmpty(referralCode)) return;
+        if (lead.getReferredByCode() != null) return; // first referral wins, never overwrite
+
+        lead.setReferredByCode(referralCode);
+
+        ReferralCodeRegistryResponse registry = referralCodeRegistryService.getReferralCodeByCode(referralCode);
+        if (registry != null && registry.getEntityType() != null) {
+            lead.setReferredByType(ReferredByType.valueOf(registry.getEntityType().name()));
+            lead.setReferredByIdentifier(registry.getEntityIdentifier());
         }
     }
+
 }

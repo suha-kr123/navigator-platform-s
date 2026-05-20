@@ -208,7 +208,7 @@ public class LeadDashboardWrapper {
                         ELSE NULL
                     END AS hold_follow_up_date,
                     o.code                                             AS office_code,
-                    sourcing_channel.sourcing_channel_name             AS sourcing_channel_name,
+                    COALESCE(l.sourcing_history->0->>'sourcingChannel', sourcing_channel.sourcing_channel_name) AS sourcing_channel_name,
                     (l.workflow_details->>'workflowConfigKey')         AS workflow_config_key,
                     ((l.workflow_details->'currentStageDetails')->>'stageKey') AS current_stage_key,
                     ((l.workflow_details->'currentStageDetails')->>'subStageKey') AS current_sub_stage_key,
@@ -225,9 +225,9 @@ public class LeadDashboardWrapper {
                         THEN to_timestamp(((l.workflow_details->'currentStageDetails')->>'enteredAt'), 'DD-MM-YYYY HH24:MI:SS')
                         ELSE NULL
                     END AS stage_entered_at,
-                    sourcing_channel.marketing_details->>'referredByCode' AS referred_by_code,
-                    r.entity_type::text AS referred_by_type,
-                    r.entity_identifier AS referred_by_identifier,
+                    COALESCE(l.referred_by_code, sourcing_channel.marketing_details->>'referredByCode') AS referred_by_code,
+                    COALESCE(l.referred_by_type::text, r.entity_type::text) AS referred_by_type,
+                    COALESCE(l.referred_by_identifier, r.entity_identifier) AS referred_by_identifier,
                     COALESCE(ref_adv_p.display_name, ref_st_p.display_name, ref_lead_p.display_name, ref_lead_app_p.display_name, ref_app_by_uuid_p.display_name) AS referred_by_name,
                     COALESCE(
                         (jsonb_path_query_first(COALESCE(ref_adv_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
@@ -718,7 +718,7 @@ public class LeadDashboardWrapper {
                 ) partners ON partners.lead_id = l.id
                 LEFT JOIN n_call_log latest_call ON latest_call.id = (l.other_details->>'lastCallId')::bigint
                 LEFT JOIN n_sourcing_channel_details sourcing_channel ON sourcing_channel.id = l.sourcing_channel_id
-                LEFT JOIN n_referral_code_registry r ON r.referral_code = sourcing_channel.marketing_details->>'referredByCode'
+                LEFT JOIN n_referral_code_registry r ON r.referral_code = COALESCE(l.referred_by_code, sourcing_channel.marketing_details->>'referredByCode')
                 LEFT JOIN n_advisor ref_adv ON ref_adv.identifier = r.entity_identifier AND r.entity_type::text = 'ADVISOR'
                 LEFT JOIN n_user ref_adv_u ON ref_adv_u.username = ref_adv.username
                 LEFT JOIN n_person ref_adv_p ON ref_adv_p.id = ref_adv_u.person_id

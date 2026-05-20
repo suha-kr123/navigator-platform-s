@@ -110,7 +110,7 @@ public class TransactionRepositoryWrapper {
 
             String countSql = "SELECT COUNT(*) FROM n_lead l "
                     + "LEFT JOIN n_sourcing_channel_details sc ON sc.id = l.sourcing_channel_id "
-                    + "LEFT JOIN n_referral_code_registry rcr ON rcr.referral_code = sc.marketing_details->>'referredByCode' "
+                    + "LEFT JOIN n_referral_code_registry rcr ON rcr.referral_code = COALESCE(l.referred_by_code, sc.marketing_details->>'referredByCode') "
                     + whereClause;
 
             MapSqlParameterSource params = new MapSqlParameterSource();
@@ -359,7 +359,7 @@ public class TransactionRepositoryWrapper {
                 + "LEFT JOIN n_applicant app ON app.id = l.applicant "
                 + "LEFT JOIN n_person p ON p.id = app.person_id "
                 + "LEFT JOIN n_sourcing_channel_details sc ON sc.id = l.sourcing_channel_id "
-                + "LEFT JOIN n_referral_code_registry rcr ON rcr.referral_code = sc.marketing_details->>'referredByCode' "
+                + "LEFT JOIN n_referral_code_registry rcr ON rcr.referral_code = COALESCE(l.referred_by_code, sc.marketing_details->>'referredByCode') "
                 + "LEFT JOIN n_advisor a ON a.identifier = rcr.entity_identifier "
                 + "LEFT JOIN n_user adv_u ON adv_u.username = a.username "
                 + "LEFT JOIN n_person adv_p ON adv_p.id = adv_u.person_id "

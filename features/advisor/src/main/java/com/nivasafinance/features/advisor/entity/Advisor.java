@@ -1,12 +1,14 @@
 package com.nivasafinance.features.advisor.entity;
 
 import com.nivasafinance.common.audit.AuditableEntity;
+import com.nivasafinance.common.enums.SourcingChannel;
 import com.nivasafinance.features.advisor.dto.AdvisorRemarks;
 import com.nivasafinance.features.advisor.dto.BankDetails;
 import com.nivasafinance.features.advisor.dto.OtherDetails;
 import com.nivasafinance.features.advisor.dto.QualificationDetails;
 import com.nivasafinance.features.advisor.dto.SegmentationDetails;
 import com.nivasafinance.features.advisor.enums.AdvisorStatus;
+import com.nivasafinance.common.enums.ReferredByType;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import lombok.*;
@@ -15,6 +17,7 @@ import org.hibernate.annotations.Type;
 import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -69,6 +72,21 @@ public class Advisor extends AuditableEntity {
     @Column(name = "source_channel_id")
     private Long sourceChannelId;
 
+    @Type(JsonType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "sourcing_history", columnDefinition = "jsonb")
+    private List<SourcingEntry> sourcingHistory = new ArrayList<>();
+
+    @Column(name = "referred_by_code", length = 100)
+    private String referredByCode;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "referred_by_type", length = 50)
+    private ReferredByType referredByType;
+
+    @Column(name = "referred_by_identifier")
+    private UUID referredByIdentifier;
+
     @Column(name = "office_key", length = 100)
     private String officeKey;
 
@@ -116,6 +134,20 @@ public class Advisor extends AuditableEntity {
     @Builder
     public static class CallLogDetails {
         private Long callLogId;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class SourcingEntry {
+        private SourcingChannel sourcingChannel;
+        private String marketingSource;
+        private String campaignId;
+        private String sourceId;
+        private String sourceUrl;
+        private String googleClickId;
+        private LocalDateTime capturedAt;
     }
 }
 
