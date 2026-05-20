@@ -1,5 +1,5 @@
 package com.nivasafinance.notification.executor.impl;
-
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.MessagingErrorCode;
@@ -30,6 +30,7 @@ import java.util.regex.Pattern;
 /** FCM executor: resolves app user, loads tokens from n_device, sends and tracks. */
 @Component
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "firebase.enabled", havingValue = "true", matchIfMissing = true)
 @Slf4j
 public class FirebaseNotificationExecutor implements NotificationExecutor {
 
