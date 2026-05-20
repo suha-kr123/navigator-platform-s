@@ -5,6 +5,7 @@ import com.nivasafinance.common.dto.AddressData;
 import com.nivasafinance.common.dto.GeoData;
 import com.nivasafinance.common.enums.SourcingChannel;
 import com.nivasafinance.common.enums.TenureType;
+import com.nivasafinance.common.enums.ReferredByType;
 import com.nivasafinance.features.lead.enums.LeadStatus;
 import com.nivasafinance.features.lead.enums.LeadSubStatus;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
@@ -122,8 +123,9 @@ public class Lead extends AuditableEntity {
     @Column(name = "referred_by_code", length = 100)
     private String referredByCode;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "referred_by_type", length = 50)
-    private String referredByType;
+    private ReferredByType referredByType;
 
     @Column(name = "referred_by_identifier")
     private UUID referredByIdentifier;

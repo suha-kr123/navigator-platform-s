@@ -1,6 +1,6 @@
 package com.nivasafinance.features.advisor.dto.self;
 
-import com.nivasafinance.features.referral.enums.EntityType;
+import com.nivasafinance.common.enums.ReferredByType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,5 +12,5 @@ import lombok.NoArgsConstructor;
 @Builder
 public class SelfReferredByDetails {
     private String referredByName;
-    private EntityType referredByType;
+    private ReferredByType referredByType;
 }

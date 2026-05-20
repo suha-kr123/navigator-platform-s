@@ -2,6 +2,7 @@ package com.nivasafinance.features.lead.service.impl;
 
 import com.nivasafinance.analytics.AnalyticsEvent;
 import com.nivasafinance.analytics.AnalyticsHelper;
+import com.nivasafinance.common.enums.ReferredByType;
 import com.nivasafinance.common.enums.SourcingChannel;
 import com.nivasafinance.common.context.UserContext;
 import com.nivasafinance.common.dto.AddressData;
@@ -20,7 +21,6 @@ import com.nivasafinance.features.lead.annotation.TransactionalOptimisticRetry;
 import com.nivasafinance.features.lead.dto.*;
 import com.nivasafinance.features.lead.entity.Lead;
 import com.nivasafinance.features.lead.enums.*;
-import com.nivasafinance.features.lead.exception.ActiveLeadAlreadyExistsException;
 import com.nivasafinance.features.lead.exception.LeadExceptionFactory;
 import com.nivasafinance.features.lead.repository.LeadRepositoryWrapper;
 import com.nivasafinance.features.lead.service.LeadContactWriteService;
@@ -79,8 +79,15 @@ public class LeadWriteServiceImpl implements LeadWriteService {
             productReadService.getProductByCode(request.getProduct());
         }
 
-        // Check if active lead already exists with this phone number
-        checkForActiveLead(request);
+        // If active lead exists, append sourcing and return existing lead
+        Optional<Lead> existingLead = findActiveLead(request);
+        if (existingLead.isPresent()) {
+            Lead lead = existingLead.get();
+            handleSourcingChannel(lead, request.getSourcingChannelRequest());
+            return CreateLeadResponse.builder()
+                    .leadIdentifier(lead.getLeadIdentifier())
+                    .build();
+        }
 
         // Create lead
         Lead lead = new Lead();
@@ -369,10 +376,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
                 .capturedAt(LocalDateTime.now())
                 .build();
 
-        if (lead.getSourcingHistory() == null) {
-            lead.setSourcingHistory(new ArrayList<>());
-        }
-        lead.getSourcingHistory().add(entry);
+        appendSourcingEntry(lead, entry);
 
         // Resolve referral
         resolveAndSetReferral(lead, request.getReferredByCode());
@@ -1214,27 +1218,16 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         );
     }
 
-    private void checkForActiveLead(CreateLeadRequest request) {
-        // If personReadService.getPersonByPrimaryMobile function and catch exception it will throw
-        // silently rolled back exceptions
-        // As a workaround directly calling personRepositoryWrapper
+    private Optional<Lead> findActiveLead(CreateLeadRequest request) {
         Optional<Person> existingPerson = personRepositoryWrapper
                 .findByPrimaryMobileNumber(request.getPhoneNumber().getMobileNumber());
 
         if (existingPerson.isEmpty()) {
-            return;
+            return Optional.empty();
         }
-        // Person exists, check if they are a contact in any active/onhold lead
-        Optional<Lead> existingActiveLead = leadRepositoryWrapper.findActiveLeadByContactPersonId(
+        return leadRepositoryWrapper.findActiveLeadByContactPersonId(
                 existingPerson.get().getId()
         );
-
-        if (existingActiveLead.isPresent()) {
-            throw new ActiveLeadAlreadyExistsException(
-                    request.getPhoneNumber().getMobileNumber(),
-                    messageSource
-            );
-        }
     }
 
     private void handleSourcingChannel(Lead lead, SourcingChannelRequest sourcingChannelRequest) {
@@ -1254,10 +1247,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
                 .capturedAt(LocalDateTime.now())
                 .build();
 
-        if (lead.getSourcingHistory() == null) {
-            lead.setSourcingHistory(new ArrayList<>());
-        }
-        lead.getSourcingHistory().add(entry);
+        appendSourcingEntry(lead, entry);
 
         // Resolve referral — entity-agnostic, set once only
         if (details != null) {
@@ -1265,6 +1255,14 @@ public class LeadWriteServiceImpl implements LeadWriteService {
         }
 
         leadRepositoryWrapper.saveWithException(lead);
+    }
+
+    private void appendSourcingEntry(Lead lead, Lead.SourcingEntry entry) {
+        List<Lead.SourcingEntry> history = lead.getSourcingHistory() != null
+                ? new ArrayList<>(lead.getSourcingHistory())
+                : new ArrayList<>();
+        history.add(entry);
+        lead.setSourcingHistory(history);
     }
 
     private void resolveAndSetReferral(Lead lead, String referralCode) {
@@ -1275,8 +1273,9 @@ public class LeadWriteServiceImpl implements LeadWriteService {
 
         ReferralCodeRegistryResponse registry = referralCodeRegistryService.getReferralCodeByCode(referralCode);
         if (registry != null && registry.getEntityType() != null) {
-            lead.setReferredByType(registry.getEntityType().name());
+            lead.setReferredByType(ReferredByType.valueOf(registry.getEntityType().name()));
             lead.setReferredByIdentifier(registry.getEntityIdentifier());
         }
     }
+
 }

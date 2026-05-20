@@ -16,7 +16,6 @@ import com.nivasafinance.features.lead.service.LeadReadService;
 import com.nivasafinance.features.master.codemaster.SystemControlledMasterCodes;
 import com.nivasafinance.features.master.codemaster.service.CodeMasterService;
 import com.nivasafinance.features.master.codemaster.service.CodeValueMasterService;
-import com.nivasafinance.features.sourcechannel.dto.SourcingChannelResponse;
 import com.nivasafinance.features.sourcechannel.service.SourcingChannelReadService;
 import com.nivasafinance.features.workflow.service.WorkflowConfigReadService;
 import com.nivasafinance.features.offices.dto.OfficeResponse;
@@ -300,21 +299,27 @@ public class LeadReadServiceImpl implements LeadReadService {
                 .toList();
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     @Transactional(readOnly = true)
     public SourcingDetailsResponse getSourcingDetails(UUID leadIdentifier) {
         Lead lead = leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier);
 
-        if (lead.getSourcingChannelId() == null) {
-            return SourcingDetailsResponse.builder().build();
+        SourcingDetailsResponse.SourcingDetailsResponseBuilder builder = SourcingDetailsResponse.builder()
+                .sourcingHistory(lead.getSourcingHistory())
+                .referredByCode(lead.getReferredByCode())
+                .referredByType(lead.getReferredByType());
+
+        // Backward compat: still populate old field if sourcing_channel_id exists
+        if (lead.getSourcingChannelId() != null) {
+            try {
+                builder.sourcingChannelDetails(sourcingChannelReadService.getById(lead.getSourcingChannelId()));
+            } catch (Exception e) {
+                log.warn("Failed to fetch legacy sourcing channel for lead {}", leadIdentifier, e);
+            }
         }
 
-        SourcingChannelResponse sourcingChannelResponse =
-            sourcingChannelReadService.getById(lead.getSourcingChannelId());
-
-        return SourcingDetailsResponse.builder()
-                .sourcingChannelDetails(sourcingChannelResponse)
-                .build();
+        return builder.build();
     }
 
     @Override

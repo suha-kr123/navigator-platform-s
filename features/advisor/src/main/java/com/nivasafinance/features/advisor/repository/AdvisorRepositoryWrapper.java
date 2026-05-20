@@ -263,9 +263,9 @@ public class AdvisorRepositoryWrapper {
                 a.updated_at,
                 a.office_key as office_key,
                 a.username as advisor_username,
-                sc.marketing_details->>'referredByCode' AS referred_by_code,
-                r.entity_type::text AS referred_by_type,
-                r.entity_identifier AS referred_by_identifier,
+                COALESCE(a.referred_by_code, sc.marketing_details->>'referredByCode') AS referred_by_code,
+                COALESCE(a.referred_by_type::text, r.entity_type::text) AS referred_by_type,
+                COALESCE(a.referred_by_identifier, r.entity_identifier) AS referred_by_identifier,
                 COALESCE(ref_adv_p.display_name, ref_st_p.display_name, ref_lead_p.display_name, ref_lead_app_p.display_name, ref_app_by_uuid_p.display_name) AS referred_by_name,
                 COALESCE(
                     (jsonb_path_query_first(COALESCE(ref_adv_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
@@ -280,7 +280,7 @@ public class AdvisorRepositoryWrapper {
             JOIN n_person p ON p.id = pwp.id
             LEFT JOIN n_office o ON o.key = a.office_key
             LEFT JOIN n_sourcing_channel_details sc ON sc.id = a.source_channel_id
-            LEFT JOIN n_referral_code_registry r ON r.referral_code = sc.marketing_details->>'referredByCode'
+            LEFT JOIN n_referral_code_registry r ON r.referral_code = COALESCE(a.referred_by_code, sc.marketing_details->>'referredByCode')
             LEFT JOIN n_advisor ref_adv ON ref_adv.identifier = r.entity_identifier AND r.entity_type::text = 'ADVISOR'
             LEFT JOIN n_user ref_adv_u ON ref_adv_u.username = ref_adv.username
             LEFT JOIN n_person ref_adv_p ON ref_adv_p.id = ref_adv_u.person_id
@@ -403,9 +403,9 @@ public class AdvisorRepositoryWrapper {
                 a.updated_at,
                 a.office_key as office_key,
                 a.username as advisor_username,
-                sc.marketing_details->>'referredByCode' AS referred_by_code,
-                r.entity_type::text AS referred_by_type,
-                r.entity_identifier AS referred_by_identifier,
+                COALESCE(a.referred_by_code, sc.marketing_details->>'referredByCode') AS referred_by_code,
+                COALESCE(a.referred_by_type::text, r.entity_type::text) AS referred_by_type,
+                COALESCE(a.referred_by_identifier, r.entity_identifier) AS referred_by_identifier,
                 COALESCE(ref_adv_p.display_name, ref_st_p.display_name, ref_lead_p.display_name, ref_lead_app_p.display_name, ref_app_by_uuid_p.display_name) AS referred_by_name,
                 COALESCE(
                     (jsonb_path_query_first(COALESCE(ref_adv_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
@@ -419,7 +419,7 @@ public class AdvisorRepositoryWrapper {
             JOIN n_user u ON u.username = a.username
             JOIN n_person p ON p.id = u.person_id
             LEFT JOIN n_sourcing_channel_details sc ON sc.id = a.source_channel_id
-            LEFT JOIN n_referral_code_registry r ON r.referral_code = sc.marketing_details->>'referredByCode'
+            LEFT JOIN n_referral_code_registry r ON r.referral_code = COALESCE(a.referred_by_code, sc.marketing_details->>'referredByCode')
             LEFT JOIN n_advisor ref_adv ON ref_adv.identifier = r.entity_identifier AND r.entity_type::text = 'ADVISOR'
             LEFT JOIN n_user ref_adv_u ON ref_adv_u.username = ref_adv.username
             LEFT JOIN n_person ref_adv_p ON ref_adv_p.id = ref_adv_u.person_id
@@ -486,9 +486,9 @@ public class AdvisorRepositoryWrapper {
                 a.updated_at,
                 a.office_key as office_key,
                 a.username as advisor_username,
-                sc.marketing_details->>'referredByCode' AS referred_by_code,
-                r.entity_type::text AS referred_by_type,
-                r.entity_identifier AS referred_by_identifier,
+                COALESCE(a.referred_by_code, sc.marketing_details->>'referredByCode') AS referred_by_code,
+                COALESCE(a.referred_by_type::text, r.entity_type::text) AS referred_by_type,
+                COALESCE(a.referred_by_identifier, r.entity_identifier) AS referred_by_identifier,
                 COALESCE(ref_adv_p.display_name, ref_st_p.display_name, ref_lead_p.display_name, ref_lead_app_p.display_name, ref_app_by_uuid_p.display_name) AS referred_by_name,
                 COALESCE(
                     (jsonb_path_query_first(COALESCE(ref_adv_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
@@ -502,7 +502,7 @@ public class AdvisorRepositoryWrapper {
             JOIN n_user u ON u.username = a.username
             JOIN n_person p ON p.id = u.person_id
             LEFT JOIN n_sourcing_channel_details sc ON sc.id = a.source_channel_id
-            LEFT JOIN n_referral_code_registry r ON r.referral_code = sc.marketing_details->>'referredByCode'
+            LEFT JOIN n_referral_code_registry r ON r.referral_code = COALESCE(a.referred_by_code, sc.marketing_details->>'referredByCode')
             LEFT JOIN n_advisor ref_adv ON ref_adv.identifier = r.entity_identifier AND r.entity_type::text = 'ADVISOR'
             LEFT JOIN n_user ref_adv_u ON ref_adv_u.username = ref_adv.username
             LEFT JOIN n_person ref_adv_p ON ref_adv_p.id = ref_adv_u.person_id
@@ -548,10 +548,10 @@ public class AdvisorRepositoryWrapper {
         String countSql = """
             SELECT COUNT(DISTINCT a.id)
             FROM n_advisor a
-            JOIN n_sourcing_channel_details sc ON sc.id = a.source_channel_id
+            LEFT JOIN n_sourcing_channel_details sc ON sc.id = a.source_channel_id
             JOIN n_user u ON u.username = a.username
             JOIN n_person p ON p.id = u.person_id
-            WHERE sc.marketing_details->>'referredByCode' = ?
+            WHERE COALESCE(a.referred_by_code, sc.marketing_details->>'referredByCode') = ?
               AND a.is_deleted = false
             """;
         String dataSql = """
@@ -564,9 +564,9 @@ public class AdvisorRepositoryWrapper {
                 a.updated_at,
                 a.office_key as office_key,
                 a.username as advisor_username,
-                sc.marketing_details->>'referredByCode' AS referred_by_code,
-                r.entity_type::text AS referred_by_type,
-                r.entity_identifier AS referred_by_identifier,
+                COALESCE(a.referred_by_code, sc.marketing_details->>'referredByCode') AS referred_by_code,
+                COALESCE(a.referred_by_type::text, r.entity_type::text) AS referred_by_type,
+                COALESCE(a.referred_by_identifier, r.entity_identifier) AS referred_by_identifier,
                 COALESCE(ref_adv_p.display_name, ref_st_p.display_name, ref_lead_p.display_name, ref_lead_app_p.display_name, ref_app_by_uuid_p.display_name) AS referred_by_name,
                 COALESCE(
                     (jsonb_path_query_first(COALESCE(ref_adv_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
@@ -576,10 +576,10 @@ public class AdvisorRepositoryWrapper {
                     (jsonb_path_query_first(COALESCE(ref_app_by_uuid_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number')
                 ) AS referred_by_number
             FROM n_advisor a
-            JOIN n_sourcing_channel_details sc ON sc.id = a.source_channel_id
+            LEFT JOIN n_sourcing_channel_details sc ON sc.id = a.source_channel_id
             JOIN n_user u ON u.username = a.username
             JOIN n_person p ON p.id = u.person_id
-            LEFT JOIN n_referral_code_registry r ON r.referral_code = sc.marketing_details->>'referredByCode'
+            LEFT JOIN n_referral_code_registry r ON r.referral_code = COALESCE(a.referred_by_code, sc.marketing_details->>'referredByCode')
             LEFT JOIN n_advisor ref_adv ON ref_adv.identifier = r.entity_identifier AND r.entity_type::text = 'ADVISOR'
             LEFT JOIN n_user ref_adv_u ON ref_adv_u.username = ref_adv.username
             LEFT JOIN n_person ref_adv_p ON ref_adv_p.id = ref_adv_u.person_id
@@ -593,7 +593,7 @@ public class AdvisorRepositoryWrapper {
             LEFT JOIN n_person ref_lead_app_p ON ref_lead_app_p.id = ref_lead_app.person_id
             LEFT JOIN n_applicant ref_app_by_uuid ON ref_app_by_uuid.identifier = r.entity_identifier AND r.entity_type::text = 'APPLICANT'
             LEFT JOIN n_person ref_app_by_uuid_p ON ref_app_by_uuid_p.id = ref_app_by_uuid.person_id
-            WHERE sc.marketing_details->>'referredByCode' = ?
+            WHERE COALESCE(a.referred_by_code, sc.marketing_details->>'referredByCode') = ?
               AND a.is_deleted = false
             ORDER BY a.updated_at DESC
             LIMIT ? OFFSET ?
@@ -728,8 +728,8 @@ public class AdvisorRepositoryWrapper {
             if (hasName && hasMobile) sql.append(" AND ");
             if (hasMobile) sql.append(" EXISTS (SELECT 1 FROM jsonb_array_elements(COALESCE(p.mobile_numbers, '[]'::jsonb)) m WHERE m->>'number' LIKE ?) ");
             sql.append(" ) SELECT COUNT(*) FROM n_lead l ");
-            sql.append(" JOIN n_sourcing_channel_details sc ON sc.id = l.sourcing_channel_id ");
-            sql.append(" WHERE sc.marketing_details->>'referredByCode' = ? ");
+            sql.append(" LEFT JOIN n_sourcing_channel_details sc ON sc.id = l.sourcing_channel_id ");
+            sql.append(" WHERE COALESCE(l.referred_by_code, sc.marketing_details->>'referredByCode') = ? ");
             sql.append(" AND l.is_deleted = false ");
             sql.append(" AND (EXISTS (SELECT 1 FROM jsonb_array_elements_text(COALESCE(l.contacts, '[]'::jsonb)) AS e WHERE (e)::bigint IN (SELECT id FROM matching_contacts)) ");
             sql.append(" OR EXISTS (SELECT 1 FROM jsonb_array_elements_text(COALESCE(l.co_applicants, '[]'::jsonb)) AS e WHERE (e)::bigint IN (SELECT id FROM matching_contacts))) ");
@@ -737,8 +737,8 @@ public class AdvisorRepositoryWrapper {
             countSql = sql.toString();
         } else {
             countSql = " SELECT COUNT(*) FROM n_lead l " +
-                    " JOIN n_sourcing_channel_details sc ON sc.id = l.sourcing_channel_id " +
-                    " WHERE sc.marketing_details->>'referredByCode' = ? " +
+                    " LEFT JOIN n_sourcing_channel_details sc ON sc.id = l.sourcing_channel_id " +
+                    " WHERE COALESCE(l.referred_by_code, sc.marketing_details->>'referredByCode') = ? " +
                     " AND l.is_deleted = false " +
                     extraFilter;
         }
@@ -758,10 +758,10 @@ public class AdvisorRepositoryWrapper {
                        CAST(NULLIF(l.disbursement_details->>'disbursedAmount', '') AS NUMERIC) AS disbursed_amount,
                        TO_DATE(NULLIF(l.disbursement_details->>'disbursedDate', ''), 'DD-MM-YYYY') AS disbursed_date
                 FROM n_lead l
-                JOIN n_sourcing_channel_details sc ON sc.id = l.sourcing_channel_id
+                LEFT JOIN n_sourcing_channel_details sc ON sc.id = l.sourcing_channel_id
                 LEFT JOIN n_contact primary_contact ON primary_contact.id = (l.other_details->>'primaryContactId')::bigint
                 LEFT JOIN n_person primary_person ON primary_person.id = primary_contact.person_id
-                WHERE sc.marketing_details->>'referredByCode' = ?
+                WHERE COALESCE(l.referred_by_code, sc.marketing_details->>'referredByCode') = ?
                 AND l.is_deleted = false
                 """ + extraFilter + """
                 ORDER BY l.created_at DESC
@@ -803,10 +803,10 @@ public class AdvisorRepositoryWrapper {
         sql.append(" CAST(NULLIF(l.disbursement_details->>'disbursedAmount', '') AS NUMERIC) AS disbursed_amount, ");
         sql.append(" TO_DATE(NULLIF(l.disbursement_details->>'disbursedDate', ''), 'DD-MM-YYYY') AS disbursed_date ");
         sql.append(" FROM n_lead l ");
-        sql.append(" JOIN n_sourcing_channel_details sc ON sc.id = l.sourcing_channel_id ");
+        sql.append(" LEFT JOIN n_sourcing_channel_details sc ON sc.id = l.sourcing_channel_id ");
         sql.append(" LEFT JOIN n_contact primary_contact ON primary_contact.id = (l.other_details->>'primaryContactId')::bigint ");
         sql.append(" LEFT JOIN n_person primary_person ON primary_person.id = primary_contact.person_id ");
-        sql.append(" WHERE sc.marketing_details->>'referredByCode' = ? ");
+        sql.append(" WHERE COALESCE(l.referred_by_code, sc.marketing_details->>'referredByCode') = ? ");
         sql.append(" AND l.is_deleted = false ");
         sql.append(" AND (EXISTS (SELECT 1 FROM jsonb_array_elements_text(COALESCE(l.contacts, '[]'::jsonb)) AS e WHERE (e)::bigint IN (SELECT id FROM matching_contacts)) ");
         sql.append(" OR EXISTS (SELECT 1 FROM jsonb_array_elements_text(COALESCE(l.co_applicants, '[]'::jsonb)) AS e WHERE (e)::bigint IN (SELECT id FROM matching_contacts))) ");

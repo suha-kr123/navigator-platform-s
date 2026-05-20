@@ -1,5 +1,6 @@
 package com.nivasafinance.features.advisor.service.impl;
 
+import com.nivasafinance.common.enums.ReferredByType;
 import com.nivasafinance.common.enums.SourcingChannel;
 import com.nivasafinance.common.context.UserContext;
 import com.nivasafinance.common.events.BusinessEvent;
@@ -41,6 +42,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Optional;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -75,10 +77,18 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
                     .map(UserResponse::getUsername)
                     .orElseGet(() -> userWriteService.createUserForMobile(mobile, buildPersonCreateRequest(request)).getUsername());
         } catch (UserAlreadyExistsException e) {
+            // User exists — check if advisor exists and append sourcing
+            Optional<Advisor> existingAdvisor = findExistingAdvisorByMobile(mobile);
+            if (existingAdvisor.isPresent()) {
+                handleSourcingChannel(existingAdvisor.get(), request.getSourcingChannelRequest());
+                return existingAdvisor.get().getIdentifier();
+            }
             throw AdvisorExceptionFactory.advisorAlreadyExistsForMobileNumber(mobile, messageSource);
         }
-        if (advisorRepositoryWrapper.findByUsernameIncludingDeleted(advisorUsername).isPresent()) {
-            throw AdvisorExceptionFactory.advisorAlreadyExistsForMobileNumber(mobile, messageSource);
+        Optional<Advisor> existingAdvisor = advisorRepositoryWrapper.findByUsernameIncludingDeleted(advisorUsername);
+        if (existingAdvisor.isPresent()) {
+            handleSourcingChannel(existingAdvisor.get(), request.getSourcingChannelRequest());
+            return existingAdvisor.get().getIdentifier();
         }
 
         Advisor advisor = new Advisor();
@@ -223,10 +233,11 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
                 .capturedAt(LocalDateTime.now())
                 .build();
 
-        if (advisor.getSourcingHistory() == null) {
-            advisor.setSourcingHistory(new ArrayList<>());
-        }
-        advisor.getSourcingHistory().add(entry);
+        List<Advisor.SourcingEntry> history = advisor.getSourcingHistory() != null
+                ? new ArrayList<>(advisor.getSourcingHistory())
+                : new ArrayList<>();
+        history.add(entry);
+        advisor.setSourcingHistory(history);
 
         // Resolve referral
         resolveAndSetReferral(advisor, request.getReferredByCode());
@@ -609,10 +620,11 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
                 .capturedAt(LocalDateTime.now())
                 .build();
 
-        if (advisor.getSourcingHistory() == null) {
-            advisor.setSourcingHistory(new ArrayList<>());
-        }
-        advisor.getSourcingHistory().add(entry);
+        List<Advisor.SourcingEntry> history = advisor.getSourcingHistory() != null
+                ? new ArrayList<>(advisor.getSourcingHistory())
+                : new ArrayList<>();
+        history.add(entry);
+        advisor.setSourcingHistory(history);
 
         // Resolve referral — entity-agnostic, set once only
         if (details != null) {
@@ -630,9 +642,17 @@ public class AdvisorWriteServiceImpl implements AdvisorWriteService {
 
         ReferralCodeRegistryResponse registry = referralCodeRegistryService.getReferralCodeByCode(referralCode);
         if (registry != null && registry.getEntityType() != null) {
-            advisor.setReferredByType(registry.getEntityType().name());
+            advisor.setReferredByType(ReferredByType.valueOf(registry.getEntityType().name()));
             advisor.setReferredByIdentifier(registry.getEntityIdentifier());
         }
+    }
+
+
+
+    private Optional<Advisor> findExistingAdvisorByMobile(String mobile) {
+        return userReadService.findUserByPersonMobile(mobile)
+                .map(UserResponse::getUsername)
+                .flatMap(advisorRepositoryWrapper::findByUsernameIncludingDeleted);
     }
 
     private void generateReferralCode(Advisor advisor) {

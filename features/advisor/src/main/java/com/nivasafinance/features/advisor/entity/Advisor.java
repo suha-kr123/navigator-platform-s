@@ -8,6 +8,7 @@ import com.nivasafinance.features.advisor.dto.OtherDetails;
 import com.nivasafinance.features.advisor.dto.QualificationDetails;
 import com.nivasafinance.features.advisor.dto.SegmentationDetails;
 import com.nivasafinance.features.advisor.enums.AdvisorStatus;
+import com.nivasafinance.common.enums.ReferredByType;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import lombok.*;
@@ -79,8 +80,9 @@ public class Advisor extends AuditableEntity {
     @Column(name = "referred_by_code", length = 100)
     private String referredByCode;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "referred_by_type", length = 50)
-    private String referredByType;
+    private ReferredByType referredByType;
 
     @Column(name = "referred_by_identifier")
     private UUID referredByIdentifier;

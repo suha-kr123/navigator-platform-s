@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- Backfill lead sourcing_history from existing sourcing_channel_id -->
+    <changeSet id="V1782000000001_02a" author="system" context="default">
+        <sql>
+            UPDATE n_lead l
+            SET sourcing_history = jsonb_build_array(
+                jsonb_build_object(
+                    'sourcingChannel', scd.sourcing_channel_name,
+                    'marketingSource', scd.marketing_source,
+                    'campaignId',      scd.marketing_details ->> 'campaignId',
+                    'sourceId',        scd.marketing_details ->> 'sourceId',
+                    'sourceUrl',       scd.marketing_details ->> 'sourceUrl',
+                    'googleClickId',   scd.marketing_details ->> 'googleClickId',
+                    'capturedAt',      l.created_at
+                )
+            )
+            FROM n_sourcing_channel_details scd
+            WHERE l.sourcing_channel_id = scd.id
+              AND l.sourcing_history = '[]'::jsonb
+        </sql>
+    </changeSet>
+
+    <!-- Backfill lead referral from existing sourcing_channel_details -->
+    <changeSet id="V1782000000001_02b" author="system" context="default">
+        <sql>
+            UPDATE n_lead l
+            SET referred_by_code = scd.marketing_details ->> 'referredByCode',
+                referred_by_type = r.entity_type::text,
+                referred_by_identifier = r.entity_identifier
+            FROM n_sourcing_channel_details scd
+            LEFT JOIN n_referral_code_registry r ON r.referral_code = scd.marketing_details ->> 'referredByCode'
+            WHERE l.sourcing_channel_id = scd.id
+              AND scd.marketing_details ->> 'referredByCode' IS NOT NULL
+              AND l.referred_by_code IS NULL
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

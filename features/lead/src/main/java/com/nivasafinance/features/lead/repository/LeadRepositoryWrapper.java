@@ -1,5 +1,6 @@
 package com.nivasafinance.features.lead.repository;
 
+import com.nivasafinance.common.enums.ReferredByType;
 import com.nivasafinance.common.base.model.PaginatedResponse;
 import com.nivasafinance.common.base.model.PaginationInfo;
 import com.nivasafinance.common.base.model.PaginationRequest;
@@ -68,8 +69,9 @@ public class LeadRepositoryWrapper {
     private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
     private final CodeValueMasterService codeValueMasterService; 
     private final ProductReadService productReadService; 
-    private final StaffReadService staffReadService; 
+    private final StaffReadService staffReadService;
     private final OfficeReadService officeReadService;
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
     public Lead saveWithException(Lead lead) {
         try {
@@ -198,9 +200,10 @@ public class LeadRepositoryWrapper {
                          THEN to_timestamp((l.workflow_details->'currentStageDetails')->>'enteredAt', 'DD-MM-YYYY HH24:MI:SS')
                          ELSE NULL
                      END AS entered_at,
-                    sc.marketing_details->>'referredByCode' AS referred_by_code,
-                    r.entity_type::text AS referred_by_type,
-                    r.entity_identifier AS referred_by_identifier,
+                    l.sourcing_history as sourcing_history,
+                    COALESCE(l.referred_by_code, sc.marketing_details->>'referredByCode') AS referred_by_code,
+                    COALESCE(l.referred_by_type::text, r.entity_type::text) AS referred_by_type,
+                    COALESCE(l.referred_by_identifier, r.entity_identifier) AS referred_by_identifier,
                     COALESCE(ref_adv_p.display_name, ref_st_p.display_name, ref_lead_p.display_name, ref_lead_app_p.display_name, ref_app_by_uuid_p.display_name) AS referred_by_name,
                     COALESCE(
                         (jsonb_path_query_first(COALESCE(ref_adv_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'),
@@ -211,7 +214,7 @@ public class LeadRepositoryWrapper {
                     ) AS referred_by_number
                  FROM n_lead l
                 LEFT JOIN n_sourcing_channel_details sc ON sc.id = l.sourcing_channel_id
-                LEFT JOIN n_referral_code_registry r ON r.referral_code = sc.marketing_details->>'referredByCode'
+                LEFT JOIN n_referral_code_registry r ON r.referral_code = COALESCE(l.referred_by_code, sc.marketing_details->>'referredByCode')
                 LEFT JOIN n_advisor ref_adv ON ref_adv.identifier = r.entity_identifier AND r.entity_type::text = 'ADVISOR'
                 LEFT JOIN n_user ref_adv_u ON ref_adv_u.username = ref_adv.username
                 LEFT JOIN n_person ref_adv_p ON ref_adv_p.id = ref_adv_u.person_id
@@ -368,7 +371,7 @@ public class LeadRepositoryWrapper {
         String referredByTypeStr = rs.getString("referred_by_type");
         if (referredByTypeStr != null) {
             try {
-                builder.referredByType(EntityType.valueOf(referredByTypeStr));
+                builder.referredByType(ReferredByType.valueOf(referredByTypeStr));
             } catch (IllegalArgumentException ignored) {
             }
         }
@@ -397,6 +400,18 @@ public class LeadRepositoryWrapper {
         }
 
         builder.leadCreatedAt(getLocalDateTime(rs, "leadCreatedAt"));
+
+        // Parse sourcing_history JSONB
+        String sourcingHistoryJson = rs.getString("sourcing_history");
+        if (sourcingHistoryJson != null && !sourcingHistoryJson.equals("[]")) {
+            try {
+                List<Lead.SourcingEntry> entries = objectMapper.readValue(
+                        sourcingHistoryJson, objectMapper.getTypeFactory().constructCollectionType(List.class, Lead.SourcingEntry.class));
+                builder.sourcingHistory(entries);
+            } catch (Exception e) {
+                log.warn("Failed to parse sourcing_history for lead {}", leadIdentifier, e);
+            }
+        }
 
         LeadResponse leadResponse = builder.build();
 
@@ -1134,9 +1149,9 @@ public class LeadRepositoryWrapper {
         sql.append("l.created_at AS created_at, ");
         sql.append("o.name AS office, ");
         sql.append("l.product_code AS product_code, ");
-        sql.append("sc.marketing_details->>'referredByCode' AS referred_by_code, ");
-        sql.append("r.entity_type::text AS referred_by_type, ");
-        sql.append("r.entity_identifier AS referred_by_identifier, ");
+        sql.append("COALESCE(l.referred_by_code, sc.marketing_details->>'referredByCode') AS referred_by_code, ");
+        sql.append("COALESCE(l.referred_by_type::text, r.entity_type::text) AS referred_by_type, ");
+        sql.append("COALESCE(l.referred_by_identifier, r.entity_identifier) AS referred_by_identifier, ");
         sql.append("COALESCE(ref_adv_p.display_name, ref_st_p.display_name, ref_lead_p.display_name, ref_lead_app_p.display_name, ref_app_by_uuid_p.display_name) AS referred_by_name, ");
         sql.append("COALESCE(");
         sql.append("(jsonb_path_query_first(COALESCE(ref_adv_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'), ");
@@ -1147,7 +1162,7 @@ public class LeadRepositoryWrapper {
         sql.append(") AS referred_by_number ");
         sql.append("FROM n_lead l ");
         sql.append("LEFT JOIN n_sourcing_channel_details sc ON sc.id = l.sourcing_channel_id ");
-        sql.append("LEFT JOIN n_referral_code_registry r ON r.referral_code = sc.marketing_details->>'referredByCode' ");
+        sql.append("LEFT JOIN n_referral_code_registry r ON r.referral_code = COALESCE(l.referred_by_code, sc.marketing_details->>'referredByCode') ");
         sql.append("LEFT JOIN n_advisor ref_adv ON ref_adv.identifier = r.entity_identifier AND r.entity_type::text = 'ADVISOR' ");
         sql.append("LEFT JOIN n_user ref_adv_u ON ref_adv_u.username = ref_adv.username ");
         sql.append("LEFT JOIN n_person ref_adv_p ON ref_adv_p.id = ref_adv_u.person_id ");
@@ -1218,19 +1233,19 @@ public class LeadRepositoryWrapper {
                 ? paginationRequest.getSortDirection() : "DESC";
         String countSql = """
             SELECT COUNT(*)
-            FROM n_sourcing_channel_details sc
-            JOIN n_lead l ON l.sourcing_channel_id = sc.id
-            WHERE sc.marketing_details->>'referredByCode' = ?
+            FROM n_lead l
+            LEFT JOIN n_sourcing_channel_details sc ON sc.id = l.sourcing_channel_id
+            WHERE COALESCE(l.referred_by_code, sc.marketing_details->>'referredByCode') = ?
               AND l.is_deleted = false
             """;
         String dataSql = """
             WITH leads AS MATERIALIZED (
               SELECT l.id, l.lead_identifier, l.other_details, l.created_at, l.requested_amount,
                      l.workflow_details, l.status, l.substatus, l.product_code, l.office_key,
-                     (sc.marketing_details->>'referredByCode') AS ref_code
-              FROM n_sourcing_channel_details sc
-              JOIN n_lead l ON l.sourcing_channel_id = sc.id
-              WHERE sc.marketing_details->>'referredByCode' = ?
+                     COALESCE(l.referred_by_code, sc.marketing_details->>'referredByCode') AS ref_code
+              FROM n_lead l
+              LEFT JOIN n_sourcing_channel_details sc ON sc.id = l.sourcing_channel_id
+              WHERE COALESCE(l.referred_by_code, sc.marketing_details->>'referredByCode') = ?
                 AND l.is_deleted = false
             )
             SELECT leads.id AS id,
@@ -1339,9 +1354,9 @@ public class LeadRepositoryWrapper {
         sql.append("l.created_at AS created_at, ");
         sql.append("o.name AS office, ");
         sql.append("l.product_code AS product_code, ");
-        sql.append("sc.marketing_details->>'referredByCode' AS referred_by_code, ");
-        sql.append("r.entity_type::text AS referred_by_type, ");
-        sql.append("r.entity_identifier AS referred_by_identifier, ");
+        sql.append("COALESCE(l.referred_by_code, sc.marketing_details->>'referredByCode') AS referred_by_code, ");
+        sql.append("COALESCE(l.referred_by_type::text, r.entity_type::text) AS referred_by_type, ");
+        sql.append("COALESCE(l.referred_by_identifier, r.entity_identifier) AS referred_by_identifier, ");
         sql.append("COALESCE(ref_adv_p.display_name, ref_st_p.display_name, ref_lead_p.display_name, ref_lead_app_p.display_name, ref_app_by_uuid_p.display_name) AS referred_by_name, ");
         sql.append("COALESCE(");
         sql.append("(jsonb_path_query_first(COALESCE(ref_adv_p.mobile_numbers, '[]'::jsonb), '$[*] ? (@.isPrimary == true)') ->> 'number'), ");
@@ -1352,7 +1367,7 @@ public class LeadRepositoryWrapper {
         sql.append(") AS referred_by_number ");
         sql.append("FROM n_lead l ");
         sql.append("LEFT JOIN n_sourcing_channel_details sc ON sc.id = l.sourcing_channel_id ");
-        sql.append("LEFT JOIN n_referral_code_registry r ON r.referral_code = sc.marketing_details->>'referredByCode' ");
+        sql.append("LEFT JOIN n_referral_code_registry r ON r.referral_code = COALESCE(l.referred_by_code, sc.marketing_details->>'referredByCode') ");
         sql.append("LEFT JOIN n_advisor ref_adv ON ref_adv.identifier = r.entity_identifier AND r.entity_type::text = 'ADVISOR' ");
         sql.append("LEFT JOIN n_user ref_adv_u ON ref_adv_u.username = ref_adv.username ");
         sql.append("LEFT JOIN n_person ref_adv_p ON ref_adv_p.id = ref_adv_u.person_id ");
