@@ -11,6 +11,7 @@ import com.nivasafinance.features.person.exception.PersonExceptionFactory;
 import java.util.Collections;
 import java.util.Map;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
+@Slf4j
 public class PersonRepositoryWrapper {
 
     private final PersonRepository personRepository;
@@ -34,6 +36,7 @@ public class PersonRepositoryWrapper {
         try {
             return personRepository.save(person);
         } catch (DataAccessException e) {
+            log.error("Person create error",e);
             throw PersonExceptionFactory.createFailed(messageSource);
         }
     }
