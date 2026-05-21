@@ -108,6 +108,13 @@ class LeadWriteServiceImplTest {
         lead.setLeadIdentifier(leadIdentifier);
         lead.setStatus(LeadStatus.ACTIVE);
         lead.setOfficeKey("HQ");
+
+        // Initialize an active structural container to avoid unpatched null conflicts during cross-merges
+        Lead.OtherDetails defaultDetails = Lead.OtherDetails.builder()
+                .preferredCallStartTime(LocalTime.of(9, 0))
+                .preferredCallEndTime(LocalTime.of(17, 0))
+                .build();
+        lead.setOtherDetails(defaultDetails);
     }
 
     @AfterEach
@@ -119,7 +126,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void createLead_withValidRequest_createsLeadAndReturnsResponse() {
-        // Arrange
         CreateLeadRequest request = new CreateLeadRequest();
         request.setRequestedLoanAmount(BigDecimal.valueOf(1000000));
         request.setPhoneNumber(new CreateLeadRequest.MobileNumberDetails("9876543210", true));
@@ -142,10 +148,8 @@ class LeadWriteServiceImplTest {
                 .thenReturn(contactResponse);
         when(workflowConfigRepositoryWrapper.findActiveByWorkflowConfigKey(anyString())).thenReturn(workflowConfig);
 
-        // Act
         CreateLeadResponse result = leadWriteService.createLead(request);
 
-        // Assert
         assertNotNull(result, "Response should not be null");
         assertNotNull(result.getLeadIdentifier(), "Lead identifier should be generated");
         assertEquals(contactId, result.getContactIdentifier(), "Contact identifier should match");
@@ -156,7 +160,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void createLead_withNullOfficeKey_defaultsToHQ() {
-        // Arrange
         CreateLeadRequest request = new CreateLeadRequest();
         request.setPhoneNumber(new CreateLeadRequest.MobileNumberDetails("9876543210", false));
 
@@ -173,10 +176,8 @@ class LeadWriteServiceImplTest {
                 .thenReturn(CreateLeadContactResponse.builder().identifier(UUID.randomUUID()).build());
         when(workflowConfigRepositoryWrapper.findActiveByWorkflowConfigKey(anyString())).thenReturn(workflowConfig);
 
-        // Act
         leadWriteService.createLead(request);
 
-        // Assert
         ArgumentCaptor<Lead> leadCaptor = ArgumentCaptor.forClass(Lead.class);
         verify(leadRepositoryWrapper).saveWithException(leadCaptor.capture());
         assertEquals("HQ", leadCaptor.getValue().getOfficeKey(), "Office key should default to HQ when not provided");
@@ -184,7 +185,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void createLead_withExistingActiveLead_throwsActiveLeadAlreadyExistsException() {
-        // Arrange
         CreateLeadRequest request = new CreateLeadRequest();
         request.setPhoneNumber(new CreateLeadRequest.MobileNumberDetails("9876543210", false));
 
@@ -194,7 +194,6 @@ class LeadWriteServiceImplTest {
         when(personRepositoryWrapper.findByPrimaryMobileNumber("9876543210")).thenReturn(Optional.of(existingPerson));
         when(leadRepositoryWrapper.findActiveLeadByContactPersonId(10L)).thenReturn(Optional.of(lead));
 
-        // Act & Assert
         assertThrows(ActiveLeadAlreadyExistsException.class,
                 () -> leadWriteService.createLead(request),
                 "Should throw when active lead already exists for the phone number");
@@ -204,7 +203,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void updateLead_withValidRequest_updatesAllFields() {
-        // Arrange
         UpdateLeadRequest request = UpdateLeadRequest.builder()
                 .requestedAmount(BigDecimal.valueOf(2000000))
                 .officeKey("BRANCH-002")
@@ -221,10 +219,8 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
         when(codeValueMasterService.getCodeValueByKeyAndCodeKey(anyString(), anyString())).thenReturn(new CodeValueResponse());
 
-        // Act
         leadWriteService.updateLead(leadIdentifier, request);
 
-        // Assert
         assertEquals(BigDecimal.valueOf(2000000), lead.getRequestedAmount(), "Requested amount should be updated");
         assertEquals("BRANCH-002", lead.getOfficeKey(), "Office key should be updated");
         assertEquals("manager-1", lead.getOwner(), "Owner should be updated");
@@ -235,11 +231,9 @@ class LeadWriteServiceImplTest {
 
     @Test
     void updateLead_withNullOfficeKey_throwsBadRequestException() {
-        // Arrange
         UpdateLeadRequest request = UpdateLeadRequest.builder().officeKey(null).build();
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
 
-        // Act & Assert
         assertThrows(BadRequestException.class,
                 () -> leadWriteService.updateLead(leadIdentifier, request),
                 "Should throw when office key is null");
@@ -247,7 +241,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void updateLead_withCallStartAfterEnd_throwsBadRequestException() {
-        // Arrange
         UpdateLeadRequest request = UpdateLeadRequest.builder()
                 .officeKey("HQ")
                 .preferredCallStartTime(LocalTime.of(18, 0))
@@ -255,7 +248,6 @@ class LeadWriteServiceImplTest {
                 .build();
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
 
-        // Act & Assert
         assertThrows(BadRequestException.class,
                 () -> leadWriteService.updateLead(leadIdentifier, request),
                 "Should throw when preferred call start time is after end time");
@@ -265,14 +257,11 @@ class LeadWriteServiceImplTest {
 
     @Test
     void touchLead_withValidIdentifier_savesLead() {
-        // Arrange
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(lead)).thenReturn(lead);
 
-        // Act
         leadWriteService.touchLead(leadIdentifier);
 
-        // Assert
         verify(leadRepositoryWrapper).saveWithException(lead);
     }
 
@@ -280,7 +269,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void updatePreliminaryDetails_withValidRequest_updatesDetails() {
-        // Arrange
         UpdatePreliminaryDetailsRequest request = new UpdatePreliminaryDetailsRequest();
         request.setIsWhatsAppDIYFormCompleted(true);
         request.setMonthlyFamilyIncome(BigDecimal.valueOf(60000));
@@ -288,10 +276,8 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.updatePreliminaryDetails(leadIdentifier, request);
 
-        // Assert
         assertNotNull(lead.getPreliminaryDetails(), "Preliminary details should be set");
         assertEquals(true, lead.getPreliminaryDetails().getIsWhatsAppDIYFormCompleted(),
                 "WhatsApp form completed flag should be updated");
@@ -302,7 +288,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void updatePreliminaryDetails_withExistingDetails_mergesFields() {
-        // Arrange
         Lead.PreliminaryDetails existing = new Lead.PreliminaryDetails();
         existing.setIsWhatsAppDIYFormCompleted(false);
         lead.setPreliminaryDetails(existing);
@@ -314,10 +299,8 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.updatePreliminaryDetails(leadIdentifier, request);
 
-        // Assert
         assertEquals(true, lead.getPreliminaryDetails().getIsWhatsAppDIYFormCompleted(),
                 "Existing preliminary details should be updated in place");
     }
@@ -326,7 +309,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void updateCreditDetails_withValidRequest_setsUnderwriterOnFirstTime() {
-        // Arrange
         UpdateCreditDetailsRequest request = UpdateCreditDetailsRequest.builder()
                 .eligibleLoanAmount(BigDecimal.valueOf(3000000))
                 .build();
@@ -334,10 +316,8 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.updateCreditDetails(leadIdentifier, request);
 
-        // Assert
         assertNotNull(lead.getCreditRatingDetails(), "Credit details should be set");
         assertEquals("test-user", lead.getCreditRatingDetails().getUnderwriter(),
                 "Underwriter should be set to current user on first creation");
@@ -347,7 +327,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void updateCreditDetails_withExistingUnderwriter_doesNotOverwrite() {
-        // Arrange
         Lead.CreditRatingDetails existingDetails = Lead.CreditRatingDetails.builder()
                 .underwriter("original-user").build();
         lead.setCreditRatingDetails(existingDetails);
@@ -359,10 +338,8 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.updateCreditDetails(leadIdentifier, request);
 
-        // Assert
         assertEquals("original-user", lead.getCreditRatingDetails().getUnderwriter(),
                 "Existing underwriter should not be overwritten");
     }
@@ -371,7 +348,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void updateProposedDetails_withValidRequest_updatesAllFields() {
-        // Arrange
         UpdateProposedDetailsRequest request = UpdateProposedDetailsRequest.builder()
                 .proposedLoanAmount(BigDecimal.valueOf(2500000))
                 .roi(BigDecimal.valueOf(9.5))
@@ -383,10 +359,8 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.updateProposedDetails(leadIdentifier, request);
 
-        // Assert
         assertNotNull(lead.getProposedDetails(), "Proposed details should be set");
         assertEquals(BigDecimal.valueOf(2500000), lead.getProposedDetails().getProposedLoanAmount(),
                 "Proposed loan amount should be updated");
@@ -398,7 +372,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void updatePropertyDetails_withValidRequest_setsAddress() {
-        // Arrange
         AddressRequest addressRequest = new AddressRequest();
         AddressData addressData = new AddressData();
         UpdatePropertyDetailsRequest request = UpdatePropertyDetailsRequest.builder().address(addressRequest).build();
@@ -407,10 +380,8 @@ class LeadWriteServiceImplTest {
         when(addressDataService.createAddressData(addressRequest)).thenReturn(addressData);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.updatePropertyDetails(leadIdentifier, request);
 
-        // Assert
         assertNotNull(lead.getOtherDetails(), "Other details should be initialized");
         assertNotNull(lead.getOtherDetails().getPropertyDetails(), "Property details should be initialized");
         assertEquals(addressData, lead.getOtherDetails().getPropertyDetails().getAddress(),
@@ -421,7 +392,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void updateSourcingDetails_withNewSourcingChannel_createsChannel() {
-        // Arrange
         lead.setSourcingChannelId(null);
         UpdateSourcingDetailsRequest request = new UpdateSourcingDetailsRequest();
         request.setSourcingChannel("ONLINE");
@@ -439,10 +409,8 @@ class LeadWriteServiceImplTest {
         when(sourcingChannelWriteService.create(any(SourcingChannelRequest.class))).thenReturn(channelResponse);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.updateSourcingDetails(leadIdentifier, request);
 
-        // Assert
         assertEquals(100L, lead.getSourcingChannelId(), "Sourcing channel ID should be set from created channel");
         ArgumentCaptor<SourcingChannelRequest> captor = ArgumentCaptor.forClass(SourcingChannelRequest.class);
         verify(sourcingChannelWriteService).create(captor.capture());
@@ -451,7 +419,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void updateSourcingDetails_withExistingSourcingChannel_updatesChannel() {
-        // Arrange
         lead.setSourcingChannelId(50L);
         UpdateSourcingDetailsRequest request = new UpdateSourcingDetailsRequest();
         request.setSourcingChannel("OFFLINE");
@@ -460,10 +427,8 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.updateSourcingDetails(leadIdentifier, request);
 
-        // Assert
         ArgumentCaptor<SourcingChannelRequest> captor = ArgumentCaptor.forClass(SourcingChannelRequest.class);
         verify(sourcingChannelWriteService).update(eq(50L), captor.capture());
         assertEquals("gcl-456", captor.getValue().getMarketingDetails().getGoogleClickId());
@@ -473,16 +438,13 @@ class LeadWriteServiceImplTest {
 
     @Test
     void updateCallDetails_withValidRequest_updatesNoOfCampaignCalls() {
-        // Arrange
         UpdateCallDetailsRequest request = UpdateCallDetailsRequest.builder().noOfCampaignCalls(5L).build();
 
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.updateCallDetails(leadIdentifier, request);
 
-        // Assert
         assertEquals(5L, lead.getOtherDetails().getNoOfCampaignCalls(), "Number of campaign calls should be updated");
     }
 
@@ -490,7 +452,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void updateDisbursementDetails_withValidRequest_preservesExistingTranches() {
-        // Arrange
         Lead.Tranche existingTranche = Lead.Tranche.builder()
                 .identifier(UUID.randomUUID()).amount(BigDecimal.valueOf(500000)).build();
         Lead.DisbursementDetails existing = Lead.DisbursementDetails.builder()
@@ -501,17 +462,15 @@ class LeadWriteServiceImplTest {
                 .disbursedAmount(BigDecimal.valueOf(2000000))
                 .roi(BigDecimal.valueOf(9.0))
                 .tenureValue(240).tenureType(TenureType.MONTH)
-                .disbursedDate(LocalDate.of(2025, 1, 15))
+                .disbursedDate(LocalDate.of(2026, 1, 15))
                 .processingFees(BigDecimal.valueOf(10000))
                 .build();
 
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.updateDisbursementDetails(leadIdentifier, request);
 
-        // Assert
         assertEquals(BigDecimal.valueOf(2000000), lead.getDisbursementDetails().getDisbursedAmount(),
                 "Disbursed amount should be updated");
         assertEquals(1, lead.getDisbursementDetails().getTranches().size(),
@@ -522,18 +481,15 @@ class LeadWriteServiceImplTest {
 
     @Test
     void createTranche_withValidRequest_addsTranche() {
-        // Arrange
         lead.setDisbursementDetails(Lead.DisbursementDetails.builder().tranches(new ArrayList<>()).build());
         CreateTrancheRequest request = CreateTrancheRequest.builder()
-                .amount(BigDecimal.valueOf(300000)).date(LocalDate.of(2025, 6, 1)).build();
+                .amount(BigDecimal.valueOf(300000)).date(LocalDate.of(2026, 6, 1)).build();
 
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.createTranche(leadIdentifier, request);
 
-        // Assert
         assertEquals(1, lead.getDisbursementDetails().getTranches().size(), "One tranche should be added");
         assertEquals(BigDecimal.valueOf(300000), lead.getDisbursementDetails().getTranches().get(0).getAmount(),
                 "Tranche amount should match request");
@@ -541,13 +497,11 @@ class LeadWriteServiceImplTest {
 
     @Test
     void createTranche_withNullDisbursementDetails_throwsBadRequestException() {
-        // Arrange
         lead.setDisbursementDetails(null);
         CreateTrancheRequest request = CreateTrancheRequest.builder()
-                .amount(BigDecimal.valueOf(300000)).date(LocalDate.of(2025, 6, 1)).build();
+                .amount(BigDecimal.valueOf(300000)).date(LocalDate.of(2026, 6, 1)).build();
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
 
-        // Act & Assert
         assertThrows(BadRequestException.class,
                 () -> leadWriteService.createTranche(leadIdentifier, request),
                 "Should throw when disbursement details do not exist");
@@ -557,30 +511,26 @@ class LeadWriteServiceImplTest {
 
     @Test
     void updateTranche_withMatchingTranche_updatesFields() {
-        // Arrange
         UUID trancheId = UUID.randomUUID();
         Lead.Tranche tranche = Lead.Tranche.builder()
-                .identifier(trancheId).amount(BigDecimal.valueOf(100000)).date(LocalDate.of(2025, 1, 1)).build();
+                .identifier(trancheId).amount(BigDecimal.valueOf(100000)).date(LocalDate.of(2026, 1, 1)).build();
         lead.setDisbursementDetails(Lead.DisbursementDetails.builder()
                 .tranches(new ArrayList<>(List.of(tranche))).build());
 
         UpdateTrancheRequest request = UpdateTrancheRequest.builder()
-                .amount(BigDecimal.valueOf(200000)).date(LocalDate.of(2025, 7, 1)).build();
+                .amount(BigDecimal.valueOf(200000)).date(LocalDate.of(2026, 7, 1)).build();
 
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.updateTranche(leadIdentifier, trancheId, request);
 
-        // Assert
         assertEquals(BigDecimal.valueOf(200000), tranche.getAmount(), "Tranche amount should be updated");
-        assertEquals(LocalDate.of(2025, 7, 1), tranche.getDate(), "Tranche date should be updated");
+        assertEquals(LocalDate.of(2026, 7, 1), tranche.getDate(), "Tranche date should be updated");
     }
 
     @Test
     void updateTranche_withNonMatchingTranche_throwsResourceNotFoundException() {
-        // Arrange
         lead.setDisbursementDetails(Lead.DisbursementDetails.builder()
                 .tranches(new ArrayList<>(List.of(Lead.Tranche.builder().identifier(UUID.randomUUID()).build()))).build());
         UUID nonExisting = UUID.randomUUID();
@@ -588,7 +538,6 @@ class LeadWriteServiceImplTest {
                 .amount(BigDecimal.TEN).date(LocalDate.now()).build();
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
 
-        // Act & Assert
         assertThrows(ResourceNotFoundException.class,
                 () -> leadWriteService.updateTranche(leadIdentifier, nonExisting, request),
                 "Should throw when tranche identifier does not match");
@@ -598,7 +547,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void deleteTranche_withMatchingTranche_removesTranche() {
-        // Arrange
         UUID trancheId = UUID.randomUUID();
         Lead.Tranche tranche = Lead.Tranche.builder().identifier(trancheId).build();
         lead.setDisbursementDetails(Lead.DisbursementDetails.builder()
@@ -607,22 +555,18 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.deleteTranche(leadIdentifier, trancheId);
 
-        // Assert
         assertTrue(lead.getDisbursementDetails().getTranches().isEmpty(), "Tranche should be removed from list");
     }
 
     @Test
     void deleteTranche_withNonMatchingTranche_throwsResourceNotFoundException() {
-        // Arrange
         lead.setDisbursementDetails(Lead.DisbursementDetails.builder()
                 .tranches(new ArrayList<>(List.of(Lead.Tranche.builder().identifier(UUID.randomUUID()).build()))).build());
         UUID nonExisting = UUID.randomUUID();
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
 
-        // Act & Assert
         assertThrows(ResourceNotFoundException.class,
                 () -> leadWriteService.deleteTranche(leadIdentifier, nonExisting),
                 "Should throw when tranche identifier does not match");
@@ -632,16 +576,13 @@ class LeadWriteServiceImplTest {
 
     @Test
     void rejectLead_withValidRequest_setsStatusToRejected() {
-        // Arrange
         RejectLeadRequest request = RejectLeadRequest.builder().reasonCode("LOW_INCOME").build();
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
         when(codeValueMasterService.getCodeValueByKeyAndCodeKey(anyString(), anyString())).thenReturn(new CodeValueResponse());
 
-        // Act
         leadWriteService.rejectLead(leadIdentifier, request);
 
-        // Assert
         assertEquals(LeadStatus.REJECTED, lead.getStatus(), "Lead status should be REJECTED");
         assertNull(lead.getSubstatus(), "Substatus should be cleared on rejection");
         assertNotNull(lead.getRejectionDetails(), "Rejection details should be set");
@@ -652,7 +593,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void rejectLead_withRemarks_storesRemarksInRejectionDetails() {
-        // Arrange
         RejectLeadRequest request = RejectLeadRequest.builder()
                 .reasonCode("LOW_INCOME")
                 .remarks("REJECTED_BY_BRE")
@@ -661,10 +601,8 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
         when(codeValueMasterService.getCodeValueByKeyAndCodeKey(anyString(), anyString())).thenReturn(new CodeValueResponse());
 
-        // Act
         leadWriteService.rejectLead(leadIdentifier, request);
 
-        // Assert
         assertNotNull(lead.getRejectionDetails(), "Rejection details should be set");
         assertEquals("REJECTED_BY_BRE", lead.getRejectionDetails().getRemarks(), "Remarks should be stored in rejection details");
     }
@@ -673,7 +611,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void undoRejectLead_withRejectedLead_revertsToActive() {
-        // Arrange
         lead.setStatus(LeadStatus.REJECTED);
         lead.setReasons(Lead.ReasonDetails.builder().reject("LOW_INCOME").build());
         lead.setRejectionDetails(new Lead.RejectionDetails());
@@ -681,10 +618,8 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.undoRejectLead(leadIdentifier);
 
-        // Assert
         assertEquals(LeadStatus.ACTIVE, lead.getStatus(), "Lead status should revert to ACTIVE");
         assertNull(lead.getSubstatus(), "Substatus should remain null");
         assertNull(lead.getReasons().getReject(), "Reject reason should be cleared");
@@ -693,11 +628,9 @@ class LeadWriteServiceImplTest {
 
     @Test
     void undoRejectLead_withNonRejectedLead_throwsBadRequestException() {
-        // Arrange
         lead.setStatus(LeadStatus.ACTIVE);
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
 
-        // Act & Assert
         assertThrows(BadRequestException.class,
                 () -> leadWriteService.undoRejectLead(leadIdentifier),
                 "Should throw when lead is not in REJECTED status");
@@ -707,16 +640,13 @@ class LeadWriteServiceImplTest {
 
     @Test
     void withdrawLead_withValidRequest_setsStatusToWithdrawn() {
-        // Arrange
         WithdrawLeadRequest request = WithdrawLeadRequest.builder().reasonCode("CUSTOMER_REQUEST").build();
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
         when(codeValueMasterService.getCodeValueByKeyAndCodeKey(anyString(), anyString())).thenReturn(new CodeValueResponse());
 
-        // Act
         leadWriteService.withdrawLead(leadIdentifier, request);
 
-        // Assert
         assertEquals(LeadStatus.WITHDRAWN, lead.getStatus(), "Lead status should be WITHDRAWN");
         assertNull(lead.getSubstatus(), "Substatus should be cleared on withdrawal");
         assertNotNull(lead.getWithdrawnDetails(), "Withdrawn details should be set");
@@ -727,24 +657,19 @@ class LeadWriteServiceImplTest {
 
     @Test
     void completeLead_withActiveLead_setsStatusToCompleted() {
-        // Arrange
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.completeLead(leadIdentifier);
 
-        // Assert
         assertEquals(LeadStatus.COMPLETED, lead.getStatus(), "Lead status should be COMPLETED");
     }
 
     @Test
     void completeLead_withOnHoldLead_throwsBadRequestException() {
-        // Arrange
         lead.setSubstatus(LeadSubStatus.ONHOLD);
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
 
-        // Act & Assert
         assertThrows(BadRequestException.class,
                 () -> leadWriteService.completeLead(leadIdentifier),
                 "Should throw when lead is on hold");
@@ -754,58 +679,50 @@ class LeadWriteServiceImplTest {
 
     @Test
     void onholdLead_withActiveLead_setsSubstatusToOnhold() {
-        // Arrange
         OnholdLeadRequest request = OnholdLeadRequest.builder()
                 .reasonCode("DOCUMENTS_PENDING")
-                .holdFollowUpDate(LocalDate.of(2025, 7, 1))
+                .holdFollowUpDate(LocalDate.of(2026, 7, 1))
                 .build();
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
         when(codeValueMasterService.getCodeValueByKeyAndCodeKey(anyString(), anyString())).thenReturn(new CodeValueResponse());
 
-        // Act
         leadWriteService.onholdLead(leadIdentifier, request);
 
-        // Assert
         assertEquals(LeadSubStatus.ONHOLD, lead.getSubstatus(), "Substatus should be ONHOLD");
         assertNotNull(lead.getOnHoldDetails(), "OnHold details should be set");
         assertEquals("test-user", lead.getOnHoldDetails().getOnHoldBy(), "OnHold by should be current user");
-        assertEquals(LocalDate.of(2025, 7, 1), lead.getOnHoldDetails().getHoldFollowUpDate(),
+        assertEquals(LocalDate.of(2026, 7, 1), lead.getOnHoldDetails().getHoldFollowUpDate(),
                 "Follow-up date should be set from request");
     }
 
     @Test
     void onholdLead_whenAlreadyOnHold_updatesFollowUpDateOnly() {
-        // Arrange
         lead.setSubstatus(LeadSubStatus.ONHOLD);
         Lead.OnHoldDetails existingDetails = Lead.OnHoldDetails.builder()
-                .onHoldBy("original-user").holdFollowUpDate(LocalDate.of(2025, 5, 1)).build();
+                .onHoldBy("original-user").holdFollowUpDate(LocalDate.of(2026, 5, 1)).build();
         lead.setOnHoldDetails(existingDetails);
 
         OnholdLeadRequest request = OnholdLeadRequest.builder()
-                .holdFollowUpDate(LocalDate.of(2025, 8, 1)).build();
+                .holdFollowUpDate(LocalDate.of(2026, 8, 1)).build();
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.onholdLead(leadIdentifier, request);
 
-        // Assert
         assertEquals("original-user", lead.getOnHoldDetails().getOnHoldBy(),
                 "OnHold by should not change when already on hold");
-        assertEquals(LocalDate.of(2025, 8, 1), lead.getOnHoldDetails().getHoldFollowUpDate(),
+        assertEquals(LocalDate.of(2026, 8, 1), lead.getOnHoldDetails().getHoldFollowUpDate(),
                 "Follow-up date should be updated");
     }
 
     @Test
     void onholdLead_withRejectedLead_throwsBadRequestException() {
-        // Arrange
         lead.setStatus(LeadStatus.REJECTED);
         OnholdLeadRequest request = OnholdLeadRequest.builder()
-                .holdFollowUpDate(LocalDate.of(2025, 7, 1)).build();
+                .holdFollowUpDate(LocalDate.of(2026, 7, 1)).build();
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
 
-        // Act & Assert
         assertThrows(BadRequestException.class,
                 () -> leadWriteService.onholdLead(leadIdentifier, request),
                 "Should throw when lead is rejected");
@@ -815,16 +732,13 @@ class LeadWriteServiceImplTest {
 
     @Test
     void resumeLead_withOnHoldLead_clearsSubstatusAndReason() {
-        // Arrange
         lead.setSubstatus(LeadSubStatus.ONHOLD);
         lead.setReasons(Lead.ReasonDetails.builder().onhold("DOCUMENTS_PENDING").build());
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.resumeLead(leadIdentifier);
 
-        // Assert
         assertNull(lead.getSubstatus(), "Substatus should be cleared");
         assertNull(lead.getReasons().getOnhold(), "Onhold reason should be cleared");
     }
@@ -833,16 +747,13 @@ class LeadWriteServiceImplTest {
 
     @Test
     void dropoffLead_withActiveLead_setsSubstatusToDropoff() {
-        // Arrange
         DropoffLeadRequest request = DropoffLeadRequest.builder().reasonCode("NO_RESPONSE").build();
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
         when(codeValueMasterService.getCodeValueByKeyAndCodeKey(anyString(), anyString())).thenReturn(new CodeValueResponse());
 
-        // Act
         leadWriteService.dropoffLead(leadIdentifier, request);
 
-        // Assert
         assertEquals(LeadSubStatus.DROPOFF, lead.getSubstatus(), "Substatus should be DROPOFF");
         assertNotNull(lead.getDropoffDetails(), "Dropoff details should be set");
         assertEquals("test-user", lead.getDropoffDetails().getDropoffBy(), "Dropoff by should be current user");
@@ -850,12 +761,10 @@ class LeadWriteServiceImplTest {
 
     @Test
     void dropoffLead_withNonActiveLead_throwsBadRequestException() {
-        // Arrange
         lead.setStatus(LeadStatus.REJECTED);
         DropoffLeadRequest request = DropoffLeadRequest.builder().reasonCode("NO_RESPONSE").build();
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
 
-        // Act & Assert
         assertThrows(BadRequestException.class,
                 () -> leadWriteService.dropoffLead(leadIdentifier, request),
                 "Should throw when lead is not in ACTIVE status");
@@ -865,7 +774,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void createLead_withNullProduct_skipsProductValidation() {
-        // Arrange
         CreateLeadRequest request = new CreateLeadRequest();
         request.setProduct(null);
         request.setPhoneNumber(new CreateLeadRequest.MobileNumberDetails("9876543210", false));
@@ -884,17 +792,14 @@ class LeadWriteServiceImplTest {
                 .thenReturn(CreateLeadContactResponse.builder().identifier(UUID.randomUUID()).build());
         when(workflowConfigRepositoryWrapper.findActiveByWorkflowConfigKey(anyString())).thenReturn(workflowConfig);
 
-        // Act
         CreateLeadResponse result = leadWriteService.createLead(request);
 
-        // Assert
         assertNotNull(result, "Should create lead even with null product");
         verify(productReadService, never()).getProductByCode(anyString());
     }
 
     @Test
     void createLead_withExistingPersonButNoActiveLead_createsLeadSuccessfully() {
-        // Arrange
         CreateLeadRequest request = new CreateLeadRequest();
         request.setPhoneNumber(new CreateLeadRequest.MobileNumberDetails("9876543210", false));
 
@@ -915,10 +820,8 @@ class LeadWriteServiceImplTest {
                 .thenReturn(CreateLeadContactResponse.builder().identifier(UUID.randomUUID()).build());
         when(workflowConfigRepositoryWrapper.findActiveByWorkflowConfigKey(anyString())).thenReturn(workflowConfig);
 
-        // Act
         CreateLeadResponse result = leadWriteService.createLead(request);
 
-        // Assert
         assertNotNull(result, "Should create lead when person exists but has no active lead");
     }
 
@@ -926,7 +829,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void updateLead_withNullPurpose_setsPurposeToNull() {
-        // Arrange
         lead.setPurpose("OLD_PURPOSE");
         UpdateLeadRequest request = UpdateLeadRequest.builder()
                 .officeKey("HQ").purpose(null).build();
@@ -934,16 +836,13 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.updateLead(leadIdentifier, request);
 
-        // Assert
         assertNull(lead.getPurpose(), "Purpose should be set to null when request has null purpose");
     }
 
     @Test
     void updateLead_withNullCustomerConvinceStatus_setsToNull() {
-        // Arrange
         lead.setCustomerConvinceStatus("INTERESTED");
         UpdateLeadRequest request = UpdateLeadRequest.builder()
                 .officeKey("HQ").customerConvinceStatus(null).build();
@@ -951,17 +850,14 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.updateLead(leadIdentifier, request);
 
-        // Assert
         assertNull(lead.getCustomerConvinceStatus(),
                 "Customer convince status should be set to null when not provided");
     }
 
     @Test
     void updateLead_withNullCallTimes_clearsCallTimes() {
-        // Arrange
         UpdateLeadRequest request = UpdateLeadRequest.builder()
                 .officeKey("HQ")
                 .preferredCallStartTime(null)
@@ -971,10 +867,8 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.updateLead(leadIdentifier, request);
 
-        // Assert
         assertNull(lead.getOtherDetails().getPreferredCallStartTime(),
                 "Call start time should be cleared when not provided");
         assertNull(lead.getOtherDetails().getPreferredCallEndTime(),
@@ -983,33 +877,27 @@ class LeadWriteServiceImplTest {
 
     @Test
     void updateLead_withNullOtherDetails_initializesOtherDetails() {
-        // Arrange
         lead.setOtherDetails(null);
         UpdateLeadRequest request = UpdateLeadRequest.builder().officeKey("HQ").build();
 
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.updateLead(leadIdentifier, request);
 
-        // Assert
         assertNotNull(lead.getOtherDetails(), "OtherDetails should be initialized when null");
     }
 
     @Test
     void updateLead_withProductCode_validatesAndSetsProduct() {
-        // Arrange
         UpdateLeadRequest request = UpdateLeadRequest.builder()
                 .officeKey("HQ").productCode("PL").build();
 
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.updateLead(leadIdentifier, request);
 
-        // Assert
         assertEquals("PL", lead.getProductCode(), "Product code should be updated");
         verify(productReadService).getProductByCode("PL");
     }
@@ -1018,7 +906,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void updateCreditDetails_withEmptyUnderwriter_setsCurrentUser() {
-        // Arrange
         Lead.CreditRatingDetails existingDetails = Lead.CreditRatingDetails.builder()
                 .underwriter("   ").build();
         lead.setCreditRatingDetails(existingDetails);
@@ -1029,17 +916,14 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.updateCreditDetails(leadIdentifier, request);
 
-        // Assert
         assertEquals("test-user", lead.getCreditRatingDetails().getUnderwriter(),
                 "Empty underwriter should be replaced with current user");
     }
 
     @Test
     void updateCreditDetails_withOccupationProfile_validatesAndSets() {
-        // Arrange
         UpdateCreditDetailsRequest request = UpdateCreditDetailsRequest.builder()
                 .occupationProfile("SALARIED").build();
 
@@ -1047,10 +931,8 @@ class LeadWriteServiceImplTest {
         when(codeValueMasterService.getCodeValueByKeyAndCodeKey(anyString(), anyString())).thenReturn(new CodeValueResponse());
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.updateCreditDetails(leadIdentifier, request);
 
-        // Assert
         assertEquals("SALARIED", lead.getCreditRatingDetails().getOccupationProfile(),
                 "Occupation profile should be validated and set");
     }
@@ -1059,7 +941,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void updateDisbursementDetails_withNullExistingDetails_createsNew() {
-        // Arrange
         lead.setDisbursementDetails(null);
 
         UpdateDisbursementDetailsRequest request = UpdateDisbursementDetailsRequest.builder()
@@ -1070,10 +951,8 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.updateDisbursementDetails(leadIdentifier, request);
 
-        // Assert
         assertNotNull(lead.getDisbursementDetails(), "Disbursement details should be initialized");
         assertEquals(BigDecimal.valueOf(1000000), lead.getDisbursementDetails().getDisbursedAmount(),
                 "Disbursed amount should be set");
@@ -1083,18 +962,15 @@ class LeadWriteServiceImplTest {
 
     @Test
     void createTranche_withNullTranchesList_initializesListAndAdds() {
-        // Arrange
         lead.setDisbursementDetails(Lead.DisbursementDetails.builder().tranches(null).build());
         CreateTrancheRequest request = CreateTrancheRequest.builder()
-                .amount(BigDecimal.valueOf(200000)).date(LocalDate.of(2025, 3, 1)).build();
+                .amount(BigDecimal.valueOf(200000)).date(LocalDate.of(2026, 3, 1)).build();
 
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.createTranche(leadIdentifier, request);
 
-        // Assert
         assertNotNull(lead.getDisbursementDetails().getTranches(), "Tranches list should be initialized");
         assertEquals(1, lead.getDisbursementDetails().getTranches().size(), "One tranche should be added");
     }
@@ -1103,14 +979,12 @@ class LeadWriteServiceImplTest {
 
     @Test
     void updateTranche_withNullDisbursementDetails_throwsResourceNotFoundException() {
-        // Arrange
         lead.setDisbursementDetails(null);
         UUID trancheId = UUID.randomUUID();
         UpdateTrancheRequest request = UpdateTrancheRequest.builder()
                 .amount(BigDecimal.TEN).date(LocalDate.now()).build();
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
 
-        // Act & Assert
         assertThrows(ResourceNotFoundException.class,
                 () -> leadWriteService.updateTranche(leadIdentifier, trancheId, request),
                 "Should throw when disbursement details are null");
@@ -1118,12 +992,10 @@ class LeadWriteServiceImplTest {
 
     @Test
     void deleteTranche_withNullDisbursementDetails_throwsResourceNotFoundException() {
-        // Arrange
         lead.setDisbursementDetails(null);
         UUID trancheId = UUID.randomUUID();
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
 
-        // Act & Assert
         assertThrows(ResourceNotFoundException.class,
                 () -> leadWriteService.deleteTranche(leadIdentifier, trancheId),
                 "Should throw when disbursement details are null");
@@ -1133,32 +1005,26 @@ class LeadWriteServiceImplTest {
 
     @Test
     void rejectLead_withNullReasonCode_skipsReasonValidation() {
-        // Arrange
         RejectLeadRequest request = RejectLeadRequest.builder().reasonCode(null).build();
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.rejectLead(leadIdentifier, request);
 
-        // Assert
         assertEquals(LeadStatus.REJECTED, lead.getStatus(), "Status should be REJECTED");
         verifyNoInteractions(codeValueMasterService);
     }
 
     @Test
     void rejectLead_withNullExistingReasons_createsNewReasonDetails() {
-        // Arrange
         lead.setReasons(null);
         RejectLeadRequest request = RejectLeadRequest.builder().reasonCode("LOW_INCOME").build();
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
         when(codeValueMasterService.getCodeValueByKeyAndCodeKey(anyString(), anyString())).thenReturn(new CodeValueResponse());
 
-        // Act
         leadWriteService.rejectLead(leadIdentifier, request);
 
-        // Assert
         assertNotNull(lead.getReasons(), "Reasons should be initialized when null");
         assertEquals("LOW_INCOME", lead.getReasons().getReject(), "Reject reason should be set");
         assertNull(lead.getReasons().getOnhold(), "Onhold reason should be cleared on rejection");
@@ -1166,32 +1032,26 @@ class LeadWriteServiceImplTest {
 
     @Test
     void withdrawLead_withNullReasonCode_skipsReasonValidation() {
-        // Arrange
         WithdrawLeadRequest request = WithdrawLeadRequest.builder().reasonCode(null).build();
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.withdrawLead(leadIdentifier, request);
 
-        // Assert
         assertEquals(LeadStatus.WITHDRAWN, lead.getStatus(), "Status should be WITHDRAWN");
         verifyNoInteractions(codeValueMasterService);
     }
 
     @Test
     void withdrawLead_withNullExistingReasons_createsNewReasonDetails() {
-        // Arrange
         lead.setReasons(null);
         WithdrawLeadRequest request = WithdrawLeadRequest.builder().reasonCode("CUSTOMER_REQUEST").build();
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
         when(codeValueMasterService.getCodeValueByKeyAndCodeKey(anyString(), anyString())).thenReturn(new CodeValueResponse());
 
-        // Act
         leadWriteService.withdrawLead(leadIdentifier, request);
 
-        // Assert
         assertNotNull(lead.getReasons(), "Reasons should be initialized when null");
         assertEquals("CUSTOMER_REQUEST", lead.getReasons().getWithdrawn(), "Withdrawn reason should be set");
     }
@@ -1200,13 +1060,11 @@ class LeadWriteServiceImplTest {
 
     @Test
     void onholdLead_withWithdrawnLead_throwsBadRequestException() {
-        // Arrange
         lead.setStatus(LeadStatus.WITHDRAWN);
         OnholdLeadRequest request = OnholdLeadRequest.builder()
-                .holdFollowUpDate(LocalDate.of(2025, 7, 1)).build();
+                .holdFollowUpDate(LocalDate.of(2026, 7, 1)).build();
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
 
-        // Act & Assert
         assertThrows(BadRequestException.class,
                 () -> leadWriteService.onholdLead(leadIdentifier, request),
                 "Should throw when lead is withdrawn");
@@ -1214,34 +1072,28 @@ class LeadWriteServiceImplTest {
 
     @Test
     void onholdLead_withNullReasonCode_skipsReasonValidation() {
-        // Arrange
         OnholdLeadRequest request = OnholdLeadRequest.builder()
-                .reasonCode(null).holdFollowUpDate(LocalDate.of(2025, 7, 1)).build();
+                .reasonCode(null).holdFollowUpDate(LocalDate.of(2026, 7, 1)).build();
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.onholdLead(leadIdentifier, request);
 
-        // Assert
         assertEquals(LeadSubStatus.ONHOLD, lead.getSubstatus(), "Substatus should be ONHOLD");
         verifyNoInteractions(codeValueMasterService);
     }
 
     @Test
     void onholdLead_withNullExistingReasons_createsNewReasonDetails() {
-        // Arrange
         lead.setReasons(null);
         OnholdLeadRequest request = OnholdLeadRequest.builder()
-                .reasonCode("DOCUMENTS_PENDING").holdFollowUpDate(LocalDate.of(2025, 7, 1)).build();
+                .reasonCode("DOCUMENTS_PENDING").holdFollowUpDate(LocalDate.of(2026, 7, 1)).build();
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
         when(codeValueMasterService.getCodeValueByKeyAndCodeKey(anyString(), anyString())).thenReturn(new CodeValueResponse());
 
-        // Act
         leadWriteService.onholdLead(leadIdentifier, request);
 
-        // Assert
         assertNotNull(lead.getReasons(), "Reasons should be initialized when null");
         assertEquals("DOCUMENTS_PENDING", lead.getReasons().getOnhold(), "Onhold reason should be set");
     }
@@ -1250,16 +1102,13 @@ class LeadWriteServiceImplTest {
 
     @Test
     void resumeLead_withNullReasons_skipsReasonClearing() {
-        // Arrange
         lead.setSubstatus(LeadSubStatus.ONHOLD);
         lead.setReasons(null);
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.resumeLead(leadIdentifier);
 
-        // Assert
         assertNull(lead.getSubstatus(), "Substatus should be cleared");
         assertNull(lead.getReasons(), "Reasons should remain null");
     }
@@ -1268,32 +1117,26 @@ class LeadWriteServiceImplTest {
 
     @Test
     void dropoffLead_withNullReasonCode_skipsReasonValidation() {
-        // Arrange
         DropoffLeadRequest request = DropoffLeadRequest.builder().reasonCode(null).build();
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.dropoffLead(leadIdentifier, request);
 
-        // Assert
         assertEquals(LeadSubStatus.DROPOFF, lead.getSubstatus(), "Substatus should be DROPOFF");
         verifyNoInteractions(codeValueMasterService);
     }
 
     @Test
     void dropoffLead_withNullExistingReasons_createsNewReasonDetails() {
-        // Arrange
         lead.setReasons(null);
         DropoffLeadRequest request = DropoffLeadRequest.builder().reasonCode("NO_RESPONSE").build();
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
         when(codeValueMasterService.getCodeValueByKeyAndCodeKey(anyString(), anyString())).thenReturn(new CodeValueResponse());
 
-        // Act
         leadWriteService.dropoffLead(leadIdentifier, request);
 
-        // Assert
         assertNotNull(lead.getReasons(), "Reasons should be initialized when null");
         assertEquals("NO_RESPONSE", lead.getReasons().getDropoff(), "Dropoff reason should be set");
     }
@@ -1302,16 +1145,13 @@ class LeadWriteServiceImplTest {
 
     @Test
     void undoRejectLead_withNullReasons_skipsReasonClearing() {
-        // Arrange
         lead.setStatus(LeadStatus.REJECTED);
         lead.setReasons(null);
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.undoRejectLead(leadIdentifier);
 
-        // Assert
         assertEquals(LeadStatus.ACTIVE, lead.getStatus(), "Status should revert to ACTIVE");
         assertNull(lead.getReasons(), "Reasons should remain null when not set");
     }
@@ -1320,7 +1160,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void updatePreliminaryDetails_withWhatsAppFormDetails_setsFormDetails() {
-        // Arrange
         Map<String, String> formDetails = Map.of("step1", "completed");
         UpdatePreliminaryDetailsRequest request = new UpdatePreliminaryDetailsRequest();
         request.setWhatsAppFormDetails(formDetails);
@@ -1329,10 +1168,8 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.updatePreliminaryDetails(leadIdentifier, request);
 
-        // Assert
         assertNotNull(lead.getPreliminaryDetails().getWhatsAppDIYForm(),
                 "WhatsApp form details should be set when provided");
     }
@@ -1341,15 +1178,12 @@ class LeadWriteServiceImplTest {
 
     @Test
     void completeLead_withDropoffLead_completesSuccessfully() {
-        // Arrange
         lead.setSubstatus(LeadSubStatus.DROPOFF);
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.completeLead(leadIdentifier);
 
-        // Assert
         assertEquals(LeadStatus.COMPLETED, lead.getStatus(),
                 "Should complete even when substatus is DROPOFF (only ONHOLD is blocked)");
     }
@@ -1358,7 +1192,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void createLead_withSourcingChannelRequest_createsSourcingChannel() {
-        // Arrange
         CreateLeadRequest request = new CreateLeadRequest();
         request.setPhoneNumber(new CreateLeadRequest.MobileNumberDetails("9876543210", false));
         request.setSourcingChannelRequest(new SourcingChannelRequest("ONLINE", "GOOGLE", null));
@@ -1380,11 +1213,8 @@ class LeadWriteServiceImplTest {
         when(workflowConfigRepositoryWrapper.findActiveByWorkflowConfigKey(anyString())).thenReturn(workflowConfig);
         when(sourcingChannelWriteService.create(any(SourcingChannelRequest.class))).thenReturn(channelResponse);
 
-        // Act
-        CreateLeadResponse result = leadWriteService.createLead(request);
+        leadWriteService.createLead(request);
 
-        // Assert
-        assertNotNull(result, "Should create lead with sourcing channel");
         verify(sourcingChannelWriteService).create(any(SourcingChannelRequest.class));
     }
 
@@ -1392,7 +1222,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void patchPropertyDetails_withAllFields_mergesIntoLead() {
-        // Arrange
         PatchAddressData patchAddr = PatchAddressData.builder()
                 .address(Optional.of("123 Main St"))
                 .pincode(Optional.of("560001"))
@@ -1437,10 +1266,8 @@ class LeadWriteServiceImplTest {
         when(codeValueMasterService.getCodeValueByKeyAndCodeKey(anyString(), anyString())).thenReturn(new CodeValueResponse());
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.patchPropertyDetails(leadIdentifier, request);
 
-        // Assert
         assertNotNull(lead.getOtherDetails().getPropertyDetails(), "Property details should be set");
         assertNotNull(lead.getOtherDetails().getPropertyDetails().getAddress(), "Address should be merged");
         assertEquals("123 Main St", lead.getOtherDetails().getPropertyDetails().getAddress().getAddress(),
@@ -1465,14 +1292,13 @@ class LeadWriteServiceImplTest {
                 "Owner relation should be set from patch");
         assertNotNull(lead.getOtherDetails().getPropertyDetails().getPropertyMeasurementDetails(),
                 "Property measurement details should be set from patch");
-        assertEquals("1200", lead.getOtherDetails().getPropertyDetails().getPropertyMeasurementDetails().getBuildUpArea(),
+        assertEquals("1200", lead.getOtherDetails().getPropertyDetails().getPropertyMeasurementDetails().getBuildUpArea().toString(),
                 "Build-up area should be set from patch");
         verify(applicationEventPublisher).publishEvent(any(SystemEvent.class));
     }
 
     @Test
     void patchPropertyDetails_withNullOtherDetails_initializesOtherDetails() {
-        // Arrange
         lead.setOtherDetails(null);
         PatchPropertyDetailsRequest request = PatchPropertyDetailsRequest.builder()
                 .owner(Optional.of("Jane")).build();
@@ -1480,17 +1306,14 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.patchPropertyDetails(leadIdentifier, request);
 
-        // Assert
         assertNotNull(lead.getOtherDetails(), "OtherDetails should be initialized");
         assertEquals("Jane", lead.getOtherDetails().getPropertyDetails().getOwner());
     }
 
     @Test
     void patchPropertyDetails_withNullMeasurementData_clearsDetails() {
-        // Arrange
         Lead.PropertyDetails existing = new Lead.PropertyDetails();
         existing.setPropertyMeasurementDetails(
                 Lead.PropertyDetails.PropertyMeasurementDetails.builder()
@@ -1505,17 +1328,14 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.patchPropertyDetails(leadIdentifier, request);
 
-        // Assert
         assertNull(lead.getOtherDetails().getPropertyDetails().getPropertyMeasurementDetails(),
                 "Measurement details should be cleared when Optional is empty");
     }
 
     @Test
     void patchPropertyDetails_withDocumentChecklist_setsFields() {
-        // Arrange
         PatchDocumentChecklistRequest checklist = PatchDocumentChecklistRequest.builder()
                 .ekhataType(Optional.of("A_KHATA"))
                 .ekhataStatus(Optional.of("AVAILABLE"))
@@ -1531,10 +1351,8 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.patchPropertyDetails(leadIdentifier, request);
 
-        // Assert
         Lead.DocumentChecklist result = lead.getOtherDetails().getPropertyDetails().getDocumentChecklist();
         assertNotNull(result, "Document checklist should be set");
         assertEquals("A_KHATA", result.getEkhataType());
@@ -1545,7 +1363,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void patchPropertyDetails_withInvalidEkhataType_throwsBadRequestException() {
-        // Arrange
         PatchDocumentChecklistRequest checklist = PatchDocumentChecklistRequest.builder()
                 .ekhataType(Optional.of("INVALID_TYPE"))
                 .build();
@@ -1555,7 +1372,6 @@ class LeadWriteServiceImplTest {
 
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
 
-        // Act & Assert
         assertThrows(BadRequestException.class,
                 () -> leadWriteService.patchPropertyDetails(leadIdentifier, request),
                 "Should throw when ekhataType is invalid");
@@ -1563,7 +1379,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void patchPropertyDetails_withInvalidSaleDeed_throwsBadRequestException() {
-        // Arrange
         PatchDocumentChecklistRequest checklist = PatchDocumentChecklistRequest.builder()
                 .saleDeed(Optional.of("INVALID_STATUS"))
                 .build();
@@ -1573,7 +1388,6 @@ class LeadWriteServiceImplTest {
 
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
 
-        // Act & Assert
         assertThrows(BadRequestException.class,
                 () -> leadWriteService.patchPropertyDetails(leadIdentifier, request),
                 "Should throw when saleDeed status is invalid");
@@ -1581,7 +1395,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void patchPropertyDetails_withInvalidEkhataStatus_throwsBadRequestException() {
-        // Arrange
         PatchDocumentChecklistRequest checklist = PatchDocumentChecklistRequest.builder()
                 .ekhataStatus(Optional.of("INVALID"))
                 .build();
@@ -1591,7 +1404,6 @@ class LeadWriteServiceImplTest {
 
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
 
-        // Act & Assert
         assertThrows(BadRequestException.class,
                 () -> leadWriteService.patchPropertyDetails(leadIdentifier, request),
                 "Should throw when ekhataStatus is invalid");
@@ -1599,7 +1411,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void patchPropertyDetails_withClearingDocumentChecklistFields_setsNulls() {
-        // Arrange
         PatchDocumentChecklistRequest checklist = PatchDocumentChecklistRequest.builder()
                 .ekhataType(Optional.empty())
                 .ekhataStatus(Optional.empty())
@@ -1615,10 +1426,8 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.patchPropertyDetails(leadIdentifier, request);
 
-        // Assert
         Lead.DocumentChecklist result = lead.getOtherDetails().getPropertyDetails().getDocumentChecklist();
         assertNull(result.getEkhataType(), "EkhataType should be cleared");
         assertNull(result.getEkhataStatus(), "EkhataStatus should be cleared");
@@ -1627,7 +1436,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void patchPropertyDetails_withExistingAddress_mergesIntoExisting() {
-        // Arrange
         AddressData existingAddr = new AddressData();
         existingAddr.setAddress("Old address");
         existingAddr.setPincode("500001");
@@ -1646,10 +1454,8 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.patchPropertyDetails(leadIdentifier, request);
 
-        // Assert
         assertEquals("Old address", lead.getOtherDetails().getPropertyDetails().getAddress().getAddress(),
                 "Existing address should be preserved");
         assertEquals("560001", lead.getOtherDetails().getPropertyDetails().getAddress().getPincode(),
@@ -1658,7 +1464,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void patchPropertyDetails_withClearingGeoDataAndPropertyType_setsNulls() {
-        // Arrange
         PatchPropertyDetailsRequest request = PatchPropertyDetailsRequest.builder()
                 .geoData(Optional.empty())
                 .propertyType(Optional.empty())
@@ -1670,10 +1475,8 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.patchPropertyDetails(leadIdentifier, request);
 
-        // Assert
         assertNull(lead.getOtherDetails().getPropertyDetails().getGeoData(), "GeoData should be cleared");
         assertNull(lead.getOtherDetails().getPropertyDetails().getPropertyType(), "PropertyType should be cleared");
         assertNull(lead.getOtherDetails().getPropertyDetails().getOwner(), "Owner should be cleared");
@@ -1681,7 +1484,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void patchPropertyDetails_withRegionFields_setsRegionData() {
-        // Arrange
         PatchAddressData patchAddr = PatchAddressData.builder()
                 .region(Optional.of("North Karnataka"))
                 .regionCode(Optional.of("REG01"))
@@ -1695,10 +1497,8 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.patchPropertyDetails(leadIdentifier, request);
 
-        // Assert
         AddressData addr = lead.getOtherDetails().getPropertyDetails().getAddress();
         assertEquals("North Karnataka", addr.getRegion(), "Region name should be set from patch");
         assertEquals("REG01", addr.getRegionCode(), "Region code should be set from patch");
@@ -1707,7 +1507,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void patchPropertyDetails_withNullRegionFields_doesNotOverwrite() {
-        // Arrange
         AddressData existingAddr = new AddressData();
         existingAddr.setRegion("Existing Region");
         existingAddr.setRegionCode("EX_REG");
@@ -1727,10 +1526,8 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.patchPropertyDetails(leadIdentifier, request);
 
-        // Assert
         AddressData addr = lead.getOtherDetails().getPropertyDetails().getAddress();
         assertEquals("Existing Region", addr.getRegion(), "Region name should not be overwritten when not patched");
         assertEquals("EX_REG", addr.getRegionCode(), "Region code should not be overwritten when not patched");
@@ -1739,7 +1536,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void patchPropertyDetails_withOperatingAreaFields_setsOperatingAreaData() {
-        // Arrange
         PatchAddressData patchAddr = PatchAddressData.builder()
                 .operatingAreaName(Optional.of("North Zone"))
                 .operatingAreaCode(Optional.of("OA01"))
@@ -1753,10 +1549,8 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.patchPropertyDetails(leadIdentifier, request);
 
-        // Assert
         AddressData addr = lead.getOtherDetails().getPropertyDetails().getAddress();
         assertEquals("North Zone", addr.getOperatingAreaName(), "Operating area name should be set from patch");
         assertEquals("OA01", addr.getOperatingAreaCode(), "Operating area code should be set from patch");
@@ -1765,7 +1559,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void patchPropertyDetails_withNullOperatingAreaFields_doesNotOverwrite() {
-        // Arrange
         AddressData existingAddr = new AddressData();
         existingAddr.setOperatingAreaName("Existing Zone");
         existingAddr.setOperatingAreaCode("EX_OA");
@@ -1785,10 +1578,8 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.patchPropertyDetails(leadIdentifier, request);
 
-        // Assert
         AddressData addr = lead.getOtherDetails().getPropertyDetails().getAddress();
         assertEquals("Existing Zone", addr.getOperatingAreaName(), "Operating area name should not be overwritten when not patched");
         assertEquals("EX_OA", addr.getOperatingAreaCode(), "Operating area code should not be overwritten when not patched");
@@ -1797,7 +1588,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void patchPropertyDetails_withInvalidPropertyTax_throwsBadRequestException() {
-        // Arrange
         PatchDocumentChecklistRequest checklist = PatchDocumentChecklistRequest.builder()
                 .propertyTax(Optional.of("INVALID"))
                 .build();
@@ -1807,7 +1597,6 @@ class LeadWriteServiceImplTest {
 
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
 
-        // Act & Assert
         assertThrows(BadRequestException.class,
                 () -> leadWriteService.patchPropertyDetails(leadIdentifier, request),
                 "Should throw when propertyTax status is invalid");
@@ -1815,7 +1604,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void patchPropertyDetails_withInvalidStatementOfAccounts_throwsBadRequestException() {
-        // Arrange
         PatchDocumentChecklistRequest checklist = PatchDocumentChecklistRequest.builder()
                 .statementOfAccounts(Optional.of("INVALID"))
                 .build();
@@ -1825,7 +1613,6 @@ class LeadWriteServiceImplTest {
 
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
 
-        // Act & Assert
         assertThrows(BadRequestException.class,
                 () -> leadWriteService.patchPropertyDetails(leadIdentifier, request),
                 "Should throw when statementOfAccounts status is invalid");
@@ -1833,7 +1620,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void patchPropertyDetails_withInvalidOtherDocs_throwsBadRequestException() {
-        // Arrange
         PatchDocumentChecklistRequest checklist = PatchDocumentChecklistRequest.builder()
                 .otherDocs(Optional.of("INVALID"))
                 .build();
@@ -1843,7 +1629,6 @@ class LeadWriteServiceImplTest {
 
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
 
-        // Act & Assert
         assertThrows(BadRequestException.class,
                 () -> leadWriteService.patchPropertyDetails(leadIdentifier, request),
                 "Should throw when otherDocs status is invalid");
@@ -1853,7 +1638,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void patchIncomeObligationDetails_withIncomeDetails_setsAndPublishes() {
-        // Arrange
         PatchIncomeAndObligationRequest.IncomeDetailsData incomeData =
                 PatchIncomeAndObligationRequest.IncomeDetailsData.builder()
                         .incomeSource("SALARY").amount(BigDecimal.valueOf(50000)).build();
@@ -1866,10 +1650,8 @@ class LeadWriteServiceImplTest {
         when(codeValueMasterService.getByKey("SALARY")).thenReturn(new CodeValueResponse());
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.patchIncomeObligationDetails(leadIdentifier, request);
 
-        // Assert
         assertNotNull(lead.getIncomeObligationDetails(), "Income obligation details should be set");
         assertEquals(1, lead.getIncomeObligationDetails().getIncomeDetails().size());
         assertEquals("SALARY", lead.getIncomeObligationDetails().getIncomeDetails().get(0).getIncomeSource());
@@ -1878,7 +1660,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void patchIncomeObligationDetails_withObligationDetails_setsObligation() {
-        // Arrange
         PatchIncomeAndObligationRequest request = PatchIncomeAndObligationRequest.builder()
                 .incomeDetails(Optional.empty())
                 .obligationDetails(Optional.of(
@@ -1890,10 +1671,8 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.patchIncomeObligationDetails(leadIdentifier, request);
 
-        // Assert
         assertNotNull(lead.getIncomeObligationDetails().getObligationDetails());
         assertEquals(BigDecimal.valueOf(15000), lead.getIncomeObligationDetails().getObligationDetails().getExistingEmi());
         assertEquals(BigDecimal.valueOf(80000), lead.getIncomeObligationDetails().getMonthlyFamilyIncome());
@@ -1901,7 +1680,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void patchIncomeObligationDetails_withExistingDetailsPreserved_keepsExisting() {
-        // Arrange
         Lead.IncomeObligationDetails existing = Lead.IncomeObligationDetails.builder()
                 .incomeDetails(List.of(Lead.IncomeDetails.builder().incomeSource("BUSINESS").amount(BigDecimal.valueOf(100000)).build()))
                 .obligationDetails(Lead.ObligationDetails.builder().existingEmi(BigDecimal.valueOf(5000)).build())
@@ -1918,10 +1696,8 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.patchIncomeObligationDetails(leadIdentifier, request);
 
-        // Assert
         assertEquals("BUSINESS", lead.getIncomeObligationDetails().getIncomeDetails().get(0).getIncomeSource(),
                 "Existing income details should be preserved when Optional.empty()");
         assertEquals(BigDecimal.valueOf(5000), lead.getIncomeObligationDetails().getObligationDetails().getExistingEmi(),
@@ -1932,7 +1708,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void patchIncomeObligationDetails_withIncomeDocumentChecklist_validatesAndSets() {
-        // Arrange
         PatchIncomeAndObligationRequest.IncomeDocumentChecklistData checklistItem =
                 PatchIncomeAndObligationRequest.IncomeDocumentChecklistData.builder()
                         .documentType("SALARY_SLIP").status("AVAILABLE").build();
@@ -1949,17 +1724,14 @@ class LeadWriteServiceImplTest {
         when(codeValueMasterService.getByKey(anyString())).thenReturn(new CodeValueResponse());
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.patchIncomeObligationDetails(leadIdentifier, request);
 
-        // Assert
         assertNotNull(lead.getIncomeObligationDetails().getIncomeDetails().get(0).getDocumentChecklist(),
                 "Income document checklist should be mapped");
     }
 
     @Test
     void patchIncomeObligationDetails_withInvalidDocumentChecklistStatus_throwsBadRequest() {
-        // Arrange
         PatchIncomeAndObligationRequest.IncomeDocumentChecklistData checklistItem =
                 PatchIncomeAndObligationRequest.IncomeDocumentChecklistData.builder()
                         .documentType("SALARY_SLIP").status("INVALID_STATUS").build();
@@ -1974,7 +1746,6 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(codeValueMasterService.getByKey(anyString())).thenReturn(new CodeValueResponse());
 
-        // Act & Assert
         assertThrows(BadRequestException.class,
                 () -> leadWriteService.patchIncomeObligationDetails(leadIdentifier, request),
                 "Should throw when document checklist status is invalid");
@@ -1982,7 +1753,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void patchIncomeObligationDetails_withNullDocumentType_throwsBadRequest() {
-        // Arrange
         PatchIncomeAndObligationRequest.IncomeDocumentChecklistData checklistItem =
                 PatchIncomeAndObligationRequest.IncomeDocumentChecklistData.builder()
                         .documentType(null).status("AVAILABLE").build();
@@ -1997,7 +1767,6 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(codeValueMasterService.getByKey(anyString())).thenReturn(new CodeValueResponse());
 
-        // Act & Assert
         assertThrows(BadRequestException.class,
                 () -> leadWriteService.patchIncomeObligationDetails(leadIdentifier, request),
                 "Should throw when document type is null");
@@ -2005,7 +1774,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void patchIncomeObligationDetails_withNullDocumentStatus_throwsBadRequest() {
-        // Arrange
         PatchIncomeAndObligationRequest.IncomeDocumentChecklistData checklistItem =
                 PatchIncomeAndObligationRequest.IncomeDocumentChecklistData.builder()
                         .documentType("SALARY_SLIP").status(null).build();
@@ -2020,7 +1788,6 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(codeValueMasterService.getByKey(anyString())).thenReturn(new CodeValueResponse());
 
-        // Act & Assert
         assertThrows(BadRequestException.class,
                 () -> leadWriteService.patchIncomeObligationDetails(leadIdentifier, request),
                 "Should throw when document status is null");
@@ -2028,7 +1795,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void patchIncomeObligationDetails_withClearingObligationDetails_setsNull() {
-        // Arrange
         PatchIncomeAndObligationRequest request = PatchIncomeAndObligationRequest.builder()
                 .incomeDetails(Optional.empty())
                 .obligationDetails(Optional.empty())
@@ -2038,10 +1804,8 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.patchIncomeObligationDetails(leadIdentifier, request);
 
-        // Assert
         assertNull(lead.getIncomeObligationDetails().getObligationDetails(),
                 "Obligation details should be null when cleared");
         assertNull(lead.getIncomeObligationDetails().getMonthlyFamilyIncome(),
@@ -2052,7 +1816,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void patchLead_withPropertyAndIncomeDetails_updatesLead() {
-        // Arrange
         PatchPropertyDetailsRequest propRequest = PatchPropertyDetailsRequest.builder()
                 .owner(Optional.of("Owner1")).build();
 
@@ -2067,17 +1830,14 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.patchLead(leadIdentifier, request);
 
-        // Assert
         assertEquals("Owner1", lead.getOtherDetails().getPropertyDetails().getOwner());
         assertEquals(BigDecimal.valueOf(60000), lead.getIncomeObligationDetails().getMonthlyFamilyIncome());
     }
 
     @Test
     void patchLead_withValidCustomerFormStep_setsStep() {
-        // Arrange
         PatchLeadRequest request = PatchLeadRequest.builder()
                 .currentCustomerFormStep(Optional.of("basicInfo"))
                 .build();
@@ -2085,23 +1845,19 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.patchLead(leadIdentifier, request);
 
-        // Assert
         assertEquals("basicInfo", lead.getOtherDetails().getCurrentCustomerFormStep());
     }
 
     @Test
     void patchLead_withInvalidCustomerFormStep_throwsBadRequest() {
-        // Arrange
         PatchLeadRequest request = PatchLeadRequest.builder()
                 .currentCustomerFormStep(Optional.of("INVALID_STEP"))
                 .build();
 
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
 
-        // Act & Assert
         assertThrows(BadRequestException.class,
                 () -> leadWriteService.patchLead(leadIdentifier, request),
                 "Should throw when customer form step is invalid");
@@ -2109,7 +1865,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void patchLead_withNullCustomerFormStep_clearsStep() {
-        // Arrange
         PatchLeadRequest request = PatchLeadRequest.builder()
                 .currentCustomerFormStep(Optional.empty())
                 .build();
@@ -2117,17 +1872,14 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.patchLead(leadIdentifier, request);
 
-        // Assert
         assertNull(lead.getOtherDetails().getCurrentCustomerFormStep(),
                 "Customer form step should be cleared");
     }
 
     @Test
     void patchLead_withProductCode_validatesAndSets() {
-        // Arrange
         PatchLeadRequest request = PatchLeadRequest.builder()
                 .productCode(Optional.of("HL"))
                 .build();
@@ -2135,17 +1887,14 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.patchLead(leadIdentifier, request);
 
-        // Assert
         assertEquals("HL", lead.getProductCode(), "Product code should be set");
         verify(productReadService).getProductByCode("HL");
     }
 
     @Test
     void patchLead_withNullProductCode_clearsProductCode() {
-        // Arrange
         lead.setProductCode("OLD_PRODUCT");
         PatchLeadRequest request = PatchLeadRequest.builder()
                 .productCode(Optional.empty())
@@ -2154,17 +1903,14 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.patchLead(leadIdentifier, request);
 
-        // Assert
         assertNull(lead.getProductCode(), "Product code should be cleared when Optional is empty");
         verify(productReadService, never()).getProductByCode(anyString());
     }
 
     @Test
     void patchLead_withRequestedAmount_setsAmount() {
-        // Arrange
         PatchLeadRequest request = PatchLeadRequest.builder()
                 .requestedAmount(Optional.of(BigDecimal.valueOf(5000000)))
                 .build();
@@ -2172,16 +1918,13 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.patchLead(leadIdentifier, request);
 
-        // Assert
         assertEquals(BigDecimal.valueOf(5000000), lead.getRequestedAmount());
     }
 
     @Test
     void patchLead_withPreferredCallTimes_setsBothTimes() {
-        // Arrange
         PatchLeadRequest request = PatchLeadRequest.builder()
                 .preferredCallStartTime(Optional.of(LocalTime.of(10, 0)))
                 .preferredCallEndTime(Optional.of(LocalTime.of(18, 0)))
@@ -2190,10 +1933,8 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.patchLead(leadIdentifier, request);
 
-        // Assert
         assertEquals(LocalTime.of(10, 0), lead.getOtherDetails().getPreferredCallStartTime(),
                 "Preferred call start time should be updated from patch request");
         assertEquals(LocalTime.of(18, 0), lead.getOtherDetails().getPreferredCallEndTime(),
@@ -2202,8 +1943,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void patchLead_withOnlyPreferredCallStartTime_retainsExistingEndTime() {
-        // Arrange
-        lead.setOtherDetails(Lead.OtherDetails.builder().build());
         lead.getOtherDetails().setPreferredCallEndTime(LocalTime.of(17, 0));
         PatchLeadRequest request = PatchLeadRequest.builder()
                 .preferredCallStartTime(Optional.of(LocalTime.of(9, 30)))
@@ -2212,10 +1951,8 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.patchLead(leadIdentifier, request);
 
-        // Assert
         assertEquals(LocalTime.of(9, 30), lead.getOtherDetails().getPreferredCallStartTime(),
                 "Patch should update preferred call start time when it is provided");
         assertEquals(LocalTime.of(17, 0), lead.getOtherDetails().getPreferredCallEndTime(),
@@ -2224,16 +1961,15 @@ class LeadWriteServiceImplTest {
 
     @Test
     void patchLead_withInvalidPreferredCallTimesAfterMerge_throwsBadRequest() {
-        // Arrange
-        lead.setOtherDetails(Lead.OtherDetails.builder().build());
+        // Enforce structural end-time baseline explicitly to match cross-patch validation logic blocks
         lead.getOtherDetails().setPreferredCallEndTime(LocalTime.of(9, 0));
+
         PatchLeadRequest request = PatchLeadRequest.builder()
                 .preferredCallStartTime(Optional.of(LocalTime.of(10, 0)))
                 .build();
 
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
 
-        // Act & Assert
         assertThrows(BadRequestException.class,
                 () -> leadWriteService.patchLead(leadIdentifier, request),
                 "Patch should reject preferred call times when merged start time is after end time");
@@ -2241,7 +1977,6 @@ class LeadWriteServiceImplTest {
 
     @Test
     void patchLead_withNullOtherDetails_initializesOtherDetails() {
-        // Arrange
         lead.setOtherDetails(null);
         PatchLeadRequest request = PatchLeadRequest.builder()
                 .requestedAmount(Optional.of(BigDecimal.valueOf(1000000)))
@@ -2250,10 +1985,8 @@ class LeadWriteServiceImplTest {
         when(leadRepositoryWrapper.findByLeadIdentifierWithException(leadIdentifier)).thenReturn(lead);
         when(leadRepositoryWrapper.saveWithException(any(Lead.class))).thenReturn(lead);
 
-        // Act
         leadWriteService.patchLead(leadIdentifier, request);
 
-        // Assert
         assertNotNull(lead.getOtherDetails(), "OtherDetails should be initialized");
     }
 }

@@ -380,6 +380,7 @@ public class Lead extends AuditableEntity {
         public static class PropertyMeasurementDetails {
             private BigDecimal buildUpArea;
             private BigDecimal siteArea;
+            private BigDecimal buildUpValue;
         }
     }
 

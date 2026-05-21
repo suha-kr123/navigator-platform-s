@@ -185,6 +185,7 @@ public class LeadReadServiceImpl implements LeadReadService {
             measurementData = PropertyDetailsResponse.PropertyMeasurementDetailsData.builder()
                     .buildUpArea(measurement.getBuildUpArea())
                     .siteArea(measurement.getSiteArea())
+                    .buildUpValue(measurement.getBuildUpValue())
                     .build();
         }
 

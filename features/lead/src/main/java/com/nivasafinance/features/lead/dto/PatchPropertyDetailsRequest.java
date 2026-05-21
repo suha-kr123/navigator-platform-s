@@ -33,5 +33,6 @@ public class PatchPropertyDetailsRequest {
     public static class PropertyMeasurementDetailsData {
         private BigDecimal buildUpArea;
         private BigDecimal siteArea;
+        private BigDecimal buildUpValue;
     }
 }

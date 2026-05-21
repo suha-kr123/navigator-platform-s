@@ -869,6 +869,7 @@ public class LeadWriteServiceImpl implements LeadWriteService {
                         Lead.PropertyDetails.PropertyMeasurementDetails.builder()
                                 .buildUpArea(m.getBuildUpArea())
                                 .siteArea(m.getSiteArea())
+                                .buildUpValue(m.getBuildUpValue())
                                 .build());
             } else {
                 propertyDetails.setPropertyMeasurementDetails(null);
